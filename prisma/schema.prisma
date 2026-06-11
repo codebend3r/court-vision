@@ -1,0 +1,15 @@
+// Court Vision Prisma schema.
+// No models yet — the data layer is wired up but the schema is filled in when
+// game-log / player work begins. See PRD §8 (Data and Sync Strategy).
+//
+// Prisma 7: the connection URL lives in prisma.config.ts (not here), and the
+// client is generated to ../generated/prisma via the `prisma-client` generator.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}

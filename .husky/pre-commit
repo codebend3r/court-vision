@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+set -e
+
+echo "Running pre-commit hook"
+
+bun run prettier:quick && \
+bun run typecheck && \
+bun run lint && \
+bun run test

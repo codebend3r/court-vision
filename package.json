@@ -1,0 +1,63 @@
+{
+  "name": "court-vision",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 46644",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "prepare": "husky",
+    "prettier": "prettier --write .",
+    "prettier:check": "prettier --check .",
+    "prettier:quick": "pretty-quick --staged",
+    "postinstall": "prisma generate",
+    "system-check": "run-s prettier:check typecheck lint test"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.8.0",
+    "@prisma/client": "7.8.0",
+    "next": "16.2.9",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "@testing-library/user-event": "14.6.1",
+    "@types/node": "20.19.43",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.2",
+    "dotenv": "17.4.2",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.9",
+    "eslint-config-prettier": "10.1.8",
+    "husky": "9.1.7",
+    "jsdom": "29.1.1",
+    "npm-run-all2": "9.0.1",
+    "prettier": "3.8.4",
+    "pretty-quick": "4.2.2",
+    "prisma": "7.8.0",
+    "sass": "1.101.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.8"
+  },
+  "ignoreScripts": [
+    "sharp",
+    "unrs-resolver"
+  ],
+  "trustedDependencies": [
+    "@parcel/watcher",
+    "@prisma/engines",
+    "prisma",
+    "sharp",
+    "unrs-resolver"
+  ]
+}
