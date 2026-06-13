@@ -1,0 +1,170 @@
+# Court Vision
+
+Find fantasy basketball players trending in the categories you care about.
+
+Court Vision pulls NBA player stats, tracks how each player is performing over recent
+windows, and surfaces who is "heating up" — powering a leaderboard, trend charts, and a
+weighted **heat score**.
+
+> **Status:** early. The engineering scaffold and the NBA stats **fetch layer** are in
+> place; the data layer is code-only so far (no live database is wired up yet), and the
+> product UI (leaderboard, charts, heat score) is still to come. See
+> [`docs/superpowers/specs/`](docs/superpowers/specs/) for the design specs.
+
+## Stack
+
+| Area         | Choice                                                                     |
+| ------------ | -------------------------------------------------------------------------- |
+| Framework    | [Next.js 16](https://nextjs.org/) (App Router, Turbopack) + React 19       |
+| Language     | TypeScript 5.9 (`strict`)                                                  |
+| Styling      | SCSS modules (`*.module.scss`) + `src/styles/globals.scss` design tokens   |
+| Data layer   | [Prisma 7](https://www.prisma.io/) + PostgreSQL (via `@prisma/adapter-pg`) |
+| Validation   | [Zod](https://zod.dev/) at the NBA API boundary                            |
+| Testing      | [Vitest 4](https://vitest.dev/) + React Testing Library (jsdom)            |
+| Lint/format  | ESLint 9 (flat config) + Prettier (Prettier owns formatting)               |
+| Git hooks    | Husky + lint-staged                                                        |
+| Runtime / PM | [Bun](https://bun.sh/) (all scripts run through Bun)                       |
+| CI           | GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml))    |
+
+## Prerequisites
+
+- **Bun** 1.3.x — the package manager and runtime. Never use `npm` or `yarn`.
+- **Node 24** — see [`.nvmrc`](.nvmrc). Only needed for tooling/editors that key off a
+  Node version; the app and scripts run on Bun.
+- **PostgreSQL** — only required once the data layer is exercised against a live database
+  (see [Database](#database)). Not needed to run the dev server or the test suite.
+
+## Getting started
+
+```bash
+bun install                 # installs deps, sets up git hooks, generates the Prisma client
+cp .env.example .env        # then fill in DATABASE_URL when you need a database
+bun dev                     # http://localhost:46644
+```
+
+`bun install` runs `prisma generate` (via `postinstall`) and installs the Husky hooks (via
+`prepare`), so the generated Prisma client and quality gates are ready immediately.
+
+### Environment
+
+| Variable       | Required for                        | Notes                                             |
+| -------------- | ----------------------------------- | ------------------------------------------------- |
+| `DATABASE_URL` | `prisma migrate`, the live NBA sync | PostgreSQL connection string. See `.env.example`. |
+
+`prisma generate`, `bun dev`, and the test suite all work without a real `DATABASE_URL` —
+it's only needed for commands that actually connect to a database.
+
+## Scripts
+
+All scripts run through Bun (`bun run <name>`):
+
+| Script           | Command                                    | Purpose                                         |
+| ---------------- | ------------------------------------------ | ----------------------------------------------- |
+| `dev`            | `next dev --port 46644`                    | Dev server on port **46644**                    |
+| `build`          | `next build`                               | Production build                                |
+| `start`          | `next start`                               | Serve the production build                      |
+| `lint`           | `eslint . --max-warnings 0`                | Lint (warnings are a hard failure)              |
+| `typecheck`      | `tsc --noEmit`                             | Type-check only                                 |
+| `test`           | `vitest run`                               | Run the test suite once                         |
+| `test:watch`     | `vitest`                                   | Watch-mode tests                                |
+| `prettier`       | `prettier --write .`                       | Format the repo                                 |
+| `prettier:check` | `prettier --check .`                       | Verify formatting                               |
+| `db:generate`    | `prisma generate`                          | Regenerate the Prisma client                    |
+| `db:migrate`     | `prisma migrate dev`                       | Create/apply a migration (needs `DATABASE_URL`) |
+| `sync:nba`       | `bun run src/lib/nba/sync.ts`              | Run the NBA stats sync (needs a live DB)        |
+| `system-check`   | `run-s prettier:check typecheck lint test` | Run all quality gates locally                   |
+
+## Project layout
+
+```
+.
+├── prisma/
+│   ├── schema.prisma           # Player / PlayerSeasonStats / PlayerGameLog models
+│   └── migrations/             # first migration authored (not yet applied)
+├── prisma.config.ts            # Prisma 7 CLI config (schema path, migrations, DATABASE_URL)
+├── generated/prisma/           # generated Prisma client (gitignored; import via @generated/*)
+├── public/                     # static assets
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── layout.tsx          # root layout; imports @/styles/globals.scss
+│   │   └── page.tsx            # `/` route
+│   ├── components/             # React components (co-located SCSS module + test)
+│   │   └── Hello/
+│   ├── lib/
+│   │   ├── nba/                # NBA stats fetch → parse → validate → transform → persist
+│   │   └── prisma.ts           # Prisma client singleton (pg driver adapter)
+│   └── styles/
+│       └── globals.scss        # design tokens + typographic primitives
+├── docs/superpowers/           # design specs + implementation plans
+├── .github/workflows/ci.yml    # CI: prettier → lint → typecheck → test
+└── .husky/                     # pre-commit + pre-push hooks
+```
+
+Import aliases: `@/*` → `src/*`, `@generated/*` → `generated/*`.
+
+## Routes
+
+Court Vision uses the Next.js **App Router** (`src/app`).
+
+| Route | Source             | Renders                                            |
+| ----- | ------------------ | -------------------------------------------------- |
+| `/`   | `src/app/page.tsx` | Placeholder landing (`<Hello />`) — product UI TBD |
+
+No API route handlers exist yet; the NBA sync runs as a standalone Bun script.
+
+## Data layer (NBA sync)
+
+The first real data layer lives under [`src/lib/nba/`](src/lib/nba/) and pulls player stats
+from the NBA Stats API (`stats.nba.com`) for the 2025–26 regular season:
+
+```
+constants → client (fetch + retry) → parse (columnar → rows) → schemas (zod)
+          → endpoints → transform → persist (idempotent Prisma upserts) → sync
+```
+
+`bun run sync:nba` orchestrates the flow (player identity → season aggregates → per-game
+logs by month). It's currently **code-only and proven by mocked unit tests** — running it for
+real requires a live Postgres database and a `DATABASE_URL`. See
+[`docs/superpowers/specs/2026-06-12-nba-player-stats-fetch-design.md`](docs/superpowers/specs/2026-06-12-nba-player-stats-fetch-design.md).
+
+## Database
+
+Prisma 7 with a PostgreSQL datasource. The connection URL lives in `prisma.config.ts`
+(read from `DATABASE_URL`), **not** in `schema.prisma`. The client is generated to
+`generated/prisma/` (gitignored) and imported via the `@generated/*` alias.
+
+```bash
+bun run db:generate         # regenerate the client after editing schema.prisma
+bun run db:migrate          # create/apply a migration (requires a live DATABASE_URL)
+```
+
+The schema defines `Player`, `PlayerSeasonStats`, and `PlayerGameLog`. The first migration is
+authored under `prisma/migrations/` but has not been applied — no live database is stood up yet.
+
+## Testing
+
+[Vitest](https://vitest.dev/) + React Testing Library (jsdom). Tests are **co-located** with
+the code they cover (`lib/foo.ts` ↔ `lib/foo.test.ts`, `Foo.tsx` ↔ `Foo.test.tsx`).
+
+```bash
+bun run test                # run once
+bun run test:watch          # watch mode
+```
+
+## Conventions & quality gates
+
+Repo conventions (TypeScript, CSS, code style, commits) live in
+[`CLAUDE.md`](CLAUDE.md). Highlights:
+
+- Dependencies are **exact-pinned** (no `^`/`~`).
+- No `any` and no type casts; prefer type guards and `unknown`.
+- SCSS modules for components; tokens from `styles/globals.scss`.
+- Commit subjects start with `CV:`.
+
+Quality is enforced both locally and in CI:
+
+- **pre-commit** — lint-staged (eslint --fix + prettier) → typecheck → test
+- **pre-push** — prettier check → lint → typecheck → test
+- **CI** — the same gates on every PR and push to `main`
+
+Run them all at once with `bun run system-check`.
