@@ -151,7 +151,7 @@ Run:
 ```bash
 mkdir -p prisma/migrations/20260612000000_init
 printf 'provider = "postgresql"\n' > prisma/migrations/migration_lock.toml
-bunx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/20260612000000_init/migration.sql
+bunx prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script > prisma/migrations/20260612000000_init/migration.sql
 ```
 
 Expected: `migration.sql` contains `CREATE TABLE "Player" ...`, `CREATE TABLE "PlayerSeasonStats" ...`, `CREATE TABLE "PlayerGameLog" ...` plus the unique/index statements. **Do not run `migrate deploy`/`migrate dev`.** (`.prettierignore` already excludes `prisma/migrations/`.)
@@ -1367,8 +1367,15 @@ export const parseMatchup = (
   return { homeAway: away ? "away" : "home", opponentAbbr };
 };
 
-const parseGameDate = (value: string): Date =>
-  value.includes("T") ? new Date(value) : new Date(`${value}T00:00:00Z`);
+const parseGameDate = (value: string): Date => {
+  if (!value.includes("T")) {
+    return new Date(`${value}T00:00:00Z`);
+  }
+  // A bare date-time with no timezone designator is parsed as LOCAL time by JS
+  // (skewing the stored date by the host offset). Force UTC when none is given.
+  const hasTimezone = value.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(value);
+  return hasTimezone ? new Date(value) : new Date(`${value}Z`);
+};
 
 export const toPlayerInput = (row: PlayerIndexRow): PlayerInput => ({
   id: row.PERSON_ID,
