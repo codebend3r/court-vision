@@ -13,3 +13,81 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Player {
+  id           Int      @id
+  firstName    String
+  lastName     String
+  fullName     String
+  teamId       Int?
+  teamAbbr     String?
+  position     String?
+  jerseyNumber String?
+  seasonStats  PlayerSeasonStats[]
+  gameLogs     PlayerGameLog[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model PlayerSeasonStats {
+  id          String   @id @default(cuid())
+  player      Player   @relation(fields: [playerId], references: [id])
+  playerId    Int
+  season      String
+  seasonType  String
+  gamesPlayed Int
+  minutes     Float
+  fgm         Int
+  fga         Int
+  fg3m        Int
+  fg3a        Int
+  ftm         Int
+  fta         Int
+  oreb        Int
+  dreb        Int
+  reb         Int
+  ast         Int
+  stl         Int
+  blk         Int
+  tov         Int
+  pts         Int
+  updatedAt   DateTime @updatedAt
+
+  @@unique([playerId, season, seasonType])
+}
+
+model PlayerGameLog {
+  id           String   @id @default(cuid())
+  player       Player   @relation(fields: [playerId], references: [id])
+  playerId     Int
+  gameId       String
+  gameDate     DateTime
+  season       String
+  seasonType   String
+  teamId       Int
+  teamAbbr     String
+  matchup      String
+  opponentAbbr String?
+  homeAway     String
+  winLoss      String?
+  minutes      Float
+  fgm          Int
+  fga          Int
+  fg3m         Int
+  fg3a         Int
+  ftm          Int
+  fta          Int
+  oreb         Int
+  dreb         Int
+  reb          Int
+  ast          Int
+  stl          Int
+  blk          Int
+  tov          Int
+  pts          Int
+  plusMinus    Int?
+
+  @@unique([playerId, gameId])
+  @@index([gameDate])
+  @@index([playerId, gameDate])
+}
