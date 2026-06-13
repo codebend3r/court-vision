@@ -17,6 +17,7 @@
     "prettier:check": "prettier --check .",
     "prettier:quick": "pretty-quick --staged",
     "postinstall": "prisma generate",
+    "sync:nba": "bun run src/lib/nba/sync.ts",
     "system-check": "run-s prettier:check typecheck lint test"
   },
   "dependencies": {
