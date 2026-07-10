@@ -44,6 +44,10 @@ Operating rules for this repo. The README covers stack, layout, and routes; this
 
 - Tests are co-located: `lib/foo.ts` ↔ `lib/foo.test.ts`, `components/Foo/Foo.tsx` ↔ `components/Foo/Foo.test.tsx`.
 
+## Data sources
+
+- Live NBA stats come from the [Balldontlie API](https://docs.balldontlie.io/) — always consult that endpoint reference (e.g. [Get All Players](https://docs.balldontlie.io/#get-all-players)) when touching the adapter in `lib/balldontlie/`. Auth via `BALLDONTLIE_API_KEY` in `.env`; endpoint availability is tier-gated.
+
 ## Specs
 
 Design specs and implementation plans live in `docs/superpowers/specs/` and `docs/superpowers/plans/`. Check them before extending an existing feature.

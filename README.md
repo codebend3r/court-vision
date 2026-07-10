@@ -58,21 +58,22 @@ it's only needed for commands that actually connect to a database.
 
 All scripts run through Bun (`bun run <name>`):
 
-| Script           | Command                                    | Purpose                                         |
-| ---------------- | ------------------------------------------ | ----------------------------------------------- |
-| `dev`            | `next dev --port 46644`                    | Dev server on port **46644**                    |
-| `build`          | `next build`                               | Production build                                |
-| `start`          | `next start`                               | Serve the production build                      |
-| `lint`           | `eslint . --max-warnings 0`                | Lint (warnings are a hard failure)              |
-| `typecheck`      | `tsc --noEmit`                             | Type-check only                                 |
-| `test`           | `vitest run`                               | Run the test suite once                         |
-| `test:watch`     | `vitest`                                   | Watch-mode tests                                |
-| `prettier`       | `prettier --write .`                       | Format the repo                                 |
-| `prettier:check` | `prettier --check .`                       | Verify formatting                               |
-| `db:generate`    | `prisma generate`                          | Regenerate the Prisma client                    |
-| `db:migrate`     | `prisma migrate dev`                       | Create/apply a migration (needs `DATABASE_URL`) |
-| `sync:nba`       | `bun run src/lib/nba/sync.ts`              | Run the NBA stats sync (needs a live DB)        |
-| `system-check`   | `run-s prettier:check typecheck lint test` | Run all quality gates locally                   |
+| Script           | Command                                    | Purpose                                          |
+| ---------------- | ------------------------------------------ | ------------------------------------------------ |
+| `dev`            | `next dev --port 46644`                    | Dev server on port **46644**                     |
+| `build`          | `next build`                               | Production build                                 |
+| `start`          | `next start`                               | Serve the production build                       |
+| `lint`           | `eslint . --max-warnings 0`                | Lint (warnings are a hard failure)               |
+| `typecheck`      | `tsc --noEmit`                             | Type-check only                                  |
+| `test`           | `vitest run`                               | Run the test suite once                          |
+| `test:watch`     | `vitest`                                   | Watch-mode tests                                 |
+| `prettier`       | `prettier --write .`                       | Format the repo                                  |
+| `prettier:check` | `prettier --check .`                       | Verify formatting                                |
+| `db:generate`    | `prisma generate`                          | Regenerate the Prisma client                     |
+| `db:migrate`     | `prisma migrate dev`                       | Create/apply a migration (needs `DATABASE_URL`)  |
+| `sync:nba`       | `bun run src/lib/nba/sync.ts`              | Run the NBA stats sync (needs a live DB)         |
+| `sync:bdl`       | `bun run src/lib/balldontlie/sync.ts`      | Run the Balldontlie stats sync (needs a live DB) |
+| `system-check`   | `run-s prettier:check typecheck lint test` | Run all quality gates locally                    |
 
 ## Project layout
 
@@ -126,6 +127,16 @@ constants → client (fetch + retry) → parse (columnar → rows) → schemas (
 logs by month). It's currently **code-only and proven by mocked unit tests** — running it for
 real requires a live Postgres database and a `DATABASE_URL`. See
 [`docs/superpowers/specs/2026-06-12-nba-player-stats-fetch-design.md`](docs/superpowers/specs/2026-06-12-nba-player-stats-fetch-design.md).
+
+### Balldontlie adapter
+
+Because `stats.nba.com` is unreachable from some networks, the **live** stats source is the
+[Balldontlie API](https://docs.balldontlie.io/) via [`src/lib/balldontlie/`](src/lib/balldontlie/),
+sharing the source-agnostic write path in `src/lib/stats/`. `bun run sync:bdl` orchestrates it
+(requires `BALLDONTLIE_API_KEY` in `.env`; per-game stats are gated behind the ALL-STAR tier).
+The full endpoint reference — e.g. [Get All Players](https://docs.balldontlie.io/#get-all-players) —
+lives in the [Balldontlie documentation](https://docs.balldontlie.io/). See
+[`docs/superpowers/specs/2026-07-10-balldontlie-player-stats-backfill-design.md`](docs/superpowers/specs/2026-07-10-balldontlie-player-stats-backfill-design.md).
 
 ## Database
 
