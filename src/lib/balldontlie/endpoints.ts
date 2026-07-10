@@ -1,9 +1,11 @@
 import { bdlFetch, BdlParamValue } from "./client";
 import { PER_PAGE, SEASON_YEAR, THROTTLE_MS } from "./constants";
 import {
+  BdlGame,
   BdlPlayer,
   BdlStat,
   BdlTeam,
+  bdlGameSchema,
   bdlPage,
   bdlPlayerSchema,
   bdlStatSchema,
@@ -74,6 +76,44 @@ export const fetchAllPlayers = async (
     const raw = await bdlFetch({
       endpoint: "players",
       params: { per_page: PER_PAGE, ...cursorParam },
+      apiKey: deps.apiKey,
+      fetchImpl: deps.fetchImpl,
+      sleep: deps.sleep,
+    });
+    const page = pageSchema.parse(raw);
+    const combined = acc.concat(page.data);
+    const next = page.meta.next_cursor ?? null;
+    if (next === null) {
+      return combined;
+    }
+    await sleep(throttleMs);
+    return loadPage(next, combined);
+  };
+
+  return loadPage(null, []);
+};
+
+export const fetchTeamGames = async (args: {
+  teamId: number;
+  deps?: BdlClientDeps;
+  throttleMs?: number;
+}): Promise<BdlGame[]> => {
+  const { teamId, deps = {}, throttleMs = THROTTLE_MS } = args;
+  const sleep = deps.sleep ?? defaultSleep;
+  const pageSchema = bdlPage(bdlGameSchema);
+
+  const loadPage = async (cursor: number | null, acc: BdlGame[]): Promise<BdlGame[]> => {
+    const cursorParam: Record<string, BdlParamValue> =
+      cursor === null ? {} : { cursor: String(cursor) };
+    const raw = await bdlFetch({
+      endpoint: "games",
+      params: {
+        seasons: [SEASON_YEAR],
+        team_ids: [String(teamId)],
+        postseason: "false",
+        per_page: PER_PAGE,
+        ...cursorParam,
+      },
       apiKey: deps.apiKey,
       fetchImpl: deps.fetchImpl,
       sleep: deps.sleep,

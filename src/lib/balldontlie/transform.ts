@@ -2,11 +2,42 @@ import { GameLogInput, PlayerInput, SeasonStatsInput } from "@/lib/stats/inputs"
 import { parseGameDate, parseMinutes } from "@/lib/stats/parse";
 
 import { SEASON_LABEL, SEASON_TYPE } from "./constants";
-import { BdlPlayer, BdlStat } from "./schemas";
+import { BdlGame, BdlPlayer, BdlStat } from "./schemas";
 
 export const blankToNull = (value: string | null | undefined): string | null => {
   const trimmed = (value ?? "").trim();
   return trimmed === "" ? null : trimmed;
+};
+
+export interface GameContext {
+  homeAway: "home" | "away";
+  opponentAbbr: string | null;
+  winLoss: string | null;
+  matchup: string;
+  gameDate: Date;
+}
+
+export const deriveGameContext = (args: {
+  game: BdlGame;
+  teamId: number;
+  teamAbbr: string;
+  teamAbbrById: Map<number, string>;
+}): GameContext => {
+  const { game, teamId, teamAbbr, teamAbbrById } = args;
+  const homeAway = teamId === game.home_team_id ? "home" : "away";
+  const opponentTeamId = homeAway === "home" ? game.visitor_team_id : game.home_team_id;
+  const opponentAbbr = teamAbbrById.get(opponentTeamId) ?? null;
+  const teamScore = homeAway === "home" ? game.home_team_score : game.visitor_team_score;
+  const opponentScore = homeAway === "home" ? game.visitor_team_score : game.home_team_score;
+  const winLoss = teamScore > opponentScore ? "W" : teamScore < opponentScore ? "L" : null;
+  const separator = homeAway === "away" ? "@" : "vs.";
+  return {
+    homeAway,
+    opponentAbbr,
+    winLoss,
+    matchup: `${teamAbbr} ${separator} ${opponentAbbr ?? ""}`.trim(),
+    gameDate: parseGameDate(game.date),
+  };
 };
 
 export const toPlayerInputs = (
@@ -38,27 +69,20 @@ export const toGameLogInput = (args: {
 }): GameLogInput => {
   const { stat, teamAbbrById } = args;
   const { game, team } = stat;
-  const homeAway = team.id === game.home_team_id ? "home" : "away";
-  const opponentTeamId = homeAway === "home" ? game.visitor_team_id : game.home_team_id;
-  const opponentAbbr = teamAbbrById.get(opponentTeamId) ?? null;
-  const playerScore = homeAway === "home" ? game.home_team_score : game.visitor_team_score;
-  const opponentScore = homeAway === "home" ? game.visitor_team_score : game.home_team_score;
-  const winLoss = playerScore > opponentScore ? "W" : playerScore < opponentScore ? "L" : null;
-  const separator = homeAway === "away" ? "@" : "vs.";
-  const matchup = `${team.abbreviation} ${separator} ${opponentAbbr ?? ""}`.trim();
+  const context = deriveGameContext({
+    game,
+    teamId: team.id,
+    teamAbbr: team.abbreviation,
+    teamAbbrById,
+  });
 
   return {
     playerId: stat.player.id,
     gameId: String(game.id),
-    gameDate: parseGameDate(game.date),
     season: SEASON_LABEL,
     seasonType: SEASON_TYPE,
     teamId: team.id,
     teamAbbr: team.abbreviation,
-    matchup,
-    opponentAbbr,
-    homeAway,
-    winLoss,
     minutes: parseMinutes(stat.min ?? 0),
     fgm: stat.fgm,
     fga: stat.fga,
@@ -75,6 +99,7 @@ export const toGameLogInput = (args: {
     tov: stat.turnover,
     pts: stat.pts,
     plusMinus: stat.plus_minus ?? null,
+    ...context,
   };
 };
 

@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { GameLogInput } from "@/lib/stats/inputs";
 
-import { aggregateSeasonStats, toGameLogInput, toPlayerInputs, toPlayerInput } from "./transform";
+import {
+  aggregateSeasonStats,
+  toGameLogInput,
+  toPlayerInputs,
+  toPlayerInput,
+  deriveGameContext,
+} from "./transform";
 import { BdlStat } from "./schemas";
 
 const teamAbbrById = new Map<number, string>([
@@ -94,6 +100,44 @@ describe("toPlayerInputs", () => {
     expect(player.teamAbbr).toBeNull();
     expect(player.position).toBeNull();
     expect(player.jerseyNumber).toBeNull();
+  });
+});
+
+describe("deriveGameContext", () => {
+  const game = {
+    id: 1,
+    date: "2025-10-22",
+    season: 2025,
+    home_team_id: 18,
+    visitor_team_id: 2,
+    home_team_score: 100,
+    visitor_team_score: 110,
+    postseason: false,
+  };
+  const teamAbbrById = new Map([
+    [18, "MIN"],
+    [2, "BOS"],
+  ]);
+
+  it("derives home loss", () => {
+    const ctx = deriveGameContext({ game, teamId: 18, teamAbbr: "MIN", teamAbbrById });
+    expect(ctx).toMatchObject({
+      homeAway: "home",
+      opponentAbbr: "BOS",
+      winLoss: "L",
+      matchup: "MIN vs. BOS",
+    });
+    expect(ctx.gameDate.toISOString()).toBe("2025-10-22T00:00:00.000Z");
+  });
+
+  it("derives away win", () => {
+    const ctx = deriveGameContext({ game, teamId: 2, teamAbbr: "BOS", teamAbbrById });
+    expect(ctx).toMatchObject({
+      homeAway: "away",
+      opponentAbbr: "MIN",
+      winLoss: "W",
+      matchup: "BOS @ MIN",
+    });
   });
 });
 

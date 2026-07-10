@@ -115,3 +115,31 @@ describe("fetchAllPlayers", () => {
     await expect(fetchAllPlayers({ deps: { fetchImpl, apiKey: "k" } })).rejects.toThrow();
   });
 });
+
+describe("fetchTeamGames", () => {
+  it("requests the team season schedule and paginates", async () => {
+    const game = {
+      id: 18422,
+      date: "2025-10-22",
+      season: 2025,
+      home_team_id: 18,
+      visitor_team_id: 2,
+      home_team_score: 112,
+      visitor_team_score: 108,
+      postseason: false,
+    };
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: [game], meta: { next_cursor: null } })),
+      );
+    const { fetchTeamGames } = await import("./endpoints");
+    const games = await fetchTeamGames({ teamId: 18, deps: { fetchImpl, apiKey: "k" } });
+    expect(games).toEqual([game]);
+    const url = fetchImpl.mock.calls[0][0];
+    expect(url).toContain("/games?");
+    expect(url).toContain("seasons[]=2025");
+    expect(url).toContain("team_ids[]=18");
+    expect(url).toContain("postseason=false");
+  });
+});

@@ -33,7 +33,7 @@ export const bdlPlayerSchema = z.object({
 
 export type BdlPlayer = z.infer<typeof bdlPlayerSchema>;
 
-const bdlGameSchema = z.object({
+export const bdlGameSchema = z.object({
   id: z.number(),
   date: z.string(),
   season: z.number(),
@@ -43,6 +43,8 @@ const bdlGameSchema = z.object({
   visitor_team_score: z.number(),
   postseason: z.boolean(),
 });
+
+export type BdlGame = z.infer<typeof bdlGameSchema>;
 
 export const bdlStatSchema = z.object({
   id: z.number(),
