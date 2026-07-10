@@ -71,8 +71,14 @@ throttles to ~13s between requests; ~55-60 requests total ≈ 13 min):
    generates one box score per game around a hardcoded per-player profile.
 
 Because player ids and game ids are **real**, the future ALL-STAR backfill
-upserts over the same `(playerId, gameId)` keys — demo rows are replaced with
-zero cleanup.
+upserts over the same `(playerId, gameId)` keys for games the real player
+actually played. That is not "zero cleanup", though: the real sync only
+writes rows for games the player appears in, so demo game logs generated for
+games where the real player was DNP'd are never touched by the upsert and
+would linger, mixing fabricated points into an otherwise-real series. Before
+the first real `sync:bdl` backfill, delete the five profiled players'
+2025-26 game logs (one `deleteMany` on their playerIds) so demo rows for
+real-DNP games don't linger; then run the sync.
 
 **Fallback** (only if `/v1/games` unexpectedly 401s): synthetic schedule with
 deterministic fake game ids prefixed `demo-`; cleanup then =

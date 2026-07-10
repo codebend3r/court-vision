@@ -58,22 +58,23 @@ it's only needed for commands that actually connect to a database.
 
 All scripts run through Bun (`bun run <name>`):
 
-| Script           | Command                                    | Purpose                                          |
-| ---------------- | ------------------------------------------ | ------------------------------------------------ |
-| `dev`            | `next dev --port 46644`                    | Dev server on port **46644**                     |
-| `build`          | `next build`                               | Production build                                 |
-| `start`          | `next start`                               | Serve the production build                       |
-| `lint`           | `eslint . --max-warnings 0`                | Lint (warnings are a hard failure)               |
-| `typecheck`      | `tsc --noEmit`                             | Type-check only                                  |
-| `test`           | `vitest run`                               | Run the test suite once                          |
-| `test:watch`     | `vitest`                                   | Watch-mode tests                                 |
-| `prettier`       | `prettier --write .`                       | Format the repo                                  |
-| `prettier:check` | `prettier --check .`                       | Verify formatting                                |
-| `db:generate`    | `prisma generate`                          | Regenerate the Prisma client                     |
-| `db:migrate`     | `prisma migrate dev`                       | Create/apply a migration (needs `DATABASE_URL`)  |
-| `sync:nba`       | `bun run src/lib/nba/sync.ts`              | Run the NBA stats sync (needs a live DB)         |
-| `sync:bdl`       | `bun run src/lib/balldontlie/sync.ts`      | Run the Balldontlie stats sync (needs a live DB) |
-| `system-check`   | `run-s prettier:check typecheck lint test` | Run all quality gates locally                    |
+| Script           | Command                                    | Purpose                                            |
+| ---------------- | ------------------------------------------ | -------------------------------------------------- |
+| `dev`            | `next dev --port 46644`                    | Dev server on port **46644**                       |
+| `build`          | `next build`                               | Production build                                   |
+| `start`          | `next start`                               | Serve the production build                         |
+| `lint`           | `eslint . --max-warnings 0`                | Lint (warnings are a hard failure)                 |
+| `typecheck`      | `tsc --noEmit`                             | Type-check only                                    |
+| `test`           | `vitest run`                               | Run the test suite once                            |
+| `test:watch`     | `vitest`                                   | Watch-mode tests                                   |
+| `prettier`       | `prettier --write .`                       | Format the repo                                    |
+| `prettier:check` | `prettier --check .`                       | Verify formatting                                  |
+| `db:generate`    | `prisma generate`                          | Regenerate the Prisma client                       |
+| `db:migrate`     | `prisma migrate dev`                       | Create/apply a migration (needs `DATABASE_URL`)    |
+| `sync:nba`       | `bun run src/lib/nba/sync.ts`              | Run the NBA stats sync (needs a live DB)           |
+| `sync:bdl`       | `bun run src/lib/balldontlie/sync.ts`      | Run the Balldontlie stats sync (needs a live DB)   |
+| `seed:demo`      | `bun run src/lib/demo/seed.ts`             | Seed all players + demo game logs into the live DB |
+| `system-check`   | `run-s prettier:check typecheck lint test` | Run all quality gates locally                      |
 
 ## Project layout
 
@@ -90,10 +91,14 @@ All scripts run through Bun (`bun run <name>`):
 │   │   ├── layout.tsx          # root layout; imports @/styles/globals.scss
 │   │   └── page.tsx            # `/` route
 │   ├── components/             # React components (co-located SCSS module + test)
-│   │   └── Hello/
+│   │   ├── Hello/
+│   │   └── PlayerStatChart/    # two-panel Recharts season-average line chart
 │   ├── lib/
+│   │   ├── balldontlie/        # Balldontlie adapter: client → schemas → endpoints → transform → sync
+│   │   ├── demo/               # seed:demo generator (real identities/schedules, generated box scores)
 │   │   ├── nba/                # NBA stats fetch → parse → validate → transform → persist
-│   │   └── prisma.ts           # Prisma client singleton (pg driver adapter)
+│   │   ├── prisma.ts           # Prisma client singleton (pg driver adapter)
+│   │   └── stats/              # source-agnostic upserts + cumulative season-average series builder
 │   └── styles/
 │       └── globals.scss        # design tokens + typographic primitives
 ├── docs/superpowers/           # design specs + implementation plans
@@ -107,10 +112,10 @@ Import aliases: `@/*` → `src/*`, `@generated/*` → `generated/*`.
 
 Court Vision uses the Next.js **App Router** (`src/app`).
 
-| Route                 | Source                                | Renders                                            |
-| --------------------- | ------------------------------------- | -------------------------------------------------- |
-| `/`                   | `src/app/page.tsx`                    | Placeholder landing (`<Hello />`) — product UI TBD |
-| `/players/[playerId]` | `src/app/players/[playerId]/page.tsx` | Season-to-date average line charts for one player  |
+| Route                 | Source                                | Renders                                                                                 |
+| --------------------- | ------------------------------------- | --------------------------------------------------------------------------------------- |
+| `/`                   | `src/app/page.tsx`                    | Landing page; lists seeded players (name + team), each linking to `/players/[playerId]` |
+| `/players/[playerId]` | `src/app/players/[playerId]/page.tsx` | Season-to-date average line charts for one player                                       |
 
 No API route handlers exist yet; the NBA sync runs as a standalone Bun script.
 
