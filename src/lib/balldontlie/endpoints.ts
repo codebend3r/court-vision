@@ -13,14 +13,25 @@ import {
   bdlTeamSchema,
 } from "./schemas";
 
+export interface BdlPageProgress {
+  endpoint: string;
+  page: number;
+  pageRows: number;
+  totalRows: number;
+  nextCursor: number | null;
+}
+
 export interface BdlClientDeps {
   fetchImpl?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
   apiKey?: string;
+  onPage?: (progress: BdlPageProgress) => void;
 }
 
 const defaultSleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
+
+const noopOnPage = (): void => {};
 
 export const fetchTeams = async (deps: BdlClientDeps = {}): Promise<BdlTeam[]> => {
   const raw = await bdlFetch({
@@ -34,9 +45,14 @@ export const fetchTeams = async (deps: BdlClientDeps = {}): Promise<BdlTeam[]> =
 
 export const fetchAllStats = async (deps: BdlClientDeps = {}): Promise<BdlStat[]> => {
   const sleep = deps.sleep ?? defaultSleep;
+  const onPage = deps.onPage ?? noopOnPage;
   const pageSchema = bdlPaginatedPage(bdlStatSchema);
 
-  const loadPage = async (cursor: number | null, acc: BdlStat[]): Promise<BdlStat[]> => {
+  const loadPage = async (
+    cursor: number | null,
+    acc: BdlStat[],
+    pageNumber: number,
+  ): Promise<BdlStat[]> => {
     const cursorParam: Record<string, BdlParamValue> =
       cursor === null ? {} : { cursor: String(cursor) };
     const raw = await bdlFetch({
@@ -54,14 +70,21 @@ export const fetchAllStats = async (deps: BdlClientDeps = {}): Promise<BdlStat[]
     const page = pageSchema.parse(raw);
     const combined = acc.concat(page.data);
     const next = page.meta.next_cursor ?? null;
+    onPage({
+      endpoint: "stats",
+      page: pageNumber,
+      pageRows: page.data.length,
+      totalRows: combined.length,
+      nextCursor: next,
+    });
     if (next === null) {
       return combined;
     }
     await sleep(THROTTLE_MS);
-    return loadPage(next, combined);
+    return loadPage(next, combined, pageNumber + 1);
   };
 
-  return loadPage(null, []);
+  return loadPage(null, [], 1);
 };
 
 export const fetchAllPlayers = async (

@@ -14,17 +14,28 @@ declare global {
 
 export async function syncBalldontlie(deps: BdlClientDeps = {}): Promise<SyncSummary> {
   const teams = await fetchTeams(deps);
+  console.log(`Fetched ${teams.length} teams.`);
   const teamAbbrById = teams.reduce(
     (map, team) => map.set(team.id, team.abbreviation),
     new Map<number, string>(),
   );
 
-  const stats = await fetchAllStats(deps);
+  const stats = await fetchAllStats({
+    onPage: ({ page, totalRows, nextCursor }) => {
+      console.log(
+        `stats page ${page}: ${totalRows} rows total${nextCursor === null ? " (final page)" : ""}`,
+      );
+    },
+    ...deps,
+  });
+  console.log(`Fetched ${stats.length} stat rows; upserting players…`);
 
   const players = await upsertPlayers(toPlayerInputs(stats, teamAbbrById));
+  console.log(`Upserted ${players} players; upserting game logs…`);
 
   const gameLogInputs = stats.map((stat) => toGameLogInput({ stat, teamAbbrById }));
   const gameLogs = await upsertGameLogs(gameLogInputs);
+  console.log(`Upserted ${gameLogs} game logs; aggregating season stats…`);
 
   const seasonStats = await upsertSeasonStats(aggregateSeasonStats(gameLogInputs));
 

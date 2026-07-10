@@ -84,6 +84,33 @@ describe("fetchAllStats", () => {
     expect(firstUrl).not.toContain("cursor=");
     expect(secondUrl).toContain("cursor=2");
   });
+
+  it("reports per-page progress through onPage", async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ data: [statRow(1, 10)], meta: { next_cursor: 2 } }))
+      .mockResolvedValueOnce(jsonResponse({ data: [statRow(2, 11)], meta: {} }));
+    const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
+    const onPage = vi.fn();
+
+    await fetchAllStats({ apiKey: "k", fetchImpl, sleep, onPage });
+
+    expect(onPage).toHaveBeenCalledTimes(2);
+    expect(onPage).toHaveBeenNthCalledWith(1, {
+      endpoint: "stats",
+      page: 1,
+      pageRows: 1,
+      totalRows: 1,
+      nextCursor: 2,
+    });
+    expect(onPage).toHaveBeenNthCalledWith(2, {
+      endpoint: "stats",
+      page: 2,
+      pageRows: 1,
+      totalRows: 2,
+      nextCursor: null,
+    });
+  });
 });
 
 describe("fetchAllPlayers", () => {
