@@ -25,9 +25,12 @@ Next.js project and the chart is built here.
 
 **In scope**
 
-- `seed:demo` script that seeds five players' full 2025-26 game logs into
-  Supabase using real identities/schedules (Free-tier endpoints) and generated
-  box scores.
+- `seed:demo` script that seeds **all players** (cursor-paginated
+  `GET /v1/players`, per <https://docs.balldontlie.io/#get-all-players>) plus
+  full 2025-26 game logs for five profiled players, using real
+  identities/schedules (Free-tier endpoints) and generated box scores.
+- New `fetchAllPlayers` cursor-paginated fetcher (+ player Zod schema) in the
+  Balldontlie adapter, mirroring `fetchAllStats`.
 - Pure cumulative-average series builder in `src/lib/stats/`.
 - Player page `/players/[playerId]` (server component, Prisma reads).
 - `PlayerStatChart` client component (Recharts) with stat toggles.
@@ -50,12 +53,21 @@ Next.js project and the chart is built here.
 ### 3.1 Real identity + schedule, generated stats
 
 Free tier allows `/teams`, `/players`, `/games` (5 req/min — the script
-throttles to ~13s between requests; total ~12 requests ≈ 2.5 min):
+throttles to ~13s between requests; ~55-60 requests total ≈ 13 min):
 
-1. `/v1/players?search=<name>` → real Balldontlie player id, team, position.
-2. `/v1/games?seasons[]=2025&team_ids[]=<teamId>&per_page=100` → the team's
-   real 2025-26 regular-season games (id, date, home/visitor, scores).
-3. A deterministic seeded PRNG (e.g. mulberry32 keyed on `playerId`)
+1. `GET /v1/players?per_page=100` + `cursor` pagination
+   (<https://docs.balldontlie.io/#get-all-players>) → **every player** in the
+   database (1946-current, roughly 5k rows / 50+ pages). Each row (id,
+   first_name, last_name, position, jersey_number, team{id, abbreviation})
+   maps to a `PlayerInput`; nullable fields (`teamId`, `position`,
+   `jerseyNumber`) pass through as null when absent. All rows are upserted.
+2. The five profiled players are found in that fetched set by exact
+   full-name match (no extra `search` requests); a missing profile name
+   aborts the script.
+3. `/v1/games?seasons[]=2025&team_ids[]=<teamId>&per_page=100` → each
+   profiled player's team schedule: real 2025-26 regular-season games
+   (id, date, home/visitor, scores). 5 requests.
+4. A deterministic seeded PRNG (e.g. mulberry32 keyed on `playerId`)
    generates one box score per game around a hardcoded per-player profile.
 
 Because player ids and game ids are **real**, the future ALL-STAR backfill
@@ -92,7 +104,9 @@ spread, and a games-played target introduces deterministic DNPs:
 Writes go through the existing source-agnostic path: `upsertPlayers` →
 `upsertGameLogs` → `upsertSeasonStats` with `aggregateSeasonStats` reused for
 the season rows. `.env`'s `DATABASE_URL` already points at the Supabase
-transaction pooler, so the script needs no new configuration.
+transaction pooler, so the script needs no new configuration. The all-players
+upsert is ~5k sequential round trips over the pooler (a few minutes) — fine
+for a one-off script; the API throttle dominates anyway.
 
 ## 4. Cumulative series (`src/lib/stats/cumulative.ts`)
 
@@ -120,8 +134,9 @@ Pure function, `reduce`-based running sums; one input = game logs ordered by
 
 ### 5.2 Home page
 
-The scaffold home page gains a "Players" section listing seeded players
-(Prisma query, name + team) linking to `/players/[id]`. Nothing else changes.
+The scaffold home page gains a "Players" section listing only players who
+**have game logs** (the Player table itself holds ~5k players after seeding),
+name + team, linking to `/players/[id]`. Nothing else changes.
 
 ### 5.3 `PlayerStatChart` — `src/components/PlayerStatChart/` (client)
 
@@ -148,6 +163,8 @@ The scaffold home page gains a "Players" section listing seeded players
 
 - `cumulative.test.ts`: golden cases — running averages, ratio-of-sums
   percentages, zero-attempt `null`, empty input → empty output.
+- Adapter tests for `fetchAllPlayers` (mocked fetch): cursor pagination,
+  schema validation, player-row → `PlayerInput` mapping incl. null fields.
 - `generate.test.ts` (demo): determinism (same seed → same rows) and the §3.3
   invariants across all generated games.
 - `PlayerStatChart.test.tsx`: renders default series; toggling a chip
