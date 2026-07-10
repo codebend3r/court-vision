@@ -1,6 +1,12 @@
 import { prisma } from "@/lib/prisma";
 
-import { GameLogInput, PlayerInput, SeasonStatsInput } from "./transform";
+import { GameLogInput, PlayerInput, SeasonStatsInput } from "./inputs";
+
+export interface SyncSummary {
+  players: number;
+  seasonStats: number;
+  gameLogs: number;
+}
 
 export async function upsertPlayers(players: PlayerInput[]): Promise<number> {
   await players.reduce(async (previous, player) => {

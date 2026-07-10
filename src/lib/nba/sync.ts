@@ -1,3 +1,5 @@
+import { SyncSummary, upsertGameLogs, upsertPlayers, upsertSeasonStats } from "@/lib/stats/persist";
+
 import { REGULAR_SEASON_DATE_RANGES } from "./constants";
 import {
   NbaClientDeps,
@@ -5,7 +7,6 @@ import {
   fetchPlayerIndex,
   fetchSeasonStats,
 } from "./endpoints";
-import { upsertGameLogs, upsertPlayers, upsertSeasonStats } from "./persist";
 import { toGameLogInput, toPlayerInput, toSeasonStatsInput } from "./transform";
 
 // Bun sets `import.meta.main` on the entry module. @types/node's ImportMeta
@@ -15,12 +16,6 @@ declare global {
   interface ImportMeta {
     readonly main: boolean;
   }
-}
-
-export interface SyncSummary {
-  players: number;
-  seasonStats: number;
-  gameLogs: number;
 }
 
 export async function syncNba(deps: NbaClientDeps = {}): Promise<SyncSummary> {

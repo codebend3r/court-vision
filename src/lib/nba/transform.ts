@@ -1,89 +1,12 @@
+import { GameLogInput, PlayerInput, SeasonStatsInput } from "@/lib/stats/inputs";
+import { parseGameDate, parseMinutes } from "@/lib/stats/parse";
+
 import { SEASON, SEASON_TYPE } from "./constants";
 import { GameLogRow, PlayerIndexRow, SeasonStatsRow } from "./schemas";
-
-export interface PlayerInput {
-  id: number;
-  firstName: string;
-  lastName: string;
-  fullName: string;
-  teamId: number | null;
-  teamAbbr: string | null;
-  position: string | null;
-  jerseyNumber: string | null;
-}
-
-export interface SeasonStatsInput {
-  playerId: number;
-  season: string;
-  seasonType: string;
-  gamesPlayed: number;
-  minutes: number;
-  fgm: number;
-  fga: number;
-  fg3m: number;
-  fg3a: number;
-  ftm: number;
-  fta: number;
-  oreb: number;
-  dreb: number;
-  reb: number;
-  ast: number;
-  stl: number;
-  blk: number;
-  tov: number;
-  pts: number;
-}
-
-export interface GameLogInput {
-  playerId: number;
-  gameId: string;
-  gameDate: Date;
-  season: string;
-  seasonType: string;
-  teamId: number;
-  teamAbbr: string;
-  matchup: string;
-  opponentAbbr: string | null;
-  homeAway: "home" | "away";
-  winLoss: string | null;
-  minutes: number;
-  fgm: number;
-  fga: number;
-  fg3m: number;
-  fg3a: number;
-  ftm: number;
-  fta: number;
-  oreb: number;
-  dreb: number;
-  reb: number;
-  ast: number;
-  stl: number;
-  blk: number;
-  tov: number;
-  pts: number;
-  plusMinus: number | null;
-}
 
 const blankToNull = (value: string | null): string | null => {
   const trimmed = (value ?? "").trim();
   return trimmed === "" ? null : trimmed;
-};
-
-export const parseMinutes = (value: number | string): number => {
-  if (typeof value === "number") {
-    return value;
-  }
-  if (value.includes(":")) {
-    const [minutes, seconds] = value.split(":");
-    const parsedMinutes = Number.parseFloat(minutes);
-    const parsedSeconds = Number.parseFloat(seconds);
-    if (Number.isNaN(parsedMinutes) || Number.isNaN(parsedSeconds)) {
-      return 0;
-    }
-    return parsedMinutes + parsedSeconds / 60;
-  }
-  const parsed = Number.parseFloat(value);
-  return Number.isNaN(parsed) ? 0 : parsed;
 };
 
 export const parseMatchup = (
@@ -93,15 +16,6 @@ export const parseMatchup = (
   const separator = away ? " @ " : " vs. ";
   const opponentAbbr = matchup.split(separator)[1]?.trim() ?? "";
   return { homeAway: away ? "away" : "home", opponentAbbr };
-};
-
-const parseGameDate = (value: string): Date => {
-  if (!value.includes("T")) {
-    return new Date(`${value}T00:00:00Z`);
-  }
-  // Treat as UTC if no timezone designator is present
-  const hasTimezone = value.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(value);
-  return hasTimezone ? new Date(value) : new Date(`${value}Z`);
 };
 
 export const toPlayerInput = (row: PlayerIndexRow): PlayerInput => ({
