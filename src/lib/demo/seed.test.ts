@@ -158,4 +158,25 @@ describe("seedDemo", () => {
 
     await expect(seedDemo({ apiKey: "k" })).rejects.toThrow("Demo profile not resolvable");
   });
+
+  it("rejects when a matched demo profile player has no team", async () => {
+    const edwardsNoTeam: BdlPlayer = {
+      ...profiledPlayers[0],
+      team: null,
+    };
+    vi.spyOn(endpoints, "fetchTeams").mockResolvedValue(teams);
+    vi.spyOn(endpoints, "fetchAllPlayers").mockResolvedValue([
+      edwardsNoTeam,
+      ...profiledPlayers.slice(1),
+      unprofiledPlayer,
+    ]);
+    vi.spyOn(endpoints, "fetchTeamGames").mockResolvedValue(fakeGames);
+    vi.spyOn(persist, "upsertPlayers").mockResolvedValue(6);
+    vi.spyOn(persist, "upsertGameLogs").mockResolvedValue(0);
+    vi.spyOn(persist, "upsertSeasonStats").mockResolvedValue(0);
+
+    await expect(seedDemo({ apiKey: "k" })).rejects.toThrow(
+      "Demo profile not resolvable: Anthony Edwards",
+    );
+  });
 });
