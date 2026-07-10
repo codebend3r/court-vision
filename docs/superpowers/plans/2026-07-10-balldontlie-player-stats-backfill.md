@@ -1117,14 +1117,12 @@ const statRow = (id: number, playerId: number) => ({
 
 describe("fetchTeams", () => {
   it("returns the parsed teams array", async () => {
-    const fetchImpl = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(
-        jsonResponse({
-          data: [{ id: 1, abbreviation: "ATL", full_name: "Atlanta Hawks" }],
-          meta: {},
-        }),
-      );
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      jsonResponse({
+        data: [{ id: 1, abbreviation: "ATL", full_name: "Atlanta Hawks" }],
+        meta: {},
+      }),
+    );
     const teams = await fetchTeams({ apiKey: "k", fetchImpl });
     expect(teams).toEqual([{ id: 1, abbreviation: "ATL", full_name: "Atlanta Hawks" }]);
     expect(fetchImpl.mock.calls[0]?.[0]?.toString() ?? "").toContain("/teams");
