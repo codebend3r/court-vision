@@ -5,7 +5,7 @@ import {
   BdlPlayer,
   BdlStat,
   BdlTeam,
-  bdlGameSchema,
+  bdlGameRowSchema,
   bdlPage,
   bdlPlayerSchema,
   bdlStatSchema,
@@ -100,7 +100,7 @@ export const fetchTeamGames = async (args: {
 }): Promise<BdlGame[]> => {
   const { teamId, deps = {}, throttleMs = THROTTLE_MS } = args;
   const sleep = deps.sleep ?? defaultSleep;
-  const pageSchema = bdlPage(bdlGameSchema);
+  const pageSchema = bdlPage(bdlGameRowSchema);
 
   const loadPage = async (cursor: number | null, acc: BdlGame[]): Promise<BdlGame[]> => {
     const cursorParam: Record<string, BdlParamValue> =

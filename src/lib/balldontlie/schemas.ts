@@ -46,6 +46,35 @@ export const bdlGameSchema = z.object({
 
 export type BdlGame = z.infer<typeof bdlGameSchema>;
 
+// `/v1/games` rows embed team OBJECTS (`home_team`/`visitor_team`), unlike the
+// flat `home_team_id`/`visitor_team_id` numbers on the `game` nested inside
+// `/v1/stats` rows (still described by `bdlGameSchema` above). This schema
+// validates the nested shape and transforms it down to the flat `BdlGame`
+// shape so downstream code has one representation to work with.
+export const bdlGameRowSchema = z
+  .object({
+    id: z.number(),
+    date: z.string(),
+    season: z.number(),
+    postseason: z.boolean(),
+    home_team_score: z.number(),
+    visitor_team_score: z.number(),
+    home_team: bdlNestedTeamSchema,
+    visitor_team: bdlNestedTeamSchema,
+  })
+  .transform(
+    (row): BdlGame => ({
+      id: row.id,
+      date: row.date,
+      season: row.season,
+      home_team_id: row.home_team.id,
+      visitor_team_id: row.visitor_team.id,
+      home_team_score: row.home_team_score,
+      visitor_team_score: row.visitor_team_score,
+      postseason: row.postseason,
+    }),
+  );
+
 export const bdlStatSchema = z.object({
   id: z.number(),
   min: z.union([z.string(), z.number()]).nullable(),

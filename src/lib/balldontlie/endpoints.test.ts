@@ -127,8 +127,19 @@ describe("fetchAllPlayers", () => {
 });
 
 describe("fetchTeamGames", () => {
-  it("requests the team season schedule and paginates", async () => {
-    const game = {
+  it("requests the team season schedule, paginates, and flattens nested team objects", async () => {
+    const gameRow = {
+      id: 18422,
+      date: "2025-10-22",
+      season: 2025,
+      postseason: false,
+      home_team_score: 112,
+      visitor_team_score: 108,
+      status: "Final",
+      home_team: { id: 18, abbreviation: "MIN" },
+      visitor_team: { id: 2, abbreviation: "BOS" },
+    };
+    const expectedGame = {
       id: 18422,
       date: "2025-10-22",
       season: 2025,
@@ -141,11 +152,11 @@ describe("fetchTeamGames", () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ data: [game], meta: { next_cursor: null } })),
+        new Response(JSON.stringify({ data: [gameRow], meta: { next_cursor: null } })),
       );
     const { fetchTeamGames } = await import("./endpoints");
     const games = await fetchTeamGames({ teamId: 18, deps: { fetchImpl, apiKey: "k" } });
-    expect(games).toEqual([game]);
+    expect(games).toEqual([expectedGame]);
     const url = fetchImpl.mock.calls[0][0];
     expect(url).toContain("/games?");
     expect(url).toContain("seasons[]=2025");
