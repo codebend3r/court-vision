@@ -6,11 +6,15 @@ import { GameLogInput } from "@/lib/stats/inputs";
 import { createPrng, gaussian } from "./prng";
 import { DemoProfile, MeanSpread } from "./profiles";
 
-const nonNegInt = (rng: () => number, meanSpread: MeanSpread): number =>
-  Math.max(0, Math.round(gaussian({ rng, ...meanSpread })));
+const nonNegInt = (args: { rng: () => number; meanSpread: MeanSpread }): number => {
+  const { rng, meanSpread } = args;
+  return Math.max(0, Math.round(gaussian({ rng, ...meanSpread })));
+};
 
-const boundedPct = (rng: () => number, pct: number): number =>
-  Math.min(0.95, Math.max(0.1, gaussian({ rng, mean: pct, spread: 0.09 })));
+const boundedPct = (args: { rng: () => number; pct: number }): number => {
+  const { rng, pct } = args;
+  return Math.min(0.95, Math.max(0.1, gaussian({ rng, mean: pct, spread: 0.09 })));
+};
 
 const wasPlayed = (game: BdlGame): boolean => game.home_team_score + game.visitor_team_score > 0;
 
@@ -57,23 +61,23 @@ export const generateGameLogs = (args: {
       const minutes =
         Math.round(Math.min(44, Math.max(20, gaussian({ rng, ...profile.minutes }))) * 10) / 10;
 
-      const fga = nonNegInt(rng, profile.fga);
-      const fg3a = Math.min(fga, nonNegInt(rng, profile.fg3a));
-      const fta = nonNegInt(rng, profile.fta);
+      const fga = nonNegInt({ rng, meanSpread: profile.fga });
+      const fg3a = Math.min(fga, nonNegInt({ rng, meanSpread: profile.fg3a }));
+      const fta = nonNegInt({ rng, meanSpread: profile.fta });
 
-      const fg3m = Math.round(fg3a * boundedPct(rng, profile.fg3Pct));
-      const fg2m = Math.round((fga - fg3a) * boundedPct(rng, profile.fgPct));
+      const fg3m = Math.round(fg3a * boundedPct({ rng, pct: profile.fg3Pct }));
+      const fg2m = Math.round((fga - fg3a) * boundedPct({ rng, pct: profile.fgPct }));
       const fgm = fg2m + fg3m;
-      const ftm = Math.round(fta * boundedPct(rng, profile.ftPct));
+      const ftm = Math.round(fta * boundedPct({ rng, pct: profile.ftPct }));
       const pts = 2 * (fgm - fg3m) + 3 * fg3m + ftm;
 
-      const oreb = nonNegInt(rng, profile.oreb);
-      const dreb = nonNegInt(rng, profile.dreb);
+      const oreb = nonNegInt({ rng, meanSpread: profile.oreb });
+      const dreb = nonNegInt({ rng, meanSpread: profile.dreb });
       const reb = oreb + dreb;
-      const ast = nonNegInt(rng, profile.ast);
-      const stl = nonNegInt(rng, profile.stl);
-      const blk = nonNegInt(rng, profile.blk);
-      const tov = nonNegInt(rng, profile.tov);
+      const ast = nonNegInt({ rng, meanSpread: profile.ast });
+      const stl = nonNegInt({ rng, meanSpread: profile.stl });
+      const blk = nonNegInt({ rng, meanSpread: profile.blk });
+      const tov = nonNegInt({ rng, meanSpread: profile.tov });
 
       const context = deriveGameContext({ game, teamId, teamAbbr, teamAbbrById });
 
