@@ -135,4 +135,33 @@ describe("generateGameLogs", () => {
     expect(meanPts).toBeGreaterThan(27.6 * 0.8);
     expect(meanPts).toBeLessThan(27.6 * 1.2);
   });
+
+  it("derives exact game-context values for specific games", () => {
+    const games = buildGames(82);
+    const logs = generateGameLogs({ ...baseArgs, games });
+
+    // HOME game (gameId 1000): MIN home vs BOS visitor on 2025-10-22
+    // Fixture: home_team_score=100 (MIN), visitor_team_score=95 (BOS) => MIN wins
+    const homeGame = logs.find((log) => log.gameId === "1000");
+    expect(homeGame).toBeDefined();
+    if (homeGame) {
+      expect(homeGame.homeAway).toBe("home");
+      expect(homeGame.opponentAbbr).toBe("BOS");
+      expect(homeGame.matchup).toBe("MIN vs. BOS");
+      expect(homeGame.winLoss).toBe("W");
+      expect(homeGame.gameDate).toEqual(new Date("2025-10-22T00:00:00Z"));
+    }
+
+    // AWAY game (gameId 1001): MIN visitor vs BOS home on 2025-10-23
+    // Fixture: home_team_score=101 (BOS), visitor_team_score=96 (MIN) => MIN loses
+    const awayGame = logs.find((log) => log.gameId === "1001");
+    expect(awayGame).toBeDefined();
+    if (awayGame) {
+      expect(awayGame.homeAway).toBe("away");
+      expect(awayGame.opponentAbbr).toBe("BOS");
+      expect(awayGame.matchup).toBe("MIN @ BOS");
+      expect(awayGame.winLoss).toBe("L");
+      expect(awayGame.gameDate).toEqual(new Date("2025-10-23T00:00:00Z"));
+    }
+  });
 });
