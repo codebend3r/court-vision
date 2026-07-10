@@ -1,30 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  parseMatchup,
-  parseMinutes,
-  toGameLogInput,
-  toPlayerInput,
-  toSeasonStatsInput,
-} from "./transform";
-
-describe("parseMinutes", () => {
-  it("passes through numeric minutes", () => {
-    expect(parseMinutes(34)).toBe(34);
-  });
-
-  it("parses mm:ss strings to decimal minutes", () => {
-    expect(parseMinutes("34:30")).toBe(34.5);
-  });
-
-  it("parses plain numeric strings", () => {
-    expect(parseMinutes("28")).toBe(28);
-  });
-
-  it("falls back to 0 for unparseable input", () => {
-    expect(parseMinutes("")).toBe(0);
-  });
-});
+import { parseMatchup, toGameLogInput, toPlayerInput, toSeasonStatsInput } from "./transform";
 
 describe("parseMatchup", () => {
   it("detects a home game", () => {

@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { prisma } from "@/lib/prisma";
 
+import { GameLogInput, PlayerInput, SeasonStatsInput } from "./inputs";
 import { upsertGameLogs, upsertPlayers, upsertSeasonStats } from "./persist";
-import { GameLogInput, PlayerInput, SeasonStatsInput } from "./transform";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {

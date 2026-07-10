@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import * as endpoints from "./endpoints";
-import * as persist from "./persist";
+import * as persist from "@/lib/stats/persist";
 import { syncNba } from "./sync";
 
 const playerIndexRow = {
