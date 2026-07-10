@@ -8,7 +8,7 @@ Operating rules for this repo. The README covers stack, layout, and routes; this
 
 ## Workflow
 
-- Always create a branch for each feature or bug fix.
+- Never create a new branch unless explicitly asked to. Work on the current branch by default.
 - Auto-commit each logical change without asking. Subject must start with `CV:` (see the `cv-commit-format` skill).
 
 ## Tooling
