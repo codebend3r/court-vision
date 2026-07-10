@@ -140,16 +140,25 @@ name + team, linking to `/players/[id]`. Nothing else changes.
 
 ### 5.3 `PlayerStatChart` — `src/components/PlayerStatChart/` (client)
 
-- **Recharts** `LineChart` (exact-pinned version compatible with React 19).
-- X-axis: game number; tooltip shows date, matchup, W/L and the active series'
-  values.
-- Ten toggleable series via stat chips: PTS, REB, AST, STL, BLK, MIN, TOV,
-  FG%, 3P%, FT%. **Default visible: PTS, REB, AST.**
-- Counting stats → left y-axis; any active shooting % → right y-axis (0–100%).
-- Styling: SCSS module, all colors/spacing/type from `styles/globals.scss`
-  tokens; chart palette chosen per the dataviz skill (read before building).
-- The chart receives plain serializable props (series array + stat metadata) —
-  no data fetching inside the component.
+- **Recharts** (exact-pinned `3.9.2`, React 19 compatible) rendered as **two
+  stacked single-axis panels** sharing the game-number x-axis — never dual
+  y-axes (the dataviz skill's #1 anti-pattern; amended from the earlier
+  right-axis idea): "Per-game averages" (PTS, REB, AST, STL, BLK, MIN, TOV)
+  and "Shooting percentages" (FG%, 3P%, FT%, y fixed 0–100). The shooting
+  panel renders only while a % stat is active.
+- Ten toggleable series via stat chips that double as the legend (color dot +
+  label). **Default visible: PTS, REB, AST.** Colors follow the stat, never
+  the toggle order — fixed slots from the dataviz reference palette (dark
+  steps), validated with the palette script against the app surface `#151a23`
+  (7-slot counting set passes with one floor-band CVD pair, mitigated by
+  end-of-line direct labels in muted ink; 3-slot shooting set passes clean).
+- X-axis: game number; tooltip shows date, matchup, W/L and the active
+  series' values (counting stats 1dp; percentages 1dp + `%`).
+- Styling: SCSS module; chart chrome (grid, axis text, chips) uses
+  `styles/globals.scss` tokens; the validated series hexes live in
+  `statMeta.ts` as data constants.
+- The chart receives plain serializable props (series array) — no data
+  fetching inside the component.
 
 ## 6. Error handling
 
@@ -168,7 +177,7 @@ name + team, linking to `/players/[id]`. Nothing else changes.
 - `generate.test.ts` (demo): determinism (same seed → same rows) and the §3.3
   invariants across all generated games.
 - `PlayerStatChart.test.tsx`: renders default series; toggling a chip
-  shows/hides a series; % toggle activates the right axis.
+  shows/hides a series; toggling a % stat reveals the shooting panel.
 - Existing suites untouched; `bun run system-check` green.
 
 ## 8. Risks
