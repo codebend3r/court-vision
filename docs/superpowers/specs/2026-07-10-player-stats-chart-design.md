@@ -41,7 +41,8 @@ Next.js project and the chart is built here.
 
 - Player search, multi-player comparison, season selection, UI-triggered sync.
 - Playoffs; other seasons.
-- Replacing demo data — that is just `sync:bdl` once the key is ALL-STAR.
+- Replacing demo data — once the key is ALL-STAR, run the one-time `deleteMany`
+  of the profiled players' demo game logs (§3.1) and then `sync:bdl`.
 
 **Definition of done**
 

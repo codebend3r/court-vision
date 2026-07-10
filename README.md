@@ -6,10 +6,11 @@ Court Vision pulls NBA player stats, tracks how each player is performing over r
 windows, and surfaces who is "heating up" — powering a leaderboard, trend charts, and a
 weighted **heat score**.
 
-> **Status:** early. The engineering scaffold and the NBA stats **fetch layer** are in
-> place; the data layer is code-only so far (no live database is wired up yet), and the
-> product UI (leaderboard, charts, heat score) is still to come. See
-> [`docs/superpowers/specs/`](docs/superpowers/specs/) for the design specs.
+> **Status:** early. The stats fetch layers (NBA + Balldontlie) are in place, the live
+> database runs on Supabase (seeded via `seed:demo`), and the first product UI is live:
+> per-player season-average charts at `/players/[playerId]`. The leaderboard and heat
+> score are still to come. See [`docs/superpowers/specs/`](docs/superpowers/specs/) for
+> the design specs.
 
 ## Stack
 
