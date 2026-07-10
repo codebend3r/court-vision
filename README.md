@@ -107,9 +107,10 @@ Import aliases: `@/*` → `src/*`, `@generated/*` → `generated/*`.
 
 Court Vision uses the Next.js **App Router** (`src/app`).
 
-| Route | Source             | Renders                                            |
-| ----- | ------------------ | -------------------------------------------------- |
-| `/`   | `src/app/page.tsx` | Placeholder landing (`<Hello />`) — product UI TBD |
+| Route                 | Source                                | Renders                                            |
+| --------------------- | ------------------------------------- | -------------------------------------------------- |
+| `/`                   | `src/app/page.tsx`                    | Placeholder landing (`<Hello />`) — product UI TBD |
+| `/players/[playerId]` | `src/app/players/[playerId]/page.tsx` | Season-to-date average line charts for one player  |
 
 No API route handlers exist yet; the NBA sync runs as a standalone Bun script.
 
