@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { GameLogInput } from "@/lib/stats/inputs";
 
-import { aggregateSeasonStats, toGameLogInput, toPlayerInputs } from "./transform";
+import { aggregateSeasonStats, toGameLogInput, toPlayerInputs, toPlayerInput } from "./transform";
 import { BdlStat } from "./schemas";
 
 const teamAbbrById = new Map<number, string>([
@@ -142,6 +142,43 @@ describe("aggregateSeasonStats", () => {
       pts: 49,
       tov: 6,
       minutes: 68,
+    });
+  });
+});
+
+describe("toPlayerInput", () => {
+  it("maps a full player row", () => {
+    const input = toPlayerInput({
+      player: {
+        id: 3547238,
+        first_name: "Anthony",
+        last_name: "Edwards",
+        position: "G",
+        jersey_number: "5",
+        team: { id: 18, abbreviation: "MIN" },
+      },
+    });
+    expect(input).toEqual({
+      id: 3547238,
+      firstName: "Anthony",
+      lastName: "Edwards",
+      fullName: "Anthony Edwards",
+      teamId: 18,
+      teamAbbr: "MIN",
+      position: "G",
+      jerseyNumber: "5",
+    });
+  });
+
+  it("nulls team fields and blanks", () => {
+    const input = toPlayerInput({
+      player: { id: 1, first_name: "Old", last_name: "Timer", position: "", team: null },
+    });
+    expect(input).toMatchObject({
+      teamId: null,
+      teamAbbr: null,
+      position: null,
+      jerseyNumber: null,
     });
   });
 });

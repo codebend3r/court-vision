@@ -22,6 +22,17 @@ const bdlNestedTeamSchema = z.object({
   abbreviation: z.string(),
 });
 
+export const bdlPlayerSchema = z.object({
+  id: z.number(),
+  first_name: z.string(),
+  last_name: z.string(),
+  position: z.string().nullable().optional(),
+  jersey_number: z.string().nullable().optional(),
+  team: bdlNestedTeamSchema.nullable().optional(),
+});
+
+export type BdlPlayer = z.infer<typeof bdlPlayerSchema>;
+
 const bdlGameSchema = z.object({
   id: z.number(),
   date: z.string(),

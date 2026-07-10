@@ -2,9 +2,9 @@ import { GameLogInput, PlayerInput, SeasonStatsInput } from "@/lib/stats/inputs"
 import { parseGameDate, parseMinutes } from "@/lib/stats/parse";
 
 import { SEASON_LABEL, SEASON_TYPE } from "./constants";
-import { BdlStat } from "./schemas";
+import { BdlPlayer, BdlStat } from "./schemas";
 
-const blankToNull = (value: string | null | undefined): string | null => {
+export const blankToNull = (value: string | null | undefined): string | null => {
   const trimmed = (value ?? "").trim();
   return trimmed === "" ? null : trimmed;
 };
@@ -123,4 +123,18 @@ export const aggregateSeasonStats = (logs: GameLogInput[]): SeasonStatsInput[] =
     return acc;
   }, new Map<number, SeasonStatsInput>());
   return Array.from(byPlayer.values());
+};
+
+export const toPlayerInput = (args: { player: BdlPlayer }): PlayerInput => {
+  const { player } = args;
+  return {
+    id: player.id,
+    firstName: player.first_name,
+    lastName: player.last_name,
+    fullName: `${player.first_name} ${player.last_name}`,
+    teamId: player.team?.id ?? null,
+    teamAbbr: player.team?.abbreviation ?? null,
+    position: blankToNull(player.position),
+    jerseyNumber: blankToNull(player.jersey_number),
+  };
 };

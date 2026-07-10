@@ -75,3 +75,43 @@ describe("fetchAllStats", () => {
     expect(secondUrl).toContain("cursor=2");
   });
 });
+
+describe("fetchAllPlayers", () => {
+  const playerRow = {
+    id: 3547238,
+    first_name: "Anthony",
+    last_name: "Edwards",
+    position: "G",
+    jersey_number: "5",
+    team: { id: 18, abbreviation: "MIN" },
+  };
+
+  it("paginates with cursor until next_cursor is null and honors throttleMs", async () => {
+    const pageOne = { data: [playerRow], meta: { next_cursor: 25, per_page: 100 } };
+    const pageTwo = { data: [{ ...playerRow, id: 2, team: null }], meta: { next_cursor: null } };
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse(pageOne))
+      .mockResolvedValueOnce(jsonResponse(pageTwo));
+    const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
+
+    const { fetchAllPlayers } = await import("./endpoints");
+    const players = await fetchAllPlayers({
+      deps: { fetchImpl, sleep, apiKey: "k" },
+      throttleMs: 13000,
+    });
+
+    expect(players).toHaveLength(2);
+    expect(fetchImpl.mock.calls[0]?.[0]?.toString() ?? "").toContain("/players?per_page=100");
+    expect(fetchImpl.mock.calls[1]?.[0]?.toString() ?? "").toContain("cursor=25");
+    expect(sleep).toHaveBeenCalledWith(13000);
+  });
+
+  it("rejects rows that fail the player schema", async () => {
+    const bad = { data: [{ id: "nope" }], meta: { next_cursor: null } };
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse(bad));
+
+    const { fetchAllPlayers } = await import("./endpoints");
+    await expect(fetchAllPlayers({ deps: { fetchImpl, apiKey: "k" } })).rejects.toThrow();
+  });
+});
