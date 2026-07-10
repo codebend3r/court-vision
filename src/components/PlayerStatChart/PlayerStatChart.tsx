@@ -30,7 +30,11 @@ const GRID_STROKE = "#232a36"; // --color-border
 const TICK_FILL = "#9aa4b2"; // --color-text-muted
 const END_LABEL_FILL = "#9aa4b2"; // --color-text-muted
 
-const formatDate = (isoDate: string): string => new Date(isoDate).toLocaleDateString();
+// `gameDate` is stored as a UTC-midnight ISO string. Formatting it in the
+// viewer's local timezone can shift the displayed date back a day for any
+// timezone west of UTC, so the date is always rendered in UTC.
+const formatDate = (isoDate: string): string =>
+  new Date(isoDate).toLocaleDateString(undefined, { timeZone: "UTC" });
 
 const formatValue = ({ value, panel }: { value: number; panel: StatPanel }): string =>
   panel === "shooting" ? `${value.toFixed(1)}%` : value.toFixed(1);
