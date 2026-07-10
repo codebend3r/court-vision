@@ -124,6 +124,14 @@ describe("fetchAllPlayers", () => {
     const { fetchAllPlayers } = await import("./endpoints");
     await expect(fetchAllPlayers({ deps: { fetchImpl, apiKey: "k" } })).rejects.toThrow();
   });
+
+  it("rejects a page response missing meta entirely, instead of silently stopping pagination", async () => {
+    const noMeta = { data: [playerRow] };
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse(noMeta));
+
+    const { fetchAllPlayers } = await import("./endpoints");
+    await expect(fetchAllPlayers({ deps: { fetchImpl, apiKey: "k" } })).rejects.toThrow();
+  });
 });
 
 describe("fetchTeamGames", () => {

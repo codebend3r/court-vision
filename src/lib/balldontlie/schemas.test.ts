@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bdlPage, bdlStatSchema, bdlTeamSchema } from "./schemas";
+import { bdlPage, bdlPaginatedPage, bdlStatSchema, bdlTeamSchema } from "./schemas";
 
 const team = { id: 1, abbreviation: "ATL", full_name: "Atlanta Hawks", extra: "ignored" };
 
@@ -96,5 +96,28 @@ describe("bdlPage", () => {
     const page = bdlPage(bdlTeamSchema).parse({ data: [team] });
     expect(page.data).toHaveLength(1);
     expect(page.meta?.next_cursor ?? null).toBeNull();
+  });
+});
+
+describe("bdlPaginatedPage", () => {
+  it("parses a page with meta and exposes next_cursor", () => {
+    const page = bdlPaginatedPage(bdlTeamSchema).parse({
+      data: [team],
+      meta: { next_cursor: 25, per_page: 25 },
+    });
+    expect(page.data).toHaveLength(1);
+    expect(page.meta.next_cursor ?? null).toBe(25);
+  });
+
+  it("allows a null next_cursor inside meta (last page)", () => {
+    const page = bdlPaginatedPage(bdlTeamSchema).parse({
+      data: [],
+      meta: { next_cursor: null, per_page: 25 },
+    });
+    expect(page.meta.next_cursor ?? null).toBeNull();
+  });
+
+  it("rejects a response missing meta entirely", () => {
+    expect(() => bdlPaginatedPage(bdlTeamSchema).parse({ data: [team] })).toThrow();
   });
 });

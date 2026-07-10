@@ -7,6 +7,7 @@ import {
   BdlTeam,
   bdlGameRowSchema,
   bdlPage,
+  bdlPaginatedPage,
   bdlPlayerSchema,
   bdlStatSchema,
   bdlTeamSchema,
@@ -33,7 +34,7 @@ export const fetchTeams = async (deps: BdlClientDeps = {}): Promise<BdlTeam[]> =
 
 export const fetchAllStats = async (deps: BdlClientDeps = {}): Promise<BdlStat[]> => {
   const sleep = deps.sleep ?? defaultSleep;
-  const pageSchema = bdlPage(bdlStatSchema);
+  const pageSchema = bdlPaginatedPage(bdlStatSchema);
 
   const loadPage = async (cursor: number | null, acc: BdlStat[]): Promise<BdlStat[]> => {
     const cursorParam: Record<string, BdlParamValue> =
@@ -52,7 +53,7 @@ export const fetchAllStats = async (deps: BdlClientDeps = {}): Promise<BdlStat[]
     });
     const page = pageSchema.parse(raw);
     const combined = acc.concat(page.data);
-    const next = page.meta?.next_cursor ?? null;
+    const next = page.meta.next_cursor ?? null;
     if (next === null) {
       return combined;
     }
@@ -68,7 +69,7 @@ export const fetchAllPlayers = async (
 ): Promise<BdlPlayer[]> => {
   const { deps = {}, throttleMs = THROTTLE_MS } = args;
   const sleep = deps.sleep ?? defaultSleep;
-  const pageSchema = bdlPage(bdlPlayerSchema);
+  const pageSchema = bdlPaginatedPage(bdlPlayerSchema);
 
   const loadPage = async (cursor: number | null, acc: BdlPlayer[]): Promise<BdlPlayer[]> => {
     const cursorParam: Record<string, BdlParamValue> =
@@ -82,7 +83,7 @@ export const fetchAllPlayers = async (
     });
     const page = pageSchema.parse(raw);
     const combined = acc.concat(page.data);
-    const next = page.meta?.next_cursor ?? null;
+    const next = page.meta.next_cursor ?? null;
     if (next === null) {
       return combined;
     }
@@ -100,7 +101,7 @@ export const fetchTeamGames = async (args: {
 }): Promise<BdlGame[]> => {
   const { teamId, deps = {}, throttleMs = THROTTLE_MS } = args;
   const sleep = deps.sleep ?? defaultSleep;
-  const pageSchema = bdlPage(bdlGameRowSchema);
+  const pageSchema = bdlPaginatedPage(bdlGameRowSchema);
 
   const loadPage = async (cursor: number | null, acc: BdlGame[]): Promise<BdlGame[]> => {
     const cursorParam: Record<string, BdlParamValue> =
@@ -120,7 +121,7 @@ export const fetchTeamGames = async (args: {
     });
     const page = pageSchema.parse(raw);
     const combined = acc.concat(page.data);
-    const next = page.meta?.next_cursor ?? null;
+    const next = page.meta.next_cursor ?? null;
     if (next === null) {
       return combined;
     }

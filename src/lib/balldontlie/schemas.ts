@@ -100,6 +100,9 @@ export const bdlStatSchema = z.object({
 
 export type BdlStat = z.infer<typeof bdlStatSchema>;
 
+// `/v1/teams` is a single-page endpoint whose live response omits `meta`
+// entirely, so this envelope keeps `meta` optional. Do NOT reuse it for
+// cursor-paginated endpoints — see `bdlPaginatedPage` below.
 export const bdlPage = <T>(item: z.ZodType<T>) =>
   z.object({
     data: z.array(item),
@@ -109,4 +112,19 @@ export const bdlPage = <T>(item: z.ZodType<T>) =>
         per_page: z.number().optional(),
       })
       .optional(),
+  });
+
+// Cursor-paginated endpoints (`/v1/stats`, `/v1/players`, `/v1/games`) MUST
+// report `meta` on every page: the fetchers below read `meta.next_cursor` to
+// decide whether to keep paginating, and a page silently missing `meta`
+// would look identical to "no more pages", stopping early and upserting a
+// partial dataset. `meta` is required here; `next_cursor` inside it stays
+// nullable/optional to represent "no next page".
+export const bdlPaginatedPage = <T>(item: z.ZodType<T>) =>
+  z.object({
+    data: z.array(item),
+    meta: z.object({
+      next_cursor: z.number().nullable().optional(),
+      per_page: z.number().optional(),
+    }),
   });
