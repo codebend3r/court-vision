@@ -19,6 +19,7 @@
     "postinstall": "prisma generate",
     "sync:nba": "bun run src/lib/nba/sync.ts",
     "sync:bdl": "bun run src/lib/balldontlie/sync.ts",
+    "seed:demo": "bun run src/lib/demo/seed.ts",
     "system-check": "run-s prettier:check typecheck lint test"
   },
   "dependencies": {
