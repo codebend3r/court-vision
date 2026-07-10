@@ -74,8 +74,10 @@ export type BdlStat = z.infer<typeof bdlStatSchema>;
 export const bdlPage = <T>(item: z.ZodType<T>) =>
   z.object({
     data: z.array(item),
-    meta: z.object({
-      next_cursor: z.number().nullable().optional(),
-      per_page: z.number().optional(),
-    }),
+    meta: z
+      .object({
+        next_cursor: z.number().nullable().optional(),
+        per_page: z.number().optional(),
+      })
+      .optional(),
   });

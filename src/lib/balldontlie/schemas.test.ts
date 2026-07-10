@@ -84,11 +84,17 @@ describe("bdlPage", () => {
       meta: { next_cursor: 25, per_page: 25 },
     });
     expect(page.data).toHaveLength(1);
-    expect(page.meta.next_cursor).toBe(25);
+    expect(page.meta?.next_cursor ?? null).toBe(25);
   });
 
   it("allows a missing next_cursor", () => {
     const page = bdlPage(bdlTeamSchema).parse({ data: [], meta: { per_page: 25 } });
-    expect(page.meta.next_cursor ?? null).toBeNull();
+    expect(page.meta?.next_cursor ?? null).toBeNull();
+  });
+
+  it("allows a missing meta key entirely", () => {
+    const page = bdlPage(bdlTeamSchema).parse({ data: [team] });
+    expect(page.data).toHaveLength(1);
+    expect(page.meta?.next_cursor ?? null).toBeNull();
   });
 });

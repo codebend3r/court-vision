@@ -52,7 +52,7 @@ export const fetchAllStats = async (deps: BdlClientDeps = {}): Promise<BdlStat[]
     });
     const page = pageSchema.parse(raw);
     const combined = acc.concat(page.data);
-    const next = page.meta.next_cursor ?? null;
+    const next = page.meta?.next_cursor ?? null;
     if (next === null) {
       return combined;
     }
@@ -82,7 +82,7 @@ export const fetchAllPlayers = async (
     });
     const page = pageSchema.parse(raw);
     const combined = acc.concat(page.data);
-    const next = page.meta.next_cursor ?? null;
+    const next = page.meta?.next_cursor ?? null;
     if (next === null) {
       return combined;
     }
@@ -120,7 +120,7 @@ export const fetchTeamGames = async (args: {
     });
     const page = pageSchema.parse(raw);
     const combined = acc.concat(page.data);
-    const next = page.meta.next_cursor ?? null;
+    const next = page.meta?.next_cursor ?? null;
     if (next === null) {
       return combined;
     }
