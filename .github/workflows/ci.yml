@@ -23,7 +23,7 @@ jobs:
         run: bunx prisma generate
 
       - name: Prettier
-        run: bun run format:check
+        run: bun run prettier:check
 
       - name: ESLint
         run: bun run lint
