@@ -38,9 +38,29 @@
   --font-sans: var(--font-body-next), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-display-next), var(--font-sans);
 
+  // Font weights (display loads 400/500/700, body loads 400/500/600)
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
   // Letter spacing
   --tracking-tight: -0.01em;
   --tracking-wide: 0.12em;
+
+  // Form controls
+  --color-control-bg: #10142a;
+  --color-control-border: var(--color-border);
+  --color-control-accent: var(--color-accent);
+  --color-control-placeholder: #6a7194;
+  --color-focus-ring: rgba(63, 195, 232, 0.32);
+  --control-height: 2.25rem;
+  --control-size: 1.25rem;
+  --control-radius: var(--radius-sm);
+  --focus-ring-width: 3px;
+  --control-disabled-opacity: 0.5;
+
+  color-scheme: dark;
 }
 
 *,
@@ -85,9 +105,11 @@ a {
 
 h1,
 h2,
-h3 {
+h3,
+h4,
+h5 {
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   line-height: 1.15;
   letter-spacing: var(--tracking-tight);
 }
@@ -101,4 +123,10 @@ h3 {
   --color-accent: #0e7fa8;
   --color-accent-strong: #d6206a;
   --color-highlight: #b35c00;
+
+  --color-control-bg: #ffffff;
+  --color-control-placeholder: #7c86a6;
+  --color-focus-ring: rgba(14, 127, 168, 0.28);
+
+  color-scheme: light;
 }

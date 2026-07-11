@@ -79,3 +79,228 @@
 .radiusLabel {
   @include micro-label;
 }
+
+.specimenName {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.headingStack {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.headingRow {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.headingSample {
+  margin: 0;
+}
+
+.weightStack {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.weightFamily {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.weightRow {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.weightSample {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+.tokenChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tokenChip {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-control-bg);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.controlGroup {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.specimenGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+.specimen {
+  display: grid;
+  gap: var(--space-1);
+  align-content: start;
+}
+
+.field {
+  @include control-field;
+}
+
+.fieldMultiple {
+  @include control-field;
+  height: auto;
+  padding: var(--space-1);
+}
+
+.textarea {
+  @include control-field;
+  height: auto;
+  min-height: calc(var(--control-height) * 2);
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+}
+
+.fieldset {
+  display: grid;
+  gap: var(--space-2);
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.toggleRow {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.checkbox {
+  @include control-checkbox;
+}
+
+.radio {
+  @include control-radio;
+}
+
+.range {
+  @include control-range;
+}
+
+.colorField {
+  justify-self: start;
+  width: calc(var(--control-height) * 2);
+  height: var(--control-height);
+  padding: var(--space-1);
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--control-radius);
+  background: var(--color-control-bg);
+  cursor: pointer;
+
+  &::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+
+  &::-webkit-color-swatch {
+    border: none;
+    border-radius: var(--radius-sm);
+  }
+
+  &::-moz-color-swatch {
+    border: none;
+    border-radius: var(--radius-sm);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+  }
+}
+
+.fileField {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+
+  &::file-selector-button {
+    height: var(--control-height);
+    padding: 0 var(--space-3);
+    border: 1px solid var(--color-control-border);
+    border-radius: var(--control-radius);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    margin-right: var(--space-3);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+    border-radius: var(--radius-sm);
+  }
+}
+
+.buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.buttonPrimary,
+.buttonSecondary,
+.buttonGhost {
+  height: var(--control-height);
+  padding: 0 var(--space-4);
+  border-radius: var(--control-radius);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+
+  &:focus-visible {
+    @include control-focus-ring;
+  }
+
+  &:disabled {
+    opacity: var(--control-disabled-opacity);
+    cursor: not-allowed;
+  }
+}
+
+.buttonPrimary {
+  border: none;
+  background: var(--color-control-accent);
+  color: var(--color-surface);
+}
+
+.buttonSecondary {
+  border: 1px solid var(--color-control-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.buttonGhost {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.note {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
