@@ -1,0 +1,48 @@
+@use "@/styles/mixins" as *;
+
+.page {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-6);
+}
+
+.summary {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    @include micro-label;
+    padding: var(--space-2) var(--space-3);
+    text-align: left;
+  }
+
+  td {
+    padding: var(--space-2) var(--space-3);
+    border-top: 1px solid var(--color-border);
+  }
+
+  tbody {
+    font-variant-numeric: tabular-nums;
+  }
+
+  tr:hover td {
+    background: var(--color-surface);
+  }
+}
+
+.nameCell {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.page:has([data-pending="true"]) .table {
+  opacity: 0.6;
+}

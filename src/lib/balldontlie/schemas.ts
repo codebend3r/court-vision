@@ -22,7 +22,18 @@ const bdlNestedTeamSchema = z.object({
   abbreviation: z.string(),
 });
 
-const bdlGameSchema = z.object({
+export const bdlPlayerSchema = z.object({
+  id: z.number(),
+  first_name: z.string(),
+  last_name: z.string(),
+  position: z.string().nullable().optional(),
+  jersey_number: z.string().nullable().optional(),
+  team: bdlNestedTeamSchema.nullable().optional(),
+});
+
+export type BdlPlayer = z.infer<typeof bdlPlayerSchema>;
+
+export const bdlGameSchema = z.object({
   id: z.number(),
   date: z.string(),
   season: z.number(),
@@ -32,6 +43,37 @@ const bdlGameSchema = z.object({
   visitor_team_score: z.number(),
   postseason: z.boolean(),
 });
+
+export type BdlGame = z.infer<typeof bdlGameSchema>;
+
+// `/v1/games` rows embed team OBJECTS (`home_team`/`visitor_team`), unlike the
+// flat `home_team_id`/`visitor_team_id` numbers on the `game` nested inside
+// `/v1/stats` rows (still described by `bdlGameSchema` above). This schema
+// validates the nested shape and transforms it down to the flat `BdlGame`
+// shape so downstream code has one representation to work with.
+export const bdlGameRowSchema = z
+  .object({
+    id: z.number(),
+    date: z.string(),
+    season: z.number(),
+    postseason: z.boolean(),
+    home_team_score: z.number(),
+    visitor_team_score: z.number(),
+    home_team: bdlNestedTeamSchema,
+    visitor_team: bdlNestedTeamSchema,
+  })
+  .transform(
+    (row): BdlGame => ({
+      id: row.id,
+      date: row.date,
+      season: row.season,
+      home_team_id: row.home_team.id,
+      visitor_team_id: row.visitor_team.id,
+      home_team_score: row.home_team_score,
+      visitor_team_score: row.visitor_team_score,
+      postseason: row.postseason,
+    }),
+  );
 
 export const bdlStatSchema = z.object({
   id: z.number(),
@@ -58,7 +100,27 @@ export const bdlStatSchema = z.object({
 
 export type BdlStat = z.infer<typeof bdlStatSchema>;
 
+// `/v1/teams` is a single-page endpoint whose live response omits `meta`
+// entirely, so this envelope keeps `meta` optional. Do NOT reuse it for
+// cursor-paginated endpoints — see `bdlPaginatedPage` below.
 export const bdlPage = <T>(item: z.ZodType<T>) =>
+  z.object({
+    data: z.array(item),
+    meta: z
+      .object({
+        next_cursor: z.number().nullable().optional(),
+        per_page: z.number().optional(),
+      })
+      .optional(),
+  });
+
+// Cursor-paginated endpoints (`/v1/stats`, `/v1/players`, `/v1/games`) MUST
+// report `meta` on every page: the fetchers below read `meta.next_cursor` to
+// decide whether to keep paginating, and a page silently missing `meta`
+// would look identical to "no more pages", stopping early and upserting a
+// partial dataset. `meta` is required here; `next_cursor` inside it stays
+// nullable/optional to represent "no next page".
+export const bdlPaginatedPage = <T>(item: z.ZodType<T>) =>
   z.object({
     data: z.array(item),
     meta: z.object({

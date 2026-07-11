@@ -1,0 +1,6 @@
+@mixin micro-label {
+  text-transform: uppercase;
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-muted);
+}

@@ -9,6 +9,9 @@ export const PER_PAGE = "100";
 // ALL-STAR tier allows 60 req/min; ~1.1s between pages keeps us safely under.
 export const THROTTLE_MS = 1100;
 
+// Free tier allows 5 req/min; 13s spacing stays safely under.
+export const FREE_TIER_THROTTLE_MS = 13000;
+
 export const getApiKey = (): string => {
   const key = process.env.BALLDONTLIE_API_KEY ?? "";
   if (key === "") {

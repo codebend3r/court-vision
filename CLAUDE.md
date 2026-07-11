@@ -8,7 +8,7 @@ Operating rules for this repo. The README covers stack, layout, and routes; this
 
 ## Workflow
 
-- Always create a branch for each feature or bug fix.
+- Never create a new branch unless explicitly asked to. Work on the current branch by default.
 - Auto-commit each logical change without asking. Subject must start with `CV:` (see the `cv-commit-format` skill).
 
 ## Tooling
@@ -43,6 +43,10 @@ Operating rules for this repo. The README covers stack, layout, and routes; this
 ## Content + tests
 
 - Tests are co-located: `lib/foo.ts` ↔ `lib/foo.test.ts`, `components/Foo/Foo.tsx` ↔ `components/Foo/Foo.test.tsx`.
+
+## Data sources
+
+- Live NBA stats come from the [Balldontlie API](https://docs.balldontlie.io/) — always consult that endpoint reference (e.g. [Get All Players](https://docs.balldontlie.io/#get-all-players)) when touching the adapter in `lib/balldontlie/`. Auth via `BALLDONTLIE_API_KEY` in `.env`; endpoint availability is tier-gated.
 
 ## Specs
 

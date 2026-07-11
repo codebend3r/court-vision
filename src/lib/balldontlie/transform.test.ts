@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { GameLogInput } from "@/lib/stats/inputs";
 
-import { aggregateSeasonStats, toGameLogInput, toPlayerInputs } from "./transform";
+import {
+  aggregateSeasonStats,
+  toGameLogInput,
+  toPlayerInputs,
+  toPlayerInput,
+  deriveGameContext,
+} from "./transform";
 import { BdlStat } from "./schemas";
 
 const teamAbbrById = new Map<number, string>([
@@ -97,6 +103,44 @@ describe("toPlayerInputs", () => {
   });
 });
 
+describe("deriveGameContext", () => {
+  const game = {
+    id: 1,
+    date: "2025-10-22",
+    season: 2025,
+    home_team_id: 18,
+    visitor_team_id: 2,
+    home_team_score: 100,
+    visitor_team_score: 110,
+    postseason: false,
+  };
+  const teamAbbrById = new Map([
+    [18, "MIN"],
+    [2, "BOS"],
+  ]);
+
+  it("derives home loss", () => {
+    const ctx = deriveGameContext({ game, teamId: 18, teamAbbr: "MIN", teamAbbrById });
+    expect(ctx).toMatchObject({
+      homeAway: "home",
+      opponentAbbr: "BOS",
+      winLoss: "L",
+      matchup: "MIN vs. BOS",
+    });
+    expect(ctx.gameDate.toISOString()).toBe("2025-10-22T00:00:00.000Z");
+  });
+
+  it("derives away win", () => {
+    const ctx = deriveGameContext({ game, teamId: 2, teamAbbr: "BOS", teamAbbrById });
+    expect(ctx).toMatchObject({
+      homeAway: "away",
+      opponentAbbr: "MIN",
+      winLoss: "W",
+      matchup: "BOS @ MIN",
+    });
+  });
+});
+
 describe("toGameLogInput", () => {
   it("derives a home win", () => {
     const log = toGameLogInput({ stat: homeStat, teamAbbrById });
@@ -142,6 +186,43 @@ describe("aggregateSeasonStats", () => {
       pts: 49,
       tov: 6,
       minutes: 68,
+    });
+  });
+});
+
+describe("toPlayerInput", () => {
+  it("maps a full player row", () => {
+    const input = toPlayerInput({
+      player: {
+        id: 3547238,
+        first_name: "Anthony",
+        last_name: "Edwards",
+        position: "G",
+        jersey_number: "5",
+        team: { id: 18, abbreviation: "MIN" },
+      },
+    });
+    expect(input).toEqual({
+      id: 3547238,
+      firstName: "Anthony",
+      lastName: "Edwards",
+      fullName: "Anthony Edwards",
+      teamId: 18,
+      teamAbbr: "MIN",
+      position: "G",
+      jerseyNumber: "5",
+    });
+  });
+
+  it("nulls team fields and blanks", () => {
+    const input = toPlayerInput({
+      player: { id: 1, first_name: "Old", last_name: "Timer", position: "", team: null },
+    });
+    expect(input).toMatchObject({
+      teamId: null,
+      teamAbbr: null,
+      position: null,
+      jerseyNumber: null,
     });
   });
 });
