@@ -3,7 +3,13 @@
 import { useRouter } from "next/navigation";
 import { ChangeEvent, useEffect, useRef, useTransition } from "react";
 
-import { DEFAULT_PAGE_SIZE, MAX_QUERY_LENGTH, PAGE_SIZES } from "@/lib/players/searchParams";
+import {
+  buildPlayersHref,
+  MAX_QUERY_LENGTH,
+  PAGE_SIZES,
+  type PlayerSortKey,
+  type SortDirection,
+} from "@/lib/players/searchParams";
 
 import styles from "./PlayersSearchControls.module.scss";
 
@@ -13,32 +19,11 @@ export interface PlayersSearchControlsProps {
   size: number;
   includeRetired: boolean;
   totalPages: number;
+  sort: PlayerSortKey;
+  dir: SortDirection;
 }
 
 const DEBOUNCE_MS = 300;
-
-const buildHref = (args: {
-  q: string;
-  page: number;
-  size: number;
-  includeRetired: boolean;
-}): string => {
-  const params = new URLSearchParams();
-  if (args.q !== "") {
-    params.set("q", args.q);
-  }
-  if (args.page > 1) {
-    params.set("page", String(args.page));
-  }
-  if (args.size !== DEFAULT_PAGE_SIZE) {
-    params.set("size", String(args.size));
-  }
-  if (args.includeRetired) {
-    params.set("retired", "1");
-  }
-  const query = params.toString();
-  return query === "" ? "/players" : `/players?${query}`;
-};
 
 export function PlayersSearchControls({
   q,
@@ -46,6 +31,8 @@ export function PlayersSearchControls({
   size,
   includeRetired,
   totalPages,
+  sort,
+  dir,
 }: PlayersSearchControlsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -83,25 +70,25 @@ export function PlayersSearchControls({
       if (trimmed === latestQ.current) {
         return;
       }
-      navigate(buildHref({ q: trimmed, page: 1, size, includeRetired }));
+      navigate(buildPlayersHref({ q: trimmed, page: 1, size, includeRetired, sort, dir }));
     }, DEBOUNCE_MS);
   };
 
   const onSizeChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const newSize = Number.parseInt(event.target.value, 10);
-    navigate(buildHref({ q, page: 1, size: newSize, includeRetired }));
+    navigate(buildPlayersHref({ q, page: 1, size: newSize, includeRetired, sort, dir }));
   };
 
   const onRetiredChange = () => {
-    navigate(buildHref({ q, page: 1, size, includeRetired: !includeRetired }));
+    navigate(buildPlayersHref({ q, page: 1, size, includeRetired: !includeRetired, sort, dir }));
   };
 
   const onPrev = () => {
-    navigate(buildHref({ q, page: page - 1, size, includeRetired }));
+    navigate(buildPlayersHref({ q, page: page - 1, size, includeRetired, sort, dir }));
   };
 
   const onNext = () => {
-    navigate(buildHref({ q, page: page + 1, size, includeRetired }));
+    navigate(buildPlayersHref({ q, page: page + 1, size, includeRetired, sort, dir }));
   };
 
   return (

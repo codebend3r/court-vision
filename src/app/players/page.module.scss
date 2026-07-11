@@ -43,6 +43,18 @@
   gap: var(--space-2);
 }
 
+.sortLink {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-1);
+  color: inherit;
+
+  &[data-active="true"] {
+    color: var(--color-accent);
+  }
+}
+
 .page:has([data-pending="true"]) .table {
   opacity: 0.6;
 }

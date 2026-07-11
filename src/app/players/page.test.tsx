@@ -20,19 +20,23 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("PlayersPage", () => {
-  it("renders rows and a summary for a page of results", async () => {
+  it("renders first and last name link columns and a summary for a page of results", async () => {
     vi.mocked(searchPlayers).mockResolvedValue({
       rows: [
         {
           id: 1,
-          fullName: "Curry, Stephen",
+          firstName: "Stephen",
+          lastName: "Curry",
+          fullName: "Stephen Curry",
           teamAbbr: "GSW",
           position: "G",
           nbaPersonId: null,
         },
         {
           id: 2,
-          fullName: "Green, Draymond",
+          firstName: "Draymond",
+          lastName: "Green",
+          fullName: "Draymond Green",
           teamAbbr: "GSW",
           position: "F",
           nbaPersonId: null,
@@ -48,11 +52,85 @@ describe("PlayersPage", () => {
       }),
     );
 
-    const curryLink = screen.getByRole("link", { name: "Curry, Stephen" });
-    expect(curryLink).toHaveAttribute("href", "/players/1");
-    const greenLink = screen.getByRole("link", { name: "Green, Draymond" });
-    expect(greenLink).toHaveAttribute("href", "/players/2");
+    expect(screen.getByRole("link", { name: "Stephen" })).toHaveAttribute("href", "/players/1");
+    expect(screen.getByRole("link", { name: "Curry" })).toHaveAttribute("href", "/players/1");
+    expect(screen.getByRole("link", { name: "Draymond" })).toHaveAttribute("href", "/players/2");
+    expect(screen.getByRole("link", { name: "Green" })).toHaveAttribute("href", "/players/2");
     expect(screen.getByText("Showing 26–50 of 60")).toBeInTheDocument();
+  });
+
+  it("renders sortable name headers with the default first name ascending sort", async () => {
+    vi.mocked(searchPlayers).mockResolvedValue({
+      rows: [
+        {
+          id: 1,
+          firstName: "Stephen",
+          lastName: "Curry",
+          fullName: "Stephen Curry",
+          teamAbbr: "GSW",
+          position: "G",
+          nbaPersonId: null,
+        },
+      ],
+      total: 1,
+      page: 1,
+    });
+
+    render(await PlayersPage({ searchParams: Promise.resolve({}) }));
+
+    const firstNameHeader = screen.getByRole("columnheader", { name: "First name" });
+    expect(firstNameHeader).toHaveAttribute("aria-sort", "ascending");
+    const lastNameHeader = screen.getByRole("columnheader", { name: "Last name" });
+    expect(lastNameHeader).not.toHaveAttribute("aria-sort");
+
+    expect(screen.getByRole("link", { name: "First name" })).toHaveAttribute(
+      "href",
+      "/players?dir=desc",
+    );
+    expect(screen.getByRole("link", { name: "Last name" })).toHaveAttribute(
+      "href",
+      "/players?sort=lastName",
+    );
+  });
+
+  it("toggles the active header link and marks descending last name sort", async () => {
+    vi.mocked(searchPlayers).mockResolvedValue({
+      rows: [
+        {
+          id: 1,
+          firstName: "Stephen",
+          lastName: "Curry",
+          fullName: "Stephen Curry",
+          teamAbbr: "GSW",
+          position: "G",
+          nbaPersonId: null,
+        },
+      ],
+      total: 1,
+      page: 1,
+    });
+
+    render(
+      await PlayersPage({
+        searchParams: Promise.resolve({ sort: "lastName", dir: "desc", q: "curry" }),
+      }),
+    );
+
+    expect(searchPlayers).toHaveBeenCalledWith(
+      expect.objectContaining({ sort: "lastName", dir: "desc", q: "curry" }),
+    );
+
+    const lastNameHeader = screen.getByRole("columnheader", { name: "Last name" });
+    expect(lastNameHeader).toHaveAttribute("aria-sort", "descending");
+
+    expect(screen.getByRole("link", { name: "Last name" })).toHaveAttribute(
+      "href",
+      "/players?q=curry&sort=lastName",
+    );
+    expect(screen.getByRole("link", { name: "First name" })).toHaveAttribute(
+      "href",
+      "/players?q=curry",
+    );
   });
 
   it("shows a headshot image for a row with an nbaPersonId and initials for a row without", async () => {
@@ -60,6 +138,8 @@ describe("PlayersPage", () => {
       rows: [
         {
           id: 1,
+          firstName: "Stephen",
+          lastName: "Curry",
           fullName: "Stephen Curry",
           teamAbbr: "GSW",
           position: "G",
@@ -67,6 +147,8 @@ describe("PlayersPage", () => {
         },
         {
           id: 2,
+          firstName: "Draymond",
+          lastName: "Green",
           fullName: "Draymond Green",
           teamAbbr: "GSW",
           position: "F",

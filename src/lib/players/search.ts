@@ -6,6 +6,8 @@ import { PlayersSearchParams } from "./searchParams";
 
 export interface PlayerRow {
   id: number;
+  firstName: string;
+  lastName: string;
   fullName: string;
   teamAbbr: string | null;
   position: string | null;
@@ -20,6 +22,8 @@ export interface PlayersSearchResult {
 
 const rowSelect = {
   id: true,
+  firstName: true,
+  lastName: true,
   fullName: true,
   teamAbbr: true,
   position: true,
@@ -27,17 +31,21 @@ const rowSelect = {
 };
 
 export const searchPlayers = async (args: PlayersSearchParams): Promise<PlayersSearchResult> => {
-  const { q, page, size, includeRetired } = args;
+  const { q, page, size, includeRetired, sort, dir } = args;
   const where: Prisma.PlayerWhereInput = {
     ...(includeRetired ? {} : { gameLogs: { some: {} } }),
     ...(q === "" ? {} : { fullName: { contains: q, mode: "insensitive" } }),
   };
+  const orderBy: Prisma.PlayerOrderByWithRelationInput[] =
+    sort === "lastName"
+      ? [{ lastName: dir }, { firstName: dir }, { id: "asc" }]
+      : [{ firstName: dir }, { lastName: dir }, { id: "asc" }];
 
   const pageQuery = (pageNumber: number) =>
     prisma.player.findMany({
       where,
       select: rowSelect,
-      orderBy: { fullName: "asc" },
+      orderBy,
       skip: (pageNumber - 1) * size,
       take: size,
     });

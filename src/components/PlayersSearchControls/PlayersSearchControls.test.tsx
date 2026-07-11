@@ -26,6 +26,8 @@ const defaultProps: PlayersSearchControlsProps = {
   size: 25,
   includeRetired: false,
   totalPages: 1,
+  sort: "firstName",
+  dir: "asc",
 };
 
 const advance = (ms: number) => {
@@ -100,6 +102,15 @@ describe("PlayersSearchControls", () => {
 
     expect(replace).toHaveBeenCalledTimes(1);
     expect(replace).toHaveBeenCalledWith("/players?page=3&size=50");
+  });
+
+  it("preserves a non-default sort and dir on navigation", () => {
+    render(<PlayersSearchControls {...defaultProps} sort="lastName" dir="desc" totalPages={3} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledWith("/players?page=2&sort=lastName&dir=desc");
   });
 
   it("disables the Previous button on the first page", () => {

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { searchPlayers } from "./search";
 import type { PlayerRow } from "./search";
+import type { PlayersSearchParams } from "./searchParams";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -14,6 +15,25 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import { prisma } from "@/lib/prisma";
+
+const defaultParams: PlayersSearchParams = {
+  q: "",
+  page: 1,
+  size: 25,
+  includeRetired: false,
+  sort: "firstName",
+  dir: "asc",
+};
+
+const expectedSelect = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  fullName: true,
+  teamAbbr: true,
+  position: true,
+  nbaPersonId: true,
+};
 
 describe("searchPlayers", () => {
   beforeEach(() => {
@@ -39,18 +59,12 @@ describe("searchPlayers", () => {
     vi.mocked(prisma.player.findMany).mockResolvedValue(mockRows);
     vi.mocked(prisma.player.count).mockResolvedValue(100);
 
-    const result = await searchPlayers({ q: "", page: 1, size: 25, includeRetired: false });
+    const result = await searchPlayers(defaultParams);
 
     expect(prisma.player.findMany).toHaveBeenCalledWith({
       where: { gameLogs: { some: {} } },
-      select: {
-        id: true,
-        fullName: true,
-        teamAbbr: true,
-        position: true,
-        nbaPersonId: true,
-      },
-      orderBy: { fullName: "asc" },
+      select: expectedSelect,
+      orderBy: [{ firstName: "asc" }, { lastName: "asc" }, { id: "asc" }],
       skip: 0,
       take: 25,
     });
@@ -76,21 +90,15 @@ describe("searchPlayers", () => {
     vi.mocked(prisma.player.findMany).mockResolvedValue(mockRows);
     vi.mocked(prisma.player.count).mockResolvedValue(1);
 
-    await searchPlayers({ q: "curry", page: 1, size: 25, includeRetired: false });
+    await searchPlayers({ ...defaultParams, q: "curry" });
 
     expect(prisma.player.findMany).toHaveBeenCalledWith({
       where: {
         gameLogs: { some: {} },
         fullName: { contains: "curry", mode: "insensitive" },
       },
-      select: {
-        id: true,
-        fullName: true,
-        teamAbbr: true,
-        position: true,
-        nbaPersonId: true,
-      },
-      orderBy: { fullName: "asc" },
+      select: expectedSelect,
+      orderBy: [{ firstName: "asc" }, { lastName: "asc" }, { id: "asc" }],
       skip: 0,
       take: 25,
     });
@@ -100,21 +108,41 @@ describe("searchPlayers", () => {
     vi.mocked(prisma.player.findMany).mockResolvedValue([]);
     vi.mocked(prisma.player.count).mockResolvedValue(0);
 
-    await searchPlayers({ q: "", page: 1, size: 25, includeRetired: true });
+    await searchPlayers({ ...defaultParams, includeRetired: true });
 
     expect(prisma.player.findMany).toHaveBeenCalledWith({
       where: {},
-      select: {
-        id: true,
-        fullName: true,
-        teamAbbr: true,
-        position: true,
-        nbaPersonId: true,
-      },
-      orderBy: { fullName: "asc" },
+      select: expectedSelect,
+      orderBy: [{ firstName: "asc" }, { lastName: "asc" }, { id: "asc" }],
       skip: 0,
       take: 25,
     });
+  });
+
+  it("orders by last name with first name and id tiebreaks when sort is lastName", async () => {
+    vi.mocked(prisma.player.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.player.count).mockResolvedValue(0);
+
+    await searchPlayers({ ...defaultParams, sort: "lastName", dir: "desc" });
+
+    expect(prisma.player.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [{ lastName: "desc" }, { firstName: "desc" }, { id: "asc" }],
+      }),
+    );
+  });
+
+  it("orders by first name descending with tiebreaks when dir is desc", async () => {
+    vi.mocked(prisma.player.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.player.count).mockResolvedValue(0);
+
+    await searchPlayers({ ...defaultParams, dir: "desc" });
+
+    expect(prisma.player.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [{ firstName: "desc" }, { lastName: "desc" }, { id: "asc" }],
+      }),
+    );
   });
 
   it("clamps page when requested page exceeds available data", async () => {
@@ -139,7 +167,7 @@ describe("searchPlayers", () => {
       .mockResolvedValueOnce(secondQueryRows);
     vi.mocked(prisma.player.count).mockResolvedValue(30);
 
-    const result = await searchPlayers({ q: "", page: 9, size: 25, includeRetired: false });
+    const result = await searchPlayers({ ...defaultParams, page: 9 });
 
     expect(result).toEqual({ rows: secondQueryRows, total: 30, page: 2 });
     expect(prisma.player.findMany).toHaveBeenCalledTimes(2);
@@ -157,7 +185,7 @@ describe("searchPlayers", () => {
     vi.mocked(prisma.player.findMany).mockResolvedValue([]);
     vi.mocked(prisma.player.count).mockResolvedValue(0);
 
-    const result = await searchPlayers({ q: "", page: 1, size: 25, includeRetired: false });
+    const result = await searchPlayers(defaultParams);
 
     expect(result).toEqual({ rows: [], total: 0, page: 1 });
     expect(prisma.player.findMany).toHaveBeenCalledTimes(1);
