@@ -19,6 +19,7 @@ Operating rules for this repo. The README covers stack, layout, and routes; this
 
 ## Typescript
 
+- Always use type aliases. Never introduce TypeScript interfaces.
 - Use type guards wherever possible.
 - Never use `any` types; prefer type narrowing or type guards
 - Never under any circumstance cast types and never double cast: `as any as string`
