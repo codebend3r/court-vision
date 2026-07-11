@@ -117,6 +117,7 @@ Court Vision uses the Next.js **App Router** (`src/app`).
 | --------------------- | ------------------------------------- | --------------------------------------------------------------------------------------- |
 | `/`                   | `src/app/page.tsx`                    | Landing page; lists seeded players (name + team), each linking to `/players/[playerId]` |
 | `/players/[playerId]` | `src/app/players/[playerId]/page.tsx` | Season-to-date average line charts for one player                                       |
+| `/players`            | `src/app/players/page.tsx`            | Searchable, paginated table of all players                                              |
 
 No API route handlers exist yet; the NBA sync runs as a standalone Bun script.
 

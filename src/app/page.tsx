@@ -17,7 +17,12 @@ export default async function Home() {
     <main className={styles.page}>
       <Hello name="world" />
       <section className={styles.players}>
-        <h2 className={styles.title}>Players</h2>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.title}>Players</h2>
+          <Link href="/players" className={styles.allPlayers}>
+            All players →
+          </Link>
+        </div>
         <ul className={styles.list}>
           {players.map((player) => (
             <li key={player.id}>

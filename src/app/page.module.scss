@@ -9,9 +9,22 @@
   gap: var(--space-2);
 }
 
+.sectionHeader {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .title {
   margin: 0;
   font-size: var(--font-size-lg);
+}
+
+.allPlayers {
+  color: var(--color-accent);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
 }
 
 .list {

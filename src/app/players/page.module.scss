@@ -1,0 +1,36 @@
+.page {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-6);
+}
+
+.summary {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    padding: var(--space-2) var(--space-3);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    text-align: left;
+  }
+
+  td {
+    padding: var(--space-2) var(--space-3);
+    border-top: 1px solid var(--color-border);
+  }
+
+  tr:hover td {
+    background: var(--color-surface);
+  }
+}
+
+.page:has([data-pending="true"]) .table {
+  opacity: 0.6;
+}
