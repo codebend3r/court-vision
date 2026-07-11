@@ -9,10 +9,17 @@ import styles from "./page.module.scss";
 
 export const dynamic = "force-dynamic";
 
+// Player.id is a Postgres INT4; anything outside its range would make Prisma
+// throw (a 500) instead of rendering a 404.
+const MAX_INT4 = 2147483647;
+
 export default async function PlayerPage({ params }: { params: Promise<{ playerId: string }> }) {
   const { playerId } = await params;
+  if (!/^\d+$/.test(playerId)) {
+    notFound();
+  }
   const numericId = Number.parseInt(playerId, 10);
-  if (Number.isNaN(numericId)) {
+  if (!Number.isSafeInteger(numericId) || numericId < 1 || numericId > MAX_INT4) {
     notFound();
   }
   const player = await prisma.player.findUnique({ where: { id: numericId } });

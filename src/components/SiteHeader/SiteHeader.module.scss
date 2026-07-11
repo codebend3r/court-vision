@@ -18,7 +18,7 @@
   font-size: var(--font-size-lg);
   font-weight: 700;
   text-transform: uppercase;
-  // Brand-specific wordmark tracking; wider than --tracking-wide, not a shared token.
+  // Brand-specific wordmark tracking (between --tracking-tight and --tracking-wide).
   letter-spacing: 0.08em;
 
   &:hover {

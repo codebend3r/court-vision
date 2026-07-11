@@ -6,11 +6,12 @@ Court Vision pulls NBA player stats, tracks how each player is performing over r
 windows, and surfaces who is "heating up" — powering a leaderboard, trend charts, and a
 weighted **heat score**.
 
-> **Status:** early. The stats fetch layers (NBA + Balldontlie) are in place, the live
-> database runs on Supabase (seeded via `seed:demo`), and the first product UI is live:
-> per-player season-average charts at `/players/[playerId]`. The leaderboard and heat
-> score are still to come. See [`docs/superpowers/specs/`](docs/superpowers/specs/) for
-> the design specs.
+> **Status:** in progress. The live Supabase database holds the full 2025-26 season
+> (603 players, ~43k game logs via `sync:bdl`); the UI ships a themed app shell
+> (light/dark), a searchable `/players` table with headshots, per-player
+> season-average charts, and a `/design` style guide. The leaderboard and heat score
+> are still to come. See [`docs/superpowers/specs/`](docs/superpowers/specs/) for the
+> design specs.
 
 ## Stack
 
@@ -48,9 +49,11 @@ bun dev                     # http://localhost:46644
 
 ### Environment
 
-| Variable       | Required for                        | Notes                                             |
-| -------------- | ----------------------------------- | ------------------------------------------------- |
-| `DATABASE_URL` | `prisma migrate`, the live NBA sync | PostgreSQL connection string. See `.env.example`. |
+| Variable              | Required for                    | Notes                                                  |
+| --------------------- | ------------------------------- | ------------------------------------------------------ |
+| `DATABASE_URL`        | Runtime queries, the live syncs | PostgreSQL connection string. See `.env.example`.      |
+| `DIRECT_URL`          | `prisma migrate`                | Session-pooler connection for migrations.              |
+| `BALLDONTLIE_API_KEY` | `sync:bdl`, `seed:demo`         | Balldontlie API key (per-game stats need a paid tier). |
 
 `prisma generate`, `bun dev`, and the test suite all work without a real `DATABASE_URL` —
 it's only needed for commands that actually connect to a database.
@@ -83,7 +86,7 @@ All scripts run through Bun (`bun run <name>`):
 .
 ├── prisma/
 │   ├── schema.prisma           # Player / PlayerSeasonStats / PlayerGameLog models
-│   └── migrations/             # first migration authored (not yet applied)
+│   └── migrations/             # applied to the live Supabase database
 ├── prisma.config.ts            # Prisma 7 CLI config (schema path, migrations, DATABASE_URL)
 ├── generated/prisma/           # generated Prisma client (gitignored; import via @generated/*)
 ├── public/                     # static assets
@@ -95,12 +98,13 @@ All scripts run through Bun (`bun run <name>`):
 │   ├── components/             # React components (co-located SCSS module + test)
 │   │   ├── ChartPaletteSwatches/  # labeled color chips for the chart stat palettes
 │   │   ├── PlayerAvatar/       # NBA CDN headshot with initials fallback
+│   │   ├── PlayerAvatar/       # NBA CDN headshot with initials fallback
 │   │   ├── PlayerStatChart/    # two-panel Recharts season-average line chart
 │   │   ├── PlayersSearchControls/  # debounced search, page size, retired toggle, pager
 │   │   ├── SideNav/            # persistent side menu (Players, Design)
 │   │   ├── SiteHeader/         # persistent Court Vision header
 │   │   └── TokenSwatch/        # single design-token tile (swatch + name + computed value)
-│   ├── lib/
+│   ├── lib/                    # (also: theme/ provider, players/ search, headshots/ mapping)
 │   │   ├── balldontlie/        # Balldontlie adapter: client → schemas → endpoints → transform → sync
 │   │   ├── demo/               # seed:demo generator (real identities/schedules, generated box scores)
 │   │   ├── headshots/          # nbaPersonId mapping script (index source → match → persist)
@@ -108,7 +112,8 @@ All scripts run through Bun (`bun run <name>`):
 │   │   ├── prisma.ts           # Prisma client singleton (pg driver adapter)
 │   │   └── stats/              # source-agnostic upserts + cumulative season-average series builder
 │   └── styles/
-│       └── globals.scss        # design tokens + typographic primitives
+│       ├── globals.scss        # design tokens (both themes) + typographic primitives
+│       └── mixins.scss         # shared SCSS recipes (micro-label)
 ├── docs/superpowers/           # design specs + implementation plans
 ├── .github/workflows/ci.yml    # CI: prettier → lint → typecheck → test
 └── .husky/                     # pre-commit + pre-push hooks
@@ -168,8 +173,9 @@ bun run db:generate         # regenerate the client after editing schema.prisma
 bun run db:migrate          # create/apply a migration (requires a live DATABASE_URL)
 ```
 
-The schema defines `Player`, `PlayerSeasonStats`, and `PlayerGameLog`. The first migration is
-authored under `prisma/migrations/` but has not been applied — no live database is stood up yet.
+The schema defines `Player` (incl. `nbaPersonId` for headshots), `PlayerSeasonStats`, and
+`PlayerGameLog`. Migrations under `prisma/migrations/` are applied to the live Supabase
+database, which holds the full synced 2025-26 season.
 
 ## Testing
 

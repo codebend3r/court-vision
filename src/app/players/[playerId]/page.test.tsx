@@ -118,6 +118,18 @@ describe("PlayerPage", () => {
     expect(prisma.player.findUnique).not.toHaveBeenCalled();
   });
 
+  it.each([["12abc"], ["99999999999"], ["0"], ["-5"]])(
+    "rejects id %s without querying the database",
+    async (playerId) => {
+      vi.mocked(prisma.player.findUnique).mockResolvedValue(null);
+      vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([]);
+
+      await expect(PlayerPage({ params: Promise.resolve({ playerId }) })).rejects.toThrow();
+
+      expect(prisma.player.findUnique).not.toHaveBeenCalled();
+    },
+  );
+
   it("shows the empty state and no chips when the player has zero logs", async () => {
     vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
     vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([]);
