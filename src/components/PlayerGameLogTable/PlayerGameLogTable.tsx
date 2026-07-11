@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { parseAsString, useQueryStates } from "nuqs";
 
 import styles from "@/components/PlayerGameLogTable/PlayerGameLogTable.module.scss";
 
@@ -75,6 +76,11 @@ const COLUMNS: readonly Column[] = [
   },
 ];
 
+const SORT_KEYS = new Set<SortKey>(COLUMNS.map((column) => column.key));
+
+const isSortKey = (value: string | null): value is SortKey =>
+  value !== null && SORT_KEYS.has(value as SortKey);
+
 const compare = (
   left: PlayerGameLogTableRow,
   right: PlayerGameLogTableRow,
@@ -93,8 +99,12 @@ const compare = (
 };
 
 export function PlayerGameLogTable({ rows }: { rows: PlayerGameLogTableRow[] }) {
-  const [sortKey, setSortKey] = useState<SortKey>("gameDate");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [{ sort, dir }, setSorting] = useQueryStates({
+    sort: parseAsString,
+    dir: parseAsString,
+  });
+  const sortKey: SortKey = isSortKey(sort) ? sort : "gameDate";
+  const sortDirection: SortDirection = dir === "asc" ? "asc" : "desc";
   const sortedRows = useMemo(
     () =>
       [...rows].sort((left, right) => {
@@ -106,11 +116,10 @@ export function PlayerGameLogTable({ rows }: { rows: PlayerGameLogTableRow[] }) 
 
   const sortBy = (key: SortKey) => {
     if (key === sortKey) {
-      setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"));
+      void setSorting({ sort: key, dir: sortDirection === "asc" ? "desc" : "asc" });
       return;
     }
-    setSortKey(key);
-    setSortDirection(key === "gameDate" ? "desc" : "asc");
+    void setSorting({ sort: key, dir: key === "gameDate" ? "desc" : "asc" });
   };
 
   return (
@@ -130,7 +139,13 @@ export function PlayerGameLogTable({ rows }: { rows: PlayerGameLogTableRow[] }) 
                     : "descending"
                   : "none";
                 return (
-                  <th key={column.key} scope="col" aria-sort={ariaSort} data-align={column.align}>
+                  <th
+                    key={column.key}
+                    scope="col"
+                    aria-sort={ariaSort}
+                    data-align={column.align}
+                    data-sort-active={isActive || undefined}
+                  >
                     <button
                       type="button"
                       className={styles.sortButton}
@@ -150,7 +165,11 @@ export function PlayerGameLogTable({ rows }: { rows: PlayerGameLogTableRow[] }) 
             {sortedRows.map((row) => (
               <tr key={row.id}>
                 {COLUMNS.map((column) => (
-                  <td key={column.key} data-align={column.align}>
+                  <td
+                    key={column.key}
+                    data-align={column.align}
+                    data-sort-active={column.key === sortKey || undefined}
+                  >
                     {column.render?.(row) ?? row[column.key] ?? "—"}
                   </td>
                 ))}

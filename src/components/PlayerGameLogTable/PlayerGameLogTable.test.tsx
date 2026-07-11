@@ -1,4 +1,6 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { withNuqsTestingAdapter, type UrlUpdateEvent } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -32,16 +34,27 @@ const buildRow = (overrides: Partial<PlayerGameLogTableRow>): PlayerGameLogTable
   ...overrides,
 });
 
+const renderTable = ({
+  rows,
+  searchParams = {},
+  onUrlUpdate,
+}: {
+  rows: PlayerGameLogTableRow[];
+  searchParams?: Record<string, string>;
+  onUrlUpdate?: (event: UrlUpdateEvent) => void;
+}) =>
+  render(<PlayerGameLogTable rows={rows} />, {
+    wrapper: withNuqsTestingAdapter({ hasMemory: true, searchParams, onUrlUpdate }),
+  });
+
 describe("PlayerGameLogTable", () => {
   it("shows raw game stats in newest-first order", () => {
-    render(
-      <PlayerGameLogTable
-        rows={[
-          buildRow({ id: "older", gameDate: "2026-02-08T00:00:00.000Z", pts: 12 }),
-          buildRow({ id: "newer" }),
-        ]}
-      />,
-    );
+    renderTable({
+      rows: [
+        buildRow({ id: "older", gameDate: "2026-02-08T00:00:00.000Z", pts: 12 }),
+        buildRow({ id: "newer" }),
+      ],
+    });
 
     const rows = screen.getAllByRole("row");
     expect(within(rows[1]).getByText("83")).toBeInTheDocument();
@@ -49,14 +62,12 @@ describe("PlayerGameLogTable", () => {
   });
 
   it("sorts every column, including points", () => {
-    render(
-      <PlayerGameLogTable
-        rows={[
-          buildRow({ id: "high", pts: 83 }),
-          buildRow({ id: "low", pts: 12, gameDate: "2026-02-08T00:00:00.000Z" }),
-        ]}
-      />,
-    );
+    renderTable({
+      rows: [
+        buildRow({ id: "high", pts: 83 }),
+        buildRow({ id: "low", pts: 12, gameDate: "2026-02-08T00:00:00.000Z" }),
+      ],
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /PTS/ }));
 
@@ -67,5 +78,34 @@ describe("PlayerGameLogTable", () => {
       "aria-sort",
       "ascending",
     );
+  });
+
+  it("restores sorting from the URL and highlights the active column", () => {
+    renderTable({
+      rows: [
+        buildRow({ id: "high", ast: 12 }),
+        buildRow({ id: "low", ast: 3, gameDate: "2026-02-08T00:00:00.000Z" }),
+      ],
+      searchParams: { sort: "ast", dir: "desc" },
+    });
+
+    const rows = screen.getAllByRole("row");
+    const astHeader = screen.getByRole("columnheader", { name: /AST/ });
+    expect(within(rows[1]).getByText("12")).toBeInTheDocument();
+    expect(astHeader).toHaveAttribute("aria-sort", "descending");
+    expect(astHeader).toHaveAttribute("data-sort-active", "true");
+    expect(rows[1].querySelectorAll('[data-sort-active="true"]')).toHaveLength(1);
+  });
+
+  it("writes the selected sort and direction to the URL", async () => {
+    const user = userEvent.setup();
+    const updates: UrlUpdateEvent[] = [];
+    renderTable({ rows: [buildRow({})], onUrlUpdate: (event) => updates.push(event) });
+
+    await user.click(screen.getByRole("button", { name: /AST/ }));
+    await waitFor(() => expect(updates.at(-1)?.queryString).toBe("?sort=ast&dir=asc"));
+
+    await user.click(screen.getByRole("button", { name: /AST/ }));
+    await waitFor(() => expect(updates.at(-1)?.queryString).toBe("?sort=ast&dir=desc"));
   });
 });
