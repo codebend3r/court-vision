@@ -6,8 +6,8 @@ import type { PlayerRow } from "./search";
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     player: {
-      findMany: vi.fn(),
-      count: vi.fn(),
+      findMany: vi.fn<(arg: unknown) => Promise<PlayerRow[]>>(),
+      count: vi.fn<(arg: unknown) => Promise<number>>(),
     },
     $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
   },
@@ -21,13 +21,22 @@ describe("searchPlayers", () => {
   });
 
   it("calls findMany with default view (active players, no query)", async () => {
-    const mockRows: PlayerRow[] = [
-      { id: 1, fullName: "Stephen Curry", teamAbbr: "GSW", position: "PG" },
+    const mockRows = [
+      {
+        id: 1,
+        firstName: "Stephen",
+        lastName: "Curry",
+        fullName: "Stephen Curry",
+        teamId: 1,
+        teamAbbr: "GSW",
+        position: "PG",
+        jerseyNumber: "30",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     ];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (prisma.player.findMany as any).mockResolvedValue(mockRows);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (prisma.player.count as any).mockResolvedValue(100);
+    vi.mocked(prisma.player.findMany).mockResolvedValue(mockRows);
+    vi.mocked(prisma.player.count).mockResolvedValue(100);
 
     const result = await searchPlayers({ q: "", page: 1, size: 25, includeRetired: false });
 
@@ -42,13 +51,22 @@ describe("searchPlayers", () => {
   });
 
   it("adds fullName search condition when q is provided", async () => {
-    const mockRows: PlayerRow[] = [
-      { id: 1, fullName: "Stephen Curry", teamAbbr: "GSW", position: "PG" },
+    const mockRows = [
+      {
+        id: 1,
+        firstName: "Stephen",
+        lastName: "Curry",
+        fullName: "Stephen Curry",
+        teamId: 1,
+        teamAbbr: "GSW",
+        position: "PG",
+        jerseyNumber: "30",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     ];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (prisma.player.findMany as any).mockResolvedValue(mockRows);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (prisma.player.count as any).mockResolvedValue(1);
+    vi.mocked(prisma.player.findMany).mockResolvedValue(mockRows);
+    vi.mocked(prisma.player.count).mockResolvedValue(1);
 
     await searchPlayers({ q: "curry", page: 1, size: 25, includeRetired: false });
 
@@ -65,11 +83,8 @@ describe("searchPlayers", () => {
   });
 
   it("excludes gameLogs filter when includeRetired is true", async () => {
-    const mockRows: PlayerRow[] = [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (prisma.player.findMany as any).mockResolvedValue(mockRows);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (prisma.player.count as any).mockResolvedValue(0);
+    vi.mocked(prisma.player.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.player.count).mockResolvedValue(0);
 
     await searchPlayers({ q: "", page: 1, size: 25, includeRetired: true });
 
@@ -83,29 +98,43 @@ describe("searchPlayers", () => {
   });
 
   it("clamps page when requested page exceeds available data", async () => {
-    const firstQueryRows: PlayerRow[] = [];
-    const secondQueryRows: PlayerRow[] = [
-      { id: 2, fullName: "Player", teamAbbr: "LAL", position: "SF" },
+    const secondQueryRows = [
+      {
+        id: 2,
+        firstName: "Player",
+        lastName: "",
+        fullName: "Player",
+        teamId: 2,
+        teamAbbr: "LAL",
+        position: "SF",
+        jerseyNumber: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     ];
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (prisma.player.findMany as any)
-      .mockResolvedValueOnce(firstQueryRows)
+    vi.mocked(prisma.player.findMany)
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce(secondQueryRows);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (prisma.player.count as any).mockResolvedValue(30);
+    vi.mocked(prisma.player.count).mockResolvedValue(30);
 
     const result = await searchPlayers({ q: "", page: 9, size: 25, includeRetired: false });
 
     expect(result).toEqual({ rows: secondQueryRows, total: 30, page: 2 });
     expect(prisma.player.findMany).toHaveBeenCalledTimes(2);
+    expect(prisma.player.findMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ skip: 200, take: 25 }),
+    );
+    expect(prisma.player.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ skip: 25, take: 25 }),
+    );
   });
 
   it("returns page 1 with empty rows when total is 0", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (prisma.player.findMany as any).mockResolvedValue([]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (prisma.player.count as any).mockResolvedValue(0);
+    vi.mocked(prisma.player.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.player.count).mockResolvedValue(0);
 
     const result = await searchPlayers({ q: "", page: 1, size: 25, includeRetired: false });
 
