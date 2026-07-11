@@ -1,5 +1,6 @@
 import { Chakra_Petch, IBM_Plex_Sans } from "next/font/google";
 import type { Metadata } from "next";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { ReactNode } from "react";
 
 import { SideNav } from "@/components/SideNav/SideNav";
@@ -46,13 +47,15 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body>
-        <ThemeProvider>
-          <SiteHeader />
-          <div className={styles.shell}>
-            <SideNav />
-            <div className={styles.content}>{children}</div>
-          </div>
-        </ThemeProvider>
+        <NuqsAdapter>
+          <ThemeProvider>
+            <SiteHeader />
+            <div className={styles.shell}>
+              <SideNav />
+              <div className={styles.content}>{children}</div>
+            </div>
+          </ThemeProvider>
+        </NuqsAdapter>
       </body>
     </html>
   );
