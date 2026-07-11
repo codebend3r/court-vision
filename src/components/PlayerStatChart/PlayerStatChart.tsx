@@ -222,6 +222,7 @@ function StatLineChart({
         <CartesianGrid stroke={chrome.grid} vertical={false} />
         <XAxis
           dataKey="gameIndex"
+          interval="equidistantPreserveStart"
           tick={{ fill: chrome.axis, fontSize: 12 }}
           stroke={chrome.grid}
         />
