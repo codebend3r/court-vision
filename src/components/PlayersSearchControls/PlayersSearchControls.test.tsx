@@ -126,21 +126,20 @@ describe("PlayersSearchControls", () => {
     expect(replace).toHaveBeenCalledTimes(0);
   });
 
-  it("does not navigate when props catch up and user types the same value again", () => {
+  it("skips navigation when q catches up while the timer is pending", () => {
     const { rerender } = render(<PlayersSearchControls {...defaultProps} />);
 
     const input = screen.getByLabelText("Search players");
+    // Fire change event to "cur" — debounce timer now pending. Do NOT advance yet.
     fireEvent.change(input, { target: { value: "cur" } });
 
-    advance(300);
-    expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith("/players?q=cur");
-
-    replace.mockClear();
-
+    // Rerender with q="cur" (props catch up) while the timer is still pending.
+    // This updates latestQ.current to "cur" via the useEffect.
     rerender(<PlayersSearchControls {...defaultProps} q="cur" />);
-    fireEvent.change(input, { target: { value: "cur" } });
 
+    // Now advance the timer. The callback should check latestQ.current === "cur"
+    // and skip navigation. Under the old buggy code (using stale closure q=""),
+    // it would incorrectly navigate.
     advance(300);
 
     expect(replace).toHaveBeenCalledTimes(0);
