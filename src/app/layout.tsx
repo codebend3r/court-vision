@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { SideNav } from "@/components/SideNav/SideNav";
+import { SiteHeader } from "@/components/SiteHeader/SiteHeader";
+
 import "@/styles/globals.scss";
+
+import styles from "./layout.module.scss";
 
 export const metadata: Metadata = {
   title: "Court Vision",
@@ -15,7 +20,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <SiteHeader />
+        <div className={styles.shell}>
+          <SideNav />
+          <div className={styles.content}>{children}</div>
+        </div>
+      </body>
     </html>
   );
 }

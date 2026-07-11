@@ -1,0 +1,10 @@
+.shell {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: calc(100vh - 57px); // header: --space-3 padding ×2 + lg line box + border
+}
+
+.content {
+  display: grid;
+  align-content: start;
+}

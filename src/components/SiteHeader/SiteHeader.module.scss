@@ -1,0 +1,17 @@
+.header {
+  display: grid;
+  align-items: center;
+  padding: var(--space-3) var(--space-6);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.wordmark {
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+
+  &:hover {
+    text-decoration: none;
+  }
+}
