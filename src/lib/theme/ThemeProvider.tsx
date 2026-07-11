@@ -1,34 +1,44 @@
 "use client";
 
-import { ReactNode, createContext, useContext, useState } from "react";
+import { ReactNode, createContext, useContext, useEffect, useRef, useState } from "react";
 
 export type Theme = "dark" | "light";
 
-interface ThemeContextValue {
+export interface ThemeContextValue {
   theme: Theme;
+  mounted: boolean;
   toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-const readInitialTheme = (): Theme =>
-  typeof document !== "undefined" && document.documentElement.dataset.theme === "light"
-    ? "light"
-    : "dark";
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(readInitialTheme);
+  const [theme, setTheme] = useState<Theme>("dark");
+  const [mounted, setMounted] = useState(false);
+  const hasSyncedStampedTheme = useRef(false);
+
+  useEffect(() => {
+    if (hasSyncedStampedTheme.current) {
+      return;
+    }
+    hasSyncedStampedTheme.current = true;
+    const stamped = document.documentElement.dataset.theme === "light" ? "light" : "dark";
+    setTheme(stamped);
+    setMounted(true);
+  }, []);
 
   const toggleTheme = () => {
-    setTheme((current) => {
-      const next = current === "dark" ? "light" : "dark";
-      document.documentElement.dataset.theme = next;
-      window.localStorage.setItem("theme", next);
-      return next;
-    });
+    const next: Theme = theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    window.localStorage.setItem("theme", next);
+    setTheme(next);
   };
 
-  return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={{ theme, mounted, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
 }
 
 export const useTheme = (): ThemeContextValue => {
