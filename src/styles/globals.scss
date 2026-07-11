@@ -28,13 +28,22 @@
   --radius-full: 999px;
 
   // Font sizes
+  --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-md: 1rem;
   --font-size-lg: 1.25rem;
   --font-size-xl: 1.75rem;
 
   // Font family
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans:
+    var(--font-body-next), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display:
+    var(--font-display-next), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
+
+  // Letter spacing
+  --tracking-tight: -0.025em;
+  --tracking-wide: 0.025em;
 }
 
 *,
@@ -75,6 +84,15 @@ a {
   &:hover {
     text-decoration: underline;
   }
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: var(--tracking-tight);
 }
 
 :root[data-theme="light"] {
