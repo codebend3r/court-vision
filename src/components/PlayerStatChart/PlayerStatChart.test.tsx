@@ -50,7 +50,7 @@ describe("PlayerStatChart", () => {
     renderChart();
 
     const chips = screen.getAllByRole("button");
-    expect(chips).toHaveLength(11);
+    expect(chips).toHaveLength(10);
 
     const pressedCount = chips.filter(
       (chip) => chip.getAttribute("aria-pressed") === "true",
@@ -126,7 +126,7 @@ describe("PlayerStatChart", () => {
   it("shows only raw counting stats in game mode", () => {
     const { container } = renderChart({ mode: "game" });
 
-    expect(screen.getAllByRole("button")).toHaveLength(8);
+    expect(screen.getAllByRole("button")).toHaveLength(7);
     expect(screen.queryByRole("button", { name: "FG%" })).not.toBeInTheDocument();
     expect(screen.queryByText("Shooting percentages")).not.toBeInTheDocument();
     expect(container.querySelectorAll(".recharts-line")).toHaveLength(7);
@@ -142,13 +142,14 @@ describe("PlayerStatChart", () => {
     expect(container.querySelectorAll(".recharts-line")).toHaveLength(9);
   });
 
-  it("gives each chip a color dot matching its stat's permanent color", () => {
+  it("gives each chip an icon matching its stat's permanent color", () => {
     renderChart();
 
     const ptsChip = screen.getByRole("button", { name: "PTS" });
-    const dot = ptsChip.querySelector("span");
+    const icon = ptsChip.querySelector("span");
 
-    expect(dot).toHaveStyle({ backgroundColor: "#3987e5" });
+    expect(icon?.querySelector("svg")).toBeInTheDocument();
+    expect(icon).toHaveStyle({ color: "#3987e5" });
   });
 
   it("marks zero-minute games when the DNP toggle is enabled and writes it to the URL", async () => {
@@ -156,13 +157,10 @@ describe("PlayerStatChart", () => {
     const updates: UrlUpdateEvent[] = [];
     const { container } = renderChart({ onUrlUpdate: (event) => updates.push(event) });
 
-    await user.click(screen.getByRole("button", { name: "Show DNP / DNP-CD" }));
+    await user.click(screen.getByRole("switch", { name: "Show DNP / DNP-CD" }));
 
-    expect(screen.getByRole("button", { name: "Show DNP / DNP-CD" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    expect(container.querySelectorAll(".recharts-reference-line")).toHaveLength(2);
+    expect(screen.getByRole("switch", { name: "Show DNP / DNP-CD" })).toBeChecked();
+    expect(container.querySelectorAll("[data-dnp-marker]")).toHaveLength(2);
     expect(updates.at(-1)?.queryString).toBe("?dnp=true");
   });
 

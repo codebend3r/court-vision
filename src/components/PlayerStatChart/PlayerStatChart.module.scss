@@ -35,16 +35,27 @@
   }
 }
 
-.dnpToggle {
-  @extend .chip;
-  justify-self: start;
-}
-
 .dot {
   display: block;
   width: 10px;
   height: 10px;
   border-radius: var(--radius-lg);
+}
+
+.statIcon {
+  display: grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+
+  svg {
+    display: block;
+  }
+}
+
+.dnpMarker {
+  fill: #f4d35e;
+  filter: drop-shadow(0 0 3px rgb(244 211 94 / 65%));
 }
 
 .panel {

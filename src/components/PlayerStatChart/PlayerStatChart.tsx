@@ -1,6 +1,19 @@
 "use client";
 
 import { type ReactElement } from "react";
+import {
+  ArrowRight,
+  ArrowUpFromLine,
+  CircleGauge,
+  CirclePlus,
+  Crosshair,
+  Shield,
+  Sparkles,
+  Target,
+  Timer,
+  Undo2,
+  type LucideIcon,
+} from "lucide-react";
 import { parseAsBoolean, parseAsString, useQueryState } from "nuqs";
 import {
   CartesianGrid,
@@ -17,6 +30,7 @@ import {
 import type { CumulativePoint } from "@/lib/stats/cumulative";
 import type { StatMode } from "@/lib/stats/searchParams";
 import { useTheme } from "@/lib/theme/ThemeProvider";
+import { Switch } from "@/components/Switch/Switch";
 
 import styles from "@/components/PlayerStatChart/PlayerStatChart.module.scss";
 import {
@@ -65,7 +79,18 @@ const COUNTING_TITLE_BY_MODE: Record<StatMode, string> = {
   per36: "Per 36 minutes",
 };
 
-const DNP_MARKER_COLOR = "#e66767";
+const STAT_ICONS: Record<StatKey, LucideIcon> = {
+  pts: CirclePlus,
+  reb: ArrowUpFromLine,
+  ast: ArrowRight,
+  stl: Sparkles,
+  blk: Shield,
+  min: Timer,
+  tov: Undo2,
+  fgPct: Target,
+  fg3Pct: CircleGauge,
+  ftPct: Crosshair,
+};
 
 const isCumulativePoint = (value: unknown): value is CumulativePoint => {
   if (typeof value !== "object" || value === null) {
@@ -83,6 +108,28 @@ const isCumulativePoint = (value: unknown): value is CumulativePoint => {
     (typeof value.pts === "number" || value.pts === null)
   );
 };
+
+function DnpMarker({
+  viewBox,
+}: {
+  viewBox?: { x?: number; y?: number; height?: number };
+}): ReactElement | null {
+  const { x, y, height } = viewBox ?? {};
+  if (typeof x !== "number" || typeof y !== "number" || typeof height !== "number") {
+    return null;
+  }
+
+  return (
+    <circle
+      data-dnp-marker
+      aria-hidden="true"
+      className={styles.dnpMarker}
+      cx={x}
+      cy={y + height}
+      r={4}
+    />
+  );
+}
 
 const renderEndLabel = ({
   label,
@@ -188,8 +235,8 @@ function StatLineChart({
               <ReferenceLine
                 key={point.gameIndex}
                 x={point.gameIndex}
-                stroke={DNP_MARKER_COLOR}
-                strokeDasharray="4 3"
+                stroke="none"
+                label={<DnpMarker />}
               />
             ))}
         {metas.map((meta) => (
@@ -241,29 +288,31 @@ export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; m
   return (
     <div className={styles.root}>
       <div className={styles.chips}>
-        {visibleStatMeta.map((meta) => (
-          <button
-            key={meta.key}
-            type="button"
-            aria-pressed={active.includes(meta.key) && !isDisabled(meta)}
-            disabled={isDisabled(meta)}
-            onClick={() => toggle(meta.key)}
-            className={styles.chip}
-          >
-            <span className={styles.dot} style={{ backgroundColor: meta.color }} />
-            {meta.label}
-          </button>
-        ))}
+        {visibleStatMeta.map((meta) => {
+          const Icon = STAT_ICONS[meta.key];
+          return (
+            <button
+              key={meta.key}
+              type="button"
+              aria-pressed={active.includes(meta.key) && !isDisabled(meta)}
+              disabled={isDisabled(meta)}
+              onClick={() => toggle(meta.key)}
+              className={styles.chip}
+            >
+              <span className={styles.statIcon} style={{ color: meta.color }} aria-hidden="true">
+                <Icon size={16} strokeWidth={2} />
+              </span>
+              {meta.label}
+            </button>
+          );
+        })}
       </div>
 
-      <button
-        type="button"
-        aria-pressed={showDnp}
-        onClick={() => setShowDnp(!showDnp)}
-        className={styles.dnpToggle}
-      >
-        Show DNP / DNP-CD
-      </button>
+      <Switch
+        label="Show DNP / DNP-CD"
+        checked={showDnp}
+        onChange={({ checked }) => void setShowDnp(checked)}
+      />
 
       <section className={styles.panel}>
         <h3 className={styles.panelTitle}>{COUNTING_TITLE_BY_MODE[mode]}</h3>
