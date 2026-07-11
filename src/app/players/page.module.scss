@@ -14,6 +14,7 @@
 
 .table {
   width: 100%;
+  min-width: 72rem;
   border-collapse: collapse;
 
   th {
@@ -34,6 +35,16 @@
   tr:hover td {
     background: var(--color-surface);
   }
+}
+
+.tableScroller {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.numeric {
+  text-align: right !important;
+  white-space: nowrap;
 }
 
 .nameCell {

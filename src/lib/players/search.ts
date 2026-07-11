@@ -12,6 +12,20 @@ export interface PlayerRow {
   teamAbbr: string | null;
   position: string | null;
   nbaPersonId: number | null;
+  seasonStats?: Array<{
+    gamesPlayed: number;
+    fgm: number;
+    fga: number;
+    fg3m: number;
+    ftm: number;
+    fta: number;
+    reb: number;
+    ast: number;
+    stl: number;
+    blk: number;
+    tov: number;
+    pts: number;
+  }>;
 }
 
 export interface PlayersSearchResult {
@@ -28,6 +42,25 @@ const rowSelect = {
   teamAbbr: true,
   position: true,
   nbaPersonId: true,
+  seasonStats: {
+    where: { seasonType: "Regular Season" },
+    orderBy: { season: "desc" as const },
+    take: 1,
+    select: {
+      gamesPlayed: true,
+      fgm: true,
+      fga: true,
+      fg3m: true,
+      ftm: true,
+      fta: true,
+      reb: true,
+      ast: true,
+      stl: true,
+      blk: true,
+      tov: true,
+      pts: true,
+    },
+  },
 };
 
 export const searchPlayers = async (args: PlayersSearchParams): Promise<PlayersSearchResult> => {

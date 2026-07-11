@@ -31,6 +31,22 @@ describe("PlayersPage", () => {
           teamAbbr: "GSW",
           position: "G",
           nbaPersonId: null,
+          seasonStats: [
+            {
+              gamesPlayed: 10,
+              pts: 250,
+              reb: 50,
+              ast: 60,
+              stl: 15,
+              blk: 5,
+              fg3m: 40,
+              fgm: 90,
+              fga: 180,
+              ftm: 30,
+              fta: 40,
+              tov: 20,
+            },
+          ],
         },
         {
           id: 2,
@@ -57,6 +73,10 @@ describe("PlayersPage", () => {
     expect(screen.getByRole("link", { name: "Draymond" })).toHaveAttribute("href", "/players/2");
     expect(screen.getByRole("link", { name: "Green" })).toHaveAttribute("href", "/players/2");
     expect(screen.getByText("Showing 26–50 of 60")).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "PTS" })).toBeInTheDocument();
+    expect(screen.getByText("25.0")).toBeInTheDocument();
+    expect(screen.getByText(".500")).toBeInTheDocument();
+    expect(screen.getByText(".750")).toBeInTheDocument();
   });
 
   it("renders sortable name headers with the default first name ascending sort", async () => {

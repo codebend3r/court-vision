@@ -33,6 +33,25 @@ const expectedSelect = {
   teamAbbr: true,
   position: true,
   nbaPersonId: true,
+  seasonStats: {
+    where: { seasonType: "Regular Season" },
+    orderBy: { season: "desc" },
+    take: 1,
+    select: {
+      gamesPlayed: true,
+      fgm: true,
+      fga: true,
+      fg3m: true,
+      ftm: true,
+      fta: true,
+      reb: true,
+      ast: true,
+      stl: true,
+      blk: true,
+      tov: true,
+      pts: true,
+    },
+  },
 };
 
 describe("searchPlayers", () => {
