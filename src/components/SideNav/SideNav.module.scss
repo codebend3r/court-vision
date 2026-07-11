@@ -3,8 +3,33 @@
 .nav {
   display: grid;
   align-content: start;
+  width: 220px;
   padding: var(--space-4) var(--space-3);
   border-right: 1px solid var(--color-border);
+  transition: width 160ms ease;
+
+  &[data-collapsed="true"] {
+    width: 64px;
+  }
+}
+
+.collapseButton {
+  display: grid;
+  place-items: center;
+  justify-self: end;
+  width: var(--control-height);
+  height: var(--control-height);
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-text);
+  }
 }
 
 .list {
@@ -21,6 +46,10 @@
 
 .link {
   @include micro-label;
+  display: grid;
+  grid-template-columns: 0 1fr;
+  align-items: center;
+  overflow: hidden;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
 
@@ -28,6 +57,42 @@
     color: var(--color-text);
     background: var(--color-surface);
     text-decoration: none;
+  }
+}
+
+.shortLabel {
+  width: 0;
+  overflow: hidden;
+  text-align: center;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+.nav[data-collapsed="true"] {
+  .collapseButton {
+    justify-self: center;
+  }
+
+  .link {
+    grid-template-columns: 1fr 0;
+    padding-inline: var(--space-2);
+  }
+
+  .shortLabel {
+    width: auto;
+  }
+
+  .label {
+    width: 0;
+    overflow: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav {
+    transition: none;
   }
 }
 
