@@ -17,7 +17,7 @@ import {
 
 import styles from "@/components/PlayersSearchControls/PlayersSearchControls.module.scss";
 
-export interface PlayersSearchControlsProps {
+export type PlayersSearchControlsProps = {
   q: string;
   page: number;
   size: number;
@@ -27,7 +27,7 @@ export interface PlayersSearchControlsProps {
   dir: SortDirection;
   range: PlayerGameRange;
   mode: PlayerStatMode;
-}
+};
 
 const DEBOUNCE_MS = 300;
 

@@ -1,10 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-interface SideNavState {
+type SideNavState = {
   isCollapsed: boolean;
   toggleCollapsed: () => void;
-}
+};
 
 export const useSideNavStore = create<SideNavState>()(
   persist(

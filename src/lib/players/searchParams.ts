@@ -41,7 +41,7 @@ export type PlayerStatMode = "average" | "total";
 export const DEFAULT_SORT_KEY: PlayerSortKey = "firstName";
 export const DEFAULT_SORT_DIR: SortDirection = "desc";
 
-export interface PlayersSearchParams {
+export type PlayersSearchParams = {
   q: string;
   page: number;
   size: number;
@@ -50,7 +50,7 @@ export interface PlayersSearchParams {
   dir: SortDirection;
   range: PlayerGameRange;
   mode: PlayerStatMode;
-}
+};
 
 const isPlayerSortKey = (value: string | undefined): value is PlayerSortKey =>
   PLAYER_SORT_KEYS.some((key) => key === value);

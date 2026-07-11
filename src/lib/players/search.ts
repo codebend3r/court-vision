@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 import { PlayersSearchParams } from "@/lib/players/searchParams";
 
-export interface PlayerRow {
+export type PlayerRow = {
   id: number;
   firstName: string;
   lastName: string;
@@ -28,9 +28,9 @@ export interface PlayerRow {
   }>;
   stats?: PlayerStats;
   gameLogs?: PlayerGameStats[];
-}
+};
 
-export interface PlayerStats {
+export type PlayerStats = {
   gamesPlayed: number;
   fgm: number;
   fga: number;
@@ -43,7 +43,7 @@ export interface PlayerStats {
   blk: number;
   tov: number;
   pts: number;
-}
+};
 
 type CountingStatKey =
   | "fgm"
@@ -60,11 +60,11 @@ type CountingStatKey =
 type SortableCountingStatKey = "pts" | "reb" | "ast" | "stl" | "blk" | "fg3m" | "tov";
 type PlayerGameStats = Omit<PlayerStats, "gamesPlayed">;
 
-export interface PlayersSearchResult {
+export type PlayersSearchResult = {
   rows: PlayerRow[];
   total: number;
   page: number;
-}
+};
 
 const statSelect = {
   fgm: true,
