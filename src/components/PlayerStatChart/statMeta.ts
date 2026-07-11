@@ -31,4 +31,4 @@ export const STAT_META: StatMeta[] = [
   { key: "ftPct", label: "FT%", panel: "shooting", color: "#c98500" },
 ];
 
-export const DEFAULT_ACTIVE_KEYS: StatKey[] = ["pts", "reb", "ast"];
+export const DEFAULT_ACTIVE_KEYS: StatKey[] = STAT_META.map((meta) => meta.key);

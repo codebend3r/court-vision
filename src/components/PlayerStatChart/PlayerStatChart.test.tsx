@@ -27,39 +27,40 @@ const buildSeries = (): CumulativePoint[] =>
   }));
 
 describe("PlayerStatChart", () => {
-  it("renders a chip per stat with only the defaults pressed", () => {
+  it("renders a chip per stat with every stat pressed by default", () => {
     render(<PlayerStatChart series={buildSeries()} />);
 
     const chips = screen.getAllByRole("button");
     expect(chips).toHaveLength(10);
 
-    const pressedLabels = chips
-      .filter((chip) => chip.getAttribute("aria-pressed") === "true")
-      .map((chip) => chip.textContent);
+    const pressedCount = chips.filter(
+      (chip) => chip.getAttribute("aria-pressed") === "true",
+    ).length;
 
-    expect(pressedLabels).toEqual(["PTS", "REB", "AST"]);
+    expect(pressedCount).toBe(10);
   });
 
-  it("renders one recharts line per default-active counting stat", () => {
+  it("renders every line and both panels by default", () => {
     const { container } = render(<PlayerStatChart series={buildSeries()} />);
 
-    expect(container.querySelectorAll(".recharts-line")).toHaveLength(3);
+    expect(container.querySelectorAll(".recharts-line")).toHaveLength(10);
+    expect(screen.getByText("Shooting percentages")).toBeInTheDocument();
   });
 
-  it("adds a line per toggled-on stat and reveals the shooting panel on demand", async () => {
+  it("removes a line per toggled-off stat and hides the shooting panel when its stats are off", async () => {
     const user = userEvent.setup();
     const { container } = render(<PlayerStatChart series={buildSeries()} />);
 
-    expect(screen.queryByText("Shooting percentages")).not.toBeInTheDocument();
-
     await user.click(screen.getByRole("button", { name: "TOV" }));
 
-    expect(container.querySelectorAll(".recharts-line")).toHaveLength(4);
+    expect(container.querySelectorAll(".recharts-line")).toHaveLength(9);
 
     await user.click(screen.getByRole("button", { name: "FG%" }));
+    await user.click(screen.getByRole("button", { name: "3P%" }));
+    await user.click(screen.getByRole("button", { name: "FT%" }));
 
-    expect(screen.getByText("Shooting percentages")).toBeInTheDocument();
-    expect(container.querySelectorAll(".recharts-line")).toHaveLength(5);
+    expect(screen.queryByText("Shooting percentages")).not.toBeInTheDocument();
+    expect(container.querySelectorAll(".recharts-line")).toHaveLength(6);
   });
 
   it("shows a muted hint instead of a chart when every counting stat is toggled off", async () => {
@@ -69,6 +70,10 @@ describe("PlayerStatChart", () => {
     await user.click(screen.getByRole("button", { name: "PTS" }));
     await user.click(screen.getByRole("button", { name: "REB" }));
     await user.click(screen.getByRole("button", { name: "AST" }));
+    await user.click(screen.getByRole("button", { name: "STL" }));
+    await user.click(screen.getByRole("button", { name: "BLK" }));
+    await user.click(screen.getByRole("button", { name: "MIN" }));
+    await user.click(screen.getByRole("button", { name: "TOV" }));
 
     expect(screen.getByText("Select a stat to plot")).toBeInTheDocument();
   });
