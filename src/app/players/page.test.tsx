@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { searchPlayers } from "@/lib/players/search";
 
-import PlayersPage from "./page";
+import PlayersPage from "@/app/players/page";
 
 vi.mock("@/lib/players/search", () => ({
   searchPlayers: vi.fn(),

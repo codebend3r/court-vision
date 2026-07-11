@@ -2,13 +2,14 @@ import { notFound } from "next/navigation";
 import type { SearchParams } from "nuqs/server";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
+import { PlayerGameLogTable } from "@/components/PlayerGameLogTable/PlayerGameLogTable";
 import { PlayerStatChart } from "@/components/PlayerStatChart/PlayerStatChart";
 import { PlayerStatFilters } from "@/components/PlayerStatFilters/PlayerStatFilters";
 import { prisma } from "@/lib/prisma";
 import { buildStatSeries } from "@/lib/stats/cumulative";
 import { gamesForSpan, loadStatFilters } from "@/lib/stats/searchParams";
 
-import styles from "./page.module.scss";
+import styles from "@/app/players/[playerId]/page.module.scss";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +63,12 @@ export default async function PlayerPage({
         <>
           <PlayerStatFilters />
           <PlayerStatChart series={series} mode={mode} />
+          <PlayerGameLogTable
+            rows={logs.map((log) => ({
+              ...log,
+              gameDate: log.gameDate.toISOString(),
+            }))}
+          />
         </>
       )}
     </main>

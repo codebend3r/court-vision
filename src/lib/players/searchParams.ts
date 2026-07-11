@@ -1,5 +1,5 @@
 export const PAGE_SIZES: readonly number[] = [10, 25, 50, 100];
-export const DEFAULT_PAGE_SIZE = 25;
+export const DEFAULT_PAGE_SIZE = 50;
 export const MAX_QUERY_LENGTH = 100;
 
 export const PLAYER_SORT_KEYS = ["firstName", "lastName"] as const;

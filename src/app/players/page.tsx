@@ -10,7 +10,7 @@ import {
   type SortDirection,
 } from "@/lib/players/searchParams";
 
-import styles from "./page.module.scss";
+import styles from "@/app/players/page.module.scss";
 
 export const dynamic = "force-dynamic";
 

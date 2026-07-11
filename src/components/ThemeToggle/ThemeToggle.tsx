@@ -2,7 +2,7 @@
 
 import { useTheme } from "@/lib/theme/ThemeProvider";
 
-import styles from "./ThemeToggle.module.scss";
+import styles from "@/components/ThemeToggle/ThemeToggle.module.scss";
 
 export function ThemeToggle() {
   const { theme, mounted, toggleTheme } = useTheme();

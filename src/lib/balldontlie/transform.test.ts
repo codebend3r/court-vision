@@ -9,7 +9,7 @@ import {
   toPlayerInput,
   deriveGameContext,
 } from "./transform";
-import { BdlStat } from "./schemas";
+import { BdlStat } from "@/lib/balldontlie/schemas";
 
 const teamAbbrById = new Map<number, string>([
   [10, "GSW"],

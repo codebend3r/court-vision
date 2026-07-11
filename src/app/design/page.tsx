@@ -1,7 +1,7 @@
 import { ChartPaletteSwatches } from "@/components/ChartPaletteSwatches/ChartPaletteSwatches";
 import { TokenSwatch } from "@/components/TokenSwatch/TokenSwatch";
 
-import styles from "./page.module.scss";
+import styles from "@/app/design/page.module.scss";
 
 const COLOR_TOKENS: readonly string[] = [
   "--color-bg",

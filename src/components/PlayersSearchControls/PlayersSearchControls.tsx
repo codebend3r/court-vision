@@ -11,7 +11,7 @@ import {
   type SortDirection,
 } from "@/lib/players/searchParams";
 
-import styles from "./PlayersSearchControls.module.scss";
+import styles from "@/components/PlayersSearchControls/PlayersSearchControls.module.scss";
 
 export interface PlayersSearchControlsProps {
   q: string;

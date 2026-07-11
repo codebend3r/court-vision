@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { prisma } from "@/lib/prisma";
 
-import { mapHeadshots } from "./map";
-import * as sources from "./sources";
-import type { NbaPlayerIndexRow } from "./sources";
+import { mapHeadshots } from "@/lib/headshots/map";
+import * as sources from "@/lib/headshots/sources";
+import type { NbaPlayerIndexRow } from "@/lib/headshots/sources";
 
 interface OurPlayerRow {
   id: number;

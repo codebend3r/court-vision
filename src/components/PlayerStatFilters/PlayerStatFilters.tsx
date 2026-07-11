@@ -11,10 +11,11 @@ import {
   type StatSpan,
 } from "@/lib/stats/searchParams";
 
-import styles from "./PlayerStatFilters.module.scss";
+import styles from "@/components/PlayerStatFilters/PlayerStatFilters.module.scss";
 
 const MODE_LABELS: Record<StatMode, string> = {
   avg: "Avg",
+  game: "Game",
   totals: "Totals",
   per36: "Per 36",
 };

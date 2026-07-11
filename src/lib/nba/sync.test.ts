@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
-import * as endpoints from "./endpoints";
+import * as endpoints from "@/lib/nba/endpoints";
 import * as persist from "@/lib/stats/persist";
-import { syncNba } from "./sync";
+import { syncNba } from "@/lib/nba/sync";
 
 const playerIndexRow = {
   PERSON_ID: 1629029,

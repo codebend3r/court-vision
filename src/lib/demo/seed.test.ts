@@ -4,7 +4,7 @@ import * as endpoints from "@/lib/balldontlie/endpoints";
 import { BdlGame, BdlPlayer, BdlTeam } from "@/lib/balldontlie/schemas";
 import * as persist from "@/lib/stats/persist";
 
-import { seedDemo } from "./seed";
+import { seedDemo } from "@/lib/demo/seed";
 
 const teams: BdlTeam[] = [
   { id: 18, abbreviation: "MIN", full_name: "Minnesota Timberwolves" },

@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { PlayerAvatar } from "./PlayerAvatar";
+import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 
 afterEach(cleanup);
 

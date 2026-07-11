@@ -1,16 +1,19 @@
 import type { Theme } from "@/lib/theme/ThemeProvider";
 
-export type StatKey =
-  | "pts"
-  | "reb"
-  | "ast"
-  | "stl"
-  | "blk"
-  | "min"
-  | "tov"
-  | "fgPct"
-  | "fg3Pct"
-  | "ftPct";
+export const STAT_KEYS = [
+  "pts",
+  "reb",
+  "ast",
+  "stl",
+  "blk",
+  "min",
+  "tov",
+  "fgPct",
+  "fg3Pct",
+  "ftPct",
+] as const;
+
+export type StatKey = (typeof STAT_KEYS)[number];
 export type StatPanel = "counting" | "shooting";
 
 export interface StatMeta {

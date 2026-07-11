@@ -1,11 +1,12 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { withNuqsTestingAdapter, type UrlUpdateEvent } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { CumulativePoint } from "@/lib/stats/cumulative";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
-import { PlayerStatChart } from "./PlayerStatChart";
+import { PlayerStatChart } from "@/components/PlayerStatChart/PlayerStatChart";
 
 afterEach(cleanup);
 
@@ -15,6 +16,7 @@ const buildSeries = (): CumulativePoint[] =>
     gameDate: new Date(2026, 0, gameIndex).toISOString(),
     matchup: `vs. OPP${gameIndex}`,
     winLoss: gameIndex % 2 === 0 ? "L" : "W",
+    dnp: gameIndex === 3,
     min: 30 + gameIndex,
     pts: 20 + gameIndex,
     reb: 5 + gameIndex,
@@ -27,16 +29,28 @@ const buildSeries = (): CumulativePoint[] =>
     ftPct: 80 + gameIndex,
   }));
 
+const renderChart = ({
+  mode = "avg",
+  searchParams = {},
+  onUrlUpdate,
+}: {
+  mode?: "avg" | "game" | "totals" | "per36";
+  searchParams?: Record<string, string>;
+  onUrlUpdate?: (event: UrlUpdateEvent) => void;
+} = {}) =>
+  render(
+    <ThemeProvider>
+      <PlayerStatChart series={buildSeries()} mode={mode} />
+    </ThemeProvider>,
+    { wrapper: withNuqsTestingAdapter({ hasMemory: true, onUrlUpdate, searchParams }) },
+  );
+
 describe("PlayerStatChart", () => {
   it("renders a chip per stat with every stat pressed by default", () => {
-    render(
-      <ThemeProvider>
-        <PlayerStatChart series={buildSeries()} mode="avg" />
-      </ThemeProvider>,
-    );
+    renderChart();
 
     const chips = screen.getAllByRole("button");
-    expect(chips).toHaveLength(10);
+    expect(chips).toHaveLength(11);
 
     const pressedCount = chips.filter(
       (chip) => chip.getAttribute("aria-pressed") === "true",
@@ -46,11 +60,7 @@ describe("PlayerStatChart", () => {
   });
 
   it("renders every line and both panels by default", () => {
-    const { container } = render(
-      <ThemeProvider>
-        <PlayerStatChart series={buildSeries()} mode="avg" />
-      </ThemeProvider>,
-    );
+    const { container } = renderChart();
 
     expect(container.querySelectorAll(".recharts-line")).toHaveLength(10);
     expect(screen.getByText("Shooting percentages")).toBeInTheDocument();
@@ -58,11 +68,7 @@ describe("PlayerStatChart", () => {
 
   it("removes a line per toggled-off stat and hides the shooting panel when its stats are off", async () => {
     const user = userEvent.setup();
-    const { container } = render(
-      <ThemeProvider>
-        <PlayerStatChart series={buildSeries()} mode="avg" />
-      </ThemeProvider>,
-    );
+    const { container } = renderChart();
 
     await user.click(screen.getByRole("button", { name: "TOV" }));
 
@@ -78,11 +84,7 @@ describe("PlayerStatChart", () => {
 
   it("shows a muted hint instead of a chart when every counting stat is toggled off", async () => {
     const user = userEvent.setup();
-    render(
-      <ThemeProvider>
-        <PlayerStatChart series={buildSeries()} mode="avg" />
-      </ThemeProvider>,
-    );
+    renderChart();
 
     await user.click(screen.getByRole("button", { name: "PTS" }));
     await user.click(screen.getByRole("button", { name: "REB" }));
@@ -96,11 +98,7 @@ describe("PlayerStatChart", () => {
   });
 
   it("titles the counting panel per mode", () => {
-    const { rerender } = render(
-      <ThemeProvider>
-        <PlayerStatChart series={buildSeries()} mode="avg" />
-      </ThemeProvider>,
-    );
+    const { rerender } = renderChart();
     expect(screen.getByText("Per-game averages")).toBeInTheDocument();
 
     rerender(
@@ -116,14 +114,26 @@ describe("PlayerStatChart", () => {
       </ThemeProvider>,
     );
     expect(screen.getByText("Per 36 minutes")).toBeInTheDocument();
+
+    rerender(
+      <ThemeProvider>
+        <PlayerStatChart series={buildSeries()} mode="game" />
+      </ThemeProvider>,
+    );
+    expect(screen.getByText("Per-game stats")).toBeInTheDocument();
+  });
+
+  it("shows only raw counting stats in game mode", () => {
+    const { container } = renderChart({ mode: "game" });
+
+    expect(screen.getAllByRole("button")).toHaveLength(8);
+    expect(screen.queryByRole("button", { name: "FG%" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Shooting percentages")).not.toBeInTheDocument();
+    expect(container.querySelectorAll(".recharts-line")).toHaveLength(7);
   });
 
   it("disables the MIN chip and drops its line in per36 mode", () => {
-    const { container } = render(
-      <ThemeProvider>
-        <PlayerStatChart series={buildSeries()} mode="per36" />
-      </ThemeProvider>,
-    );
+    const { container } = renderChart({ mode: "per36" });
 
     const minChip = screen.getByRole("button", { name: "MIN" });
     expect(minChip).toBeDisabled();
@@ -133,15 +143,42 @@ describe("PlayerStatChart", () => {
   });
 
   it("gives each chip a color dot matching its stat's permanent color", () => {
-    render(
-      <ThemeProvider>
-        <PlayerStatChart series={buildSeries()} mode="avg" />
-      </ThemeProvider>,
-    );
+    renderChart();
 
     const ptsChip = screen.getByRole("button", { name: "PTS" });
     const dot = ptsChip.querySelector("span");
 
     expect(dot).toHaveStyle({ backgroundColor: "#3987e5" });
+  });
+
+  it("marks zero-minute games when the DNP toggle is enabled and writes it to the URL", async () => {
+    const user = userEvent.setup();
+    const updates: UrlUpdateEvent[] = [];
+    const { container } = renderChart({ onUrlUpdate: (event) => updates.push(event) });
+
+    await user.click(screen.getByRole("button", { name: "Show DNP / DNP-CD" }));
+
+    expect(screen.getByRole("button", { name: "Show DNP / DNP-CD" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(container.querySelectorAll(".recharts-reference-line")).toHaveLength(2);
+    expect(updates.at(-1)?.queryString).toBe("?dnp=true");
+  });
+
+  it("restores visible stats from the URL and writes each chip change back", async () => {
+    const user = userEvent.setup();
+    const updates: UrlUpdateEvent[] = [];
+    renderChart({
+      searchParams: { stats: "pts,reb" },
+      onUrlUpdate: (event) => updates.push(event),
+    });
+
+    expect(screen.getByRole("button", { name: "PTS" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "AST" })).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(screen.getByRole("button", { name: "AST" }));
+
+    expect(updates.at(-1)?.queryString).toBe("?stats=pts,reb,ast");
   });
 });

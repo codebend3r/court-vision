@@ -6,9 +6,11 @@ export interface NetlifyImageLoaderArgs {
 
 const netlifyImageLoader = ({ src, width, quality }: NetlifyImageLoaderArgs): string => {
   // Outside Netlify (bun dev, next start) /.netlify/images does not exist,
-  // so serve the source image directly.
+  // so serve the source image directly. A custom next/image loader must still
+  // return a URL that includes the requested width.
   if (process.env.NODE_ENV === "development") {
-    return src;
+    const separator = src.includes("?") ? "&" : "?";
+    return `${src}${separator}w=${width}`;
   }
   const params = new URLSearchParams({
     url: src,

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
-import { ThemeToggle } from "./ThemeToggle";
+import { ThemeToggle } from "@/components/ThemeToggle/ThemeToggle";
 
 afterEach(() => {
   cleanup();

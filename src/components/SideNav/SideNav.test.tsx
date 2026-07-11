@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { SideNav } from "./SideNav";
+import { SideNav } from "@/components/SideNav/SideNav";
 
 const pathnameMock = vi.hoisted(() => ({ current: "/" }));
 

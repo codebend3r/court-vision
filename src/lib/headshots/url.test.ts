@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { headshotUrl } from "./url";
+import { headshotUrl } from "@/lib/headshots/url";
 
 describe("headshotUrl", () => {
   it("builds the exact NBA CDN headshot URL for a person id", () => {

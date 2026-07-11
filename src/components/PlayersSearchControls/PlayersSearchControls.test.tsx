@@ -1,7 +1,10 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { PlayersSearchControls, type PlayersSearchControlsProps } from "./PlayersSearchControls";
+import {
+  PlayersSearchControls,
+  type PlayersSearchControlsProps,
+} from "@/components/PlayersSearchControls/PlayersSearchControls";
 
 const replace = vi.fn();
 
@@ -23,7 +26,7 @@ afterEach(() => {
 const defaultProps: PlayersSearchControlsProps = {
   q: "",
   page: 1,
-  size: 25,
+  size: 50,
   includeRetired: false,
   totalPages: 1,
   sort: "firstName",
@@ -79,29 +82,29 @@ describe("PlayersSearchControls", () => {
     render(<PlayersSearchControls {...defaultProps} page={3} />);
 
     const select = screen.getByLabelText("Page size");
-    fireEvent.change(select, { target: { value: "50" } });
+    fireEvent.change(select, { target: { value: "25" } });
 
     expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith("/players?size=50");
+    expect(replace).toHaveBeenCalledWith("/players?size=25");
   });
 
   it("navigates immediately on retired toggle, preserving q and size", () => {
-    render(<PlayersSearchControls {...defaultProps} q="cur" size={50} />);
+    render(<PlayersSearchControls {...defaultProps} q="cur" size={25} />);
 
     const checkbox = screen.getByRole("checkbox");
     fireEvent.click(checkbox);
 
     expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith("/players?q=cur&size=50&retired=1");
+    expect(replace).toHaveBeenCalledWith("/players?q=cur&size=25&retired=1");
   });
 
   it("navigates to the next page, preserving size", () => {
-    render(<PlayersSearchControls {...defaultProps} page={2} size={50} totalPages={3} />);
+    render(<PlayersSearchControls {...defaultProps} page={2} size={25} totalPages={3} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
 
     expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith("/players?page=3&size=50");
+    expect(replace).toHaveBeenCalledWith("/players?page=3&size=25");
   });
 
   it("preserves a non-default sort and dir on navigation", () => {
@@ -166,13 +169,13 @@ describe("PlayersSearchControls", () => {
     fireEvent.change(input, { target: { value: "cur" } });
 
     // Immediately change size (before timer fires). This should cancel the pending timer.
-    fireEvent.change(select, { target: { value: "50" } });
+    fireEvent.change(select, { target: { value: "25" } });
 
     // Advance 300ms. The pending debounce should have been cancelled,
     // so replace should be called exactly ONCE (the size navigation).
     advance(300);
 
     expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith("/players?size=50");
+    expect(replace).toHaveBeenCalledWith("/players?size=25");
   });
 });

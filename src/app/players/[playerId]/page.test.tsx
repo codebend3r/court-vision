@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
-import PlayerPage from "./page";
+import PlayerPage from "@/app/players/[playerId]/page";
 
 const renderPage = async ({
   playerId,

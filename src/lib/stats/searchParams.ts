@@ -1,9 +1,9 @@
 import { createLoader, parseAsStringLiteral } from "nuqs/server";
 
-export type StatMode = "avg" | "totals" | "per36";
+export type StatMode = "avg" | "game" | "totals" | "per36";
 export type StatSpan = "10" | "20" | "30" | "season";
 
-export const STAT_MODES: readonly StatMode[] = ["avg", "totals", "per36"];
+export const STAT_MODES: readonly StatMode[] = ["avg", "game", "totals", "per36"];
 export const STAT_SPANS: readonly StatSpan[] = ["10", "20", "30", "season"];
 
 export const DEFAULT_MODE: StatMode = "avg";

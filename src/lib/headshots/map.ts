@@ -1,7 +1,7 @@
 import { normalizeName } from "@/lib/demo/names";
 import { prisma } from "@/lib/prisma";
 
-import { fetchNbaPlayerIndex } from "./sources";
+import { fetchNbaPlayerIndex } from "@/lib/headshots/sources";
 
 // Bun sets `import.meta.main` on the entry module. @types/node's ImportMeta
 // doesn't declare it, so augment the global interface (declaration merging,

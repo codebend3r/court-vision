@@ -1,13 +1,13 @@
 import { SyncSummary, upsertGameLogs, upsertPlayers, upsertSeasonStats } from "@/lib/stats/persist";
 
-import { REGULAR_SEASON_DATE_RANGES } from "./constants";
+import { REGULAR_SEASON_DATE_RANGES } from "@/lib/nba/constants";
 import {
   NbaClientDeps,
   fetchPlayerGameLogs,
   fetchPlayerIndex,
   fetchSeasonStats,
 } from "./endpoints";
-import { toGameLogInput, toPlayerInput, toSeasonStatsInput } from "./transform";
+import { toGameLogInput, toPlayerInput, toSeasonStatsInput } from "@/lib/nba/transform";
 
 // Bun sets `import.meta.main` on the entry module. @types/node's ImportMeta
 // doesn't declare it, so augment the global interface (declaration merging,

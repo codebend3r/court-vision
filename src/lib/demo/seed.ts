@@ -10,9 +10,9 @@ import { aggregateSeasonStats, toPlayerInput } from "@/lib/balldontlie/transform
 import { GameLogInput } from "@/lib/stats/inputs";
 import { SyncSummary, upsertGameLogs, upsertPlayers, upsertSeasonStats } from "@/lib/stats/persist";
 
-import { generateGameLogs } from "./generate";
-import { normalizeName } from "./names";
-import { DEMO_PROFILES } from "./profiles";
+import { generateGameLogs } from "@/lib/demo/generate";
+import { normalizeName } from "@/lib/demo/names";
+import { DEMO_PROFILES } from "@/lib/demo/profiles";
 
 // Bun sets `import.meta.main` on the entry module. @types/node's ImportMeta
 // doesn't declare it, so augment the global interface (declaration merging,

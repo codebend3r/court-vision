@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
-import DesignPage from "./page";
+import DesignPage from "@/app/design/page";
 
 afterEach(cleanup);
 

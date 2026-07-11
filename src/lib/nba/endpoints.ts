@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-import { nbaFetch } from "./client";
-import { LEAGUE_ID, RESULT_SET_NAMES, SEASON, SEASON_TYPE } from "./constants";
-import { parseNbaResponse, rowsToObjects, selectResultSet } from "./parse";
+import { nbaFetch } from "@/lib/nba/client";
+import { LEAGUE_ID, RESULT_SET_NAMES, SEASON, SEASON_TYPE } from "@/lib/nba/constants";
+import { parseNbaResponse, rowsToObjects, selectResultSet } from "@/lib/nba/parse";
 import {
   GameLogRow,
   PlayerIndexRow,

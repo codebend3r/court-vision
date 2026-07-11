@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bdlPage, bdlPaginatedPage, bdlStatSchema, bdlTeamSchema } from "./schemas";
+import { bdlPage, bdlPaginatedPage, bdlStatSchema, bdlTeamSchema } from "@/lib/balldontlie/schemas";
 
 const team = { id: 1, abbreviation: "ATL", full_name: "Atlanta Hawks", extra: "ignored" };
 

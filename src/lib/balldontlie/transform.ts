@@ -1,8 +1,8 @@
 import { GameLogInput, PlayerInput, SeasonStatsInput } from "@/lib/stats/inputs";
 import { parseGameDate, parseMinutes } from "@/lib/stats/parse";
 
-import { SEASON_LABEL, SEASON_TYPE } from "./constants";
-import { BdlGame, BdlPlayer, BdlStat } from "./schemas";
+import { SEASON_LABEL, SEASON_TYPE } from "@/lib/balldontlie/constants";
+import { BdlGame, BdlPlayer, BdlStat } from "@/lib/balldontlie/schemas";
 
 export const blankToNull = (value: string | null | undefined): string | null => {
   const trimmed = (value ?? "").trim();

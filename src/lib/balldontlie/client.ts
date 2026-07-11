@@ -1,4 +1,4 @@
-import { BDL_BASE_URL, getApiKey } from "./constants";
+import { BDL_BASE_URL, getApiKey } from "@/lib/balldontlie/constants";
 
 export type BdlParamValue = string | string[];
 

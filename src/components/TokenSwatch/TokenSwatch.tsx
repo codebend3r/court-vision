@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { useTheme } from "@/lib/theme/ThemeProvider";
 
-import styles from "./TokenSwatch.module.scss";
+import styles from "@/components/TokenSwatch/TokenSwatch.module.scss";
 
 export function TokenSwatch({ token }: { token: string }) {
   const { theme } = useTheme();

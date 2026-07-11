@@ -1,5 +1,5 @@
-import { bdlFetch, BdlParamValue } from "./client";
-import { PER_PAGE, SEASON_YEAR, THROTTLE_MS } from "./constants";
+import { bdlFetch, BdlParamValue } from "@/lib/balldontlie/client";
+import { PER_PAGE, SEASON_YEAR, THROTTLE_MS } from "@/lib/balldontlie/constants";
 import {
   BdlGame,
   BdlPlayer,

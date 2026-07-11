@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 
 import * as persist from "@/lib/stats/persist";
 
-import * as endpoints from "./endpoints";
-import { BdlStat } from "./schemas";
-import { syncBalldontlie } from "./sync";
+import * as endpoints from "@/lib/balldontlie/endpoints";
+import { BdlStat } from "@/lib/balldontlie/schemas";
+import { syncBalldontlie } from "@/lib/balldontlie/sync";
 
 const statRow: BdlStat = {
   id: 1,

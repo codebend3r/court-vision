@@ -9,7 +9,7 @@ import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
 import "@/styles/globals.scss";
 
-import styles from "./layout.module.scss";
+import styles from "@/app/layout.module.scss";
 
 const displayFont = Chakra_Petch({
   weight: ["400", "500", "700"],

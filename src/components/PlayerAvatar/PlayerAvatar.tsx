@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { headshotUrl } from "@/lib/headshots/url";
 
-import styles from "./PlayerAvatar.module.scss";
+import styles from "@/components/PlayerAvatar/PlayerAvatar.module.scss";
 
 export type PlayerAvatarSize = "sm" | "lg";
 

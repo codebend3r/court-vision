@@ -1,4 +1,4 @@
-import { NBA_BASE_URL, NBA_HEADERS } from "./constants";
+import { NBA_BASE_URL, NBA_HEADERS } from "@/lib/nba/constants";
 
 export interface NbaFetchOptions {
   endpoint: string;

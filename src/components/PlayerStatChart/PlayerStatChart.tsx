@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, type ReactElement } from "react";
+import { type ReactElement } from "react";
+import { parseAsBoolean, parseAsString, useQueryState } from "nuqs";
 import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -16,16 +18,22 @@ import type { CumulativePoint } from "@/lib/stats/cumulative";
 import type { StatMode } from "@/lib/stats/searchParams";
 import { useTheme } from "@/lib/theme/ThemeProvider";
 
-import styles from "./PlayerStatChart.module.scss";
+import styles from "@/components/PlayerStatChart/PlayerStatChart.module.scss";
 import {
   DEFAULT_ACTIVE_KEYS,
   getChartChrome,
   getStatMeta,
+  STAT_KEYS,
   type ChartChrome,
   type StatKey,
   type StatMeta,
   type StatPanel,
 } from "./statMeta";
+
+const isStatKey = (value: string): value is StatKey => STAT_KEYS.some((key) => key === value);
+
+const parseVisibleStats = (value: string | null): StatKey[] =>
+  value === null ? DEFAULT_ACTIVE_KEYS : value.split(",").filter(isStatKey);
 
 // `gameDate` is stored as a UTC-midnight ISO string. Formatting it in the
 // viewer's local timezone can shift the displayed date back a day for any
@@ -33,7 +41,8 @@ import {
 const formatDate = (isoDate: string): string =>
   new Date(isoDate).toLocaleDateString(undefined, { timeZone: "UTC" });
 
-// Totals are whole-number sums; averages and per-36 rates keep one decimal.
+// Raw per-game values and totals are whole-number counts; averages and per-36
+// rates keep one decimal.
 const formatValue = ({
   value,
   panel,
@@ -46,14 +55,17 @@ const formatValue = ({
   if (panel === "shooting") {
     return `${value.toFixed(1)}%`;
   }
-  return mode === "totals" ? value.toFixed(0) : value.toFixed(1);
+  return mode === "totals" || mode === "game" ? value.toFixed(0) : value.toFixed(1);
 };
 
 const COUNTING_TITLE_BY_MODE: Record<StatMode, string> = {
   avg: "Per-game averages",
+  game: "Per-game stats",
   totals: "Accumulating totals",
   per36: "Per 36 minutes",
 };
+
+const DNP_MARKER_COLOR = "#e66767";
 
 const isCumulativePoint = (value: unknown): value is CumulativePoint => {
   if (typeof value !== "object" || value === null) {
@@ -133,6 +145,7 @@ function StatTooltip({ active, payload, metas, mode }: StatTooltipProps): ReactE
           </p>
         );
       })}
+      {point.dnp && <p className={styles.tooltipStatus}>DNP / DNP-CD (0 MIN)</p>}
     </div>
   );
 }
@@ -143,12 +156,14 @@ function StatLineChart({
   domain,
   chrome,
   mode,
+  showDnp,
 }: {
   metas: StatMeta[];
   series: CumulativePoint[];
   domain?: [number, number];
   chrome: ChartChrome;
   mode: StatMode;
+  showDnp: boolean;
 }) {
   const lastIndex = series.length - 1;
 
@@ -166,6 +181,17 @@ function StatLineChart({
           content={<StatTooltip metas={metas} mode={mode} />}
           cursor={{ stroke: chrome.axis, strokeDasharray: "3 3" }}
         />
+        {showDnp &&
+          series
+            .filter((point) => point.dnp)
+            .map((point) => (
+              <ReferenceLine
+                key={point.gameIndex}
+                x={point.gameIndex}
+                stroke={DNP_MARKER_COLOR}
+                strokeDasharray="4 3"
+              />
+            ))}
         {metas.map((meta) => (
           <Line
             key={meta.key}
@@ -189,27 +215,33 @@ export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; m
   const { theme } = useTheme();
   const statMeta = getStatMeta({ theme });
   const chrome = getChartChrome({ theme });
-  const [active, setActive] = useState<StatKey[]>(DEFAULT_ACTIVE_KEYS);
+  const [stats, setStats] = useQueryState("stats", parseAsString);
+  const [showDnp, setShowDnp] = useQueryState("dnp", parseAsBoolean.withDefault(false));
+  const active = parseVisibleStats(stats);
 
-  const toggle = (key: StatKey) =>
-    setActive((current) =>
-      current.includes(key) ? current.filter((activeKey) => activeKey !== key) : [...current, key],
-    );
+  const toggle = (key: StatKey) => {
+    const next = active.includes(key)
+      ? active.filter((activeKey) => activeKey !== key)
+      : [...active, key];
+    void setStats(next.join(","));
+  };
 
   // Per-36 minutes would plot as the constant 36, so MIN sits out that mode.
   const isDisabled = (meta: StatMeta): boolean => mode === "per36" && meta.key === "min";
 
-  const countingActive = statMeta.filter(
+  const visibleStatMeta =
+    mode === "game" ? statMeta.filter((meta) => meta.panel === "counting") : statMeta;
+  const countingActive = visibleStatMeta.filter(
     (meta) => meta.panel === "counting" && active.includes(meta.key) && !isDisabled(meta),
   );
-  const shootingActive = statMeta.filter(
+  const shootingActive = visibleStatMeta.filter(
     (meta) => meta.panel === "shooting" && active.includes(meta.key),
   );
 
   return (
     <div className={styles.root}>
       <div className={styles.chips}>
-        {statMeta.map((meta) => (
+        {visibleStatMeta.map((meta) => (
           <button
             key={meta.key}
             type="button"
@@ -224,10 +256,25 @@ export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; m
         ))}
       </div>
 
+      <button
+        type="button"
+        aria-pressed={showDnp}
+        onClick={() => setShowDnp(!showDnp)}
+        className={styles.dnpToggle}
+      >
+        Show DNP / DNP-CD
+      </button>
+
       <section className={styles.panel}>
         <h3 className={styles.panelTitle}>{COUNTING_TITLE_BY_MODE[mode]}</h3>
         {!!countingActive.length ? (
-          <StatLineChart metas={countingActive} series={series} chrome={chrome} mode={mode} />
+          <StatLineChart
+            metas={countingActive}
+            series={series}
+            chrome={chrome}
+            mode={mode}
+            showDnp={showDnp}
+          />
         ) : (
           <p className={styles.emptyHint}>Select a stat to plot</p>
         )}
@@ -242,6 +289,7 @@ export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; m
             domain={[0, 100]}
             chrome={chrome}
             mode={mode}
+            showDnp={showDnp}
           />
         </section>
       )}

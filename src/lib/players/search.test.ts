@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { searchPlayers } from "./search";
-import type { PlayerRow } from "./search";
-import type { PlayersSearchParams } from "./searchParams";
+import { searchPlayers } from "@/lib/players/search";
+import type { PlayerRow } from "@/lib/players/search";
+import type { PlayersSearchParams } from "@/lib/players/searchParams";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {

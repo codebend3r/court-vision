@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { bdlFetch } from "./client";
+import { bdlFetch } from "@/lib/balldontlie/client";
 
 const jsonResponse = (
   body: unknown,

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
-import { GameLogInput, PlayerInput, SeasonStatsInput } from "./inputs";
+import { GameLogInput, PlayerInput, SeasonStatsInput } from "@/lib/stats/inputs";
 
 export interface SyncSummary {
   players: number;

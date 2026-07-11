@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { gamesForSpan, loadStatFilters } from "./searchParams";
+import { gamesForSpan, loadStatFilters } from "@/lib/stats/searchParams";
 
 describe("loadStatFilters", () => {
   it("falls back to defaults when params are absent", async () => {
@@ -20,6 +20,10 @@ describe("loadStatFilters", () => {
     expect((await loadStatFilters({ span: "20" })).span).toBe("20");
     expect((await loadStatFilters({ span: "30" })).span).toBe("30");
     expect((await loadStatFilters({ span: "season" })).span).toBe("season");
+  });
+
+  it("parses game mode for raw per-game chart values", async () => {
+    expect((await loadStatFilters({ mode: "game" })).mode).toBe("game");
   });
 
   it("falls back to defaults on invalid values", async () => {

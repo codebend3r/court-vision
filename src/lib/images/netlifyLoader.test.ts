@@ -1,17 +1,25 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import netlifyImageLoader from "./netlifyLoader";
+import netlifyImageLoader from "@/lib/images/netlifyLoader";
 
 afterEach(() => {
   vi.unstubAllEnvs();
 });
 
 describe("netlifyImageLoader", () => {
-  it("returns the source unchanged in development", () => {
+  it("returns the source with its requested width in development", () => {
     vi.stubEnv("NODE_ENV", "development");
 
     const src = "https://cdn.nba.com/headshots/nba/latest/1040x760/201939.png";
-    expect(netlifyImageLoader({ src, width: 64 })).toBe(src);
+    expect(netlifyImageLoader({ src, width: 64 })).toBe(`${src}?w=64`);
+  });
+
+  it("appends the development width to a source URL with existing query parameters", () => {
+    vi.stubEnv("NODE_ENV", "development");
+
+    expect(netlifyImageLoader({ src: "/court-vision-mark.jpg?fit=cover", width: 32 })).toBe(
+      "/court-vision-mark.jpg?fit=cover&w=32",
+    );
   });
 
   it("builds a Netlify Image CDN URL outside development", () => {

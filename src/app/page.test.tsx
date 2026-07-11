@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import Home from "./page";
+import Home from "@/app/page";
 
 afterEach(cleanup);
 

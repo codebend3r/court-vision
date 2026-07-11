@@ -2,7 +2,7 @@ import { Prisma } from "@generated/prisma/client";
 
 import { prisma } from "@/lib/prisma";
 
-import { PlayersSearchParams } from "./searchParams";
+import { PlayersSearchParams } from "@/lib/players/searchParams";
 
 export interface PlayerRow {
   id: number;

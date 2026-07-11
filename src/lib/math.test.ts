@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { sum } from "./math";
+import { sum } from "@/lib/math";
 
 describe("sum", () => {
   it("adds an array of numbers", () => {

@@ -1,7 +1,7 @@
 import { SyncSummary, upsertGameLogs, upsertPlayers, upsertSeasonStats } from "@/lib/stats/persist";
 
-import { BdlClientDeps, fetchAllStats, fetchTeams } from "./endpoints";
-import { aggregateSeasonStats, toGameLogInput, toPlayerInputs } from "./transform";
+import { BdlClientDeps, fetchAllStats, fetchTeams } from "@/lib/balldontlie/endpoints";
+import { aggregateSeasonStats, toGameLogInput, toPlayerInputs } from "@/lib/balldontlie/transform";
 
 // Bun sets `import.meta.main` on the entry module. @types/node's ImportMeta
 // doesn't declare it, so augment the global interface (declaration merging,

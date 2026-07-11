@@ -1,4 +1,4 @@
-import type { StatMode } from "./searchParams";
+import type { StatMode } from "@/lib/stats/searchParams";
 
 export interface CumulativeSourceLog {
   gameDate: Date;
@@ -24,6 +24,7 @@ export interface CumulativePoint {
   gameDate: string;
   matchup: string;
   winLoss: string | null;
+  dnp: boolean;
   min: number;
   pts: number | null;
   reb: number | null;
@@ -36,16 +37,20 @@ export interface CumulativePoint {
   ftPct: number | null;
 }
 
-// avg: running mean; totals: running sum; per36: running sum scaled to a
-// 36-minute pace (null until any minutes accrue). Shooting percentages are
-// ratio-of-sums in every mode — a "total" or "per-36" percentage is not
-// meaningful.
+// game: individual-game value; avg: running mean; totals: running sum; per36:
+// running sum scaled to a 36-minute pace (null until any minutes accrue).
+// Shooting percentages are ratio-of-sums in every mode, but the game chart
+// deliberately omits them because it focuses on raw counting stats.
 const countingValue = (args: {
+  currentValue: number;
   total: number;
   gameIndex: number;
   minutesTotal: number;
   mode: StatMode;
 }): number | null => {
+  if (args.mode === "game") {
+    return args.currentValue;
+  }
   if (args.mode === "avg") {
     return args.total / args.gameIndex;
   }
@@ -116,23 +121,35 @@ export const buildStatSeries = (args: {
       fta: acc.totals.fta + log.fta,
     };
 
-    const counting = (total: number): number | null =>
-      countingValue({ total, gameIndex, minutesTotal: newTotals.minutes, mode: args.mode });
+    const counting = (total: number, currentValue: number): number | null =>
+      countingValue({
+        currentValue,
+        total,
+        gameIndex,
+        minutesTotal: newTotals.minutes,
+        mode: args.mode,
+      });
 
     const point: CumulativePoint = {
       gameIndex,
       gameDate: log.gameDate.toISOString(),
       matchup: log.matchup,
       winLoss: log.winLoss,
+      dnp: log.minutes === 0,
       // per36 minutes would be the constant 36, so min carries the running
       // minutes total in both totals and per36 modes.
-      min: args.mode === "avg" ? newTotals.minutes / gameIndex : newTotals.minutes,
-      pts: counting(newTotals.pts),
-      reb: counting(newTotals.reb),
-      ast: counting(newTotals.ast),
-      stl: counting(newTotals.stl),
-      blk: counting(newTotals.blk),
-      tov: counting(newTotals.tov),
+      min:
+        args.mode === "game"
+          ? log.minutes
+          : args.mode === "avg"
+            ? newTotals.minutes / gameIndex
+            : newTotals.minutes,
+      pts: counting(newTotals.pts, log.pts),
+      reb: counting(newTotals.reb, log.reb),
+      ast: counting(newTotals.ast, log.ast),
+      stl: counting(newTotals.stl, log.stl),
+      blk: counting(newTotals.blk, log.blk),
+      tov: counting(newTotals.tov, log.tov),
       fgPct: newTotals.fga === 0 ? null : (100 * newTotals.fgm) / newTotals.fga,
       fg3Pct: newTotals.fg3a === 0 ? null : (100 * newTotals.fg3m) / newTotals.fg3a,
       ftPct: newTotals.fta === 0 ? null : (100 * newTotals.ftm) / newTotals.fta,

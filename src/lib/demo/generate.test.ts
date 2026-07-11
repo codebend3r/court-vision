@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { SEASON_TYPE } from "@/lib/balldontlie/constants";
 import { BdlGame } from "@/lib/balldontlie/schemas";
 
-import { generateGameLogs } from "./generate";
-import { DEMO_PROFILES } from "./profiles";
+import { generateGameLogs } from "@/lib/demo/generate";
+import { DEMO_PROFILES } from "@/lib/demo/profiles";
 
 const TEAM_ID = 18;
 const OPPONENT_ID = 2;
