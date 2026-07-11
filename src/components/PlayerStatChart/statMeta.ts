@@ -58,16 +58,20 @@ const CHROME_BY_THEME: Record<Theme, ChartChrome> = {
 
 export const getStatMeta = ({ theme }: { theme: Theme }): StatMeta[] => {
   const palette = SERIES_BY_THEME[theme];
-  const counting = COUNTING_STATS.map((stat, index) => ({
-    ...stat,
-    panel: "counting" as const,
-    color: palette[index],
-  }));
-  const shooting = SHOOTING_STATS.map((stat, index) => ({
-    ...stat,
-    panel: "shooting" as const,
-    color: palette[index],
-  }));
+  const counting = COUNTING_STATS.map(
+    (stat, index): StatMeta => ({
+      ...stat,
+      panel: "counting",
+      color: palette[index],
+    }),
+  );
+  const shooting = SHOOTING_STATS.map(
+    (stat, index): StatMeta => ({
+      ...stat,
+      panel: "shooting",
+      color: palette[index],
+    }),
+  );
 
   return [...counting, ...shooting];
 };
