@@ -4,7 +4,8 @@ Operating rules for this repo. The README covers stack, layout, and routes; this
 
 ## Structure
 
-- Source lives under `src/` (`src/app`, `src/components`, `src/lib`, `src/styles`); `prisma/`, `public/`, config files, `.github/`, and `.husky/` stay at the repo root. Path references below (e.g. `styles/globals.scss`, `lib/foo.ts`) are under `src/`, and the `@/*` import alias maps to `src/*`.
+- Source lives under `src/` (`src/app`, `src/components`, `src/lib`, `src/styles`); `prisma/`, `public/`, config files, `.github/`, and `.husky/` stay at the repo root. Path references below (e.g. `styles/globals.scss`, `lib/foo.ts`) are under `src/`, and the `@/*` import alias maps to `src/*` (`@public/*` and `@generated/*` map to the root `public/` and `generated/` dirs).
+- Import via aliases, never parent-relative paths (`../`); lint enforces this. Same-directory `./` imports (co-located styles, tests) are fine.
 
 ## Workflow
 

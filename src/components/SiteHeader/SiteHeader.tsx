@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { ThemeToggle } from "@/components/ThemeToggle/ThemeToggle";
 
-import mark from "../../../public/court-vision-mark.jpg";
+import mark from "@public/court-vision-mark.jpg";
 
 import styles from "./SiteHeader.module.scss";
 
