@@ -6,9 +6,9 @@ import Home from "./page";
 afterEach(cleanup);
 
 describe("Home", () => {
-  it("renders an empty main", () => {
+  it("renders the coming soon message", () => {
     render(<Home />);
-    const main = screen.getByRole("main");
-    expect(main).toBeEmptyDOMElement();
+    expect(screen.getByRole("heading", { level: 1, name: "Coming soon" })).toBeInTheDocument();
+    expect(screen.getByText("Court Vision is under construction.")).toBeInTheDocument();
   });
 });
