@@ -3,6 +3,7 @@ import type { SearchParams } from "nuqs/server";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayerGameLogTable } from "@/components/PlayerGameLogTable/PlayerGameLogTable";
+import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { PlayerStatChart } from "@/components/PlayerStatChart/PlayerStatChart";
 import { PlayerStatFilters } from "@/components/PlayerStatFilters/PlayerStatFilters";
 import { prisma } from "@/lib/prisma";
@@ -52,8 +53,9 @@ export default async function PlayerPage({
         <span className={styles.headerText}>
           <h1>{player.fullName}</h1>
           <p className={styles.meta}>
-            {[player.teamAbbr, player.position].filter((part) => !!part).join(" · ")} — 2025-26 ·{" "}
-            {logs.length} games
+            {!!player.teamAbbr && <TeamChip team={player.teamAbbr} size="sm" />}
+            {!!player.position && <span>{player.position}</span>}
+            <span>2025-26 · {logs.length} games</span>
           </p>
         </span>
       </header>

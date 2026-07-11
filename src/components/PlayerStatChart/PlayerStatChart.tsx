@@ -31,6 +31,7 @@ import type { CumulativePoint } from "@/lib/stats/cumulative";
 import type { StatMode } from "@/lib/stats/searchParams";
 import { useTheme } from "@/lib/theme/ThemeProvider";
 import { Switch } from "@/components/Switch/Switch";
+import { TeamMatchup } from "@/components/TeamMatchup/TeamMatchup";
 
 import styles from "@/components/PlayerStatChart/PlayerStatChart.module.scss";
 import {
@@ -181,7 +182,8 @@ function StatTooltip({ active, payload, metas, mode }: StatTooltipProps): ReactE
   return (
     <div className={styles.tooltip}>
       <p className={styles.tooltipHeader}>
-        Game {point.gameIndex} — {formatDate(point.gameDate)} {point.matchup} {point.winLoss ?? ""}
+        Game {point.gameIndex} · {formatDate(point.gameDate)} ·{" "}
+        <TeamMatchup matchup={point.matchup} size="sm" /> {point.winLoss ?? ""}
       </p>
       {metas.map((meta) => {
         const value = point[meta.key];

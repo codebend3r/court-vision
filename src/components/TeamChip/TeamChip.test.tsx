@@ -16,6 +16,14 @@ describe("TeamChip", () => {
     expect(screen.queryByText("Toronto Raptors")).not.toBeInTheDocument();
   });
 
+  it("renders a neutral chip for an abbreviation it does not know", () => {
+    render(<TeamChip team="SEA" />);
+
+    const chip = screen.getByText("SEA");
+    expect(chip).not.toHaveAttribute("title");
+    expect(chip).not.toHaveAttribute("style");
+  });
+
   it("defines all 30 NBA teams once", () => {
     expect(NBA_TEAMS).toHaveLength(30);
     expect(new Set(NBA_TEAMS.map((team) => team.abbreviation))).toHaveLength(30);

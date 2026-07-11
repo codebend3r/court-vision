@@ -72,6 +72,7 @@ describe("PlayersPage", () => {
     expect(screen.getByRole("link", { name: "Curry" })).toHaveAttribute("href", "/players/1");
     expect(screen.getByRole("link", { name: "Draymond" })).toHaveAttribute("href", "/players/2");
     expect(screen.getByRole("link", { name: "Green" })).toHaveAttribute("href", "/players/2");
+    expect(screen.getAllByTitle("Golden State Warriors")).toHaveLength(2);
     expect(screen.getByText("Showing 26–50 of 60")).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "PTS" })).toBeInTheDocument();
     expect(screen.getByText("25.0")).toBeInTheDocument();

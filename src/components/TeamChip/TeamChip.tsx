@@ -35,18 +35,25 @@ export const NBA_TEAMS = [
 
 export type TeamAbbreviation = (typeof NBA_TEAMS)[number]["abbreviation"];
 
-const TEAM_BY_ABBREVIATION = new Map(NBA_TEAMS.map((team) => [team.abbreviation, team]));
+export type TeamChipSize = "sm" | "md";
 
-export function TeamChip({ team }: { team: TeamAbbreviation }) {
+type NbaTeam = (typeof NBA_TEAMS)[number];
+
+const TEAM_BY_ABBREVIATION: Map<string, NbaTeam> = new Map(
+  NBA_TEAMS.map((team) => [team.abbreviation, team]),
+);
+
+export function TeamChip({ team, size = "md" }: { team: string; size?: TeamChipSize }) {
   const details = TEAM_BY_ABBREVIATION.get(team);
+  const className = size === "sm" ? `${styles.chip} ${styles.sm}` : styles.chip;
 
   if (!details) {
-    return null;
+    return <span className={className}>{team}</span>;
   }
 
   return (
     <span
-      className={styles.chip}
+      className={className}
       title={details.name}
       aria-label={details.name}
       style={{ backgroundColor: details.primary, color: details.secondary }}

@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { parseAsString, useQueryStates } from "nuqs";
+
+import { TeamMatchup } from "@/components/TeamMatchup/TeamMatchup";
 
 import styles from "@/components/PlayerGameLogTable/PlayerGameLogTable.module.scss";
 
-export interface PlayerGameLogTableRow {
+export type PlayerGameLogTableRow = {
   id: string;
   gameDate: string;
   matchup: string;
@@ -26,17 +28,17 @@ export interface PlayerGameLogTableRow {
   tov: number;
   pts: number;
   plusMinus: number | null;
-}
+};
 
 type SortKey = Exclude<keyof PlayerGameLogTableRow, "id">;
 type SortDirection = "asc" | "desc";
 
-interface Column {
+type Column = {
   key: SortKey;
   label: string;
   align?: "left" | "right";
-  render?: (row: PlayerGameLogTableRow) => string | number;
-}
+  render?: (row: PlayerGameLogTableRow) => ReactNode;
+};
 
 const formatDate = (isoDate: string): string =>
   new Date(isoDate).toLocaleDateString(undefined, {
@@ -51,7 +53,11 @@ const formatPlusMinus = (value: number | null): string =>
 
 const COLUMNS: readonly Column[] = [
   { key: "gameDate", label: "Date", render: ({ gameDate }) => formatDate(gameDate) },
-  { key: "matchup", label: "Matchup" },
+  {
+    key: "matchup",
+    label: "Matchup",
+    render: ({ matchup }) => <TeamMatchup matchup={matchup} size="sm" />,
+  },
   { key: "winLoss", label: "Result" },
   { key: "minutes", label: "MIN", align: "right" },
   { key: "pts", label: "PTS", align: "right" },

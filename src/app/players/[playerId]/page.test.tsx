@@ -94,6 +94,9 @@ describe("PlayerPage", () => {
     await renderPage({ playerId: "3547238" });
 
     expect(screen.getByText("CJ Rivas")).toBeInTheDocument();
+    // Header chip plus one per matchup cell
+    expect(screen.getAllByTitle("Golden State Warriors")).toHaveLength(3);
+    expect(screen.getAllByTitle("Los Angeles Lakers")).toHaveLength(2);
     expect(screen.getAllByRole("button").length).toBeGreaterThan(0);
     const fallback = screen.getByRole("img", { name: "CJ Rivas" });
     expect(fallback.tagName).not.toBe("IMG");

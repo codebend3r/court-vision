@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayersSearchControls } from "@/components/PlayersSearchControls/PlayersSearchControls";
+import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { searchPlayers } from "@/lib/players/search";
 import {
   buildPlayersHref,
@@ -128,7 +129,9 @@ export default async function PlayersPage({
                     <td>
                       <Link href={`/players/${row.id}`}>{row.lastName}</Link>
                     </td>
-                    <td>{row.teamAbbr ?? "—"}</td>
+                    <td>
+                      {row.teamAbbr === null ? "—" : <TeamChip team={row.teamAbbr} size="sm" />}
+                    </td>
                     <td>{row.position ?? "—"}</td>
                     <td className={styles.numeric}>
                       {stats ? formatCountingStat(stats.pts) : "—"}

@@ -59,6 +59,8 @@ describe("PlayerGameLogTable", () => {
     const rows = screen.getAllByRole("row");
     expect(within(rows[1]).getByText("83")).toBeInTheDocument();
     expect(within(rows[2]).getByText("12")).toBeInTheDocument();
+    expect(within(rows[1]).getByTitle("Miami Heat")).toHaveTextContent("MIA");
+    expect(within(rows[1]).getByText("WSH")).toBeInTheDocument();
   });
 
   it("sorts every column, including points", () => {
