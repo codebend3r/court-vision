@@ -7,9 +7,9 @@ import { headshotUrl } from "@/lib/headshots/url";
 
 import styles from "./PlayerAvatar.module.scss";
 
-const SIZE_PX = { sm: 32, lg: 96 } as const;
+export type PlayerAvatarSize = "sm" | "lg";
 
-export type PlayerAvatarSize = keyof typeof SIZE_PX;
+const SIZE_PX: Record<PlayerAvatarSize, number> = { sm: 32, lg: 96 };
 
 export interface PlayerAvatarProps {
   fullName: string;
