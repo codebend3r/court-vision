@@ -4,12 +4,14 @@
 
 :root {
   // Color
-  --color-bg: #0b0e14;
-  --color-surface: #151a23;
-  --color-border: #232a36;
-  --color-text: #e6e9ef;
-  --color-text-muted: #9aa4b2;
-  --color-accent: #4f8cff;
+  --color-bg: #131629;
+  --color-surface: #1c2138;
+  --color-border: #2a3050;
+  --color-text: #e8eaf6;
+  --color-text-muted: #8b93b5;
+  --color-accent: #3fc3e8;
+  --color-accent-strong: #ff2e7e;
+  --color-highlight: #ff9f3c;
 
   // Spacing scale
   --space-1: 0.25rem;
@@ -72,4 +74,15 @@ a {
   &:hover {
     text-decoration: underline;
   }
+}
+
+:root[data-theme="light"] {
+  --color-bg: #f7f8fc;
+  --color-surface: #ffffff;
+  --color-border: #dfe3f0;
+  --color-text: #171b2e;
+  --color-text-muted: #5a6280;
+  --color-accent: #0e7fa8;
+  --color-accent-strong: #d6206a;
+  --color-highlight: #b35c00;
 }
