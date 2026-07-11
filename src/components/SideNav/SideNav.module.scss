@@ -1,3 +1,5 @@
+@use "@/styles/mixins" as *;
+
 .nav {
   display: grid;
   align-content: start;
@@ -18,10 +20,9 @@
 }
 
 .link {
+  @include micro-label;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
 
   &:hover {
     color: var(--color-text);

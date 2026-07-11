@@ -1,3 +1,5 @@
+@use "@/styles/mixins" as *;
+
 .page {
   display: grid;
   gap: var(--space-4);
@@ -15,15 +17,18 @@
   border-collapse: collapse;
 
   th {
+    @include micro-label;
     padding: var(--space-2) var(--space-3);
-    color: var(--color-text-muted);
-    font-size: var(--font-size-sm);
     text-align: left;
   }
 
   td {
     padding: var(--space-2) var(--space-3);
     border-top: 1px solid var(--color-border);
+  }
+
+  tbody {
+    font-variant-numeric: tabular-nums;
   }
 
   tr:hover td {

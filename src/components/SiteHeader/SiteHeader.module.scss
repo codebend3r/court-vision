@@ -14,8 +14,12 @@
   align-items: center;
   gap: var(--space-2);
   color: var(--color-text);
+  font-family: var(--font-display);
   font-size: var(--font-size-lg);
   font-weight: 700;
+  text-transform: uppercase;
+  // Brand-specific wordmark tracking; wider than --tracking-wide, not a shared token.
+  letter-spacing: 0.08em;
 
   &:hover {
     text-decoration: none;

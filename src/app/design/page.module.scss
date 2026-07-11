@@ -1,3 +1,5 @@
+@use "@/styles/mixins" as *;
+
 .page {
   display: grid;
   gap: var(--space-8);
@@ -24,6 +26,16 @@
   margin: 0;
 }
 
+.typefaceStack {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.typefaceSample {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
 .spacingStack {
   display: grid;
   gap: var(--space-2);
@@ -43,8 +55,7 @@
 }
 
 .spacingLabel {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  @include micro-label;
 }
 
 .radiusGrid {
@@ -66,6 +77,5 @@
 }
 
 .radiusLabel {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  @include micro-label;
 }

@@ -8,7 +8,7 @@ import DesignPage from "./page";
 afterEach(cleanup);
 
 describe("DesignPage", () => {
-  it("renders the five section headings", () => {
+  it("renders the six section headings", () => {
     render(
       <ThemeProvider>
         <DesignPage />
@@ -18,8 +18,20 @@ describe("DesignPage", () => {
     expect(screen.getByRole("heading", { name: "Colors" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Chart palettes" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Typography" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Typefaces" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Spacing" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Radius" })).toBeInTheDocument();
+  });
+
+  it("renders both typeface family names", () => {
+    render(
+      <ThemeProvider>
+        <DesignPage />
+      </ThemeProvider>,
+    );
+
+    expect(screen.getByText("Chakra Petch — display")).toBeInTheDocument();
+    expect(screen.getByText("IBM Plex Sans — body")).toBeInTheDocument();
   });
 
   it("renders all 8 color token names", () => {

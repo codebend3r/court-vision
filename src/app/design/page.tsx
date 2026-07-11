@@ -32,6 +32,11 @@ const SPACING_TOKENS: readonly string[] = [
 
 const RADIUS_TOKENS: readonly string[] = ["--radius-sm", "--radius-md", "--radius-lg"];
 
+const TYPEFACES: readonly { name: string; cssVar: string }[] = [
+  { name: "Chakra Petch — display", cssVar: "--font-display" },
+  { name: "IBM Plex Sans — body", cssVar: "--font-sans" },
+];
+
 export default function DesignPage() {
   return (
     <main className={styles.page}>
@@ -57,6 +62,21 @@ export default function DesignPage() {
           {TYPOGRAPHY_TOKENS.map((token) => (
             <p key={token} className={styles.typeSample} style={{ fontSize: `var(${token})` }}>
               {token}
+            </p>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2>Typefaces</h2>
+        <div className={styles.typefaceStack}>
+          {TYPEFACES.map((typeface) => (
+            <p
+              key={typeface.cssVar}
+              className={styles.typefaceSample}
+              style={{ fontFamily: `var(${typeface.cssVar})` }}
+            >
+              {typeface.name}
             </p>
           ))}
         </div>
