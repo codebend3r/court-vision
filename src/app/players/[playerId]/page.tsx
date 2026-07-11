@@ -1,9 +1,12 @@
 import { notFound } from "next/navigation";
+import type { SearchParams } from "nuqs/server";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayerStatChart } from "@/components/PlayerStatChart/PlayerStatChart";
+import { PlayerStatFilters } from "@/components/PlayerStatFilters/PlayerStatFilters";
 import { prisma } from "@/lib/prisma";
-import { buildCumulativeSeries } from "@/lib/stats/cumulative";
+import { buildStatSeries } from "@/lib/stats/cumulative";
+import { gamesForSpan, loadStatFilters } from "@/lib/stats/searchParams";
 
 import styles from "./page.module.scss";
 
@@ -13,7 +16,13 @@ export const dynamic = "force-dynamic";
 // throw (a 500) instead of rendering a 404.
 const MAX_INT4 = 2147483647;
 
-export default async function PlayerPage({ params }: { params: Promise<{ playerId: string }> }) {
+export default async function PlayerPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ playerId: string }>;
+  searchParams?: Promise<SearchParams>;
+}) {
   const { playerId } = await params;
   if (!/^\d+$/.test(playerId)) {
     notFound();
@@ -30,7 +39,10 @@ export default async function PlayerPage({ params }: { params: Promise<{ playerI
     where: { playerId: numericId },
     orderBy: { gameDate: "asc" },
   });
-  const series = buildCumulativeSeries({ logs });
+  const { mode, span } = await loadStatFilters(searchParams ?? Promise.resolve({}));
+  const windowSize = gamesForSpan({ span });
+  const windowLogs = windowSize === null ? logs : logs.slice(-windowSize);
+  const series = buildStatSeries({ logs: windowLogs, mode });
 
   return (
     <main className={styles.page}>
@@ -40,14 +52,17 @@ export default async function PlayerPage({ params }: { params: Promise<{ playerI
           <h1>{player.fullName}</h1>
           <p className={styles.meta}>
             {[player.teamAbbr, player.position].filter((part) => !!part).join(" · ")} — 2025-26 ·{" "}
-            {series.length} games
+            {logs.length} games
           </p>
         </span>
       </header>
       {series.length === 0 ? (
         <p className={styles.empty}>No game logs for this player yet.</p>
       ) : (
-        <PlayerStatChart series={series} />
+        <>
+          <PlayerStatFilters />
+          <PlayerStatChart series={series} mode={mode} />
+        </>
       )}
     </main>
   );

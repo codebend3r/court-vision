@@ -31,7 +31,7 @@ describe("PlayerStatChart", () => {
   it("renders a chip per stat with every stat pressed by default", () => {
     render(
       <ThemeProvider>
-        <PlayerStatChart series={buildSeries()} />
+        <PlayerStatChart series={buildSeries()} mode="avg" />
       </ThemeProvider>,
     );
 
@@ -48,7 +48,7 @@ describe("PlayerStatChart", () => {
   it("renders every line and both panels by default", () => {
     const { container } = render(
       <ThemeProvider>
-        <PlayerStatChart series={buildSeries()} />
+        <PlayerStatChart series={buildSeries()} mode="avg" />
       </ThemeProvider>,
     );
 
@@ -60,7 +60,7 @@ describe("PlayerStatChart", () => {
     const user = userEvent.setup();
     const { container } = render(
       <ThemeProvider>
-        <PlayerStatChart series={buildSeries()} />
+        <PlayerStatChart series={buildSeries()} mode="avg" />
       </ThemeProvider>,
     );
 
@@ -80,7 +80,7 @@ describe("PlayerStatChart", () => {
     const user = userEvent.setup();
     render(
       <ThemeProvider>
-        <PlayerStatChart series={buildSeries()} />
+        <PlayerStatChart series={buildSeries()} mode="avg" />
       </ThemeProvider>,
     );
 
@@ -95,10 +95,47 @@ describe("PlayerStatChart", () => {
     expect(screen.getByText("Select a stat to plot")).toBeInTheDocument();
   });
 
+  it("titles the counting panel per mode", () => {
+    const { rerender } = render(
+      <ThemeProvider>
+        <PlayerStatChart series={buildSeries()} mode="avg" />
+      </ThemeProvider>,
+    );
+    expect(screen.getByText("Per-game averages")).toBeInTheDocument();
+
+    rerender(
+      <ThemeProvider>
+        <PlayerStatChart series={buildSeries()} mode="totals" />
+      </ThemeProvider>,
+    );
+    expect(screen.getByText("Accumulating totals")).toBeInTheDocument();
+
+    rerender(
+      <ThemeProvider>
+        <PlayerStatChart series={buildSeries()} mode="per36" />
+      </ThemeProvider>,
+    );
+    expect(screen.getByText("Per 36 minutes")).toBeInTheDocument();
+  });
+
+  it("disables the MIN chip and drops its line in per36 mode", () => {
+    const { container } = render(
+      <ThemeProvider>
+        <PlayerStatChart series={buildSeries()} mode="per36" />
+      </ThemeProvider>,
+    );
+
+    const minChip = screen.getByRole("button", { name: "MIN" });
+    expect(minChip).toBeDisabled();
+    expect(minChip).toHaveAttribute("aria-pressed", "false");
+    // 10 stats minus the excluded MIN line
+    expect(container.querySelectorAll(".recharts-line")).toHaveLength(9);
+  });
+
   it("gives each chip a color dot matching its stat's permanent color", () => {
     render(
       <ThemeProvider>
-        <PlayerStatChart series={buildSeries()} />
+        <PlayerStatChart series={buildSeries()} mode="avg" />
       </ThemeProvider>,
     );
 

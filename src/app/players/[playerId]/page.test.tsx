@@ -1,10 +1,28 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { prisma } from "@/lib/prisma";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
 import PlayerPage from "./page";
+
+const renderPage = async ({
+  playerId,
+  query = {},
+}: {
+  playerId: string;
+  query?: Record<string, string>;
+}) =>
+  render(
+    <ThemeProvider>
+      {await PlayerPage({
+        params: Promise.resolve({ playerId }),
+        searchParams: Promise.resolve(query),
+      })}
+    </ThemeProvider>,
+    { wrapper: withNuqsTestingAdapter({ searchParams: query }) },
+  );
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -73,11 +91,7 @@ describe("PlayerPage", () => {
       buildLog({ id: "log-2", gameId: "0022500002" }),
     ]);
 
-    render(
-      <ThemeProvider>
-        {await PlayerPage({ params: Promise.resolve({ playerId: "3547238" }) })}
-      </ThemeProvider>,
-    );
+    await renderPage({ playerId: "3547238" });
 
     expect(screen.getByText("CJ Rivas")).toBeInTheDocument();
     expect(screen.getAllByRole("button").length).toBeGreaterThan(0);
@@ -89,11 +103,7 @@ describe("PlayerPage", () => {
     vi.mocked(prisma.player.findUnique).mockResolvedValue({ ...player, nbaPersonId: 1630162 });
     vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);
 
-    render(
-      <ThemeProvider>
-        {await PlayerPage({ params: Promise.resolve({ playerId: "3547238" }) })}
-      </ThemeProvider>,
-    );
+    await renderPage({ playerId: "3547238" });
 
     const photo = screen.getByRole("img", { name: "CJ Rivas" });
     const src = decodeURIComponent(photo.getAttribute("src") ?? "");
@@ -104,7 +114,12 @@ describe("PlayerPage", () => {
     vi.mocked(prisma.player.findUnique).mockResolvedValue(null);
     vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([]);
 
-    await expect(PlayerPage({ params: Promise.resolve({ playerId: "999999" }) })).rejects.toThrow();
+    await expect(
+      PlayerPage({
+        params: Promise.resolve({ playerId: "999999" }),
+        searchParams: Promise.resolve({}),
+      }),
+    ).rejects.toThrow();
   });
 
   it("rejects for a non-numeric id without querying the database", async () => {
@@ -112,7 +127,10 @@ describe("PlayerPage", () => {
     vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([]);
 
     await expect(
-      PlayerPage({ params: Promise.resolve({ playerId: "not-a-number" }) }),
+      PlayerPage({
+        params: Promise.resolve({ playerId: "not-a-number" }),
+        searchParams: Promise.resolve({}),
+      }),
     ).rejects.toThrow();
 
     expect(prisma.player.findUnique).not.toHaveBeenCalled();
@@ -124,7 +142,12 @@ describe("PlayerPage", () => {
       vi.mocked(prisma.player.findUnique).mockResolvedValue(null);
       vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([]);
 
-      await expect(PlayerPage({ params: Promise.resolve({ playerId }) })).rejects.toThrow();
+      await expect(
+        PlayerPage({
+          params: Promise.resolve({ playerId }),
+          searchParams: Promise.resolve({}),
+        }),
+      ).rejects.toThrow();
 
       expect(prisma.player.findUnique).not.toHaveBeenCalled();
     },
@@ -134,9 +157,55 @@ describe("PlayerPage", () => {
     vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
     vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([]);
 
-    render(await PlayerPage({ params: Promise.resolve({ playerId: "3547238" }) }));
+    render(
+      await PlayerPage({
+        params: Promise.resolve({ playerId: "3547238" }),
+        searchParams: Promise.resolve({}),
+      }),
+    );
 
     expect(screen.getByText("No game logs for this player yet.")).toBeInTheDocument();
     expect(screen.queryAllByRole("button")).toHaveLength(0);
+  });
+
+  it("renders the stat filters alongside the chart", async () => {
+    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
+    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);
+
+    await renderPage({ playerId: "3547238" });
+
+    expect(screen.getByRole("group", { name: "Stat mode" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Timeframe" })).toBeInTheDocument();
+  });
+
+  it("titles the counting panel from the mode param", async () => {
+    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
+    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);
+
+    await renderPage({ playerId: "3547238", query: { mode: "totals" } });
+
+    expect(screen.getByText("Accumulating totals")).toBeInTheDocument();
+  });
+
+  it("windows the series to the span param and keeps total games in the header", async () => {
+    const logs = [...Array(15).keys()].map((index) =>
+      buildLog({
+        id: `log-${index + 1}`,
+        gameId: `002250000${index + 1}`,
+        gameDate: new Date(Date.UTC(2025, 9, 22 + index)),
+      }),
+    );
+    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
+    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue(logs);
+
+    const { container } = await renderPage({ playerId: "3547238", query: { span: "10" } });
+
+    // The x-axis restarts inside the window: highest game index is 10, not 15
+    expect(screen.getByText("2025-26 · 15 games", { exact: false })).toBeInTheDocument();
+    // A monotone line through N points draws N-1 curve segments, so the
+    // windowed series must produce 9 "C" commands per line, not 14.
+    const firstLinePath = container.querySelector(".recharts-line-curve");
+    const curveSegments = (firstLinePath?.getAttribute("d") ?? "").match(/C/g) ?? [];
+    expect(curveSegments).toHaveLength(9);
   });
 });

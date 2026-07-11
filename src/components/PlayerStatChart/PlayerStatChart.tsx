@@ -13,6 +13,7 @@ import {
 } from "recharts";
 
 import type { CumulativePoint } from "@/lib/stats/cumulative";
+import type { StatMode } from "@/lib/stats/searchParams";
 import { useTheme } from "@/lib/theme/ThemeProvider";
 
 import styles from "./PlayerStatChart.module.scss";
@@ -32,8 +33,27 @@ import {
 const formatDate = (isoDate: string): string =>
   new Date(isoDate).toLocaleDateString(undefined, { timeZone: "UTC" });
 
-const formatValue = ({ value, panel }: { value: number; panel: StatPanel }): string =>
-  panel === "shooting" ? `${value.toFixed(1)}%` : value.toFixed(1);
+// Totals are whole-number sums; averages and per-36 rates keep one decimal.
+const formatValue = ({
+  value,
+  panel,
+  mode,
+}: {
+  value: number;
+  panel: StatPanel;
+  mode: StatMode;
+}): string => {
+  if (panel === "shooting") {
+    return `${value.toFixed(1)}%`;
+  }
+  return mode === "totals" ? value.toFixed(0) : value.toFixed(1);
+};
+
+const COUNTING_TITLE_BY_MODE: Record<StatMode, string> = {
+  avg: "Per-game averages",
+  totals: "Accumulating totals",
+  per36: "Per 36 minutes",
+};
 
 const isCumulativePoint = (value: unknown): value is CumulativePoint => {
   if (typeof value !== "object" || value === null) {
@@ -48,7 +68,7 @@ const isCumulativePoint = (value: unknown): value is CumulativePoint => {
     "matchup" in value &&
     typeof value.matchup === "string" &&
     "pts" in value &&
-    typeof value.pts === "number"
+    (typeof value.pts === "number" || value.pts === null)
   );
 };
 
@@ -84,9 +104,10 @@ interface StatTooltipProps {
   active?: boolean;
   payload?: TooltipPayload;
   metas: StatMeta[];
+  mode: StatMode;
 }
 
-function StatTooltip({ active, payload, metas }: StatTooltipProps): ReactElement | null {
+function StatTooltip({ active, payload, metas, mode }: StatTooltipProps): ReactElement | null {
   if (!active || !payload || !payload.length) {
     return null;
   }
@@ -108,7 +129,7 @@ function StatTooltip({ active, payload, metas }: StatTooltipProps): ReactElement
         return (
           <p key={meta.key} className={styles.tooltipRow}>
             <span className={styles.dot} style={{ backgroundColor: meta.color }} />
-            {meta.label}: {value === null ? "—" : formatValue({ value, panel: meta.panel })}
+            {meta.label}: {value === null ? "—" : formatValue({ value, panel: meta.panel, mode })}
           </p>
         );
       })}
@@ -121,11 +142,13 @@ function StatLineChart({
   series,
   domain,
   chrome,
+  mode,
 }: {
   metas: StatMeta[];
   series: CumulativePoint[];
   domain?: [number, number];
   chrome: ChartChrome;
+  mode: StatMode;
 }) {
   const lastIndex = series.length - 1;
 
@@ -140,7 +163,7 @@ function StatLineChart({
         />
         <YAxis tick={{ fill: chrome.axis, fontSize: 12 }} stroke={chrome.grid} domain={domain} />
         <Tooltip
-          content={<StatTooltip metas={metas} />}
+          content={<StatTooltip metas={metas} mode={mode} />}
           cursor={{ stroke: chrome.axis, strokeDasharray: "3 3" }}
         />
         {metas.map((meta) => (
@@ -162,7 +185,7 @@ function StatLineChart({
   );
 }
 
-export function PlayerStatChart({ series }: { series: CumulativePoint[] }) {
+export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; mode: StatMode }) {
   const { theme } = useTheme();
   const statMeta = getStatMeta({ theme });
   const chrome = getChartChrome({ theme });
@@ -173,8 +196,11 @@ export function PlayerStatChart({ series }: { series: CumulativePoint[] }) {
       current.includes(key) ? current.filter((activeKey) => activeKey !== key) : [...current, key],
     );
 
+  // Per-36 minutes would plot as the constant 36, so MIN sits out that mode.
+  const isDisabled = (meta: StatMeta): boolean => mode === "per36" && meta.key === "min";
+
   const countingActive = statMeta.filter(
-    (meta) => meta.panel === "counting" && active.includes(meta.key),
+    (meta) => meta.panel === "counting" && active.includes(meta.key) && !isDisabled(meta),
   );
   const shootingActive = statMeta.filter(
     (meta) => meta.panel === "shooting" && active.includes(meta.key),
@@ -187,7 +213,8 @@ export function PlayerStatChart({ series }: { series: CumulativePoint[] }) {
           <button
             key={meta.key}
             type="button"
-            aria-pressed={active.includes(meta.key)}
+            aria-pressed={active.includes(meta.key) && !isDisabled(meta)}
+            disabled={isDisabled(meta)}
             onClick={() => toggle(meta.key)}
             className={styles.chip}
           >
@@ -198,9 +225,9 @@ export function PlayerStatChart({ series }: { series: CumulativePoint[] }) {
       </div>
 
       <section className={styles.panel}>
-        <h3 className={styles.panelTitle}>Counting stats</h3>
+        <h3 className={styles.panelTitle}>{COUNTING_TITLE_BY_MODE[mode]}</h3>
         {!!countingActive.length ? (
-          <StatLineChart metas={countingActive} series={series} chrome={chrome} />
+          <StatLineChart metas={countingActive} series={series} chrome={chrome} mode={mode} />
         ) : (
           <p className={styles.emptyHint}>Select a stat to plot</p>
         )}
@@ -209,7 +236,13 @@ export function PlayerStatChart({ series }: { series: CumulativePoint[] }) {
       {!!shootingActive.length && (
         <section className={styles.panel}>
           <h3 className={styles.panelTitle}>Shooting percentages</h3>
-          <StatLineChart metas={shootingActive} series={series} domain={[0, 100]} chrome={chrome} />
+          <StatLineChart
+            metas={shootingActive}
+            series={series}
+            domain={[0, 100]}
+            chrome={chrome}
+            mode={mode}
+          />
         </section>
       )}
     </div>

@@ -27,6 +27,12 @@
     border-color: var(--color-accent);
     color: var(--color-accent);
   }
+
+  &:disabled {
+    color: var(--color-text-muted);
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 .dot {
