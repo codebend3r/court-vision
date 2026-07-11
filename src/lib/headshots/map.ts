@@ -55,7 +55,10 @@ export async function mapHeadshots(deps: MapHeadshotsDeps = {}): Promise<MapHead
   });
   const playersByName = groupByNormalizedName(players);
 
-  const { matches, unmatched } = Array.from(playersByName.entries()).reduce(
+  const { matches, unmatched } = Array.from(playersByName.entries()).reduce<{
+    matches: PersonMatch[];
+    unmatched: string[];
+  }>(
     (acc, [name, group]) => {
       if (group.length > 1) {
         return {
@@ -74,7 +77,7 @@ export async function mapHeadshots(deps: MapHeadshotsDeps = {}): Promise<MapHead
         matches: acc.matches.concat({ id: player.id, nbaPersonId: indexMatch.personId }),
       };
     },
-    { matches: [] as PersonMatch[], unmatched: [] as string[] },
+    { matches: [], unmatched: [] },
   );
 
   await matches.reduce(async (previous, match) => {

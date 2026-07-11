@@ -24,9 +24,9 @@ const nbaPlayerIndexRowSchema: z.ZodType<NbaPlayerIndexRow> = z.object({
   fullName: z.string(),
 });
 
-// Isolates the top-level `players = [ ... ]` block so sibling blocks further
-// down the file (`wnba_players`, `teams`) are never parsed.
-const PLAYERS_BLOCK_PATTERN = /players = \[([\s\S]*?)\n\]/;
+// Isolates the top-level `players = [ ... ]` block. Anchored to line start so
+// a sibling block like `wnba_players = [` can never match, regardless of order.
+const PLAYERS_BLOCK_PATTERN = /^players = \[([\s\S]*?)\n\]/m;
 
 // Matches one `[id, "lastName", "firstName", "fullName", True|False]` row,
 // capturing the id (group 1) and full name (group 2). `(?:[^"\\]|\\.)*` allows
