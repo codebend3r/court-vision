@@ -8,6 +8,34 @@ import DesignPage from "@/app/design/page";
 afterEach(cleanup);
 
 describe("DesignPage", () => {
+  it("links to every design system section", () => {
+    render(
+      <ThemeProvider>
+        <DesignPage />
+      </ThemeProvider>,
+    );
+
+    const nav = screen.getByRole("navigation", { name: "Design system sections" });
+    const links = Array.from(nav.querySelectorAll("a"));
+
+    expect(links).toHaveLength(9);
+    expect(links.map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
+      ["Colors", "#colors"],
+      ["Chart palettes", "#chart-palettes"],
+      ["Typography", "#typography"],
+      ["Typefaces", "#typefaces"],
+      ["Headings", "#headings"],
+      ["Font weights", "#font-weights"],
+      ["Spacing", "#spacing"],
+      ["Radius", "#radius"],
+      ["Form controls", "#form-controls"],
+    ]);
+
+    for (const link of links) {
+      expect(document.querySelector(link.getAttribute("href") ?? "")).toBeInTheDocument();
+    }
+  });
+
   it("renders the nine section headings", () => {
     render(
       <ThemeProvider>
@@ -89,6 +117,9 @@ describe("DesignPage", () => {
 
     expect(screen.getAllByRole("checkbox")).toHaveLength(3);
     expect(screen.getAllByRole("radio")).toHaveLength(3);
+    expect(screen.getAllByRole("switch")).toHaveLength(3);
+    expect(screen.getByRole("switch", { name: "On" })).toBeChecked();
+    expect(screen.getByRole("switch", { name: "Disabled" })).toBeDisabled();
     expect(screen.getByRole("slider")).toBeInTheDocument();
     expect(screen.getByRole("combobox")).toBeInTheDocument();
     expect(screen.getByRole("listbox")).toBeInTheDocument();

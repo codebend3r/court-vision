@@ -1,4 +1,5 @@
 import { ChartPaletteSwatches } from "@/components/ChartPaletteSwatches/ChartPaletteSwatches";
+import { Switch } from "@/components/Switch/Switch";
 import { TokenSwatch } from "@/components/TokenSwatch/TokenSwatch";
 
 import styles from "@/app/design/page.module.scss";
@@ -105,12 +106,32 @@ const POSITIONS: readonly string[] = [
 
 const STAT_CATEGORIES: readonly string[] = ["Points", "Rebounds", "Assists", "Steals", "Blocks"];
 
+const DESIGN_SECTIONS = [
+  { id: "colors", label: "Colors" },
+  { id: "chart-palettes", label: "Chart palettes" },
+  { id: "typography", label: "Typography" },
+  { id: "typefaces", label: "Typefaces" },
+  { id: "headings", label: "Headings" },
+  { id: "font-weights", label: "Font weights" },
+  { id: "spacing", label: "Spacing" },
+  { id: "radius", label: "Radius" },
+  { id: "form-controls", label: "Form controls" },
+] as const;
+
 export default function DesignPage() {
   return (
     <main className={styles.page}>
       <h1>Design system</h1>
 
-      <section className={styles.section}>
+      <nav className={styles.sectionNav} aria-label="Design system sections">
+        {DESIGN_SECTIONS.map((section) => (
+          <a key={section.id} href={`#${section.id}`} className={styles.sectionLink}>
+            {section.label}
+          </a>
+        ))}
+      </nav>
+
+      <section id="colors" className={styles.section}>
         <h2>Colors</h2>
         <div className={styles.colorGrid}>
           {COLOR_TOKENS.map((token) => (
@@ -119,12 +140,12 @@ export default function DesignPage() {
         </div>
       </section>
 
-      <section className={styles.section}>
+      <section id="chart-palettes" className={styles.section}>
         <h2>Chart palettes</h2>
         <ChartPaletteSwatches />
       </section>
 
-      <section className={styles.section}>
+      <section id="typography" className={styles.section}>
         <h2>Typography</h2>
         <div className={styles.typeStack}>
           {TYPOGRAPHY_TOKENS.map((token) => (
@@ -135,7 +156,7 @@ export default function DesignPage() {
         </div>
       </section>
 
-      <section className={styles.section}>
+      <section id="typefaces" className={styles.section}>
         <h2>Typefaces</h2>
         <div className={styles.typefaceStack}>
           {TYPEFACES.map((typeface) => (
@@ -150,7 +171,7 @@ export default function DesignPage() {
         </div>
       </section>
 
-      <section className={styles.section}>
+      <section id="headings" className={styles.section}>
         <h2>Headings</h2>
         <div className={styles.headingStack}>
           {HEADING_TAGS.map((tag) => {
@@ -165,7 +186,7 @@ export default function DesignPage() {
         </div>
       </section>
 
-      <section className={styles.section}>
+      <section id="font-weights" className={styles.section}>
         <h2>Font weights</h2>
         <div className={styles.weightStack}>
           {WEIGHT_FAMILIES.map((family) => (
@@ -190,7 +211,7 @@ export default function DesignPage() {
         </div>
       </section>
 
-      <section className={styles.section}>
+      <section id="spacing" className={styles.section}>
         <h2>Spacing</h2>
         <div className={styles.spacingStack}>
           {SPACING_TOKENS.map((token) => (
@@ -202,7 +223,7 @@ export default function DesignPage() {
         </div>
       </section>
 
-      <section className={styles.section}>
+      <section id="radius" className={styles.section}>
         <h2>Radius</h2>
         <div className={styles.radiusGrid}>
           {RADIUS_TOKENS.map((token) => (
@@ -214,7 +235,7 @@ export default function DesignPage() {
         </div>
       </section>
 
-      <section className={styles.section}>
+      <section id="form-controls" className={styles.section}>
         <h2>Form controls</h2>
         <div className={styles.tokenChips}>
           {CONTROL_TOKENS.map((token) => (
@@ -315,6 +336,12 @@ export default function DesignPage() {
                 <input type="radio" name="radio-demo" disabled className={styles.radio} />
                 Disabled
               </label>
+            </fieldset>
+            <fieldset className={styles.fieldset}>
+              <legend className={styles.specimenName}>Switch component</legend>
+              <Switch label="On" defaultChecked />
+              <Switch label="Off" />
+              <Switch label="Disabled" disabled />
             </fieldset>
           </div>
         </div>
