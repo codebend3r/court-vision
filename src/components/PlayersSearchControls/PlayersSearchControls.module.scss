@@ -1,3 +1,5 @@
+@use "@/styles/mixins" as *;
+
 .controls {
   display: flex;
   flex-wrap: wrap;
@@ -5,7 +7,14 @@
   gap: var(--space-3);
 }
 
-.search,
+.search {
+  @include control-field;
+  width: min(480px, 100%);
+  height: calc(var(--control-height) * 1.25);
+  padding: 0 var(--space-4);
+  font-size: var(--font-size-md);
+}
+
 .select {
   padding: var(--space-1) var(--space-2);
   border: 1px solid var(--color-border);
