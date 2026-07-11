@@ -125,4 +125,24 @@ describe("PlayersSearchControls", () => {
 
     expect(replace).toHaveBeenCalledTimes(0);
   });
+
+  it("does not navigate when props catch up and user types the same value again", () => {
+    const { rerender } = render(<PlayersSearchControls {...defaultProps} />);
+
+    const input = screen.getByLabelText("Search players");
+    fireEvent.change(input, { target: { value: "cur" } });
+
+    advance(300);
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledWith("/players?q=cur");
+
+    replace.mockClear();
+
+    rerender(<PlayersSearchControls {...defaultProps} q="cur" />);
+    fireEvent.change(input, { target: { value: "cur" } });
+
+    advance(300);
+
+    expect(replace).toHaveBeenCalledTimes(0);
+  });
 });

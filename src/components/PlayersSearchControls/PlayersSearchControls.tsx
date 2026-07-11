@@ -50,6 +50,11 @@ export function PlayersSearchControls({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestQ = useRef(q);
+
+  useEffect(() => {
+    latestQ.current = q;
+  }, [q]);
 
   useEffect(
     () => () => {
@@ -71,7 +76,7 @@ export function PlayersSearchControls({
     }
     debounceRef.current = setTimeout(() => {
       const trimmed = value.trim().slice(0, MAX_QUERY_LENGTH);
-      if (trimmed === q) {
+      if (trimmed === latestQ.current) {
         return;
       }
       navigate(buildHref({ q: trimmed, page: 1, size, includeRetired }));
