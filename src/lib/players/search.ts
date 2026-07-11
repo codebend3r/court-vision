@@ -9,6 +9,7 @@ export interface PlayerRow {
   fullName: string;
   teamAbbr: string | null;
   position: string | null;
+  nbaPersonId: number | null;
 }
 
 export interface PlayersSearchResult {
@@ -17,7 +18,13 @@ export interface PlayersSearchResult {
   page: number;
 }
 
-const rowSelect = { id: true, fullName: true, teamAbbr: true, position: true };
+const rowSelect = {
+  id: true,
+  fullName: true,
+  teamAbbr: true,
+  position: true,
+  nbaPersonId: true,
+};
 
 export const searchPlayers = async (args: PlayersSearchParams): Promise<PlayersSearchResult> => {
   const { q, page, size, includeRetired } = args;

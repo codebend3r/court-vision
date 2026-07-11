@@ -81,6 +81,23 @@ describe("PlayerPage", () => {
 
     expect(screen.getByText("CJ Rivas")).toBeInTheDocument();
     expect(screen.getAllByRole("button").length).toBeGreaterThan(0);
+    const fallback = screen.getByRole("img", { name: "CJ Rivas" });
+    expect(fallback.tagName).not.toBe("IMG");
+  });
+
+  it("renders the NBA CDN headshot in the header when the player has an nbaPersonId", async () => {
+    vi.mocked(prisma.player.findUnique).mockResolvedValue({ ...player, nbaPersonId: 1630162 });
+    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);
+
+    render(
+      <ThemeProvider>
+        {await PlayerPage({ params: Promise.resolve({ playerId: "3547238" }) })}
+      </ThemeProvider>,
+    );
+
+    const photo = screen.getByRole("img", { name: "CJ Rivas" });
+    const src = decodeURIComponent(photo.getAttribute("src") ?? "");
+    expect(src).toContain("/headshots/nba/latest/1040x760/1630162.png");
   });
 
   it("rejects for an unknown id", async () => {

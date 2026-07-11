@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayersSearchControls } from "@/components/PlayersSearchControls/PlayersSearchControls";
 import { searchPlayers } from "@/lib/players/search";
 import { parsePlayersSearchParams } from "@/lib/players/searchParams";
@@ -60,7 +61,10 @@ export default async function PlayersPage({
             {rows.map((row) => (
               <tr key={row.id}>
                 <td>
-                  <Link href={`/players/${row.id}`}>{row.fullName}</Link>
+                  <span className={styles.nameCell}>
+                    <PlayerAvatar fullName={row.fullName} nbaPersonId={row.nbaPersonId} size="sm" />
+                    <Link href={`/players/${row.id}`}>{row.fullName}</Link>
+                  </span>
                 </td>
                 <td>{row.teamAbbr ?? "—"}</td>
                 <td>{row.position ?? "—"}</td>

@@ -43,7 +43,13 @@ describe("searchPlayers", () => {
 
     expect(prisma.player.findMany).toHaveBeenCalledWith({
       where: { gameLogs: { some: {} } },
-      select: { id: true, fullName: true, teamAbbr: true, position: true },
+      select: {
+        id: true,
+        fullName: true,
+        teamAbbr: true,
+        position: true,
+        nbaPersonId: true,
+      },
       orderBy: { fullName: "asc" },
       skip: 0,
       take: 25,
@@ -77,7 +83,13 @@ describe("searchPlayers", () => {
         gameLogs: { some: {} },
         fullName: { contains: "curry", mode: "insensitive" },
       },
-      select: { id: true, fullName: true, teamAbbr: true, position: true },
+      select: {
+        id: true,
+        fullName: true,
+        teamAbbr: true,
+        position: true,
+        nbaPersonId: true,
+      },
       orderBy: { fullName: "asc" },
       skip: 0,
       take: 25,
@@ -92,7 +104,13 @@ describe("searchPlayers", () => {
 
     expect(prisma.player.findMany).toHaveBeenCalledWith({
       where: {},
-      select: { id: true, fullName: true, teamAbbr: true, position: true },
+      select: {
+        id: true,
+        fullName: true,
+        teamAbbr: true,
+        position: true,
+        nbaPersonId: true,
+      },
       orderBy: { fullName: "asc" },
       skip: 0,
       take: 25,

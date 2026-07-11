@@ -94,6 +94,7 @@ All scripts run through Bun (`bun run <name>`):
 │   │   └── page.tsx            # `/` route (blank landing inside the shell)
 │   ├── components/             # React components (co-located SCSS module + test)
 │   │   ├── ChartPaletteSwatches/  # labeled color chips for the chart stat palettes
+│   │   ├── PlayerAvatar/       # NBA CDN headshot with initials fallback
 │   │   ├── PlayerStatChart/    # two-panel Recharts season-average line chart
 │   │   ├── PlayersSearchControls/  # debounced search, page size, retired toggle, pager
 │   │   ├── SideNav/            # persistent side menu (Players, Design)
@@ -102,6 +103,7 @@ All scripts run through Bun (`bun run <name>`):
 │   ├── lib/
 │   │   ├── balldontlie/        # Balldontlie adapter: client → schemas → endpoints → transform → sync
 │   │   ├── demo/               # seed:demo generator (real identities/schedules, generated box scores)
+│   │   ├── headshots/          # nbaPersonId mapping script (index source → match → persist)
 │   │   ├── nba/                # NBA stats fetch → parse → validate → transform → persist
 │   │   ├── prisma.ts           # Prisma client singleton (pg driver adapter)
 │   │   └── stats/              # source-agnostic upserts + cumulative season-average series builder
@@ -151,6 +153,9 @@ sharing the source-agnostic write path in `src/lib/stats/`. `bun run sync:bdl` o
 The full endpoint reference — e.g. [Get All Players](https://docs.balldontlie.io/#get-all-players) —
 lives in the [Balldontlie documentation](https://docs.balldontlie.io/). See
 [`docs/superpowers/specs/2026-07-10-balldontlie-player-stats-backfill-design.md`](docs/superpowers/specs/2026-07-10-balldontlie-player-stats-backfill-design.md).
+
+`bun run map:headshots` is a one-time backfill that matches players to an NBA player-id index by
+normalized name and writes `Player.nbaPersonId`, which `PlayerAvatar` uses to render CDN headshots.
 
 ## Database
 
