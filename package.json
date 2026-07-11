@@ -21,7 +21,7 @@
     "sync:bdl": "bun run src/lib/balldontlie/sync.ts",
     "seed:demo": "bun run src/lib/demo/seed.ts",
     "map:headshots": "bun run src/lib/headshots/map.ts",
-    "system-check": "run-s prettier:check typecheck lint test"
+    "system-check": "run-s prettier:check typecheck lint test build"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.8.0",
