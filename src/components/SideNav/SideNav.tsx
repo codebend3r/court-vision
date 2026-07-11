@@ -23,15 +23,6 @@ export function SideNav() {
 
   return (
     <nav className={styles.nav} aria-label="Site" data-collapsed={isCollapsed ? "true" : "false"}>
-      <button
-        type="button"
-        className={styles.collapseButton}
-        onClick={toggleCollapsed}
-        aria-label={isCollapsed ? "Expand side menu" : "Collapse side menu"}
-        aria-expanded={!isCollapsed}
-      >
-        <span aria-hidden="true">{isCollapsed ? "›" : "‹"}</span>
-      </button>
       <ul className={styles.list}>
         {NAV_ENTRIES.map((entry) => {
           const isActive = pathname === entry.href;
@@ -55,6 +46,15 @@ export function SideNav() {
           );
         })}
       </ul>
+      <button
+        type="button"
+        className={styles.collapseButton}
+        onClick={toggleCollapsed}
+        aria-label={isCollapsed ? "Expand side menu" : "Collapse side menu"}
+        aria-expanded={!isCollapsed}
+      >
+        <span aria-hidden="true">{isCollapsed ? "›" : "‹"}</span>
+      </button>
     </nav>
   );
 }
