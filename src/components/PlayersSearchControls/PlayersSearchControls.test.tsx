@@ -144,4 +144,24 @@ describe("PlayersSearchControls", () => {
 
     expect(replace).toHaveBeenCalledTimes(0);
   });
+
+  it("cancels pending debounce timer on immediate navigation (size, retired, pager)", () => {
+    render(<PlayersSearchControls {...defaultProps} />);
+
+    const input = screen.getByLabelText("Search players");
+    const select = screen.getByLabelText("Page size");
+
+    // Type "cur" — debounce timer is pending.
+    fireEvent.change(input, { target: { value: "cur" } });
+
+    // Immediately change size (before timer fires). This should cancel the pending timer.
+    fireEvent.change(select, { target: { value: "50" } });
+
+    // Advance 300ms. The pending debounce should have been cancelled,
+    // so replace should be called exactly ONCE (the size navigation).
+    advance(300);
+
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledWith("/players?size=50");
+  });
 });

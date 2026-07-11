@@ -66,6 +66,10 @@ export function PlayersSearchControls({
   );
 
   const navigate = (href: string) => {
+    if (debounceRef.current !== null) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
     startTransition(() => router.replace(href));
   };
 
@@ -112,6 +116,7 @@ export function PlayersSearchControls({
         onChange={onSearchChange}
         placeholder="Search players…"
         aria-label="Search players"
+        maxLength={MAX_QUERY_LENGTH}
         className={styles.search}
       />
       <select value={size} onChange={onSizeChange} aria-label="Page size" className={styles.select}>

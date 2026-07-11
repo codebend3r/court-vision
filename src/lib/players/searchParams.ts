@@ -17,7 +17,7 @@ export const parsePlayersSearchParams = (raw: {
 }): PlayersSearchParams => {
   const q = (raw.q ?? "").trim().slice(0, MAX_QUERY_LENGTH);
   const parsedPage = Number.parseInt(raw.page ?? "", 10);
-  const page = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
+  const page = !Number.isSafeInteger(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
   const parsedSize = Number.parseInt(raw.size ?? "", 10);
   const size = PAGE_SIZES.includes(parsedSize) ? parsedSize : DEFAULT_PAGE_SIZE;
   return { q, page, size, includeRetired: raw.retired === "1" };

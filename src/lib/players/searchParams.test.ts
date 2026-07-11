@@ -19,6 +19,8 @@ describe("parsePlayersSearchParams", () => {
     [{ page: "0" }, { page: 1 }],
     [{ page: "-2" }, { page: 1 }],
     [{ page: "abc" }, { page: 1 }],
+    [{ page: "9".repeat(400) }, { page: 1 }],
+    [{ page: "99999999999999999999" }, { page: 1 }],
     [{ size: "50" }, { size: 50 }],
     [{ size: "33" }, { size: 25 }],
     [{ size: "" }, { size: 25 }],
