@@ -1,0 +1,4 @@
+# Netlify Image CDN: allow transforming remote NBA headshots requested by
+# the next/image loader in src/lib/images/netlifyLoader.ts.
+[images]
+  remote_images = ["https://cdn\\.nba\\.com/.*"]

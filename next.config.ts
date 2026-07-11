@@ -2,7 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [{ protocol: "https", hostname: "cdn.nba.com" }],
+    loader: "custom",
+    loaderFile: "./src/lib/images/netlifyLoader.ts",
   },
 };
 
