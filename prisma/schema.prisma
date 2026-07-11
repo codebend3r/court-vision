@@ -23,6 +23,7 @@ model Player {
   teamAbbr     String?
   position     String?
   jerseyNumber String?
+  nbaPersonId  Int?
   seasonStats  PlayerSeasonStats[]
   gameLogs     PlayerGameLog[]
   createdAt    DateTime @default(now())
