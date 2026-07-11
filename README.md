@@ -89,13 +89,16 @@ All scripts run through Bun (`bun run <name>`):
 ├── public/                     # static assets
 ├── src/
 │   ├── app/                    # Next.js App Router
+│   │   ├── design/             # `/design` route: design-system reference (tokens, chart palettes)
 │   │   ├── layout.tsx          # root layout: SiteHeader + SideNav shell around every page
 │   │   └── page.tsx            # `/` route (blank landing inside the shell)
 │   ├── components/             # React components (co-located SCSS module + test)
+│   │   ├── ChartPaletteSwatches/  # labeled color chips for the chart stat palettes
 │   │   ├── PlayerStatChart/    # two-panel Recharts season-average line chart
 │   │   ├── PlayersSearchControls/  # debounced search, page size, retired toggle, pager
-│   │   ├── SideNav/            # persistent side menu (Players)
-│   │   └── SiteHeader/         # persistent Court Vision header
+│   │   ├── SideNav/            # persistent side menu (Players, Design)
+│   │   ├── SiteHeader/         # persistent Court Vision header
+│   │   └── TokenSwatch/        # single design-token tile (swatch + name + computed value)
 │   ├── lib/
 │   │   ├── balldontlie/        # Balldontlie adapter: client → schemas → endpoints → transform → sync
 │   │   ├── demo/               # seed:demo generator (real identities/schedules, generated box scores)
@@ -115,11 +118,12 @@ Import aliases: `@/*` → `src/*`, `@generated/*` → `generated/*`.
 
 Court Vision uses the Next.js **App Router** (`src/app`).
 
-| Route                 | Source                                | Renders                                                 |
-| --------------------- | ------------------------------------- | ------------------------------------------------------- |
-| `/`                   | `src/app/page.tsx`                    | Blank landing inside the app shell (header + side menu) |
-| `/players/[playerId]` | `src/app/players/[playerId]/page.tsx` | Season-to-date average line charts for one player       |
-| `/players`            | `src/app/players/page.tsx`            | Searchable, paginated table of all players              |
+| Route                 | Source                                | Renders                                                              |
+| --------------------- | ------------------------------------- | -------------------------------------------------------------------- |
+| `/`                   | `src/app/page.tsx`                    | Blank landing inside the app shell (header + side menu)              |
+| `/players/[playerId]` | `src/app/players/[playerId]/page.tsx` | Season-to-date average line charts for one player                    |
+| `/players`            | `src/app/players/page.tsx`            | Searchable, paginated table of all players                           |
+| `/design`             | `src/app/design/page.tsx`             | Design-system reference: tokens, chart palettes, type/spacing/radius |
 
 No API route handlers exist yet; the NBA sync runs as a standalone Bun script.
 

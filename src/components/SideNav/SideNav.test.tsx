@@ -25,4 +25,18 @@ describe("SideNav", () => {
     render(<SideNav />);
     expect(screen.getByRole("link", { name: "Players" })).toHaveAttribute("aria-current", "page");
   });
+
+  it("renders the Design link", () => {
+    pathnameMock.current = "/";
+    render(<SideNav />);
+    const link = screen.getByRole("link", { name: "Design" });
+    expect(link).toHaveAttribute("href", "/design");
+    expect(link).not.toHaveAttribute("aria-current");
+  });
+
+  it("marks Design active on /design", () => {
+    pathnameMock.current = "/design";
+    render(<SideNav />);
+    expect(screen.getByRole("link", { name: "Design" })).toHaveAttribute("aria-current", "page");
+  });
 });

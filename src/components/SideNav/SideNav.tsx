@@ -5,7 +5,10 @@ import { usePathname } from "next/navigation";
 
 import styles from "./SideNav.module.scss";
 
-const NAV_ENTRIES = [{ href: "/players", label: "Players" }];
+const NAV_ENTRIES = [
+  { href: "/players", label: "Players" },
+  { href: "/design", label: "Design" },
+];
 
 export function SideNav() {
   const pathname = usePathname();

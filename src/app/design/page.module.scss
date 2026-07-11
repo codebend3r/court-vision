@@ -1,0 +1,71 @@
+.page {
+  display: grid;
+  gap: var(--space-8);
+  padding: var(--space-6);
+}
+
+.section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.colorGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-3);
+}
+
+.typeStack {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.typeSample {
+  margin: 0;
+}
+
+.spacingStack {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.spacingRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.spacingBar {
+  display: block;
+  height: var(--space-4);
+  background: var(--color-accent);
+  border-radius: var(--radius-sm);
+}
+
+.spacingLabel {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.radiusGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-3);
+}
+
+.radiusTile {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.radiusSwatch {
+  width: 100%;
+  height: 48px;
+  background: var(--color-accent);
+  border: 1px solid var(--color-border);
+}
+
+.radiusLabel {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
