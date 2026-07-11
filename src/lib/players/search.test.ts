@@ -22,7 +22,9 @@ const defaultParams: PlayersSearchParams = {
   size: 25,
   includeRetired: false,
   sort: "firstName",
-  dir: "asc",
+  dir: "desc",
+  range: "all",
+  mode: "average",
 };
 
 const expectedSelect = {
@@ -83,11 +85,11 @@ describe("searchPlayers", () => {
     expect(prisma.player.findMany).toHaveBeenCalledWith({
       where: { gameLogs: { some: {} } },
       select: expectedSelect,
-      orderBy: [{ firstName: "asc" }, { lastName: "asc" }, { id: "asc" }],
+      orderBy: [{ firstName: "desc" }, { lastName: "desc" }, { id: "asc" }],
       skip: 0,
       take: 25,
     });
-    expect(result).toEqual({ rows: mockRows, total: 100, page: 1 });
+    expect(result).toEqual({ rows: [expect.objectContaining(mockRows[0])], total: 100, page: 1 });
   });
 
   it("adds fullName search condition when q is provided", async () => {
@@ -117,7 +119,7 @@ describe("searchPlayers", () => {
         fullName: { contains: "curry", mode: "insensitive" },
       },
       select: expectedSelect,
-      orderBy: [{ firstName: "asc" }, { lastName: "asc" }, { id: "asc" }],
+      orderBy: [{ firstName: "desc" }, { lastName: "desc" }, { id: "asc" }],
       skip: 0,
       take: 25,
     });
@@ -132,7 +134,7 @@ describe("searchPlayers", () => {
     expect(prisma.player.findMany).toHaveBeenCalledWith({
       where: {},
       select: expectedSelect,
-      orderBy: [{ firstName: "asc" }, { lastName: "asc" }, { id: "asc" }],
+      orderBy: [{ firstName: "desc" }, { lastName: "desc" }, { id: "asc" }],
       skip: 0,
       take: 25,
     });
@@ -188,7 +190,11 @@ describe("searchPlayers", () => {
 
     const result = await searchPlayers({ ...defaultParams, page: 9 });
 
-    expect(result).toEqual({ rows: secondQueryRows, total: 30, page: 2 });
+    expect(result).toEqual({
+      rows: [expect.objectContaining(secondQueryRows[0])],
+      total: 30,
+      page: 2,
+    });
     expect(prisma.player.findMany).toHaveBeenCalledTimes(2);
     expect(prisma.player.findMany).toHaveBeenNthCalledWith(
       1,
@@ -208,5 +214,82 @@ describe("searchPlayers", () => {
 
     expect(result).toEqual({ rows: [], total: 0, page: 1 });
     expect(prisma.player.findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("aggregates and sorts the selected recent-game range", async () => {
+    const recentRows = [
+      {
+        id: 1,
+        firstName: "Alpha",
+        lastName: "One",
+        fullName: "Alpha One",
+        teamAbbr: "AAA",
+        position: "G",
+        nbaPersonId: null,
+        teamId: 1,
+        jerseyNumber: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        gameLogs: [
+          {
+            fgm: 2,
+            fga: 4,
+            fg3m: 1,
+            ftm: 1,
+            fta: 2,
+            reb: 2,
+            ast: 3,
+            stl: 1,
+            blk: 0,
+            tov: 1,
+            pts: 6,
+          },
+        ],
+      },
+      {
+        id: 2,
+        firstName: "Beta",
+        lastName: "Two",
+        fullName: "Beta Two",
+        teamAbbr: "BBB",
+        position: "F",
+        nbaPersonId: null,
+        teamId: 2,
+        jerseyNumber: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        gameLogs: [
+          {
+            fgm: 4,
+            fga: 8,
+            fg3m: 2,
+            ftm: 2,
+            fta: 2,
+            reb: 4,
+            ast: 2,
+            stl: 0,
+            blk: 1,
+            tov: 2,
+            pts: 12,
+          },
+        ],
+      },
+    ];
+    vi.mocked(prisma.player.findMany).mockResolvedValue(recentRows);
+
+    const result = await searchPlayers({
+      ...defaultParams,
+      sort: "pts",
+      dir: "desc",
+      range: "last20",
+    });
+
+    expect(prisma.player.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({ gameLogs: expect.objectContaining({ take: 20 }) }),
+      }),
+    );
+    expect(result.rows.map((row) => row.id)).toEqual([2, 1]);
+    expect(result.rows[0].stats?.pts).toBe(12);
   });
 });

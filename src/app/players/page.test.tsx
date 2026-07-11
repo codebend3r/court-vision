@@ -79,7 +79,7 @@ describe("PlayersPage", () => {
     expect(screen.getByText(".750")).toBeInTheDocument();
   });
 
-  it("renders sortable name headers with the default first name ascending sort", async () => {
+  it("renders sortable name headers with the default first name descending sort", async () => {
     vi.mocked(searchPlayers).mockResolvedValue({
       rows: [
         {
@@ -99,13 +99,13 @@ describe("PlayersPage", () => {
     render(await PlayersPage({ searchParams: Promise.resolve({}) }));
 
     const firstNameHeader = screen.getByRole("columnheader", { name: "First name" });
-    expect(firstNameHeader).toHaveAttribute("aria-sort", "ascending");
+    expect(firstNameHeader).toHaveAttribute("aria-sort", "descending");
     const lastNameHeader = screen.getByRole("columnheader", { name: "Last name" });
     expect(lastNameHeader).not.toHaveAttribute("aria-sort");
 
     expect(screen.getByRole("link", { name: "First name" })).toHaveAttribute(
       "href",
-      "/players?dir=desc",
+      "/players?dir=asc",
     );
     expect(screen.getByRole("link", { name: "Last name" })).toHaveAttribute(
       "href",
@@ -145,12 +145,52 @@ describe("PlayersPage", () => {
 
     expect(screen.getByRole("link", { name: "Last name" })).toHaveAttribute(
       "href",
-      "/players?q=curry&sort=lastName",
+      "/players?q=curry&sort=lastName&dir=asc",
     );
     expect(screen.getByRole("link", { name: "First name" })).toHaveAttribute(
       "href",
       "/players?q=curry",
     );
+  });
+
+  it("makes stat headers sortable and renders totals when selected", async () => {
+    vi.mocked(searchPlayers).mockResolvedValue({
+      rows: [
+        {
+          id: 1,
+          firstName: "Stephen",
+          lastName: "Curry",
+          fullName: "Stephen Curry",
+          teamAbbr: "GSW",
+          position: "G",
+          nbaPersonId: null,
+          stats: {
+            gamesPlayed: 5,
+            pts: 140,
+            reb: 25,
+            ast: 30,
+            stl: 5,
+            blk: 2,
+            fg3m: 20,
+            fgm: 50,
+            fga: 100,
+            ftm: 20,
+            fta: 25,
+            tov: 10,
+          },
+        },
+      ],
+      total: 1,
+      page: 1,
+    });
+
+    render(await PlayersPage({ searchParams: Promise.resolve({ range: "last5", mode: "total" }) }));
+
+    expect(screen.getByRole("link", { name: "PTS" })).toHaveAttribute(
+      "href",
+      "/players?sort=pts&range=last5&mode=total",
+    );
+    expect(screen.getByText("140")).toBeInTheDocument();
   });
 
   it("shows a headshot image for a row with an nbaPersonId and initials for a row without", async () => {

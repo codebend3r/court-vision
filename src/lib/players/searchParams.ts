@@ -2,11 +2,44 @@ export const PAGE_SIZES: readonly number[] = [10, 25, 50, 100];
 export const DEFAULT_PAGE_SIZE = 50;
 export const MAX_QUERY_LENGTH = 100;
 
-export const PLAYER_SORT_KEYS = ["firstName", "lastName"] as const;
-export type PlayerSortKey = (typeof PLAYER_SORT_KEYS)[number];
+export type PlayerSortKey =
+  | "firstName"
+  | "lastName"
+  | "pts"
+  | "reb"
+  | "ast"
+  | "stl"
+  | "blk"
+  | "fg3m"
+  | "fgPct"
+  | "ftPct"
+  | "tov";
+export const PLAYER_SORT_KEYS: readonly PlayerSortKey[] = [
+  "firstName",
+  "lastName",
+  "pts",
+  "reb",
+  "ast",
+  "stl",
+  "blk",
+  "fg3m",
+  "fgPct",
+  "ftPct",
+  "tov",
+];
 export type SortDirection = "asc" | "desc";
+export type PlayerGameRange = "all" | "last5" | "last10" | "last20" | "last40" | "last60";
+export const PLAYER_GAME_RANGES: readonly PlayerGameRange[] = [
+  "all",
+  "last5",
+  "last10",
+  "last20",
+  "last40",
+  "last60",
+];
+export type PlayerStatMode = "average" | "total";
 export const DEFAULT_SORT_KEY: PlayerSortKey = "firstName";
-export const DEFAULT_SORT_DIR: SortDirection = "asc";
+export const DEFAULT_SORT_DIR: SortDirection = "desc";
 
 export interface PlayersSearchParams {
   q: string;
@@ -15,10 +48,18 @@ export interface PlayersSearchParams {
   includeRetired: boolean;
   sort: PlayerSortKey;
   dir: SortDirection;
+  range: PlayerGameRange;
+  mode: PlayerStatMode;
 }
 
 const isPlayerSortKey = (value: string | undefined): value is PlayerSortKey =>
   PLAYER_SORT_KEYS.some((key) => key === value);
+
+export const isPlayerGameRange = (value: string | undefined): value is PlayerGameRange =>
+  PLAYER_GAME_RANGES.some((range) => range === value);
+
+export const isPlayerStatMode = (value: string | undefined): value is PlayerStatMode =>
+  value === "average" || value === "total";
 
 export const parsePlayersSearchParams = (raw: {
   q?: string;
@@ -27,6 +68,8 @@ export const parsePlayersSearchParams = (raw: {
   retired?: string;
   sort?: string;
   dir?: string;
+  range?: string;
+  mode?: string;
 }): PlayersSearchParams => {
   const q = (raw.q ?? "").trim().slice(0, MAX_QUERY_LENGTH);
   const parsedPage = Number.parseInt(raw.page ?? "", 10);
@@ -34,8 +77,10 @@ export const parsePlayersSearchParams = (raw: {
   const parsedSize = Number.parseInt(raw.size ?? "", 10);
   const size = PAGE_SIZES.includes(parsedSize) ? parsedSize : DEFAULT_PAGE_SIZE;
   const sort = isPlayerSortKey(raw.sort) ? raw.sort : DEFAULT_SORT_KEY;
-  const dir: SortDirection = raw.dir === "desc" ? "desc" : DEFAULT_SORT_DIR;
-  return { q, page, size, includeRetired: raw.retired === "1", sort, dir };
+  const dir: SortDirection = raw.dir === "asc" ? "asc" : DEFAULT_SORT_DIR;
+  const range: PlayerGameRange = isPlayerGameRange(raw.range) ? raw.range : "all";
+  const mode: PlayerStatMode = isPlayerStatMode(raw.mode) ? raw.mode : "average";
+  return { q, page, size, includeRetired: raw.retired === "1", sort, dir, range, mode };
 };
 
 export const buildPlayersHref = (args: PlayersSearchParams): string => {
@@ -57,6 +102,12 @@ export const buildPlayersHref = (args: PlayersSearchParams): string => {
   }
   if (args.dir !== DEFAULT_SORT_DIR) {
     params.set("dir", args.dir);
+  }
+  if (args.range !== "all") {
+    params.set("range", args.range);
+  }
+  if (args.mode !== "average") {
+    params.set("mode", args.mode);
   }
   const query = params.toString();
   return query === "" ? "/players" : `/players?${query}`;

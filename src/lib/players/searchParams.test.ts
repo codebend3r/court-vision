@@ -10,7 +10,9 @@ describe("parsePlayersSearchParams", () => {
       size: 50,
       includeRetired: false,
       sort: "firstName",
-      dir: "asc",
+      dir: "desc",
+      range: "all",
+      mode: "average",
     });
   });
 
@@ -34,7 +36,12 @@ describe("parsePlayersSearchParams", () => {
     [{ sort: "" }, { sort: "firstName" }],
     [{ dir: "desc" }, { dir: "desc" }],
     [{ dir: "asc" }, { dir: "asc" }],
-    [{ dir: "up" }, { dir: "asc" }],
+    [{ dir: "up" }, { dir: "desc" }],
+    [{ range: "last5" }, { range: "last5" }],
+    [{ range: "last20" }, { range: "last20" }],
+    [{ range: "10" }, { range: "all" }],
+    [{ mode: "total" }, { mode: "total" }],
+    [{ mode: "perGame" }, { mode: "average" }],
   ])("normalizes %j", (raw, expected) => {
     expect(parsePlayersSearchParams(raw)).toMatchObject(expected);
   });
@@ -47,7 +54,9 @@ describe("buildPlayersHref", () => {
     size: 50,
     includeRetired: false,
     sort: "firstName",
-    dir: "asc",
+    dir: "desc",
+    range: "all",
+    mode: "average",
   } as const;
 
   it("returns the bare path when everything is default", () => {
@@ -56,9 +65,10 @@ describe("buildPlayersHref", () => {
 
   it("omits default sort and dir but includes non-default values", () => {
     expect(buildPlayersHref({ ...defaults, sort: "lastName" })).toBe("/players?sort=lastName");
-    expect(buildPlayersHref({ ...defaults, dir: "desc" })).toBe("/players?dir=desc");
+    expect(buildPlayersHref({ ...defaults, dir: "desc" })).toBe("/players");
+    expect(buildPlayersHref({ ...defaults, dir: "asc" })).toBe("/players?dir=asc");
     expect(buildPlayersHref({ ...defaults, sort: "lastName", dir: "desc" })).toBe(
-      "/players?sort=lastName&dir=desc",
+      "/players?sort=lastName",
     );
   });
 
@@ -71,7 +81,9 @@ describe("buildPlayersHref", () => {
         includeRetired: true,
         sort: "lastName",
         dir: "desc",
+        range: "last5",
+        mode: "total",
       }),
-    ).toBe("/players?q=curry&page=2&size=25&retired=1&sort=lastName&dir=desc");
+    ).toBe("/players?q=curry&page=2&size=25&retired=1&sort=lastName&range=last5&mode=total");
   });
 });

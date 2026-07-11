@@ -38,6 +38,8 @@ export default async function PlayersPage({
     retired: firstValue(raw.retired),
     sort: firstValue(raw.sort),
     dir: firstValue(raw.dir),
+    range: firstValue(raw.range),
+    mode: firstValue(raw.mode),
   });
   const { rows, total, page } = await searchPlayers(params);
   const totalPages = Math.max(1, Math.ceil(total / params.size));
@@ -45,7 +47,7 @@ export default async function PlayersPage({
   const rangeEnd = Math.min(total, page * params.size);
 
   const nextDir = ({ sortKey }: { sortKey: PlayerSortKey }): SortDirection =>
-    params.sort === sortKey && params.dir === "asc" ? "desc" : "asc";
+    params.sort === sortKey ? (params.dir === "desc" ? "asc" : "desc") : "desc";
 
   const renderSortableHeader = ({ label, sortKey }: { label: string; sortKey: PlayerSortKey }) => {
     const isActive = params.sort === sortKey;
@@ -74,6 +76,8 @@ export default async function PlayersPage({
         totalPages={totalPages}
         sort={params.sort}
         dir={params.dir}
+        range={params.range}
+        mode={params.mode}
       />
       <p className={styles.summary}>
         {total === 0
@@ -91,20 +95,24 @@ export default async function PlayersPage({
                 {renderSortableHeader({ label: "Last name", sortKey: "lastName" })}
                 <th>Team</th>
                 <th>Position</th>
-                <th className={styles.numeric}>PTS</th>
-                <th className={styles.numeric}>REB</th>
-                <th className={styles.numeric}>AST</th>
-                <th className={styles.numeric}>STL</th>
-                <th className={styles.numeric}>BLK</th>
-                <th className={styles.numeric}>3PM</th>
-                <th className={styles.numeric}>FG%</th>
-                <th className={styles.numeric}>FT%</th>
-                <th className={styles.numeric}>TOV</th>
+                {renderSortableHeader({ label: "PTS", sortKey: "pts" })}
+                {renderSortableHeader({ label: "REB", sortKey: "reb" })}
+                {renderSortableHeader({ label: "AST", sortKey: "ast" })}
+                {renderSortableHeader({ label: "STL", sortKey: "stl" })}
+                {renderSortableHeader({ label: "BLK", sortKey: "blk" })}
+                {renderSortableHeader({ label: "3PM", sortKey: "fg3m" })}
+                {renderSortableHeader({ label: "FG%", sortKey: "fgPct" })}
+                {renderSortableHeader({ label: "FT%", sortKey: "ftPct" })}
+                {renderSortableHeader({ label: "TOV", sortKey: "tov" })}
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => {
-                const stats = row.seasonStats?.[0];
+                const stats = row.stats ?? row.seasonStats?.[0];
+                const formatCountingStat = (value: number) =>
+                  params.mode === "total"
+                    ? String(value)
+                    : formatPerGame(value, stats?.gamesPlayed ?? 0);
                 return (
                   <tr key={row.id}>
                     <td>
@@ -123,22 +131,22 @@ export default async function PlayersPage({
                     <td>{row.teamAbbr ?? "—"}</td>
                     <td>{row.position ?? "—"}</td>
                     <td className={styles.numeric}>
-                      {stats ? formatPerGame(stats.pts, stats.gamesPlayed) : "—"}
+                      {stats ? formatCountingStat(stats.pts) : "—"}
                     </td>
                     <td className={styles.numeric}>
-                      {stats ? formatPerGame(stats.reb, stats.gamesPlayed) : "—"}
+                      {stats ? formatCountingStat(stats.reb) : "—"}
                     </td>
                     <td className={styles.numeric}>
-                      {stats ? formatPerGame(stats.ast, stats.gamesPlayed) : "—"}
+                      {stats ? formatCountingStat(stats.ast) : "—"}
                     </td>
                     <td className={styles.numeric}>
-                      {stats ? formatPerGame(stats.stl, stats.gamesPlayed) : "—"}
+                      {stats ? formatCountingStat(stats.stl) : "—"}
                     </td>
                     <td className={styles.numeric}>
-                      {stats ? formatPerGame(stats.blk, stats.gamesPlayed) : "—"}
+                      {stats ? formatCountingStat(stats.blk) : "—"}
                     </td>
                     <td className={styles.numeric}>
-                      {stats ? formatPerGame(stats.fg3m, stats.gamesPlayed) : "—"}
+                      {stats ? formatCountingStat(stats.fg3m) : "—"}
                     </td>
                     <td className={styles.numeric}>
                       {stats ? formatPercentage(stats.fgm, stats.fga) : "—"}
@@ -147,7 +155,7 @@ export default async function PlayersPage({
                       {stats ? formatPercentage(stats.ftm, stats.fta) : "—"}
                     </td>
                     <td className={styles.numeric}>
-                      {stats ? formatPerGame(stats.tov, stats.gamesPlayed) : "—"}
+                      {stats ? formatCountingStat(stats.tov) : "—"}
                     </td>
                   </tr>
                 );

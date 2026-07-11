@@ -5,9 +5,13 @@ import { ChangeEvent, useEffect, useRef, useTransition } from "react";
 
 import {
   buildPlayersHref,
+  isPlayerGameRange,
+  isPlayerStatMode,
   MAX_QUERY_LENGTH,
   PAGE_SIZES,
   type PlayerSortKey,
+  type PlayerGameRange,
+  type PlayerStatMode,
   type SortDirection,
 } from "@/lib/players/searchParams";
 
@@ -21,6 +25,8 @@ export interface PlayersSearchControlsProps {
   totalPages: number;
   sort: PlayerSortKey;
   dir: SortDirection;
+  range: PlayerGameRange;
+  mode: PlayerStatMode;
 }
 
 const DEBOUNCE_MS = 300;
@@ -33,6 +39,8 @@ export function PlayersSearchControls({
   totalPages,
   sort,
   dir,
+  range,
+  mode,
 }: PlayersSearchControlsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -70,25 +78,72 @@ export function PlayersSearchControls({
       if (trimmed === latestQ.current) {
         return;
       }
-      navigate(buildPlayersHref({ q: trimmed, page: 1, size, includeRetired, sort, dir }));
+      navigate(
+        buildPlayersHref({ q: trimmed, page: 1, size, includeRetired, sort, dir, range, mode }),
+      );
     }, DEBOUNCE_MS);
   };
 
   const onSizeChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const newSize = Number.parseInt(event.target.value, 10);
-    navigate(buildPlayersHref({ q, page: 1, size: newSize, includeRetired, sort, dir }));
+    navigate(
+      buildPlayersHref({ q, page: 1, size: newSize, includeRetired, sort, dir, range, mode }),
+    );
   };
 
   const onRetiredChange = () => {
-    navigate(buildPlayersHref({ q, page: 1, size, includeRetired: !includeRetired, sort, dir }));
+    navigate(
+      buildPlayersHref({
+        q,
+        page: 1,
+        size,
+        includeRetired: !includeRetired,
+        sort,
+        dir,
+        range,
+        mode,
+      }),
+    );
   };
 
   const onPrev = () => {
-    navigate(buildPlayersHref({ q, page: page - 1, size, includeRetired, sort, dir }));
+    navigate(buildPlayersHref({ q, page: page - 1, size, includeRetired, sort, dir, range, mode }));
   };
 
   const onNext = () => {
-    navigate(buildPlayersHref({ q, page: page + 1, size, includeRetired, sort, dir }));
+    navigate(buildPlayersHref({ q, page: page + 1, size, includeRetired, sort, dir, range, mode }));
+  };
+
+  const onRangeChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    if (!isPlayerGameRange(event.target.value)) return;
+    navigate(
+      buildPlayersHref({
+        q,
+        page: 1,
+        size,
+        includeRetired,
+        sort,
+        dir,
+        range: event.target.value,
+        mode,
+      }),
+    );
+  };
+
+  const onModeChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    if (!isPlayerStatMode(event.target.value)) return;
+    navigate(
+      buildPlayersHref({
+        q,
+        page: 1,
+        size,
+        includeRetired,
+        sort,
+        dir,
+        range,
+        mode: event.target.value,
+      }),
+    );
   };
 
   return (
@@ -116,6 +171,34 @@ export function PlayersSearchControls({
       <label className={styles.retiredLabel}>
         <input type="checkbox" checked={includeRetired} onChange={onRetiredChange} />
         Include retired players
+      </label>
+      <label className={styles.filterLabel}>
+        Games
+        <select
+          value={range}
+          onChange={onRangeChange}
+          aria-label="Game range"
+          className={styles.select}
+        >
+          <option value="all">All games</option>
+          <option value="last5">Last 5 games</option>
+          <option value="last10">Last 10 games</option>
+          <option value="last20">Last 20 games</option>
+          <option value="last40">Last 40 games</option>
+          <option value="last60">Last 60 games</option>
+        </select>
+      </label>
+      <label className={styles.filterLabel}>
+        Stats
+        <select
+          value={mode}
+          onChange={onModeChange}
+          aria-label="Stat display"
+          className={styles.select}
+        >
+          <option value="average">Averages</option>
+          <option value="total">Totals</option>
+        </select>
       </label>
       <div className={styles.pager}>
         <button type="button" onClick={onPrev} disabled={page <= 1} className={styles.pagerButton}>

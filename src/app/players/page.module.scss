@@ -66,6 +66,16 @@
   }
 }
 
+.table th.numeric .sortLink,
+.table th:has(.sortLink) .sortLink {
+  justify-content: inherit;
+}
+
+.table th:nth-child(n + 5) .sortLink {
+  width: 100%;
+  justify-content: end;
+}
+
 .page:has([data-pending="true"]) .table {
   opacity: 0.6;
 }

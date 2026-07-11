@@ -30,7 +30,9 @@ const defaultProps: PlayersSearchControlsProps = {
   includeRetired: false,
   totalPages: 1,
   sort: "firstName",
-  dir: "asc",
+  dir: "desc",
+  range: "all",
+  mode: "average",
 };
 
 const advance = (ms: number) => {
@@ -108,12 +110,23 @@ describe("PlayersSearchControls", () => {
   });
 
   it("preserves a non-default sort and dir on navigation", () => {
-    render(<PlayersSearchControls {...defaultProps} sort="lastName" dir="desc" totalPages={3} />);
+    render(<PlayersSearchControls {...defaultProps} sort="lastName" dir="asc" totalPages={3} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
 
     expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith("/players?page=2&sort=lastName&dir=desc");
+    expect(replace).toHaveBeenCalledWith("/players?page=2&sort=lastName&dir=asc");
+  });
+
+  it("changes the game range and stat display while preserving the other filter", () => {
+    const { rerender } = render(<PlayersSearchControls {...defaultProps} mode="total" />);
+
+    fireEvent.change(screen.getByLabelText("Game range"), { target: { value: "last20" } });
+    expect(replace).toHaveBeenLastCalledWith("/players?range=last20&mode=total");
+
+    rerender(<PlayersSearchControls {...defaultProps} range="last20" />);
+    fireEvent.change(screen.getByLabelText("Stat display"), { target: { value: "total" } });
+    expect(replace).toHaveBeenLastCalledWith("/players?range=last20&mode=total");
   });
 
   it("disables the Previous button on the first page", () => {
