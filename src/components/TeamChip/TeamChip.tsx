@@ -45,17 +45,13 @@ export function TeamChip({ team }: { team: TeamAbbreviation }) {
   }
 
   return (
-    <span className={styles.chip} title={details.name}>
-      <span
-        className={styles.swatch}
-        role="img"
-        aria-label={`${details.name} colors`}
-        style={{
-          background: `linear-gradient(135deg, ${details.primary} 0 50%, ${details.secondary} 50% 100%)`,
-        }}
-      />
-      <span className={styles.abbreviation}>{details.abbreviation}</span>
-      <span className={styles.name}>{details.name}</span>
+    <span
+      className={styles.chip}
+      title={details.name}
+      aria-label={details.name}
+      style={{ backgroundColor: details.primary, color: details.secondary }}
+    >
+      {details.abbreviation}
     </span>
   );
 }

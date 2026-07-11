@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { NBA_TEAMS } from "@/components/TeamChip/TeamChip";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
 import DesignPage from "@/app/design/page";
@@ -63,9 +64,11 @@ describe("DesignPage", () => {
       </ThemeProvider>,
     );
 
-    expect(screen.getAllByRole("img", { name: / colors$/ })).toHaveLength(30);
-    expect(screen.getByText("Toronto Raptors")).toBeInTheDocument();
-    expect(screen.getByText("Golden State Warriors")).toBeInTheDocument();
+    const chips = NBA_TEAMS.map((team) => screen.getByTitle(team.name));
+
+    expect(chips).toHaveLength(30);
+    expect(screen.getByText("TOR")).toBeInTheDocument();
+    expect(screen.getByText("GSW")).toBeInTheDocument();
   });
 
   it("renders both typeface family names in the typeface and weight sections", () => {
