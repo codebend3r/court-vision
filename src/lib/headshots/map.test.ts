@@ -98,6 +98,29 @@ describe("mapHeadshots", () => {
     });
   });
 
+  it("matches names that differ only in punctuation (A.J. Green vs AJ Green)", async () => {
+    mockIndex([
+      { personId: 1631260, fullName: "AJ Green" },
+      { personId: 202340, fullName: "Devonte' Graham" },
+    ]);
+    mockFindMany([
+      { id: 60, fullName: "A.J. Green" },
+      { id: 61, fullName: "Devonte Graham" },
+    ]);
+
+    const result = await mapHeadshots();
+
+    expect(result).toEqual({ matched: 2, unmatched: [] });
+    expect(prisma.player.update).toHaveBeenCalledWith({
+      where: { id: 60 },
+      data: { nbaPersonId: 1631260 },
+    });
+    expect(prisma.player.update).toHaveBeenCalledWith({
+      where: { id: 61 },
+      data: { nbaPersonId: 202340 },
+    });
+  });
+
   it("skips and reports a player with zero index matches", async () => {
     mockIndex([{ personId: 1629029, fullName: "Luka Doncic" }]);
     mockFindMany([

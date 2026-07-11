@@ -26,12 +26,21 @@ interface NamedRow {
   fullName: string;
 }
 
+// Sources disagree on punctuation ("A.J. Green" here vs "AJ Green" in the NBA
+// index, apostrophes, hyphens), so the match key drops everything but letters,
+// digits, and single spaces after diacritic normalization.
+const matchKey = (name: string): string =>
+  normalizeName(name)
+    .replace(/[^a-z0-9 ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
 // Groups rows by normalized full name. A key with more than one row means an
 // ambiguous name on that side of the match (two of our players sharing a
 // normalized name, or the NBA index listing two people under one name).
 const groupByNormalizedName = <T extends NamedRow>(rows: T[]): Map<string, T[]> =>
   rows.reduce((map, row) => {
-    const key = normalizeName(row.fullName);
+    const key = matchKey(row.fullName);
     map.set(key, (map.get(key) ?? []).concat(row));
     return map;
   }, new Map<string, T[]>());
