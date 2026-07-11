@@ -1,5 +1,6 @@
 import { ChartPaletteSwatches } from "@/components/ChartPaletteSwatches/ChartPaletteSwatches";
 import { Switch } from "@/components/Switch/Switch";
+import { NBA_TEAMS, TeamChip } from "@/components/TeamChip/TeamChip";
 import { TokenSwatch } from "@/components/TokenSwatch/TokenSwatch";
 
 import styles from "@/app/design/page.module.scss";
@@ -109,6 +110,7 @@ const STAT_CATEGORIES: readonly string[] = ["Points", "Rebounds", "Assists", "St
 const DESIGN_SECTIONS = [
   { id: "colors", label: "Colors" },
   { id: "chart-palettes", label: "Chart palettes" },
+  { id: "team-chips", label: "Team chips" },
   { id: "typography", label: "Typography" },
   { id: "typefaces", label: "Typefaces" },
   { id: "headings", label: "Headings" },
@@ -143,6 +145,15 @@ export default function DesignPage() {
       <section id="chart-palettes" className={styles.section}>
         <h2>Chart palettes</h2>
         <ChartPaletteSwatches />
+      </section>
+
+      <section id="team-chips" className={styles.section}>
+        <h2>Team chips</h2>
+        <div className={styles.teamChipGrid}>
+          {NBA_TEAMS.map((team) => (
+            <TeamChip key={team.abbreviation} team={team.abbreviation} />
+          ))}
+        </div>
       </section>
 
       <section id="typography" className={styles.section}>

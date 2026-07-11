@@ -43,6 +43,12 @@
   gap: var(--space-3);
 }
 
+.teamChipGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-2);
+}
+
 .typeStack {
   display: grid;
   gap: var(--space-2);

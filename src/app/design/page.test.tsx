@@ -18,10 +18,11 @@ describe("DesignPage", () => {
     const nav = screen.getByRole("navigation", { name: "Design system sections" });
     const links = Array.from(nav.querySelectorAll("a"));
 
-    expect(links).toHaveLength(9);
+    expect(links).toHaveLength(10);
     expect(links.map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
       ["Colors", "#colors"],
       ["Chart palettes", "#chart-palettes"],
+      ["Team chips", "#team-chips"],
       ["Typography", "#typography"],
       ["Typefaces", "#typefaces"],
       ["Headings", "#headings"],
@@ -36,7 +37,7 @@ describe("DesignPage", () => {
     }
   });
 
-  it("renders the nine section headings", () => {
+  it("renders the ten section headings", () => {
     render(
       <ThemeProvider>
         <DesignPage />
@@ -45,6 +46,7 @@ describe("DesignPage", () => {
 
     expect(screen.getByRole("heading", { name: "Colors" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Chart palettes" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Team chips" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Typography" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Typefaces" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Headings" })).toBeInTheDocument();
@@ -52,6 +54,18 @@ describe("DesignPage", () => {
     expect(screen.getByRole("heading", { name: "Spacing" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Radius" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Form controls" })).toBeInTheDocument();
+  });
+
+  it("renders a chip for every NBA team", () => {
+    render(
+      <ThemeProvider>
+        <DesignPage />
+      </ThemeProvider>,
+    );
+
+    expect(screen.getAllByRole("img", { name: / colors$/ })).toHaveLength(30);
+    expect(screen.getByText("Toronto Raptors")).toBeInTheDocument();
+    expect(screen.getByText("Golden State Warriors")).toBeInTheDocument();
   });
 
   it("renders both typeface family names in the typeface and weight sections", () => {
