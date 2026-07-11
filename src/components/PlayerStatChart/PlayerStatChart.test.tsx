@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { CumulativePoint } from "@/lib/stats/cumulative";
+import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
 import { PlayerStatChart } from "./PlayerStatChart";
 
@@ -28,7 +29,11 @@ const buildSeries = (): CumulativePoint[] =>
 
 describe("PlayerStatChart", () => {
   it("renders a chip per stat with every stat pressed by default", () => {
-    render(<PlayerStatChart series={buildSeries()} />);
+    render(
+      <ThemeProvider>
+        <PlayerStatChart series={buildSeries()} />
+      </ThemeProvider>,
+    );
 
     const chips = screen.getAllByRole("button");
     expect(chips).toHaveLength(10);
@@ -41,7 +46,11 @@ describe("PlayerStatChart", () => {
   });
 
   it("renders every line and both panels by default", () => {
-    const { container } = render(<PlayerStatChart series={buildSeries()} />);
+    const { container } = render(
+      <ThemeProvider>
+        <PlayerStatChart series={buildSeries()} />
+      </ThemeProvider>,
+    );
 
     expect(container.querySelectorAll(".recharts-line")).toHaveLength(10);
     expect(screen.getByText("Shooting percentages")).toBeInTheDocument();
@@ -49,7 +58,11 @@ describe("PlayerStatChart", () => {
 
   it("removes a line per toggled-off stat and hides the shooting panel when its stats are off", async () => {
     const user = userEvent.setup();
-    const { container } = render(<PlayerStatChart series={buildSeries()} />);
+    const { container } = render(
+      <ThemeProvider>
+        <PlayerStatChart series={buildSeries()} />
+      </ThemeProvider>,
+    );
 
     await user.click(screen.getByRole("button", { name: "TOV" }));
 
@@ -65,7 +78,11 @@ describe("PlayerStatChart", () => {
 
   it("shows a muted hint instead of a chart when every counting stat is toggled off", async () => {
     const user = userEvent.setup();
-    render(<PlayerStatChart series={buildSeries()} />);
+    render(
+      <ThemeProvider>
+        <PlayerStatChart series={buildSeries()} />
+      </ThemeProvider>,
+    );
 
     await user.click(screen.getByRole("button", { name: "PTS" }));
     await user.click(screen.getByRole("button", { name: "REB" }));
@@ -79,7 +96,11 @@ describe("PlayerStatChart", () => {
   });
 
   it("gives each chip a color dot matching its stat's permanent color", () => {
-    render(<PlayerStatChart series={buildSeries()} />);
+    render(
+      <ThemeProvider>
+        <PlayerStatChart series={buildSeries()} />
+      </ThemeProvider>,
+    );
 
     const ptsChip = screen.getByRole("button", { name: "PTS" });
     const dot = ptsChip.querySelector("span");

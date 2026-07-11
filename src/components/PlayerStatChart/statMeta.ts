@@ -1,3 +1,5 @@
+import type { Theme } from "@/lib/theme/ThemeProvider";
+
 export type StatKey =
   | "pts"
   | "reb"
@@ -18,17 +20,60 @@ export interface StatMeta {
   color: string;
 }
 
-export const STAT_META: StatMeta[] = [
-  { key: "pts", label: "PTS", panel: "counting", color: "#3987e5" },
-  { key: "reb", label: "REB", panel: "counting", color: "#199e70" },
-  { key: "ast", label: "AST", panel: "counting", color: "#c98500" },
-  { key: "stl", label: "STL", panel: "counting", color: "#008300" },
-  { key: "blk", label: "BLK", panel: "counting", color: "#9085e9" },
-  { key: "min", label: "MIN", panel: "counting", color: "#e66767" },
-  { key: "tov", label: "TOV", panel: "counting", color: "#d55181" },
-  { key: "fgPct", label: "FG%", panel: "shooting", color: "#3987e5" },
-  { key: "fg3Pct", label: "3P%", panel: "shooting", color: "#199e70" },
-  { key: "ftPct", label: "FT%", panel: "shooting", color: "#c98500" },
+export interface ChartChrome {
+  grid: string;
+  axis: string;
+  endLabel: string;
+}
+
+const COUNTING_STATS: ReadonlyArray<{ key: StatKey; label: string }> = [
+  { key: "pts", label: "PTS" },
+  { key: "reb", label: "REB" },
+  { key: "ast", label: "AST" },
+  { key: "stl", label: "STL" },
+  { key: "blk", label: "BLK" },
+  { key: "min", label: "MIN" },
+  { key: "tov", label: "TOV" },
 ];
 
-export const DEFAULT_ACTIVE_KEYS: StatKey[] = STAT_META.map((meta) => meta.key);
+const SHOOTING_STATS: ReadonlyArray<{ key: StatKey; label: string }> = [
+  { key: "fgPct", label: "FG%" },
+  { key: "fg3Pct", label: "3P%" },
+  { key: "ftPct", label: "FT%" },
+];
+
+// Counting stats use all 7 slots (pts..tov); shooting stats reuse slots 0-2
+// (fgPct/fg3Pct/ftPct) from the same palette.
+const SERIES_BY_THEME: Record<Theme, readonly string[]> = {
+  dark: ["#3987e5", "#199e70", "#c98500", "#008300", "#9085e9", "#e66767", "#d55181"],
+  light: ["#2a78d6", "#1baf7a", "#eda100", "#008300", "#4a3aa7", "#e34948", "#e87ba4"],
+};
+
+const CHROME_BY_THEME: Record<Theme, ChartChrome> = {
+  // grid mirrors --color-border, axis/endLabel mirror --color-text-muted (dark theme).
+  dark: { grid: "#2a3050", axis: "#8b93b5", endLabel: "#8b93b5" },
+  // grid mirrors --color-border, axis/endLabel mirror --color-text-muted (light theme).
+  light: { grid: "#dfe3f0", axis: "#5a6280", endLabel: "#5a6280" },
+};
+
+export const getStatMeta = ({ theme }: { theme: Theme }): StatMeta[] => {
+  const palette = SERIES_BY_THEME[theme];
+  const counting = COUNTING_STATS.map((stat, index) => ({
+    ...stat,
+    panel: "counting" as const,
+    color: palette[index],
+  }));
+  const shooting = SHOOTING_STATS.map((stat, index) => ({
+    ...stat,
+    panel: "shooting" as const,
+    color: palette[index],
+  }));
+
+  return [...counting, ...shooting];
+};
+
+export const getChartChrome = ({ theme }: { theme: Theme }): ChartChrome => CHROME_BY_THEME[theme];
+
+export const DEFAULT_ACTIVE_KEYS: StatKey[] = getStatMeta({ theme: "dark" }).map(
+  (meta) => meta.key,
+);

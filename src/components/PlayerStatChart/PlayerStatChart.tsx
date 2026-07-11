@@ -13,22 +13,18 @@ import {
 } from "recharts";
 
 import type { CumulativePoint } from "@/lib/stats/cumulative";
+import { useTheme } from "@/lib/theme/ThemeProvider";
 
 import styles from "./PlayerStatChart.module.scss";
 import {
   DEFAULT_ACTIVE_KEYS,
-  STAT_META,
+  getChartChrome,
+  getStatMeta,
+  type ChartChrome,
   type StatKey,
   type StatMeta,
   type StatPanel,
 } from "./statMeta";
-
-// Recharts SVG presentation attributes can't resolve CSS custom properties
-// reliably, so the chart-facing colors below are raw hex. Each is commented
-// with the globals.scss token it mirrors.
-const GRID_STROKE = "#232a36"; // --color-border
-const TICK_FILL = "#9aa4b2"; // --color-text-muted
-const END_LABEL_FILL = "#9aa4b2"; // --color-text-muted
 
 // `gameDate` is stored as a UTC-midnight ISO string. Formatting it in the
 // viewer's local timezone can shift the displayed date back a day for any
@@ -56,7 +52,15 @@ const isCumulativePoint = (value: unknown): value is CumulativePoint => {
   );
 };
 
-const renderEndLabel = ({ label, lastIndex }: { label: string; lastIndex: number }) =>
+const renderEndLabel = ({
+  label,
+  lastIndex,
+  fill,
+}: {
+  label: string;
+  lastIndex: number;
+  fill: string;
+}) =>
   function EndLabel(props: {
     x?: number | string;
     y?: number | string;
@@ -67,7 +71,7 @@ const renderEndLabel = ({ label, lastIndex }: { label: string; lastIndex: number
       return null;
     }
     return (
-      <text x={x + 8} y={y + 4} fill={END_LABEL_FILL} fontSize={12}>
+      <text x={x + 8} y={y + 4} fill={fill} fontSize={12}>
         {label}
       </text>
     );
@@ -116,22 +120,28 @@ function StatLineChart({
   metas,
   series,
   domain,
+  chrome,
 }: {
   metas: StatMeta[];
   series: CumulativePoint[];
   domain?: [number, number];
+  chrome: ChartChrome;
 }) {
   const lastIndex = series.length - 1;
 
   return (
     <ResponsiveContainer width="100%" height={320} initialDimension={{ width: 800, height: 320 }}>
       <LineChart data={series} margin={{ top: 8, right: 56, bottom: 8, left: 0 }}>
-        <CartesianGrid stroke={GRID_STROKE} vertical={false} />
-        <XAxis dataKey="gameIndex" tick={{ fill: TICK_FILL, fontSize: 12 }} stroke={GRID_STROKE} />
-        <YAxis tick={{ fill: TICK_FILL, fontSize: 12 }} stroke={GRID_STROKE} domain={domain} />
+        <CartesianGrid stroke={chrome.grid} vertical={false} />
+        <XAxis
+          dataKey="gameIndex"
+          tick={{ fill: chrome.axis, fontSize: 12 }}
+          stroke={chrome.grid}
+        />
+        <YAxis tick={{ fill: chrome.axis, fontSize: 12 }} stroke={chrome.grid} domain={domain} />
         <Tooltip
           content={<StatTooltip metas={metas} />}
-          cursor={{ stroke: TICK_FILL, strokeDasharray: "3 3" }}
+          cursor={{ stroke: chrome.axis, strokeDasharray: "3 3" }}
         />
         {metas.map((meta) => (
           <Line
@@ -144,7 +154,7 @@ function StatLineChart({
             activeDot={{ r: 4 }}
             isAnimationActive={false}
             connectNulls={false}
-            label={renderEndLabel({ label: meta.label, lastIndex })}
+            label={renderEndLabel({ label: meta.label, lastIndex, fill: chrome.endLabel })}
           />
         ))}
       </LineChart>
@@ -153,6 +163,9 @@ function StatLineChart({
 }
 
 export function PlayerStatChart({ series }: { series: CumulativePoint[] }) {
+  const { theme } = useTheme();
+  const statMeta = getStatMeta({ theme });
+  const chrome = getChartChrome({ theme });
   const [active, setActive] = useState<StatKey[]>(DEFAULT_ACTIVE_KEYS);
 
   const toggle = (key: StatKey) =>
@@ -160,17 +173,17 @@ export function PlayerStatChart({ series }: { series: CumulativePoint[] }) {
       current.includes(key) ? current.filter((activeKey) => activeKey !== key) : [...current, key],
     );
 
-  const countingActive = STAT_META.filter(
+  const countingActive = statMeta.filter(
     (meta) => meta.panel === "counting" && active.includes(meta.key),
   );
-  const shootingActive = STAT_META.filter(
+  const shootingActive = statMeta.filter(
     (meta) => meta.panel === "shooting" && active.includes(meta.key),
   );
 
   return (
     <div className={styles.root}>
       <div className={styles.chips}>
-        {STAT_META.map((meta) => (
+        {statMeta.map((meta) => (
           <button
             key={meta.key}
             type="button"
@@ -187,7 +200,7 @@ export function PlayerStatChart({ series }: { series: CumulativePoint[] }) {
       <section className={styles.panel}>
         <h3 className={styles.panelTitle}>Counting stats</h3>
         {!!countingActive.length ? (
-          <StatLineChart metas={countingActive} series={series} />
+          <StatLineChart metas={countingActive} series={series} chrome={chrome} />
         ) : (
           <p className={styles.emptyHint}>Select a stat to plot</p>
         )}
@@ -196,7 +209,7 @@ export function PlayerStatChart({ series }: { series: CumulativePoint[] }) {
       {!!shootingActive.length && (
         <section className={styles.panel}>
           <h3 className={styles.panelTitle}>Shooting percentages</h3>
-          <StatLineChart metas={shootingActive} series={series} domain={[0, 100]} />
+          <StatLineChart metas={shootingActive} series={series} domain={[0, 100]} chrome={chrome} />
         </section>
       )}
     </div>

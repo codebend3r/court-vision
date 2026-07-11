@@ -2,6 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { prisma } from "@/lib/prisma";
+import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
 import PlayerPage from "./page";
 
@@ -71,7 +72,11 @@ describe("PlayerPage", () => {
       buildLog({ id: "log-2", gameId: "0022500002" }),
     ]);
 
-    render(await PlayerPage({ params: Promise.resolve({ playerId: "3547238" }) }));
+    render(
+      <ThemeProvider>
+        {await PlayerPage({ params: Promise.resolve({ playerId: "3547238" }) })}
+      </ThemeProvider>,
+    );
 
     expect(screen.getByText("CJ Rivas")).toBeInTheDocument();
     expect(screen.getAllByRole("button").length).toBeGreaterThan(0);
