@@ -16,6 +16,7 @@ export type PlayerSortKey =
   | "fg3m"
   | "fg3a"
   | "fgPct"
+  | "fg3Pct"
   | "ftPct"
   | "tov";
 export const PLAYER_SORT_KEYS: readonly PlayerSortKey[] = [
@@ -32,6 +33,7 @@ export const PLAYER_SORT_KEYS: readonly PlayerSortKey[] = [
   "fg3m",
   "fg3a",
   "fgPct",
+  "fg3Pct",
   "ftPct",
   "tov",
 ];

@@ -183,14 +183,16 @@ const withDisplayStats = ({
 };
 
 // Official NBA percentage-leader qualifiers, by made volume (300 FGM for FG%,
-// 125 FTM for FT%). Toggled by the minimums search param.
+// 82 3PM for 3P%, 125 FTM for FT%). Toggled by the minimums search param.
 const MIN_FGM = 300;
+const MIN_FG3M = 82;
 const MIN_FTM = 125;
 
 const meetsMinimum = ({ row, args }: { row: PlayerRow; args: PlayersSearchParams }): boolean => {
   if (!args.minimums) return true;
   const stats = row.stats ?? emptyStats();
   if (args.sort === "fgPct") return stats.fgm >= MIN_FGM;
+  if (args.sort === "fg3Pct") return stats.fg3m >= MIN_FG3M;
   if (args.sort === "ftPct") return stats.ftm >= MIN_FTM;
   return true;
 };
@@ -200,6 +202,7 @@ const statSortValue = ({ row, args }: { row: PlayerRow; args: PlayersSearchParam
   // Games played is a count, never an average, so mode does not apply.
   if (args.sort === "gamesPlayed") return stats.gamesPlayed;
   if (args.sort === "fgPct") return stats.fga > 0 ? stats.fgm / stats.fga : -1;
+  if (args.sort === "fg3Pct") return stats.fg3a > 0 ? stats.fg3m / stats.fg3a : -1;
   if (args.sort === "ftPct") return stats.fta > 0 ? stats.ftm / stats.fta : -1;
   if (isSortableCountingStatKey(args.sort)) {
     const total = stats[args.sort];

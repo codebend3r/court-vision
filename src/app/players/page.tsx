@@ -126,6 +126,7 @@ export default async function PlayersPage({
                   {renderSortableHeader({ label: "3PM", sortKey: "fg3m" })}
                   {renderSortableHeader({ label: "3PA", sortKey: "fg3a" })}
                   {renderSortableHeader({ label: "FG%", sortKey: "fgPct" })}
+                  {renderSortableHeader({ label: "3P%", sortKey: "fg3Pct" })}
                   {renderSortableHeader({ label: "FT%", sortKey: "ftPct" })}
                   {renderSortableHeader({ label: "TOV", sortKey: "tov" })}
                 </tr>
@@ -192,6 +193,9 @@ export default async function PlayersPage({
                       </td>
                       <td className={styles.numeric}>
                         {stats ? formatPercentage(stats.fgm, stats.fga) : "—"}
+                      </td>
+                      <td className={styles.numeric}>
+                        {stats ? formatPercentage(stats.fg3m, stats.fg3a) : "—"}
                       </td>
                       <td className={styles.numeric}>
                         {stats ? formatPercentage(stats.ftm, stats.fta) : "—"}

@@ -80,11 +80,14 @@ describe("PlayersPage", () => {
     expect(screen.getByRole("columnheader", { name: "FGM" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "FGA" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "3PA" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "3P%" })).toBeInTheDocument();
     expect(screen.getByText("25.0")).toBeInTheDocument();
     // 180 FGA and 110 3PA over 10 games
     expect(screen.getByText("18.0")).toBeInTheDocument();
     expect(screen.getByText("11.0")).toBeInTheDocument();
     expect(screen.getByText(".500")).toBeInTheDocument();
+    // 40 of 110 from three
+    expect(screen.getByText(".364")).toBeInTheDocument();
     expect(screen.getByText(".750")).toBeInTheDocument();
     // name sort: no rank column
     expect(screen.queryByRole("columnheader", { name: "#" })).not.toBeInTheDocument();
