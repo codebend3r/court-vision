@@ -181,6 +181,12 @@ describe("chunked, resilient writes", () => {
     expect(prisma.playerGameLog.upsert).toHaveBeenCalledTimes(501);
     // 501 rows chunk into transactions of 250, 250, and 1.
     expect(prisma.$transaction).toHaveBeenCalledTimes(3);
+    // Each batch must carry a timeout well above Prisma's 5s default, or a
+    // full chunk of row-by-row upserts trips P2028 mid-sync.
+    expect(prisma.$transaction).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ timeout: expect.any(Number) }),
+    );
   });
 
   it("retries a chunk after a transient connection drop, then succeeds", async () => {

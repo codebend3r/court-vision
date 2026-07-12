@@ -19,6 +19,11 @@ export type SyncSummary = {
 const CHUNK_SIZE = 250;
 const MAX_RETRIES = 5;
 const RETRY_BASE_MS = 500;
+// A chunk upserts row by row over the pooler (~25ms each), so a full batch runs
+// well past Prisma's 5s default interactive-transaction timeout and trips P2028.
+// Give each batch real headroom, and time to acquire a pooled connection.
+const TRANSACTION_TIMEOUT_MS = 120_000;
+const TRANSACTION_MAX_WAIT_MS = 30_000;
 
 const isRetryableDbError = (error: unknown): boolean =>
   error instanceof Error &&
@@ -62,7 +67,12 @@ const upsertInChunks = async <T>({
 }): Promise<number> => {
   await chunk(rows, CHUNK_SIZE).reduce(async (previous, batch) => {
     await previous;
-    await withRetry(() => prisma.$transaction(batch.map(toOperation)));
+    await withRetry(() =>
+      prisma.$transaction(batch.map(toOperation), {
+        timeout: TRANSACTION_TIMEOUT_MS,
+        maxWait: TRANSACTION_MAX_WAIT_MS,
+      }),
+    );
   }, Promise.resolve());
   return rows.length;
 };
