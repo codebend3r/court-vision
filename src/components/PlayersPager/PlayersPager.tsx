@@ -23,6 +23,7 @@ export type PlayersPagerProps = {
   dir: SortDirection;
   range: PlayerGameRange;
   mode: PlayerStatMode;
+  minimums: boolean;
 };
 
 export function PlayersPager({
@@ -35,6 +36,7 @@ export function PlayersPager({
   dir,
   range,
   mode,
+  minimums,
 }: PlayersPagerProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -42,7 +44,17 @@ export function PlayersPager({
   const goTo = ({ nextPage }: { nextPage: number }) => {
     startTransition(() => {
       router.replace(
-        buildPlayersHref({ q, page: nextPage, size, includeRetired, sort, dir, range, mode }),
+        buildPlayersHref({
+          q,
+          page: nextPage,
+          size,
+          includeRetired,
+          sort,
+          dir,
+          range,
+          mode,
+          minimums,
+        }),
       );
     });
   };

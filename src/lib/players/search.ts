@@ -172,6 +172,19 @@ const withDisplayStats = ({
   return { ...row, stats };
 };
 
+// Official NBA percentage-leader qualifiers, by made volume (300 FGM for FG%,
+// 125 FTM for FT%). Toggled by the minimums search param.
+const MIN_FGM = 300;
+const MIN_FTM = 125;
+
+const meetsMinimum = ({ row, args }: { row: PlayerRow; args: PlayersSearchParams }): boolean => {
+  if (!args.minimums) return true;
+  const stats = row.stats ?? emptyStats();
+  if (args.sort === "fgPct") return stats.fgm >= MIN_FGM;
+  if (args.sort === "ftPct") return stats.ftm >= MIN_FTM;
+  return true;
+};
+
 const statSortValue = ({ row, args }: { row: PlayerRow; args: PlayersSearchParams }): number => {
   const stats = row.stats ?? emptyStats();
   // Games played is a count, never an average, so mode does not apply.
@@ -212,6 +225,11 @@ export const searchPlayers = async (args: PlayersSearchParams): Promise<PlayersS
     const sorted = candidates
       .map((row) => withDisplayStats({ row, range }))
       .sort((a, b) => {
+        // Players below the qualifying minimum always sink to the bottom,
+        // whatever the direction, so leaders are real leaders.
+        const aBelowMinimum = meetsMinimum({ row: a, args }) ? 0 : 1;
+        const bBelowMinimum = meetsMinimum({ row: b, args }) ? 0 : 1;
+        if (aBelowMinimum !== bBelowMinimum) return aBelowMinimum - bBelowMinimum;
         const difference = statSortValue({ row: a, args }) - statSortValue({ row: b, args });
         if (difference !== 0) return dir === "asc" ? difference : -difference;
         return (

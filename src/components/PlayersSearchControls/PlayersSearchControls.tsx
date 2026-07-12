@@ -15,6 +15,8 @@ import {
   type SortDirection,
 } from "@/lib/players/searchParams";
 
+import { Switch } from "@/components/Switch/Switch";
+
 import styles from "@/components/PlayersSearchControls/PlayersSearchControls.module.scss";
 
 export type PlayersSearchControlsProps = {
@@ -25,6 +27,7 @@ export type PlayersSearchControlsProps = {
   dir: SortDirection;
   range: PlayerGameRange;
   mode: PlayerStatMode;
+  minimums: boolean;
 };
 
 const DEBOUNCE_MS = 300;
@@ -37,6 +40,7 @@ export function PlayersSearchControls({
   dir,
   range,
   mode,
+  minimums,
 }: PlayersSearchControlsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -75,7 +79,17 @@ export function PlayersSearchControls({
         return;
       }
       navigate(
-        buildPlayersHref({ q: trimmed, page: 1, size, includeRetired, sort, dir, range, mode }),
+        buildPlayersHref({
+          q: trimmed,
+          page: 1,
+          size,
+          includeRetired,
+          sort,
+          dir,
+          range,
+          mode,
+          minimums,
+        }),
       );
     }, DEBOUNCE_MS);
   };
@@ -83,7 +97,17 @@ export function PlayersSearchControls({
   const onSizeChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const newSize = Number.parseInt(event.target.value, 10);
     navigate(
-      buildPlayersHref({ q, page: 1, size: newSize, includeRetired, sort, dir, range, mode }),
+      buildPlayersHref({
+        q,
+        page: 1,
+        size: newSize,
+        includeRetired,
+        sort,
+        dir,
+        range,
+        mode,
+        minimums,
+      }),
     );
   };
 
@@ -98,6 +122,7 @@ export function PlayersSearchControls({
         dir,
         range,
         mode,
+        minimums,
       }),
     );
   };
@@ -114,6 +139,7 @@ export function PlayersSearchControls({
         dir,
         range: event.target.value,
         mode,
+        minimums,
       }),
     );
   };
@@ -130,6 +156,23 @@ export function PlayersSearchControls({
         dir,
         range,
         mode: event.target.value,
+        minimums,
+      }),
+    );
+  };
+
+  const onMinimumsChange = ({ checked }: { checked: boolean }) => {
+    navigate(
+      buildPlayersHref({
+        q,
+        page: 1,
+        size,
+        includeRetired,
+        sort,
+        dir,
+        range,
+        mode,
+        minimums: checked,
       }),
     );
   };
@@ -188,6 +231,7 @@ export function PlayersSearchControls({
           <option value="total">Totals</option>
         </select>
       </label>
+      <Switch label="Qualifying minimums" checked={minimums} onChange={onMinimumsChange} />
     </section>
   );
 }

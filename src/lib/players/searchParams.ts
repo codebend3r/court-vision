@@ -58,6 +58,7 @@ export type PlayersSearchParams = {
   dir: SortDirection;
   range: PlayerGameRange;
   mode: PlayerStatMode;
+  minimums: boolean;
 };
 
 const isPlayerSortKey = (value: string | undefined): value is PlayerSortKey =>
@@ -78,6 +79,7 @@ export const parsePlayersSearchParams = (raw: {
   dir?: string;
   range?: string;
   mode?: string;
+  minimums?: string;
 }): PlayersSearchParams => {
   const q = (raw.q ?? "").trim().slice(0, MAX_QUERY_LENGTH);
   const parsedPage = Number.parseInt(raw.page ?? "", 10);
@@ -88,7 +90,9 @@ export const parsePlayersSearchParams = (raw: {
   const dir: SortDirection = raw.dir === "asc" ? "asc" : DEFAULT_SORT_DIR;
   const range: PlayerGameRange = isPlayerGameRange(raw.range) ? raw.range : "all";
   const mode: PlayerStatMode = isPlayerStatMode(raw.mode) ? raw.mode : "average";
-  return { q, page, size, includeRetired: raw.retired === "1", sort, dir, range, mode };
+  // NBA qualifying minimums apply by default; only an explicit 0 disables them.
+  const minimums = raw.minimums !== "0";
+  return { q, page, size, includeRetired: raw.retired === "1", sort, dir, range, mode, minimums };
 };
 
 export const buildPlayersHref = (args: PlayersSearchParams): string => {
@@ -116,6 +120,9 @@ export const buildPlayersHref = (args: PlayersSearchParams): string => {
   }
   if (args.mode !== "average") {
     params.set("mode", args.mode);
+  }
+  if (!args.minimums) {
+    params.set("minimums", "0");
   }
   const query = params.toString();
   return query === "" ? "/players" : `/players?${query}`;

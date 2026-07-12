@@ -30,12 +30,12 @@ export type SeasonAverageStat = {
 };
 
 // NBA-style statistical minimums so tiny samples cannot top a leaderboard:
-// per-game averages need a floor of games played, percentages need attempt
-// volume (mirroring the official 300 FGA / 82 3PA / 125 FTA qualifiers).
+// per-game averages need a floor of games played, percentages need made
+// volume (the official 300 FGM / 82 3PM / 125 FTM qualifiers).
 const MIN_GAMES = 20;
-const MIN_FGA = 300;
-const MIN_FG3A = 82;
-const MIN_FTA = 125;
+const MIN_FGM = 300;
+const MIN_FG3M = 82;
+const MIN_FTM = 125;
 
 const perGame = ({ total, gamesPlayed }: { total: number; gamesPlayed: number }): number | null =>
   gamesPlayed > 0 ? total / gamesPlayed : null;
@@ -87,7 +87,7 @@ const STAT_DEFS: readonly StatDef[] = [
     label: "FG%",
     rankTone: "leader",
     valueOf: (row) => percentage({ made: row.fgm, attempted: row.fga }),
-    qualifies: (row) => row.fga >= MIN_FGA,
+    qualifies: (row) => row.fgm >= MIN_FGM,
     format: formatPercent,
   },
   {
@@ -95,7 +95,7 @@ const STAT_DEFS: readonly StatDef[] = [
     label: "3P%",
     rankTone: "leader",
     valueOf: (row) => percentage({ made: row.fg3m, attempted: row.fg3a }),
-    qualifies: (row) => row.fg3a >= MIN_FG3A,
+    qualifies: (row) => row.fg3m >= MIN_FG3M,
     format: formatPercent,
   },
   {
@@ -103,7 +103,7 @@ const STAT_DEFS: readonly StatDef[] = [
     label: "FT%",
     rankTone: "leader",
     valueOf: (row) => percentage({ made: row.ftm, attempted: row.fta }),
-    qualifies: (row) => row.fta >= MIN_FTA,
+    qualifies: (row) => row.ftm >= MIN_FTM,
     format: formatPercent,
   },
 ];
@@ -111,12 +111,14 @@ const STAT_DEFS: readonly StatDef[] = [
 // Standard competition ranking against the qualified pool: rank is 1 plus the
 // number of qualified players strictly ahead, so ties share a rank. The viewed
 // player is always ranked (even below the qualifying floor) but only counts
-// toward eligibleCount when they qualify themselves.
+// toward eligibleCount when they qualify themselves. With applyMinimums off,
+// every player with a computable value is in the pool.
 export const buildSeasonAverageLine = (args: {
   rows: SeasonStatTotals[];
   playerId: number;
+  applyMinimums?: boolean;
 }): SeasonAverageStat[] | null => {
-  const { rows, playerId } = args;
+  const { rows, playerId, applyMinimums = true } = args;
   const playerRow = rows.find((row) => row.playerId === playerId);
   if (!playerRow) {
     return null;
@@ -129,7 +131,9 @@ export const buildSeasonAverageLine = (args: {
     if (value === null) {
       return null;
     }
-    const qualifiedOthers = rows.filter((row) => row.playerId !== playerId && def.qualifies(row));
+    const qualifies = (row: SeasonStatTotals): boolean =>
+      applyMinimums ? def.qualifies(row) : def.valueOf(row) !== null;
+    const qualifiedOthers = rows.filter((row) => row.playerId !== playerId && qualifies(row));
     const ahead = qualifiedOthers.reduce((count, row) => {
       const other = def.valueOf(row);
       return other !== null && other > value ? count + 1 : count;
@@ -140,7 +144,7 @@ export const buildSeasonAverageLine = (args: {
       value: def.format(value),
       rank: ahead + 1,
       rankTone: def.rankTone,
-      eligibleCount: qualifiedOthers.length + (def.qualifies(playerRow) ? 1 : 0),
+      eligibleCount: qualifiedOthers.length + (qualifies(playerRow) ? 1 : 0),
     };
   }).filter(isPresent);
 };

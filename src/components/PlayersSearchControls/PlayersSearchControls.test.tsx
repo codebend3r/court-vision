@@ -31,6 +31,7 @@ const defaultProps: PlayersSearchControlsProps = {
   dir: "desc",
   range: "all",
   mode: "average",
+  minimums: true,
 };
 
 const advance = (ms: number) => {
@@ -107,6 +108,24 @@ describe("PlayersSearchControls", () => {
     rerender(<PlayersSearchControls {...defaultProps} range="last20" />);
     fireEvent.change(screen.getByLabelText("Stat display"), { target: { value: "total" } });
     expect(replace).toHaveBeenLastCalledWith("/players?range=last20&mode=total");
+  });
+
+  it("writes minimums=0 to the URL when the qualifying minimums switch is turned off", () => {
+    render(<PlayersSearchControls {...defaultProps} />);
+
+    fireEvent.click(screen.getByRole("switch", { name: "Qualifying minimums" }));
+
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledWith("/players?minimums=0");
+  });
+
+  it("clears the minimums param when the switch is turned back on", () => {
+    render(<PlayersSearchControls {...defaultProps} minimums={false} />);
+
+    fireEvent.click(screen.getByRole("switch", { name: "Qualifying minimums" }));
+
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledWith("/players");
   });
 
   it("cancels a pending debounce timer on unmount", () => {

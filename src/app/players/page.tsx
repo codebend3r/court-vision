@@ -42,6 +42,7 @@ export default async function PlayersPage({
     dir: firstValue(raw.dir),
     range: firstValue(raw.range),
     mode: firstValue(raw.mode),
+    minimums: firstValue(raw.minimums),
   });
   const { rows, total, page } = await searchPlayers(params);
   const totalPages = Math.max(1, Math.ceil(total / params.size));
@@ -81,6 +82,7 @@ export default async function PlayersPage({
         dir={params.dir}
         range={params.range}
         mode={params.mode}
+        minimums={params.minimums}
       />
       <p className={styles.summary}>
         {total === 0
@@ -101,6 +103,7 @@ export default async function PlayersPage({
             dir={params.dir}
             range={params.range}
             mode={params.mode}
+            minimums={params.minimums}
           />
           <div className={styles.tableScroller}>
             <table className={styles.table}>
@@ -215,6 +218,7 @@ export default async function PlayersPage({
             dir={params.dir}
             range={params.range}
             mode={params.mode}
+            minimums={params.minimums}
           />
         </>
       ) : null}

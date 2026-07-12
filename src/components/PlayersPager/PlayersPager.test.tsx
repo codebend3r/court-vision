@@ -25,6 +25,7 @@ const defaultProps: PlayersPagerProps = {
   dir: "desc",
   range: "all",
   mode: "average",
+  minimums: true,
 };
 
 describe("PlayersPager", () => {

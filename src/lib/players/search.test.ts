@@ -25,6 +25,7 @@ const defaultParams: PlayersSearchParams = {
   dir: "desc",
   range: "all",
   mode: "average",
+  minimums: true,
 };
 
 const expectedSelect = {
@@ -334,5 +335,64 @@ describe("searchPlayers", () => {
     );
     expect(result.rows.map((row) => row.id)).toEqual([2, 1]);
     expect(result.rows[0].stats?.pts).toBe(12);
+  });
+
+  it("sinks players below the qualifying minimum on percentage sorts", async () => {
+    const buildPctRow = ({ id, fgm, fga }: { id: number; fgm: number; fga: number }) => ({
+      id,
+      firstName: `Player${id}`,
+      lastName: `P${id}`,
+      fullName: `Player${id} P${id}`,
+      teamAbbr: "AAA",
+      position: "G",
+      nbaPersonId: null,
+      teamId: 1,
+      jerseyNumber: null,
+      heightInches: null,
+      weightLbs: null,
+      birthDate: null,
+      college: null,
+      country: null,
+      draftYear: null,
+      draftRound: null,
+      draftNumber: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      seasonStats: [
+        {
+          gamesPlayed: 50,
+          fgm,
+          fga,
+          fg3m: 0,
+          fg3a: 0,
+          ftm: 200,
+          fta: 250,
+          reb: 0,
+          ast: 0,
+          stl: 0,
+          blk: 0,
+          tov: 0,
+          pts: fgm * 2,
+        },
+      ],
+    });
+    // Player 1 shoots a perfect but tiny sample; player 2 qualifies at .500
+    const rows = [
+      buildPctRow({ id: 1, fgm: 10, fga: 10 }),
+      buildPctRow({ id: 2, fgm: 400, fga: 800 }),
+    ];
+
+    vi.mocked(prisma.player.findMany).mockResolvedValue(rows);
+    const withMinimums = await searchPlayers({ ...defaultParams, sort: "fgPct", dir: "desc" });
+    expect(withMinimums.rows.map((row) => row.id)).toEqual([2, 1]);
+
+    vi.mocked(prisma.player.findMany).mockResolvedValue(rows);
+    const withoutMinimums = await searchPlayers({
+      ...defaultParams,
+      sort: "fgPct",
+      dir: "desc",
+      minimums: false,
+    });
+    expect(withoutMinimums.rows.map((row) => row.id)).toEqual([1, 2]);
   });
 });

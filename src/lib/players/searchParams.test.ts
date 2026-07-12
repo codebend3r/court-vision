@@ -13,6 +13,7 @@ describe("parsePlayersSearchParams", () => {
       dir: "desc",
       range: "all",
       mode: "average",
+      minimums: true,
     });
   });
 
@@ -42,6 +43,9 @@ describe("parsePlayersSearchParams", () => {
     [{ range: "10" }, { range: "all" }],
     [{ mode: "total" }, { mode: "total" }],
     [{ mode: "perGame" }, { mode: "average" }],
+    [{ minimums: "0" }, { minimums: false }],
+    [{ minimums: "1" }, { minimums: true }],
+    [{ minimums: "false" }, { minimums: true }],
   ])("normalizes %j", (raw, expected) => {
     expect(parsePlayersSearchParams(raw)).toMatchObject(expected);
   });
@@ -57,6 +61,7 @@ describe("buildPlayersHref", () => {
     dir: "desc",
     range: "all",
     mode: "average",
+    minimums: true,
   } as const;
 
   it("returns the bare path when everything is default", () => {
@@ -83,7 +88,10 @@ describe("buildPlayersHref", () => {
         dir: "desc",
         range: "last5",
         mode: "total",
+        minimums: false,
       }),
-    ).toBe("/players?q=curry&page=2&size=25&retired=1&sort=lastName&range=last5&mode=total");
+    ).toBe(
+      "/players?q=curry&page=2&size=25&retired=1&sort=lastName&range=last5&mode=total&minimums=0",
+    );
   });
 });
