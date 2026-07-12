@@ -17,6 +17,7 @@ describe("loadStatFilters", () => {
 
   it("parses per36 mode and every game-count span", async () => {
     expect((await loadStatFilters({ mode: "per36" })).mode).toBe("per36");
+    expect((await loadStatFilters({ span: "5" })).span).toBe("5");
     expect((await loadStatFilters({ span: "20" })).span).toBe("20");
     expect((await loadStatFilters({ span: "30" })).span).toBe("30");
     expect((await loadStatFilters({ span: "season" })).span).toBe("season");
@@ -41,6 +42,7 @@ describe("loadStatFilters", () => {
 
 describe("gamesForSpan", () => {
   it("maps game-count spans to numbers", () => {
+    expect(gamesForSpan({ span: "5" })).toBe(5);
     expect(gamesForSpan({ span: "10" })).toBe(10);
     expect(gamesForSpan({ span: "20" })).toBe(20);
     expect(gamesForSpan({ span: "30" })).toBe(30);

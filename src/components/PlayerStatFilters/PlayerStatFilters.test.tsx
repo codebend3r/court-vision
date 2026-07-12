@@ -21,7 +21,7 @@ describe("PlayerStatFilters", () => {
 
     expect(screen.getByRole("group", { name: "Stat mode" })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Timeframe" })).toBeInTheDocument();
-    ["Avg", "Game", "Totals", "Per 36", "L10", "L20", "L30", "Season"].map((label) =>
+    ["Avg", "Game", "Totals", "Per 36", "L5", "L10", "L20", "L30", "Season"].map((label) =>
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument(),
     );
   });
