@@ -4,6 +4,8 @@ import { GameLogInput } from "@/lib/stats/inputs";
 
 import {
   aggregateSeasonStats,
+  parseHeightInches,
+  parseWeightLbs,
   toGameLogInput,
   toPlayerInputs,
   toPlayerInput,
@@ -199,6 +201,13 @@ describe("toPlayerInput", () => {
         last_name: "Edwards",
         position: "G",
         jersey_number: "5",
+        height: "6-4",
+        weight: "225",
+        college: "Georgia",
+        country: "USA",
+        draft_year: 2020,
+        draft_round: 1,
+        draft_number: 1,
         team: { id: 18, abbreviation: "MIN" },
       },
     });
@@ -211,6 +220,13 @@ describe("toPlayerInput", () => {
       teamAbbr: "MIN",
       position: "G",
       jerseyNumber: "5",
+      heightInches: 76,
+      weightLbs: 225,
+      college: "Georgia",
+      country: "USA",
+      draftYear: 2020,
+      draftRound: 1,
+      draftNumber: 1,
     });
   });
 
@@ -224,5 +240,18 @@ describe("toPlayerInput", () => {
       position: null,
       jerseyNumber: null,
     });
+  });
+});
+
+describe("player measurement parsing", () => {
+  it("normalizes feet/inches and pounds", () => {
+    expect(parseHeightInches("6-2")).toBe(74);
+    expect(parseWeightLbs("185")).toBe(185);
+  });
+
+  it("returns null for blank or malformed measurements", () => {
+    expect(parseHeightInches("")).toBeNull();
+    expect(parseHeightInches("6-12")).toBeNull();
+    expect(parseWeightLbs("unknown")).toBeNull();
   });
 });

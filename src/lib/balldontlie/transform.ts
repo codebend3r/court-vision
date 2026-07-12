@@ -9,13 +9,28 @@ export const blankToNull = (value: string | null | undefined): string | null => 
   return trimmed === "" ? null : trimmed;
 };
 
-export interface GameContext {
+export const parseHeightInches = (value: string | null | undefined): number | null => {
+  const match = /^(\d+)\s*-\s*(\d+)$/.exec((value ?? "").trim());
+  if (match === null) return null;
+  const feet = Number(match[1]);
+  const inches = Number(match[2]);
+  return inches < 12 ? feet * 12 + inches : null;
+};
+
+export const parseWeightLbs = (value: string | null | undefined): number | null => {
+  const normalized = (value ?? "").trim();
+  if (!/^\d+$/.test(normalized)) return null;
+  const weight = Number(normalized);
+  return weight > 0 ? weight : null;
+};
+
+export type GameContext = {
   homeAway: "home" | "away";
   opponentAbbr: string | null;
   winLoss: string | null;
   matchup: string;
   gameDate: Date;
-}
+};
 
 export const deriveGameContext = (args: {
   game: BdlGame;
@@ -161,5 +176,12 @@ export const toPlayerInput = (args: { player: BdlPlayer }): PlayerInput => {
     teamAbbr: player.team?.abbreviation ?? null,
     position: blankToNull(player.position),
     jerseyNumber: blankToNull(player.jersey_number),
+    heightInches: parseHeightInches(player.height),
+    weightLbs: parseWeightLbs(player.weight),
+    college: blankToNull(player.college),
+    country: blankToNull(player.country),
+    draftYear: player.draft_year ?? null,
+    draftRound: player.draft_round ?? null,
+    draftNumber: player.draft_number ?? null,
   };
 };

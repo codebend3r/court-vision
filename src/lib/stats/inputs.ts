@@ -1,4 +1,4 @@
-export interface PlayerInput {
+export type PlayerInput = {
   id: number;
   firstName: string;
   lastName: string;
@@ -7,9 +7,17 @@ export interface PlayerInput {
   teamAbbr: string | null;
   position: string | null;
   jerseyNumber: string | null;
-}
+  heightInches?: number | null;
+  weightLbs?: number | null;
+  birthDate?: Date | null;
+  college?: string | null;
+  country?: string | null;
+  draftYear?: number | null;
+  draftRound?: number | null;
+  draftNumber?: number | null;
+};
 
-export interface SeasonStatsInput {
+export type SeasonStatsInput = {
   playerId: number;
   season: string;
   seasonType: string;
@@ -29,9 +37,9 @@ export interface SeasonStatsInput {
   blk: number;
   tov: number;
   pts: number;
-}
+};
 
-export interface GameLogInput {
+export type GameLogInput = {
   playerId: number;
   gameId: string;
   gameDate: Date;
@@ -59,4 +67,4 @@ export interface GameLogInput {
   tov: number;
   pts: number;
   plusMinus: number | null;
-}
+};
