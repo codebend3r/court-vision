@@ -39,6 +39,7 @@
   // Font family
   --font-sans: var(--font-body-next), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-display-next), var(--font-sans);
+  --font-mono: var(--font-mono-next), ui-monospace, "SF Mono", Menlo, monospace;
 
   // Font weights (display loads 400/500/700, body loads 400/500/600)
   --font-weight-regular: 400;

@@ -1,4 +1,4 @@
-import { Chakra_Petch, IBM_Plex_Sans } from "next/font/google";
+import { Chakra_Petch, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import type { Metadata } from "next";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { ReactNode } from "react";
@@ -26,6 +26,13 @@ const bodyFont = IBM_Plex_Sans({
   variable: "--font-body-next",
 });
 
+const monoFont = IBM_Plex_Mono({
+  weight: ["400", "500"],
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-mono-next",
+});
+
 export const metadata: Metadata = {
   title: "Court Vision",
   description: "Find fantasy basketball players trending in the categories you care about.",
@@ -42,7 +49,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${displayFont.variable} ${bodyFont.variable}`}
+      className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />

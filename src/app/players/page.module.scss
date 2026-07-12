@@ -28,6 +28,10 @@
     border-top: 1px solid var(--color-border);
   }
 
+  td.numeric {
+    font-family: var(--font-mono);
+  }
+
   tbody {
     font-variant-numeric: tabular-nums;
   }
