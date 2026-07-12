@@ -1,0 +1,12 @@
+.shell {
+  display: grid;
+  gap: var(--space-6);
+  padding: var(--space-8) var(--space-6);
+  justify-items: start;
+  max-width: 26rem;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+}

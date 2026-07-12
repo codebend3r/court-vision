@@ -1,0 +1,51 @@
+.form {
+  display: grid;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 22rem;
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+
+  span {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+  }
+
+  input {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: var(--font-size-md);
+  }
+}
+
+.error {
+  color: var(--color-accent-strong);
+  font-size: var(--font-size-sm);
+}
+
+.alt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+button[type="submit"] {
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
