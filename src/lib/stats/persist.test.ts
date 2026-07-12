@@ -5,16 +5,23 @@ import { prisma } from "@/lib/prisma";
 import { GameLogInput, PlayerInput, SeasonStatsInput } from "@/lib/stats/inputs";
 import { upsertGameLogs, upsertPlayers, upsertSeasonStats } from "@/lib/stats/persist";
 
-vi.mock("@/lib/prisma", () => ({
-  prisma: {
+vi.mock("@/lib/prisma", () => {
+  const client = {
     player: { upsert: vi.fn() },
     playerSeasonStats: { upsert: vi.fn() },
-    playerGameLog: { upsert: vi.fn() },
-    // The array form runs a batch of upserts in one transaction; resolve with
-    // the operations it was handed so callers see a normal completion.
-    $transaction: vi.fn((operations: unknown[]) => Promise.resolve(operations)),
-  },
-}));
+    playerGameLog: {
+      deleteMany: vi.fn(() => Promise.resolve({ count: 0 })),
+      createMany: vi.fn(() => Promise.resolve({ count: 0 })),
+    },
+    // Support both transaction forms: the array form (batched upserts) resolves
+    // with the operations it was handed, and the interactive callback form runs
+    // against this same mock client.
+    $transaction: vi.fn((arg: ((tx: unknown) => Promise<unknown>) | unknown[]) =>
+      typeof arg === "function" ? arg(client) : Promise.resolve(arg),
+    ),
+  };
+  return { prisma: client };
+});
 
 const player: PlayerInput = {
   id: 1629029,
@@ -25,6 +32,36 @@ const player: PlayerInput = {
   teamAbbr: "LAL",
   position: "G-F",
   jerseyNumber: "77",
+};
+
+const baseGameLog: GameLogInput = {
+  playerId: 201939,
+  gameId: "base",
+  gameDate: new Date("2025-10-22T00:00:00Z"),
+  season: "2025-26",
+  seasonType: "Regular Season",
+  teamId: 1610612744,
+  teamAbbr: "GSW",
+  matchup: "GSW vs. LAL",
+  opponentAbbr: "LAL",
+  homeAway: "home",
+  winLoss: "W",
+  minutes: 34,
+  fgm: 10,
+  fga: 20,
+  fg3m: 5,
+  fg3a: 11,
+  ftm: 4,
+  fta: 4,
+  oreb: 1,
+  dreb: 4,
+  reb: 5,
+  ast: 8,
+  stl: 2,
+  blk: 0,
+  tov: 3,
+  pts: 29,
+  plusMinus: 12,
 };
 
 beforeEach(() => {
@@ -54,6 +91,23 @@ describe("upsertPlayers", () => {
     await upsertPlayers([player]);
     await upsertPlayers([player]);
     expect(prisma.player.upsert).toHaveBeenCalledTimes(2);
+  });
+
+  it("commits chunked upserts with a timeout past Prisma's 5s default", async () => {
+    const players = Array.from({ length: 501 }, (_, index) => ({ ...player, id: index }));
+
+    const count = await upsertPlayers(players);
+
+    expect(count).toBe(501);
+    expect(prisma.player.upsert).toHaveBeenCalledTimes(501);
+    // 501 rows chunk into transactions of 250, 250, and 1.
+    expect(prisma.$transaction).toHaveBeenCalledTimes(3);
+    // Each batch must carry a timeout well above Prisma's 5s default, or a full
+    // chunk of row-by-row upserts trips P2028 mid-sync.
+    expect(prisma.$transaction).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ timeout: expect.any(Number) }),
+    );
   });
 });
 
@@ -97,79 +151,8 @@ describe("upsertSeasonStats", () => {
 });
 
 describe("upsertGameLogs", () => {
-  it("upserts on the playerId+gameId unique key", async () => {
-    const log: GameLogInput = {
-      playerId: 201939,
-      gameId: "0022500001",
-      gameDate: new Date("2025-10-22T00:00:00Z"),
-      season: "2025-26",
-      seasonType: "Regular Season",
-      teamId: 1610612744,
-      teamAbbr: "GSW",
-      matchup: "GSW vs. LAL",
-      opponentAbbr: "LAL",
-      homeAway: "home",
-      winLoss: "W",
-      minutes: 34,
-      fgm: 10,
-      fga: 20,
-      fg3m: 5,
-      fg3a: 11,
-      ftm: 4,
-      fta: 4,
-      oreb: 1,
-      dreb: 4,
-      reb: 5,
-      ast: 8,
-      stl: 2,
-      blk: 0,
-      tov: 3,
-      pts: 29,
-      plusMinus: 12,
-    };
-    const count = await upsertGameLogs([log]);
-    expect(count).toBe(1);
-    expect(prisma.playerGameLog.upsert).toHaveBeenCalledWith({
-      where: { playerId_gameId: { playerId: 201939, gameId: "0022500001" } },
-      create: log,
-      update: log,
-    });
-  });
-});
-
-const baseGameLog: GameLogInput = {
-  playerId: 201939,
-  gameId: "base",
-  gameDate: new Date("2025-10-22T00:00:00Z"),
-  season: "2025-26",
-  seasonType: "Regular Season",
-  teamId: 1610612744,
-  teamAbbr: "GSW",
-  matchup: "GSW vs. LAL",
-  opponentAbbr: "LAL",
-  homeAway: "home",
-  winLoss: "W",
-  minutes: 34,
-  fgm: 10,
-  fga: 20,
-  fg3m: 5,
-  fg3a: 11,
-  ftm: 4,
-  fta: 4,
-  oreb: 1,
-  dreb: 4,
-  reb: 5,
-  ast: 8,
-  stl: 2,
-  blk: 0,
-  tov: 3,
-  pts: 29,
-  plusMinus: 12,
-};
-
-describe("chunked, resilient writes", () => {
-  it("commits at most 250 upserts per transaction", async () => {
-    const logs = Array.from({ length: 501 }, (_, index) => ({
+  it("replaces a season's logs with chunked inserts in one transaction", async () => {
+    const logs = Array.from({ length: 1500 }, (_, index) => ({
       ...baseGameLog,
       gameId: `game-${index}`,
       playerId: index,
@@ -177,19 +160,27 @@ describe("chunked, resilient writes", () => {
 
     const count = await upsertGameLogs(logs);
 
-    expect(count).toBe(501);
-    expect(prisma.playerGameLog.upsert).toHaveBeenCalledTimes(501);
-    // 501 rows chunk into transactions of 250, 250, and 1.
-    expect(prisma.$transaction).toHaveBeenCalledTimes(3);
-    // Each batch must carry a timeout well above Prisma's 5s default, or a
-    // full chunk of row-by-row upserts trips P2028 mid-sync.
-    expect(prisma.$transaction).toHaveBeenCalledWith(
-      expect.any(Array),
-      expect.objectContaining({ timeout: expect.any(Number) }),
-    );
+    expect(count).toBe(1500);
+    // The whole season-replace runs inside a single interactive transaction.
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    // It clears exactly the (season, seasonType) it is about to re-insert.
+    expect(prisma.playerGameLog.deleteMany).toHaveBeenCalledWith({
+      where: { OR: [{ season: "2025-26", seasonType: "Regular Season" }] },
+    });
+    // 1500 rows insert as multi-row batches of 1000 and 500.
+    expect(prisma.playerGameLog.createMany).toHaveBeenCalledTimes(2);
   });
 
-  it("retries a chunk after a transient connection drop, then succeeds", async () => {
+  it("does no work when there are no rows", async () => {
+    const count = await upsertGameLogs([]);
+    expect(count).toBe(0);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.playerGameLog.deleteMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("resilient writes", () => {
+  it("retries after a transient connection drop, then succeeds", async () => {
     vi.useFakeTimers();
     try {
       vi.mocked(prisma.$transaction).mockRejectedValueOnce(
