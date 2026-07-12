@@ -110,4 +110,16 @@ describe("PlayerGameLogTable", () => {
     await user.click(screen.getByRole("button", { name: /AST/ }));
     await waitFor(() => expect(updates.at(-1)?.queryString).toBe("?sort=ast&dir=desc"));
   });
+
+  it("colors wins and losses with the win/loss classes", () => {
+    renderTable({
+      rows: [
+        buildRow({ id: "won", winLoss: "W" }),
+        buildRow({ id: "lost", gameDate: "2026-03-11T00:00:00.000Z", winLoss: "L" }),
+      ],
+    });
+
+    expect(screen.getByText("W").className).toMatch(/win/i);
+    expect(screen.getByText("L").className).toMatch(/loss/i);
+  });
 });

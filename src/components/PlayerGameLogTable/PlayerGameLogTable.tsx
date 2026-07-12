@@ -58,7 +58,16 @@ const COLUMNS: readonly Column[] = [
     label: "Matchup",
     render: ({ matchup }) => <TeamMatchup matchup={matchup} size="sm" />,
   },
-  { key: "winLoss", label: "Result" },
+  {
+    key: "winLoss",
+    label: "Result",
+    render: ({ winLoss }) =>
+      winLoss === "W" || winLoss === "L" ? (
+        <span className={winLoss === "W" ? styles.win : styles.loss}>{winLoss}</span>
+      ) : (
+        (winLoss ?? "—")
+      ),
+  },
   { key: "minutes", label: "MIN", align: "right" },
   { key: "pts", label: "PTS", align: "right" },
   { key: "fgm", label: "FGM", align: "right" },

@@ -70,3 +70,13 @@
   letter-spacing: inherit;
   text-transform: inherit;
 }
+
+.win {
+  color: var(--color-win);
+  font-weight: var(--font-weight-semibold);
+}
+
+.loss {
+  color: var(--color-loss);
+  font-weight: var(--font-weight-semibold);
+}
