@@ -17,6 +17,7 @@ export type PlayerRow = {
     fgm: number;
     fga: number;
     fg3m: number;
+    fg3a: number;
     ftm: number;
     fta: number;
     reb: number;
@@ -35,6 +36,7 @@ export type PlayerStats = {
   fgm: number;
   fga: number;
   fg3m: number;
+  fg3a: number;
   ftm: number;
   fta: number;
   reb: number;
@@ -49,6 +51,7 @@ type CountingStatKey =
   | "fgm"
   | "fga"
   | "fg3m"
+  | "fg3a"
   | "ftm"
   | "fta"
   | "reb"
@@ -57,7 +60,17 @@ type CountingStatKey =
   | "blk"
   | "tov"
   | "pts";
-type SortableCountingStatKey = "pts" | "reb" | "ast" | "stl" | "blk" | "fg3m" | "tov";
+type SortableCountingStatKey =
+  | "pts"
+  | "reb"
+  | "ast"
+  | "stl"
+  | "blk"
+  | "fgm"
+  | "fga"
+  | "fg3m"
+  | "fg3a"
+  | "tov";
 type PlayerGameStats = Omit<PlayerStats, "gamesPlayed">;
 
 export type PlayersSearchResult = {
@@ -70,6 +83,7 @@ const statSelect = {
   fgm: true,
   fga: true,
   fg3m: true,
+  fg3a: true,
   ftm: true,
   fta: true,
   reb: true,
@@ -104,6 +118,7 @@ const emptyStats = (): PlayerStats => ({
   fgm: 0,
   fga: 0,
   fg3m: 0,
+  fg3a: 0,
   ftm: 0,
   fta: 0,
   reb: 0,
@@ -118,6 +133,7 @@ const statKeys: readonly CountingStatKey[] = [
   "fgm",
   "fga",
   "fg3m",
+  "fg3a",
   "ftm",
   "fta",
   "reb",
@@ -131,7 +147,9 @@ const statKeys: readonly CountingStatKey[] = [
 const isSortableCountingStatKey = (
   key: PlayersSearchParams["sort"],
 ): key is SortableCountingStatKey =>
-  ["pts", "reb", "ast", "stl", "blk", "fg3m", "tov"].some((statKey) => statKey === key);
+  ["pts", "reb", "ast", "stl", "blk", "fgm", "fga", "fg3m", "fg3a", "tov"].some(
+    (statKey) => statKey === key,
+  );
 
 const withDisplayStats = ({
   row,
@@ -156,6 +174,8 @@ const withDisplayStats = ({
 
 const statSortValue = ({ row, args }: { row: PlayerRow; args: PlayersSearchParams }): number => {
   const stats = row.stats ?? emptyStats();
+  // Games played is a count, never an average, so mode does not apply.
+  if (args.sort === "gamesPlayed") return stats.gamesPlayed;
   if (args.sort === "fgPct") return stats.fga > 0 ? stats.fgm / stats.fga : -1;
   if (args.sort === "ftPct") return stats.fta > 0 ? stats.ftm / stats.fta : -1;
   if (isSortableCountingStatKey(args.sort)) {

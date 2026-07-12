@@ -40,6 +40,7 @@ describe("PlayersPage", () => {
               stl: 15,
               blk: 5,
               fg3m: 40,
+              fg3a: 110,
               fgm: 90,
               fga: 180,
               ftm: 30,
@@ -75,7 +76,14 @@ describe("PlayersPage", () => {
     expect(screen.getAllByTitle("Golden State Warriors")).toHaveLength(2);
     expect(screen.getByText("Showing 26–50 of 60")).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "PTS" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "GP" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "FGM" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "FGA" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "3PA" })).toBeInTheDocument();
     expect(screen.getByText("25.0")).toBeInTheDocument();
+    // 180 FGA and 110 3PA over 10 games
+    expect(screen.getByText("18.0")).toBeInTheDocument();
+    expect(screen.getByText("11.0")).toBeInTheDocument();
     expect(screen.getByText(".500")).toBeInTheDocument();
     expect(screen.getByText(".750")).toBeInTheDocument();
     // name sort: no rank column
@@ -213,6 +221,7 @@ describe("PlayersPage", () => {
             stl: 5,
             blk: 2,
             fg3m: 20,
+            fg3a: 55,
             fgm: 50,
             fga: 100,
             ftm: 20,

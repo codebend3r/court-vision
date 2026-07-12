@@ -5,24 +5,32 @@ export const MAX_QUERY_LENGTH = 100;
 export type PlayerSortKey =
   | "firstName"
   | "lastName"
+  | "gamesPlayed"
   | "pts"
   | "reb"
   | "ast"
   | "stl"
   | "blk"
+  | "fgm"
+  | "fga"
   | "fg3m"
+  | "fg3a"
   | "fgPct"
   | "ftPct"
   | "tov";
 export const PLAYER_SORT_KEYS: readonly PlayerSortKey[] = [
   "firstName",
   "lastName",
+  "gamesPlayed",
   "pts",
   "reb",
   "ast",
   "stl",
   "blk",
+  "fgm",
+  "fga",
   "fg3m",
+  "fg3a",
   "fgPct",
   "ftPct",
   "tov",

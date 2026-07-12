@@ -115,12 +115,16 @@ export default async function PlayersPage({
                   {renderSortableHeader({ label: "Last name", sortKey: "lastName" })}
                   <th>Team</th>
                   <th>Position</th>
+                  {renderSortableHeader({ label: "GP", sortKey: "gamesPlayed" })}
                   {renderSortableHeader({ label: "PTS", sortKey: "pts" })}
                   {renderSortableHeader({ label: "REB", sortKey: "reb" })}
                   {renderSortableHeader({ label: "AST", sortKey: "ast" })}
                   {renderSortableHeader({ label: "STL", sortKey: "stl" })}
                   {renderSortableHeader({ label: "BLK", sortKey: "blk" })}
+                  {renderSortableHeader({ label: "FGM", sortKey: "fgm" })}
+                  {renderSortableHeader({ label: "FGA", sortKey: "fga" })}
                   {renderSortableHeader({ label: "3PM", sortKey: "fg3m" })}
+                  {renderSortableHeader({ label: "3PA", sortKey: "fg3a" })}
                   {renderSortableHeader({ label: "FG%", sortKey: "fgPct" })}
                   {renderSortableHeader({ label: "FT%", sortKey: "ftPct" })}
                   {renderSortableHeader({ label: "TOV", sortKey: "tov" })}
@@ -158,6 +162,7 @@ export default async function PlayersPage({
                         {row.teamAbbr === null ? "—" : <TeamChip team={row.teamAbbr} size="sm" />}
                       </td>
                       <td>{row.position ?? "—"}</td>
+                      <td className={styles.numeric}>{stats ? String(stats.gamesPlayed) : "—"}</td>
                       <td className={styles.numeric}>
                         {stats ? formatCountingStat(stats.pts) : "—"}
                       </td>
@@ -174,7 +179,16 @@ export default async function PlayersPage({
                         {stats ? formatCountingStat(stats.blk) : "—"}
                       </td>
                       <td className={styles.numeric}>
+                        {stats ? formatCountingStat(stats.fgm) : "—"}
+                      </td>
+                      <td className={styles.numeric}>
+                        {stats ? formatCountingStat(stats.fga) : "—"}
+                      </td>
+                      <td className={styles.numeric}>
                         {stats ? formatCountingStat(stats.fg3m) : "—"}
+                      </td>
+                      <td className={styles.numeric}>
+                        {stats ? formatCountingStat(stats.fg3a) : "—"}
                       </td>
                       <td className={styles.numeric}>
                         {stats ? formatPercentage(stats.fgm, stats.fga) : "—"}
