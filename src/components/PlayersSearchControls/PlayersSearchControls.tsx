@@ -14,6 +14,7 @@ import {
   type SortDirection,
 } from "@/lib/players/searchParams";
 
+import { InfoTip } from "@/components/InfoTip/InfoTip";
 import { Switch } from "@/components/Switch/Switch";
 
 import styles from "@/components/PlayersSearchControls/PlayersSearchControls.module.scss";
@@ -180,7 +181,23 @@ export function PlayersSearchControls({
           <option value="total">Totals</option>
         </select>
       </label>
-      <Switch label="Qualifying minimums" checked={minimums} onChange={onMinimumsChange} />
+      <span className={styles.minimums}>
+        <Switch label="Qualifying minimums" checked={minimums} onChange={onMinimumsChange} />
+        <InfoTip label="About qualifying minimums">
+          <span className={styles.infoIntro}>
+            NBA percentage leaders must clear a minimum of made shots to qualify. With this on,
+            players below the cutoff drop to the bottom of the sort.
+          </span>
+          <dl className={styles.infoList}>
+            <dt>FG%</dt>
+            <dd>300 made field goals</dd>
+            <dt>3P%</dt>
+            <dd>82 made threes</dd>
+            <dt>FT%</dt>
+            <dd>125 made free throws</dd>
+          </dl>
+        </InfoTip>
+      </span>
     </section>
   );
 }
