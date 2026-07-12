@@ -138,6 +138,21 @@ describe("PlayerPage", () => {
     expect(fallback.tagName).not.toBe("IMG");
   });
 
+  it("counts only games played (not DNPs) in the header", async () => {
+    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
+    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([
+      buildLog({ id: "log-1" }),
+      buildLog({ id: "log-2", gameId: "0022500002" }),
+      // A DNP: on the roster but did not play.
+      buildLog({ id: "dnp", gameId: "0022500003", minutes: 0, pts: 0 }),
+    ]);
+
+    await renderPage({ playerId: "3547238" });
+
+    // Three logs, two appearances.
+    expect(screen.getByText("2025-26 · 2 games", { exact: false })).toBeInTheDocument();
+  });
+
   it("shows the season averages card with NBA ranks", async () => {
     vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
     vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);

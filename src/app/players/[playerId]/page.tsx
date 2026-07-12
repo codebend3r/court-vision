@@ -59,6 +59,8 @@ export default async function PlayerPage({
     where: { season: SEASON, seasonType: SEASON_TYPE },
   });
   const seasonLine = buildSeasonAverageLine({ rows: seasonRows, playerId: numericId }) ?? [];
+  // Games played counts appearances only, not DNPs (0-minute roster games).
+  const gamesPlayed = logs.filter((log) => log.minutes > 0).length;
   const { mode, span } = await loadStatFilters(searchParams ?? Promise.resolve({}));
   const windowSize = gamesForSpan({ span });
   const windowLogs = windowSize === null ? logs : logs.slice(-windowSize);
@@ -107,7 +109,7 @@ export default async function PlayerPage({
             {!!player.position && <span>{player.position}</span>}
             {!!player.jerseyNumber && <span>#{player.jerseyNumber}</span>}
             <span>
-              {SEASON} · {logs.length} games
+              {SEASON} · {gamesPlayed} games
             </span>
           </p>
           {facts.length > 0 && (

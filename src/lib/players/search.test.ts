@@ -250,6 +250,7 @@ describe("searchPlayers", () => {
         updatedAt: new Date(),
         gameLogs: [
           {
+            minutes: 30,
             fgm: 2,
             fga: 4,
             fg3m: 1,
@@ -287,6 +288,7 @@ describe("searchPlayers", () => {
         updatedAt: new Date(),
         gameLogs: [
           {
+            minutes: 32,
             fgm: 4,
             fga: 8,
             fg3m: 2,
@@ -319,6 +321,71 @@ describe("searchPlayers", () => {
     );
     expect(result.rows.map((row) => row.id)).toEqual([2, 1]);
     expect(result.rows[0].stats?.pts).toBe(12);
+  });
+
+  it("counts only appearances (not DNPs) as games played in a recent range", async () => {
+    const rows = [
+      {
+        id: 1,
+        firstName: "Gamma",
+        lastName: "Three",
+        fullName: "Gamma Three",
+        teamAbbr: "CCC",
+        position: "G",
+        nbaPersonId: null,
+        teamId: 3,
+        jerseyNumber: null,
+        heightInches: null,
+        weightLbs: null,
+        birthDate: null,
+        college: null,
+        country: null,
+        draftYear: null,
+        draftRound: null,
+        draftNumber: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        gameLogs: [
+          {
+            minutes: 30,
+            fgm: 5,
+            fga: 10,
+            fg3m: 0,
+            fg3a: 0,
+            ftm: 0,
+            fta: 0,
+            reb: 0,
+            ast: 0,
+            stl: 0,
+            blk: 0,
+            tov: 0,
+            pts: 10,
+          },
+          {
+            minutes: 0,
+            fgm: 0,
+            fga: 0,
+            fg3m: 0,
+            fg3a: 0,
+            ftm: 0,
+            fta: 0,
+            reb: 0,
+            ast: 0,
+            stl: 0,
+            blk: 0,
+            tov: 0,
+            pts: 0,
+          },
+        ],
+      },
+    ];
+    vi.mocked(prisma.player.findMany).mockResolvedValue(rows);
+
+    const result = await searchPlayers({ ...defaultParams, sort: "pts", range: "last5" });
+
+    // Two logs fetched, one DNP: one game played.
+    expect(result.rows[0].stats?.gamesPlayed).toBe(1);
+    expect(result.rows[0].stats?.pts).toBe(10);
   });
 
   it("sinks players below the qualifying minimum on percentage sorts", async () => {

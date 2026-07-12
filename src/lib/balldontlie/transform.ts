@@ -149,7 +149,9 @@ export const aggregateSeasonStats = (logs: GameLogInput[]): SeasonStatsInput[] =
     };
     acc.set(log.playerId, {
       ...current,
-      gamesPlayed: current.gamesPlayed + 1,
+      // Games played counts appearances only; a DNP (0 minutes) is on the
+      // roster but did not play, so it must not inflate the count.
+      gamesPlayed: current.gamesPlayed + (log.minutes > 0 ? 1 : 0),
       minutes: current.minutes + log.minutes,
       fgm: current.fgm + log.fgm,
       fga: current.fga + log.fga,

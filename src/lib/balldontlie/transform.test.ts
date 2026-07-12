@@ -200,6 +200,25 @@ describe("aggregateSeasonStats", () => {
       minutes: 68,
     });
   });
+
+  it("excludes DNP games (0 minutes) from games played", () => {
+    const dnpStat: BdlStat = {
+      ...awayStat,
+      id: 3,
+      min: "0",
+      pts: 0,
+      game: { ...awayStat.game, id: 18600, date: "2025-10-26" },
+    };
+    const logs: GameLogInput[] = [homeStat, awayStat, dnpStat].map((stat) =>
+      toGameLogInput({ stat, teamAbbrById }),
+    );
+    const [season] = aggregateSeasonStats(logs);
+    // Three logs, but the DNP does not count as a game played.
+    expect(season.gamesPlayed).toBe(2);
+    // Totals and minutes still include the DNP (which contributes zeros).
+    expect(season.pts).toBe(49);
+    expect(season.minutes).toBe(68);
+  });
 });
 
 describe("toPlayerInput", () => {

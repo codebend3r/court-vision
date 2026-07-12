@@ -28,7 +28,7 @@ export type PlayerRow = {
     pts: number;
   }>;
   stats?: PlayerStats;
-  gameLogs?: PlayerGameStats[];
+  gameLogs?: Array<PlayerGameStats & { minutes: number }>;
 };
 
 export type PlayerStats = {
@@ -92,6 +92,13 @@ const statSelect = {
   blk: true,
   tov: true,
   pts: true,
+};
+
+// Recent-range game logs also need minutes so a DNP (0 minutes) can be
+// excluded from games played, even though it is never summed as a stat.
+const gameLogSelect = {
+  ...statSelect,
+  minutes: true,
 };
 
 const rowSelect = {
@@ -161,13 +168,16 @@ const withDisplayStats = ({
   if (range === "all") {
     return { ...row, stats: row.seasonStats?.[0] ?? emptyStats() };
   }
-  const stats = (row.gameLogs ?? []).reduce<PlayerStats>(
+  const logs = row.gameLogs ?? [];
+  // Games played counts appearances only; a DNP (0 minutes) does not count.
+  const appearances = logs.filter((game) => game.minutes > 0).length;
+  const stats = logs.reduce<PlayerStats>(
     (totals, game) =>
       statKeys.reduce<PlayerStats>(
         (updated, key) => ({ ...updated, [key]: updated[key] + game[key] }),
         totals,
       ),
-    { ...emptyStats(), gamesPlayed: row.gameLogs?.length ?? 0 },
+    { ...emptyStats(), gamesPlayed: appearances },
   );
   return { ...row, stats };
 };
@@ -216,7 +226,7 @@ export const searchPlayers = async (args: PlayersSearchParams): Promise<PlayersS
     gameLimit !== null
       ? {
           ...rowSelect,
-          gameLogs: { orderBy: gameLogOrder, take: gameLimit, select: statSelect },
+          gameLogs: { orderBy: gameLogOrder, take: gameLimit, select: gameLogSelect },
         }
       : rowSelect;
   const isStatSort = sort !== "firstName" && sort !== "lastName";
