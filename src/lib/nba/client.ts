@@ -1,13 +1,13 @@
 import { NBA_BASE_URL, NBA_HEADERS } from "@/lib/nba/constants";
 
-export interface NbaFetchOptions {
+export type NbaFetchOptions = {
   endpoint: string;
   params: Record<string, string>;
   fetchImpl?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
   maxRetries?: number;
   timeoutMs?: number;
-}
+};
 
 const defaultSleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));

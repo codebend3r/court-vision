@@ -8,15 +8,7 @@ import {
   fetchSeasonStats,
 } from "./endpoints";
 import { toGameLogInput, toPlayerInput, toSeasonStatsInput } from "@/lib/nba/transform";
-
-// Bun sets `import.meta.main` on the entry module. @types/node's ImportMeta
-// doesn't declare it, so augment the global interface (declaration merging,
-// same pattern as src/lib/prisma.ts) rather than adding bun-types or casting.
-declare global {
-  interface ImportMeta {
-    readonly main: boolean;
-  }
-}
+import { isMainModule } from "@/lib/runtime";
 
 export async function syncNba(deps: NbaClientDeps = {}): Promise<SyncSummary> {
   const playerRows = await fetchPlayerIndex(deps);
@@ -35,7 +27,7 @@ export async function syncNba(deps: NbaClientDeps = {}): Promise<SyncSummary> {
   return { players, seasonStats, gameLogs };
 }
 
-if (import.meta.main) {
+if (isMainModule({ moduleUrl: import.meta.url })) {
   syncNba()
     .then((summary) => {
       console.log(

@@ -1,6 +1,6 @@
 import type { StatMode } from "@/lib/stats/searchParams";
 
-export interface CumulativeSourceLog {
+export type CumulativeSourceLog = {
   gameDate: Date;
   matchup: string;
   winLoss: string | null;
@@ -17,9 +17,9 @@ export interface CumulativeSourceLog {
   blk: number;
   tov: number;
   pts: number;
-}
+};
 
-export interface CumulativePoint {
+export type CumulativePoint = {
   gameIndex: number;
   gameDate: string;
   matchup: string;
@@ -35,7 +35,7 @@ export interface CumulativePoint {
   fgPct: number | null;
   fg3Pct: number | null;
   ftPct: number | null;
-}
+};
 
 // game: individual-game value; avg: running mean; totals: running sum; per36:
 // running sum scaled to a 36-minute pace (null until any minutes accrue).
@@ -64,7 +64,7 @@ export const buildStatSeries = (args: {
   logs: CumulativeSourceLog[];
   mode: StatMode;
 }): CumulativePoint[] => {
-  interface Accumulator {
+  type Accumulator = {
     points: CumulativePoint[];
     totals: {
       minutes: number;
@@ -81,7 +81,7 @@ export const buildStatSeries = (args: {
       ftm: number;
       fta: number;
     };
-  }
+  };
 
   const initial: Accumulator = {
     points: [],

@@ -160,12 +160,12 @@ const renderEndLabel = ({
 // Recharts clones `content` (see ContentType in its Tooltip types) and injects
 // `active`/`payload` at render time — they are never supplied at JSX-authoring
 // time here, so they must stay optional on this component's own prop type.
-interface StatTooltipProps {
+type StatTooltipProps = {
   active?: boolean;
   payload?: TooltipPayload;
   metas: StatMeta[];
   mode: StatMode;
-}
+};
 
 function StatTooltip({ active, payload, metas, mode }: StatTooltipProps): ReactElement | null {
   if (!active || !payload || !payload.length) {

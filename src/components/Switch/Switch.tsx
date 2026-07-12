@@ -4,13 +4,13 @@ import { type ChangeEvent } from "react";
 
 import styles from "@/components/Switch/Switch.module.scss";
 
-export interface SwitchProps {
+export type SwitchProps = {
   label: string;
   checked?: boolean;
   defaultChecked?: boolean;
   disabled?: boolean;
   onChange?: ({ checked }: { checked: boolean }) => void;
-}
+};
 
 export function Switch({ label, checked, defaultChecked, disabled, onChange }: SwitchProps) {
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {

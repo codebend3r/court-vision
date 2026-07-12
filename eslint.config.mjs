@@ -8,6 +8,8 @@ const eslintConfig = defineConfig([
   ...nextTs,
   {
     rules: {
+      // Type shapes are always declared with `type` aliases in this repo.
+      "@typescript-eslint/consistent-type-definitions": ["error", "type"],
       "no-restricted-imports": [
         "error",
         {

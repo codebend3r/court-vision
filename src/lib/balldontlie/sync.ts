@@ -2,15 +2,7 @@ import { SyncSummary, upsertGameLogs, upsertPlayers, upsertSeasonStats } from "@
 
 import { BdlClientDeps, fetchAllStats, fetchTeams } from "@/lib/balldontlie/endpoints";
 import { aggregateSeasonStats, toGameLogInput, toPlayerInputs } from "@/lib/balldontlie/transform";
-
-// Bun sets `import.meta.main` on the entry module. @types/node's ImportMeta
-// doesn't declare it, so augment the global interface (declaration merging,
-// same pattern as src/lib/prisma.ts) rather than adding bun-types or casting.
-declare global {
-  interface ImportMeta {
-    readonly main: boolean;
-  }
-}
+import { isMainModule } from "@/lib/runtime";
 
 export async function syncBalldontlie(deps: BdlClientDeps = {}): Promise<SyncSummary> {
   const teams = await fetchTeams(deps);
@@ -42,7 +34,7 @@ export async function syncBalldontlie(deps: BdlClientDeps = {}): Promise<SyncSum
   return { players, seasonStats, gameLogs };
 }
 
-if (import.meta.main) {
+if (isMainModule({ moduleUrl: import.meta.url })) {
   syncBalldontlie()
     .then((summary) => {
       console.log(

@@ -12,10 +12,10 @@ import {
   seasonStatsRowSchema,
 } from "./schemas";
 
-export interface NbaClientDeps {
+export type NbaClientDeps = {
   fetchImpl?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
-}
+};
 
 const PLAYER_INDEX_PARAMS: Record<string, string> = {
   College: "",

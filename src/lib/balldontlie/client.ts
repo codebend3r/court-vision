@@ -2,7 +2,7 @@ import { BDL_BASE_URL, getApiKey } from "@/lib/balldontlie/constants";
 
 export type BdlParamValue = string | string[];
 
-export interface BdlFetchOptions {
+export type BdlFetchOptions = {
   endpoint: string;
   params?: Record<string, BdlParamValue>;
   apiKey?: string;
@@ -10,7 +10,7 @@ export interface BdlFetchOptions {
   sleep?: (ms: number) => Promise<void>;
   maxRetries?: number;
   timeoutMs?: number;
-}
+};
 
 const defaultSleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));

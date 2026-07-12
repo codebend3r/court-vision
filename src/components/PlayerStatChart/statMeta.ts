@@ -16,18 +16,18 @@ export const STAT_KEYS = [
 export type StatKey = (typeof STAT_KEYS)[number];
 export type StatPanel = "counting" | "shooting";
 
-export interface StatMeta {
+export type StatMeta = {
   key: StatKey;
   label: string;
   panel: StatPanel;
   color: string;
-}
+};
 
-export interface ChartChrome {
+export type ChartChrome = {
   grid: string;
   axis: string;
   endLabel: string;
-}
+};
 
 const COUNTING_STATS: ReadonlyArray<{ key: StatKey; label: string }> = [
   { key: "pts", label: "PTS" },

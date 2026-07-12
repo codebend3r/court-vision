@@ -11,11 +11,11 @@ export type PlayerAvatarSize = "sm" | "lg";
 
 const SIZE_PX: Record<PlayerAvatarSize, number> = { sm: 32, lg: 96 };
 
-export interface PlayerAvatarProps {
+export type PlayerAvatarProps = {
   fullName: string;
   nbaPersonId: number | null;
   size: PlayerAvatarSize;
-}
+};
 
 const initialsFor = (fullName: string): string => {
   const words = fullName.split(" ").filter(Boolean);

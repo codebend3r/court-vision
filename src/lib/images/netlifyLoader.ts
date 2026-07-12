@@ -1,8 +1,8 @@
-export interface NetlifyImageLoaderArgs {
+export type NetlifyImageLoaderArgs = {
   src: string;
   width: number;
   quality?: number;
-}
+};
 
 const netlifyImageLoader = ({ src, width, quality }: NetlifyImageLoaderArgs): string => {
   // Outside Netlify (bun dev, next start) /.netlify/images does not exist,
