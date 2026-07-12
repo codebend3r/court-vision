@@ -83,3 +83,7 @@
 .page:has([data-pending="true"]) .table {
   opacity: 0.6;
 }
+
+.rank {
+  color: var(--color-text-muted);
+}

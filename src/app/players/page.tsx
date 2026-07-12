@@ -50,6 +50,9 @@ export default async function PlayersPage({
   const nextDir = ({ sortKey }: { sortKey: PlayerSortKey }): SortDirection =>
     params.sort === sortKey ? (params.dir === "desc" ? "asc" : "desc") : "desc";
 
+  // Rank only means something when the rows are ordered by a stat.
+  const isStatSort = params.sort !== "firstName" && params.sort !== "lastName";
+
   const renderSortableHeader = ({ label, sortKey }: { label: string; sortKey: PlayerSortKey }) => {
     const isActive = params.sort === sortKey;
     return (
@@ -92,6 +95,11 @@ export default async function PlayersPage({
           <table className={styles.table}>
             <thead>
               <tr>
+                {isStatSort && (
+                  <th className={styles.numeric} title="Rank in the current sort">
+                    #
+                  </th>
+                )}
                 {renderSortableHeader({ label: "First name", sortKey: "firstName" })}
                 {renderSortableHeader({ label: "Last name", sortKey: "lastName" })}
                 <th>Team</th>
@@ -108,7 +116,7 @@ export default async function PlayersPage({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => {
+              {rows.map((row, index) => {
                 const stats = row.stats ?? row.seasonStats?.[0];
                 const formatCountingStat = (value: number) =>
                   params.mode === "total"
@@ -116,6 +124,11 @@ export default async function PlayersPage({
                     : formatPerGame(value, stats?.gamesPlayed ?? 0);
                 return (
                   <tr key={row.id}>
+                    {isStatSort && (
+                      <td className={`${styles.numeric} ${styles.rank}`}>
+                        {(page - 1) * params.size + index + 1}
+                      </td>
+                    )}
                     <td>
                       <span className={styles.nameCell}>
                         <PlayerAvatar

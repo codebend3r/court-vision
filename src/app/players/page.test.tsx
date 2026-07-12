@@ -78,6 +78,46 @@ describe("PlayersPage", () => {
     expect(screen.getByText("25.0")).toBeInTheDocument();
     expect(screen.getByText(".500")).toBeInTheDocument();
     expect(screen.getByText(".750")).toBeInTheDocument();
+    // name sort: no rank column
+    expect(screen.queryByRole("columnheader", { name: "#" })).not.toBeInTheDocument();
+  });
+
+  it("shows a rank column when sorting by a stat, offset by the page", async () => {
+    vi.mocked(searchPlayers).mockResolvedValue({
+      rows: [
+        {
+          id: 1,
+          firstName: "Stephen",
+          lastName: "Curry",
+          fullName: "Stephen Curry",
+          teamAbbr: "GSW",
+          position: "G",
+          nbaPersonId: null,
+        },
+        {
+          id: 2,
+          firstName: "Draymond",
+          lastName: "Green",
+          fullName: "Draymond Green",
+          teamAbbr: "GSW",
+          position: "F",
+          nbaPersonId: null,
+        },
+      ],
+      total: 60,
+      page: 2,
+    });
+
+    render(
+      await PlayersPage({
+        searchParams: Promise.resolve({ page: "2", size: "25", sort: "pts" }),
+      }),
+    );
+
+    expect(screen.getByRole("columnheader", { name: "#" })).toBeInTheDocument();
+    // page 2 of 25-per-page: ranks continue from 26
+    expect(screen.getByText("26")).toBeInTheDocument();
+    expect(screen.getByText("27")).toBeInTheDocument();
   });
 
   it("renders sortable name headers with the default first name descending sort", async () => {
