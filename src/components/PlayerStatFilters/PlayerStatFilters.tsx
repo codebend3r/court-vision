@@ -24,7 +24,8 @@ const SPAN_LABELS: Record<StatSpan, string> = {
   "5": "L5",
   "10": "L10",
   "20": "L20",
-  "30": "L30",
+  "40": "L40",
+  "60": "L60",
   season: "Season",
 };
 

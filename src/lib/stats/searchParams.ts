@@ -1,10 +1,10 @@
 import { createLoader, parseAsStringLiteral } from "nuqs/server";
 
 export type StatMode = "avg" | "game" | "totals" | "per36";
-export type StatSpan = "5" | "10" | "20" | "30" | "season";
+export type StatSpan = "5" | "10" | "20" | "40" | "60" | "season";
 
 export const STAT_MODES: readonly StatMode[] = ["avg", "game", "totals", "per36"];
-export const STAT_SPANS: readonly StatSpan[] = ["5", "10", "20", "30", "season"];
+export const STAT_SPANS: readonly StatSpan[] = ["5", "10", "20", "40", "60", "season"];
 
 export const DEFAULT_MODE: StatMode = "avg";
 export const DEFAULT_SPAN: StatSpan = "season";
@@ -23,7 +23,8 @@ const GAMES_BY_SPAN: Record<StatSpan, number | null> = {
   "5": 5,
   "10": 10,
   "20": 20,
-  "30": 30,
+  "40": 40,
+  "60": 60,
   season: null,
 };
 

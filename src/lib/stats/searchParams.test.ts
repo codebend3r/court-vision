@@ -19,7 +19,8 @@ describe("loadStatFilters", () => {
     expect((await loadStatFilters({ mode: "per36" })).mode).toBe("per36");
     expect((await loadStatFilters({ span: "5" })).span).toBe("5");
     expect((await loadStatFilters({ span: "20" })).span).toBe("20");
-    expect((await loadStatFilters({ span: "30" })).span).toBe("30");
+    expect((await loadStatFilters({ span: "40" })).span).toBe("40");
+    expect((await loadStatFilters({ span: "60" })).span).toBe("60");
     expect((await loadStatFilters({ span: "season" })).span).toBe("season");
   });
 
@@ -45,7 +46,8 @@ describe("gamesForSpan", () => {
     expect(gamesForSpan({ span: "5" })).toBe(5);
     expect(gamesForSpan({ span: "10" })).toBe(10);
     expect(gamesForSpan({ span: "20" })).toBe(20);
-    expect(gamesForSpan({ span: "30" })).toBe(30);
+    expect(gamesForSpan({ span: "40" })).toBe(40);
+    expect(gamesForSpan({ span: "60" })).toBe(60);
   });
 
   it("maps season to null (no window)", () => {
