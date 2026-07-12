@@ -17,6 +17,7 @@ import {
 import { parseAsBoolean, parseAsString, useQueryState } from "nuqs";
 import {
   CartesianGrid,
+  DefaultZIndexes,
   Line,
   LineChart,
   ReferenceLine,
@@ -240,6 +241,9 @@ function StatLineChart({
                 x={point.gameIndex}
                 stroke="none"
                 label={<DnpMarker />}
+                // Lift the marker above the data lines (default z-index 400) so
+                // it is never painted over; the dot belongs on the scatter layer.
+                zIndex={DefaultZIndexes.scatter}
               />
             ))}
         {metas.map((meta) => (
