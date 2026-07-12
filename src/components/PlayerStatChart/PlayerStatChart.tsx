@@ -288,6 +288,12 @@ export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; m
     (meta) => meta.panel === "shooting" && active.includes(meta.key),
   );
 
+  // One-shot bulk toggle: clearing everything lets the user focus on a single
+  // stat without clicking every chip off first.
+  const hasActive = active.length > 0;
+  const toggleAll = () =>
+    void setStats(hasActive ? "" : visibleStatMeta.map((meta) => meta.key).join(","));
+
   return (
     <div className={styles.root}>
       <div className={styles.chips}>
@@ -309,6 +315,9 @@ export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; m
             </button>
           );
         })}
+        <button type="button" onClick={toggleAll} className={styles.chipAction}>
+          {hasActive ? "Clear all" : "Select all"}
+        </button>
       </div>
 
       <Switch

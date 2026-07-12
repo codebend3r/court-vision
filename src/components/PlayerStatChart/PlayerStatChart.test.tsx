@@ -49,8 +49,9 @@ describe("PlayerStatChart", () => {
   it("renders a chip per stat with every stat pressed by default", () => {
     renderChart();
 
+    // 10 stat chips plus the bulk Clear all / Select all action.
     const chips = screen.getAllByRole("button");
-    expect(chips).toHaveLength(10);
+    expect(chips).toHaveLength(11);
 
     const pressedCount = chips.filter(
       (chip) => chip.getAttribute("aria-pressed") === "true",
@@ -126,7 +127,8 @@ describe("PlayerStatChart", () => {
   it("shows only raw counting stats in game mode", () => {
     const { container } = renderChart({ mode: "game" });
 
-    expect(screen.getAllByRole("button")).toHaveLength(7);
+    // 7 counting chips plus the bulk Clear all / Select all action.
+    expect(screen.getAllByRole("button")).toHaveLength(8);
     expect(screen.queryByRole("button", { name: "FG%" })).not.toBeInTheDocument();
     expect(screen.queryByText("Shooting percentages")).not.toBeInTheDocument();
     expect(container.querySelectorAll(".recharts-line")).toHaveLength(7);
@@ -178,5 +180,36 @@ describe("PlayerStatChart", () => {
     await user.click(screen.getByRole("button", { name: "AST" }));
 
     expect(updates.at(-1)?.queryString).toBe("?stats=pts,reb,ast");
+  });
+
+  it("clears every stat in one click and flips the action to Select all", async () => {
+    const user = userEvent.setup();
+    const updates: UrlUpdateEvent[] = [];
+    renderChart({ onUrlUpdate: (event) => updates.push(event) });
+
+    await user.click(screen.getByRole("button", { name: "Clear all" }));
+
+    expect(updates.at(-1)?.searchParams.get("stats")).toBe("");
+    expect(screen.getByText("Select a stat to plot")).toBeInTheDocument();
+    expect(screen.queryByText("Shooting percentages")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Select all" })).toBeInTheDocument();
+  });
+
+  it("re-selects every visible stat in one click when everything is off", async () => {
+    const user = userEvent.setup();
+    const updates: UrlUpdateEvent[] = [];
+    renderChart({
+      searchParams: { stats: "" },
+      onUrlUpdate: (event) => updates.push(event),
+    });
+
+    expect(screen.getByText("Select a stat to plot")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Select all" }));
+
+    expect(updates.at(-1)?.searchParams.get("stats")).toBe(
+      "pts,reb,ast,stl,blk,min,tov,fgPct,fg3Pct,ftPct",
+    );
+    expect(screen.getByText("Shooting percentages")).toBeInTheDocument();
   });
 });
