@@ -326,34 +326,36 @@ export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; m
         onChange={({ checked }) => void setShowDnp(checked)}
       />
 
-      <section className={styles.panel}>
-        <h3 className={styles.panelTitle}>{COUNTING_TITLE_BY_MODE[mode]}</h3>
-        {!!countingActive.length ? (
-          <StatLineChart
-            metas={countingActive}
-            series={series}
-            chrome={chrome}
-            mode={mode}
-            showDnp={showDnp}
-          />
-        ) : (
-          <p className={styles.emptyHint}>Select a stat to plot</p>
-        )}
-      </section>
-
-      {!!shootingActive.length && (
+      <div className={styles.panels}>
         <section className={styles.panel}>
-          <h3 className={styles.panelTitle}>Shooting percentages</h3>
-          <StatLineChart
-            metas={shootingActive}
-            series={series}
-            domain={[0, 100]}
-            chrome={chrome}
-            mode={mode}
-            showDnp={showDnp}
-          />
+          <h3 className={styles.panelTitle}>{COUNTING_TITLE_BY_MODE[mode]}</h3>
+          {!!countingActive.length ? (
+            <StatLineChart
+              metas={countingActive}
+              series={series}
+              chrome={chrome}
+              mode={mode}
+              showDnp={showDnp}
+            />
+          ) : (
+            <p className={styles.emptyHint}>Select a stat to plot</p>
+          )}
         </section>
-      )}
+
+        {!!shootingActive.length && (
+          <section className={styles.panel}>
+            <h3 className={styles.panelTitle}>Shooting percentages</h3>
+            <StatLineChart
+              metas={shootingActive}
+              series={series}
+              domain={[0, 100]}
+              chrome={chrome}
+              mode={mode}
+              showDnp={showDnp}
+            />
+          </section>
+        )}
+      </div>
     </div>
   );
 }

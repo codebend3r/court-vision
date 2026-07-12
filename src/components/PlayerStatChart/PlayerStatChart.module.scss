@@ -58,9 +58,22 @@
   filter: drop-shadow(0 0 3px rgb(244 211 94 / 65%));
 }
 
+.panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+@media (max-width: 1100px) {
+  .panels {
+    grid-template-columns: 1fr;
+  }
+}
+
 .panel {
   display: grid;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .panelTitle {
