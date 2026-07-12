@@ -49,11 +49,13 @@ bun dev                     # http://localhost:46644
 
 ### Environment
 
-| Variable              | Required for                    | Notes                                                  |
-| --------------------- | ------------------------------- | ------------------------------------------------------ |
-| `DATABASE_URL`        | Runtime queries, the live syncs | PostgreSQL connection string. See `.env.example`.      |
-| `DIRECT_URL`          | `prisma migrate`                | Session-pooler connection for migrations.              |
-| `BALLDONTLIE_API_KEY` | `sync:bdl`, `seed:demo`         | Balldontlie API key (per-game stats need a paid tier). |
+| Variable                               | Required for                    | Notes                                                   |
+| -------------------------------------- | ------------------------------- | ------------------------------------------------------- |
+| `DATABASE_URL`                         | Runtime queries, the live syncs | PostgreSQL connection string. See `.env.example`.       |
+| `DIRECT_URL`                           | `prisma migrate`                | Session-pooler connection for migrations.               |
+| `BALLDONTLIE_API_KEY`                  | `sync:bdl`, `seed:demo`         | Balldontlie API key (per-game stats need a paid tier).  |
+| `NEXT_PUBLIC_SUPABASE_URL`             | Auth (browser + server)         | Supabase project URL, e.g. `https://<ref>.supabase.co`. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Auth (browser + server)         | Supabase publishable (anon) key.                        |
 
 `prisma generate`, `bun dev`, and the test suite all work without a real `DATABASE_URL` —
 it's only needed for commands that actually connect to a database.
@@ -177,9 +179,31 @@ bun run db:generate         # regenerate the client after editing schema.prisma
 bun run db:migrate          # create/apply a migration (requires a live DATABASE_URL)
 ```
 
-The schema defines `Player` (incl. `nbaPersonId` for headshots), `PlayerSeasonStats`, and
-`PlayerGameLog`. Migrations under `prisma/migrations/` are applied to the live Supabase
-database, which holds the full synced 2025-26 season.
+The schema defines `Player` (incl. `nbaPersonId` for headshots), `PlayerSeasonStats`,
+`PlayerGameLog`, and `Profile` (user identity). Migrations under `prisma/migrations/` are
+applied to the live Supabase database, which holds the full synced 2025-26 season.
+
+## Auth
+
+Email/password login via **Supabase Auth** (`@supabase/ssr`). Sessions are cookie-based and
+refreshed in `src/proxy.ts`. Supabase owns `auth.users`; a Postgres trigger
+(`on_auth_user_created`) seeds a Prisma `Profile` row — keyed to the auth user's UUID and
+carrying a unique `username` and a `tier` (`free`/`pro`, the hook for future gated content).
+
+- **Clients:** `src/lib/supabase/{client,server}.ts`; session helpers `getUser`/`getProfile`
+  in `src/lib/auth/session.ts`.
+- **Routes:** `/login`, `/signup`, `GET /auth/confirm` (email confirmation), `POST /auth/signout`.
+- **Out-of-band SQL:** `prisma/sql/profile_auth.sql` holds the trigger, the case-insensitive
+  `lower(username)` unique index, and owner-only RLS. It's applied separately from the repo
+  migrations (it touches the `auth` schema):
+
+  ```bash
+  DATABASE_URL=$(grep '^DIRECT_URL' .env | cut -d'"' -f2) \
+    bunx prisma db execute --file prisma/sql/profile_auth.sql
+  ```
+
+- **Dashboard (one-time):** enable the Email provider with **Confirm email** on, set the Site
+  URL, and allowlist the `/auth/confirm` redirect for each origin (e.g. `http://localhost:46644/**`).
 
 ## Testing
 
