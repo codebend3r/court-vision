@@ -12,6 +12,7 @@ afterEach(cleanup);
 
 const buildRow = (overrides: Partial<PlayerGameLogTableRow>): PlayerGameLogTableRow => ({
   id: "log-1",
+  gameNumber: 1,
   gameDate: "2026-03-10T00:00:00.000Z",
   matchup: "MIA vs. WSH",
   winLoss: "W",
@@ -132,6 +133,25 @@ describe("PlayerGameLogTable", () => {
 
     const resultCell = screen.getByText("L").closest("td");
     expect(resultCell).toHaveTextContent("L 102-118");
+  });
+
+  it("shows the game number and flags DNP games with a dot", () => {
+    renderTable({
+      rows: [
+        buildRow({ id: "played", gameNumber: 71 }),
+        buildRow({
+          id: "sat-out",
+          gameNumber: 72,
+          gameDate: "2026-03-11T00:00:00.000Z",
+          minutes: 0,
+        }),
+      ],
+    });
+
+    expect(screen.getByText("71")).toBeInTheDocument();
+    const dnpRow = screen.getByText("72").closest("tr");
+    expect(dnpRow?.querySelector('[aria-label="Did not play"]') ?? null).toBeInTheDocument();
+    expect(screen.getAllByLabelText("Did not play")).toHaveLength(1);
   });
 
   it("omits the score when it is not recorded", () => {

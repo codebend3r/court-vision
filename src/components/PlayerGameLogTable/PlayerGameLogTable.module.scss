@@ -89,3 +89,18 @@
   color: var(--color-text-muted);
   font-family: var(--font-mono);
 }
+
+.gameNumber {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.dnpDot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  // Matches the chart's DNP reference marker.
+  background: #f4d35e;
+}

@@ -134,8 +134,9 @@ export default async function PlayerPage({
           <PlayerStatFilters />
           <PlayerStatChart series={series} mode={mode} />
           <PlayerGameLogTable
-            rows={logs.map((log) => ({
+            rows={logs.map((log, index) => ({
               ...log,
+              gameNumber: index + 1,
               gameDate: log.gameDate.toISOString(),
             }))}
           />

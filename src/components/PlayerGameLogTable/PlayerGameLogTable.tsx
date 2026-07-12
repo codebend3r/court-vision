@@ -9,6 +9,7 @@ import styles from "@/components/PlayerGameLogTable/PlayerGameLogTable.module.sc
 
 export type PlayerGameLogTableRow = {
   id: string;
+  gameNumber: number;
   gameDate: string;
   matchup: string;
   winLoss: string | null;
@@ -54,6 +55,24 @@ const formatPlusMinus = (value: number | null): string =>
   value === null ? "—" : value > 0 ? `+${value}` : String(value);
 
 const COLUMNS: readonly Column[] = [
+  {
+    key: "gameNumber",
+    label: "GM",
+    align: "right",
+    render: ({ gameNumber, minutes }) => (
+      <span className={styles.gameNumber}>
+        {gameNumber}
+        {minutes === 0 && (
+          <span
+            className={styles.dnpDot}
+            title="DNP / DNP-CD (0 MIN)"
+            role="img"
+            aria-label="Did not play"
+          />
+        )}
+      </span>
+    ),
+  },
   { key: "gameDate", label: "Date", render: ({ gameDate }) => formatDate(gameDate) },
   {
     key: "matchup",
