@@ -14,10 +14,10 @@ export const NBA_DATA_PY_URL =
 // rather than silently mapping a handful of players.
 const MIN_EXPECTED_ROWS = 4000;
 
-export interface NbaPlayerIndexRow {
+export type NbaPlayerIndexRow = {
   personId: number;
   fullName: string;
-}
+};
 
 const nbaPlayerIndexRowSchema: z.ZodType<NbaPlayerIndexRow> = z.object({
   personId: z.number(),

@@ -3,49 +3,42 @@
 import { useRouter } from "next/navigation";
 import { ChangeEvent, useEffect, useRef, useTransition } from "react";
 
-import { DEFAULT_PAGE_SIZE, MAX_QUERY_LENGTH, PAGE_SIZES } from "@/lib/players/searchParams";
+import {
+  buildPlayersHref,
+  isPlayerGameRange,
+  isPlayerStatMode,
+  MAX_QUERY_LENGTH,
+  type PlayerSortKey,
+  type PlayerGameRange,
+  type PlayerStatMode,
+  type SortDirection,
+} from "@/lib/players/searchParams";
 
-import styles from "./PlayersSearchControls.module.scss";
+import { InfoTip } from "@/components/InfoTip/InfoTip";
+import { Switch } from "@/components/Switch/Switch";
 
-export interface PlayersSearchControlsProps {
+import styles from "@/components/PlayersSearchControls/PlayersSearchControls.module.scss";
+
+export type PlayersSearchControlsProps = {
   q: string;
-  page: number;
   size: number;
-  includeRetired: boolean;
-  totalPages: number;
-}
+  sort: PlayerSortKey;
+  dir: SortDirection;
+  range: PlayerGameRange;
+  mode: PlayerStatMode;
+  minimums: boolean;
+};
 
 const DEBOUNCE_MS = 300;
 
-const buildHref = (args: {
-  q: string;
-  page: number;
-  size: number;
-  includeRetired: boolean;
-}): string => {
-  const params = new URLSearchParams();
-  if (args.q !== "") {
-    params.set("q", args.q);
-  }
-  if (args.page > 1) {
-    params.set("page", String(args.page));
-  }
-  if (args.size !== DEFAULT_PAGE_SIZE) {
-    params.set("size", String(args.size));
-  }
-  if (args.includeRetired) {
-    params.set("retired", "1");
-  }
-  const query = params.toString();
-  return query === "" ? "/players" : `/players?${query}`;
-};
-
 export function PlayersSearchControls({
   q,
-  page,
   size,
-  includeRetired,
-  totalPages,
+  sort,
+  dir,
+  range,
+  mode,
+  minimums,
 }: PlayersSearchControlsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -83,25 +76,66 @@ export function PlayersSearchControls({
       if (trimmed === latestQ.current) {
         return;
       }
-      navigate(buildHref({ q: trimmed, page: 1, size, includeRetired }));
+      navigate(
+        buildPlayersHref({
+          q: trimmed,
+          page: 1,
+          size,
+          sort,
+          dir,
+          range,
+          mode,
+          minimums,
+        }),
+      );
     }, DEBOUNCE_MS);
   };
 
-  const onSizeChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const newSize = Number.parseInt(event.target.value, 10);
-    navigate(buildHref({ q, page: 1, size: newSize, includeRetired }));
+  const onRangeChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    if (!isPlayerGameRange(event.target.value)) return;
+    navigate(
+      buildPlayersHref({
+        q,
+        page: 1,
+        size,
+        sort,
+        dir,
+        range: event.target.value,
+        mode,
+        minimums,
+      }),
+    );
   };
 
-  const onRetiredChange = () => {
-    navigate(buildHref({ q, page: 1, size, includeRetired: !includeRetired }));
+  const onModeChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    if (!isPlayerStatMode(event.target.value)) return;
+    navigate(
+      buildPlayersHref({
+        q,
+        page: 1,
+        size,
+        sort,
+        dir,
+        range,
+        mode: event.target.value,
+        minimums,
+      }),
+    );
   };
 
-  const onPrev = () => {
-    navigate(buildHref({ q, page: page - 1, size, includeRetired }));
-  };
-
-  const onNext = () => {
-    navigate(buildHref({ q, page: page + 1, size, includeRetired }));
+  const onMinimumsChange = ({ checked }: { checked: boolean }) => {
+    navigate(
+      buildPlayersHref({
+        q,
+        page: 1,
+        size,
+        sort,
+        dir,
+        range,
+        mode,
+        minimums: checked,
+      }),
+    );
   };
 
   return (
@@ -119,33 +153,51 @@ export function PlayersSearchControls({
         maxLength={MAX_QUERY_LENGTH}
         className={styles.search}
       />
-      <select value={size} onChange={onSizeChange} aria-label="Page size" className={styles.select}>
-        {PAGE_SIZES.map((pageSize) => (
-          <option key={pageSize} value={pageSize}>
-            {pageSize}
-          </option>
-        ))}
-      </select>
-      <label className={styles.retiredLabel}>
-        <input type="checkbox" checked={includeRetired} onChange={onRetiredChange} />
-        Include retired players
-      </label>
-      <div className={styles.pager}>
-        <button type="button" onClick={onPrev} disabled={page <= 1} className={styles.pagerButton}>
-          Previous
-        </button>
-        <span>
-          Page {page} of {totalPages}
-        </span>
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={page >= totalPages}
-          className={styles.pagerButton}
+      <label className={styles.filterLabel}>
+        Games
+        <select
+          value={range}
+          onChange={onRangeChange}
+          aria-label="Game range"
+          className={styles.select}
         >
-          Next
-        </button>
-      </div>
+          <option value="all">All games</option>
+          <option value="last5">Last 5 games</option>
+          <option value="last10">Last 10 games</option>
+          <option value="last20">Last 20 games</option>
+          <option value="last40">Last 40 games</option>
+          <option value="last60">Last 60 games</option>
+        </select>
+      </label>
+      <label className={styles.filterLabel}>
+        Stats
+        <select
+          value={mode}
+          onChange={onModeChange}
+          aria-label="Stat display"
+          className={styles.select}
+        >
+          <option value="average">Averages</option>
+          <option value="total">Totals</option>
+        </select>
+      </label>
+      <span className={styles.minimums}>
+        <Switch label="Qualifying minimums" checked={minimums} onChange={onMinimumsChange} />
+        <InfoTip label="About qualifying minimums">
+          <span className={styles.infoIntro}>
+            NBA percentage leaders must clear a minimum of made shots to qualify. With this on,
+            players below the cutoff drop to the bottom of the sort.
+          </span>
+          <dl className={styles.infoList}>
+            <dt>FG%</dt>
+            <dd>300 made field goals</dd>
+            <dt>3P%</dt>
+            <dd>82 made threes</dd>
+            <dt>FT%</dt>
+            <dd>125 made free throws</dd>
+          </dl>
+        </InfoTip>
+      </span>
     </section>
   );
 }

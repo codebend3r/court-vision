@@ -1,8 +1,8 @@
 import { GameLogInput, PlayerInput, SeasonStatsInput } from "@/lib/stats/inputs";
 import { parseGameDate, parseMinutes } from "@/lib/stats/parse";
 
-import { SEASON, SEASON_TYPE } from "./constants";
-import { GameLogRow, PlayerIndexRow, SeasonStatsRow } from "./schemas";
+import { SEASON, SEASON_TYPE } from "@/lib/nba/constants";
+import { GameLogRow, PlayerIndexRow, SeasonStatsRow } from "@/lib/nba/schemas";
 
 const blankToNull = (value: string | null): string | null => {
   const trimmed = (value ?? "").trim();

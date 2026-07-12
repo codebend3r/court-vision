@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
-import { TokenSwatch } from "./TokenSwatch";
+import { TokenSwatch } from "@/components/TokenSwatch/TokenSwatch";
 
 afterEach(() => {
   cleanup();

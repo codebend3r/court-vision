@@ -4,11 +4,11 @@ import { ReactNode, createContext, useContext, useEffect, useRef, useState } fro
 
 export type Theme = "dark" | "light";
 
-export interface ThemeContextValue {
+export type ThemeContextValue = {
   theme: Theme;
   mounted: boolean;
   toggleTheme: () => void;
-}
+};
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 

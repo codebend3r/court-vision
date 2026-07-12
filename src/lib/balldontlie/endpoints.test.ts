@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { fetchAllStats, fetchTeams } from "./endpoints";
+import { fetchAllStats, fetchTeams } from "@/lib/balldontlie/endpoints";
 
 const jsonResponse = (body: unknown): Response =>
   new Response(JSON.stringify(body), {
@@ -120,6 +120,13 @@ describe("fetchAllPlayers", () => {
     last_name: "Edwards",
     position: "G",
     jersey_number: "5",
+    height: "6-4",
+    weight: "225",
+    college: "Georgia",
+    country: "USA",
+    draft_year: 2020,
+    draft_round: 1,
+    draft_number: 1,
     team: { id: 18, abbreviation: "MIN" },
   };
 
@@ -142,6 +149,24 @@ describe("fetchAllPlayers", () => {
     expect(fetchImpl.mock.calls[0]?.[0]?.toString() ?? "").toContain("/players?per_page=100");
     expect(fetchImpl.mock.calls[1]?.[0]?.toString() ?? "").toContain("cursor=25");
     expect(sleep).toHaveBeenCalledWith(13000);
+  });
+
+  it("reports player pagination progress", async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(jsonResponse({ data: [playerRow], meta: { next_cursor: null } }));
+    const onPage = vi.fn();
+
+    const { fetchAllPlayers } = await import("./endpoints");
+    await fetchAllPlayers({ deps: { fetchImpl, apiKey: "k", onPage } });
+
+    expect(onPage).toHaveBeenCalledWith({
+      endpoint: "players",
+      page: 1,
+      pageRows: 1,
+      totalRows: 1,
+      nextCursor: null,
+    });
   });
 
   it("rejects rows that fail the player schema", async () => {

@@ -1,0 +1,131 @@
+@use "@/styles/mixins" as *;
+
+.switch {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  justify-self: start;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+
+  &:has(.input:disabled) {
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+  }
+}
+
+.input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.track {
+  position: relative;
+  display: inline-grid;
+  align-items: center;
+  width: 3.5rem;
+  height: 1.75rem;
+  padding: var(--space-1);
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-control-bg);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.legendOn,
+.legendOff {
+  position: absolute;
+  font-family: var(--font-display);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  transition: opacity 160ms ease;
+}
+
+.legendOn {
+  left: var(--space-2);
+  color: var(--color-control-accent);
+  opacity: 0;
+}
+
+.legendOff {
+  right: var(--space-2);
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+.thumb {
+  display: grid;
+  place-content: center;
+  width: var(--control-size);
+  height: var(--control-size);
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  transform: translateX(0);
+  transition:
+    transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+
+  // LED slit on the thumb face.
+  &::before {
+    content: "";
+    width: 2px;
+    height: var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--color-text-muted);
+    transition: background 160ms ease;
+  }
+}
+
+.input:checked + .track {
+  border-color: var(--color-control-accent);
+  box-shadow:
+    inset 0 0 10px var(--color-focus-ring),
+    0 0 10px var(--color-focus-ring);
+
+  .legendOn {
+    opacity: 1;
+  }
+
+  .legendOff {
+    opacity: 0;
+  }
+
+  .thumb {
+    transform: translateX(1.75rem);
+    border-color: var(--color-control-accent);
+    background: var(--color-control-accent);
+    box-shadow: 0 0 8px var(--color-focus-ring);
+
+    &::before {
+      background: var(--color-bg);
+    }
+  }
+}
+
+.input:focus-visible + .track {
+  @include control-focus-ring;
+}
+
+.input:disabled + .track {
+  opacity: var(--control-disabled-opacity);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track,
+  .thumb,
+  .thumb::before,
+  .legendOn,
+  .legendOff {
+    transition: none;
+  }
+}

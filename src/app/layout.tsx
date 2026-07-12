@@ -1,15 +1,16 @@
-import { Chakra_Petch, IBM_Plex_Sans } from "next/font/google";
+import { Chakra_Petch, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import type { Metadata } from "next";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { ReactNode } from "react";
 
 import { SideNav } from "@/components/SideNav/SideNav";
+import { SiteFooter } from "@/components/SiteFooter/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader/SiteHeader";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
 import "@/styles/globals.scss";
 
-import styles from "./layout.module.scss";
+import styles from "@/app/layout.module.scss";
 
 const displayFont = Chakra_Petch({
   weight: ["400", "500", "700"],
@@ -23,6 +24,13 @@ const bodyFont = IBM_Plex_Sans({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-body-next",
+});
+
+const monoFont = IBM_Plex_Mono({
+  weight: ["400", "500"],
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-mono-next",
 });
 
 export const metadata: Metadata = {
@@ -41,7 +49,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${displayFont.variable} ${bodyFont.variable}`}
+      className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
@@ -54,6 +62,7 @@ export default function RootLayout({
               <SideNav />
               <div className={styles.content}>{children}</div>
             </div>
+            <SiteFooter />
           </ThemeProvider>
         </NuqsAdapter>
       </body>

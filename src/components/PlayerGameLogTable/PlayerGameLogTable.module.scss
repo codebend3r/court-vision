@@ -1,0 +1,106 @@
+@use "@/styles/mixins" as *;
+
+.section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.title {
+  @include micro-label;
+  margin: 0;
+}
+
+.scroll {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.table {
+  width: 100%;
+  min-width: 1180px;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+
+  th {
+    @include micro-label;
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+    text-align: left;
+    white-space: nowrap;
+
+    &[data-sort-active="true"] {
+      background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
+      color: var(--color-accent);
+      box-shadow: inset 0 -2px 0 var(--color-accent);
+    }
+  }
+
+  td {
+    padding: var(--space-2) var(--space-3);
+    border-top: 1px solid var(--color-border);
+    white-space: nowrap;
+
+    &[data-align="right"] {
+      font-family: var(--font-mono);
+    }
+
+    &[data-sort-active="true"] {
+      background: color-mix(in srgb, var(--color-accent) 7%, transparent);
+    }
+  }
+
+  tbody {
+    font-variant-numeric: tabular-nums;
+  }
+
+  tbody tr:hover td {
+    background: var(--color-surface);
+  }
+
+  [data-align="right"] {
+    text-align: right;
+  }
+}
+
+.sortButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+.win {
+  color: var(--color-win);
+  font-weight: var(--font-weight-semibold);
+}
+
+.loss {
+  color: var(--color-loss);
+  font-weight: var(--font-weight-semibold);
+}
+
+.score {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+
+.gameNumber {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.dnpDot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  // Matches the chart's DNP reference marker.
+  background: #f4d35e;
+}

@@ -14,7 +14,7 @@ datasource db {
 }
 
 model Player {
-  id           Int      @id
+  id           Int                 @id
   firstName    String
   lastName     String
   fullName     String
@@ -23,10 +23,18 @@ model Player {
   position     String?
   jerseyNumber String?
   nbaPersonId  Int?
+  heightInches Int?
+  weightLbs    Int?
+  birthDate    DateTime?
+  college      String?
+  country      String?
+  draftYear    Int?
+  draftRound   Int?
+  draftNumber  Int?
   seasonStats  PlayerSeasonStats[]
   gameLogs     PlayerGameLog[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 }
 
 model PlayerSeasonStats {
@@ -66,11 +74,13 @@ model PlayerGameLog {
   seasonType   String
   teamId       Int
   teamAbbr     String
-  matchup      String
-  opponentAbbr String?
-  homeAway     String
-  winLoss      String?
-  minutes      Float
+  matchup       String
+  opponentAbbr  String?
+  homeAway      String
+  winLoss       String?
+  teamScore     Int?
+  opponentScore Int?
+  minutes       Float
   fgm          Int
   fga          Int
   fg3m         Int

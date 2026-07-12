@@ -1,7 +1,10 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { PlayersSearchControls, type PlayersSearchControlsProps } from "./PlayersSearchControls";
+import {
+  PlayersSearchControls,
+  type PlayersSearchControlsProps,
+} from "@/components/PlayersSearchControls/PlayersSearchControls";
 
 const replace = vi.fn();
 
@@ -22,10 +25,12 @@ afterEach(() => {
 
 const defaultProps: PlayersSearchControlsProps = {
   q: "",
-  page: 1,
-  size: 25,
-  includeRetired: false,
-  totalPages: 1,
+  size: 50,
+  sort: "pts",
+  dir: "desc",
+  range: "all",
+  mode: "average",
+  minimums: true,
 };
 
 const advance = (ms: number) => {
@@ -73,45 +78,33 @@ describe("PlayersSearchControls", () => {
     expect(replace).toHaveBeenCalledTimes(0);
   });
 
-  it("navigates immediately on size change, resetting page to 1", () => {
-    render(<PlayersSearchControls {...defaultProps} page={3} />);
+  it("changes the game range and stat display while preserving the other filter", () => {
+    const { rerender } = render(<PlayersSearchControls {...defaultProps} mode="total" />);
 
-    const select = screen.getByLabelText("Page size");
-    fireEvent.change(select, { target: { value: "50" } });
+    fireEvent.change(screen.getByLabelText("Game range"), { target: { value: "last20" } });
+    expect(replace).toHaveBeenLastCalledWith("/players?range=last20&mode=total");
+
+    rerender(<PlayersSearchControls {...defaultProps} range="last20" />);
+    fireEvent.change(screen.getByLabelText("Stat display"), { target: { value: "total" } });
+    expect(replace).toHaveBeenLastCalledWith("/players?range=last20&mode=total");
+  });
+
+  it("writes minimums=0 to the URL when the qualifying minimums switch is turned off", () => {
+    render(<PlayersSearchControls {...defaultProps} />);
+
+    fireEvent.click(screen.getByRole("switch", { name: "Qualifying minimums" }));
 
     expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith("/players?size=50");
+    expect(replace).toHaveBeenCalledWith("/players?minimums=0");
   });
 
-  it("navigates immediately on retired toggle, preserving q and size", () => {
-    render(<PlayersSearchControls {...defaultProps} q="cur" size={50} />);
+  it("clears the minimums param when the switch is turned back on", () => {
+    render(<PlayersSearchControls {...defaultProps} minimums={false} />);
 
-    const checkbox = screen.getByRole("checkbox");
-    fireEvent.click(checkbox);
+    fireEvent.click(screen.getByRole("switch", { name: "Qualifying minimums" }));
 
     expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith("/players?q=cur&size=50&retired=1");
-  });
-
-  it("navigates to the next page, preserving size", () => {
-    render(<PlayersSearchControls {...defaultProps} page={2} size={50} totalPages={3} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Next" }));
-
-    expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith("/players?page=3&size=50");
-  });
-
-  it("disables the Previous button on the first page", () => {
-    render(<PlayersSearchControls {...defaultProps} page={1} totalPages={3} />);
-
-    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
-  });
-
-  it("disables the Next button on the last page", () => {
-    render(<PlayersSearchControls {...defaultProps} page={3} totalPages={3} />);
-
-    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+    expect(replace).toHaveBeenCalledWith("/players");
   });
 
   it("cancels a pending debounce timer on unmount", () => {
@@ -145,23 +138,23 @@ describe("PlayersSearchControls", () => {
     expect(replace).toHaveBeenCalledTimes(0);
   });
 
-  it("cancels pending debounce timer on immediate navigation (size, retired, pager)", () => {
+  it("cancels pending debounce timer on immediate navigation (game range)", () => {
     render(<PlayersSearchControls {...defaultProps} />);
 
     const input = screen.getByLabelText("Search players");
-    const select = screen.getByLabelText("Page size");
+    const select = screen.getByLabelText("Game range");
 
     // Type "cur" — debounce timer is pending.
     fireEvent.change(input, { target: { value: "cur" } });
 
-    // Immediately change size (before timer fires). This should cancel the pending timer.
-    fireEvent.change(select, { target: { value: "50" } });
+    // Immediately change the range (before timer fires). This cancels the pending timer.
+    fireEvent.change(select, { target: { value: "last20" } });
 
     // Advance 300ms. The pending debounce should have been cancelled,
-    // so replace should be called exactly ONCE (the size navigation).
+    // so replace should be called exactly ONCE (the range navigation).
     advance(300);
 
     expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith("/players?size=50");
+    expect(replace).toHaveBeenCalledWith("/players?range=last20");
   });
 });

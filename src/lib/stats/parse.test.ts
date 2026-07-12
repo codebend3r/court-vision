@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseGameDate, parseMinutes } from "./parse";
+import { parseGameDate, parseMinutes } from "@/lib/stats/parse";
 
 describe("parseMinutes", () => {
   it("passes through numeric minutes", () => {

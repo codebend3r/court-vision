@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildStatSeries, CumulativeSourceLog } from "./cumulative";
+import { buildStatSeries, CumulativeSourceLog } from "@/lib/stats/cumulative";
 
 describe("buildStatSeries (avg mode)", () => {
   it("returns empty array for empty input", () => {
@@ -57,6 +57,7 @@ describe("buildStatSeries (avg mode)", () => {
       gameDate: "2025-10-22T00:00:00.000Z",
       matchup: "LAL vs BOS",
       winLoss: "W",
+      dnp: false,
       min: 36,
       pts: 30,
       reb: 8,
@@ -75,6 +76,7 @@ describe("buildStatSeries (avg mode)", () => {
       gameDate: "2025-10-24T00:00:00.000Z",
       matchup: "LAL @ GSW",
       winLoss: "L",
+      dnp: false,
       min: 34, // (36 + 32) / 2
       pts: 25, // (30 + 20) / 2
       reb: 7, // (8 + 6) / 2
@@ -365,6 +367,15 @@ const twoGameLogs: CumulativeSourceLog[] = [
   },
 ];
 
+describe("buildStatSeries (game mode)", () => {
+  it("returns the raw counting stats from each game", () => {
+    const result = buildStatSeries({ logs: twoGameLogs, mode: "game" });
+
+    expect(result[0]).toMatchObject({ min: 36, pts: 30, reb: 8, ast: 5, stl: 1, blk: 2, tov: 3 });
+    expect(result[1]).toMatchObject({ min: 32, pts: 20, reb: 6, ast: 4, stl: 2, blk: 1, tov: 2 });
+  });
+});
+
 describe("buildStatSeries (totals mode)", () => {
   it("accumulates running sums for counting stats", () => {
     const result = buildStatSeries({ logs: twoGameLogs, mode: "totals" });
@@ -427,6 +438,7 @@ describe("buildStatSeries (per36 mode)", () => {
     expect(result[0].pts).toBeNull();
     expect(result[0].reb).toBeNull();
     expect(result[0].min).toBe(0);
+    expect(result[0].dnp).toBe(true);
     // Once minutes accrue, values come back: 50 pts in 32 total min
     expect(result[1].pts).toBeCloseTo((50 / 32) * 36, 10);
   });

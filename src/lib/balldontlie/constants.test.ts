@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { getApiKey } from "./constants";
+import { getApiKey } from "@/lib/balldontlie/constants";
 
 const original = process.env.BALLDONTLIE_API_KEY;
 

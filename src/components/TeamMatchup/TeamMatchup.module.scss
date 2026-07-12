@@ -1,0 +1,12 @@
+.matchup {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-1);
+  vertical-align: middle;
+}
+
+.separator {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}

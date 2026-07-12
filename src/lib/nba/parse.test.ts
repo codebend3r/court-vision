@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseNbaResponse, rowsToObjects, selectResultSet } from "./parse";
+import { parseNbaResponse, rowsToObjects, selectResultSet } from "@/lib/nba/parse";
 
 const sample = {
   resource: "playerindex",

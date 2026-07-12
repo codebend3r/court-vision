@@ -1,0 +1,19 @@
+.chip {
+  display: inline-grid;
+  place-items: center;
+  min-height: var(--control-height);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-lg);
+  vertical-align: middle;
+  font-family: var(--font-display);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+}
+
+.sm {
+  min-height: 0;
+  padding: 0 var(--space-1);
+  font-size: var(--font-size-xs);
+}

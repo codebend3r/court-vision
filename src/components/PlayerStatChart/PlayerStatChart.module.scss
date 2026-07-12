@@ -42,9 +42,38 @@
   border-radius: var(--radius-lg);
 }
 
+.statIcon {
+  display: grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+
+  svg {
+    display: block;
+  }
+}
+
+.dnpMarker {
+  fill: #f4d35e;
+  filter: drop-shadow(0 0 3px rgb(244 211 94 / 65%));
+}
+
+.panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+@media (max-width: 1100px) {
+  .panels {
+    grid-template-columns: 1fr;
+  }
+}
+
 .panel {
   display: grid;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .panelTitle {
@@ -79,4 +108,25 @@
   align-items: center;
   gap: var(--space-2);
   font-variant-numeric: tabular-nums;
+}
+
+.tooltipStatus {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.chipAction {
+  padding: var(--space-1) var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
 }

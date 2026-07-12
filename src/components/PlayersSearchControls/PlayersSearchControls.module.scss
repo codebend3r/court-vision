@@ -1,3 +1,5 @@
+@use "@/styles/mixins" as *;
+
 .controls {
   display: flex;
   flex-wrap: wrap;
@@ -5,7 +7,14 @@
   gap: var(--space-3);
 }
 
-.search,
+.search {
+  @include control-field;
+  width: min(480px, 100%);
+  height: calc(var(--control-height) * 1.25);
+  padding: 0 var(--space-4);
+  font-size: var(--font-size-md);
+}
+
 .select {
   padding: var(--space-1) var(--space-2);
   border: 1px solid var(--color-border);
@@ -15,7 +24,7 @@
   font-size: var(--font-size-sm);
 }
 
-.retiredLabel {
+.filterLabel {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -23,25 +32,32 @@
   font-size: var(--font-size-sm);
 }
 
-.pager {
-  display: flex;
+.minimums {
+  display: inline-grid;
+  grid-auto-flow: column;
   align-items: center;
   gap: var(--space-2);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
 }
 
-.pagerButton {
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
+.infoIntro {
+  color: var(--color-text-muted);
+}
 
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.infoList {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  margin: 0;
+
+  dt {
+    color: var(--color-accent);
+    font-weight: var(--font-weight-semibold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--color-text);
   }
 }

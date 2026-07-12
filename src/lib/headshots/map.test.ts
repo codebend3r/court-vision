@@ -2,20 +2,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { prisma } from "@/lib/prisma";
 
-import { mapHeadshots } from "./map";
-import * as sources from "./sources";
-import type { NbaPlayerIndexRow } from "./sources";
+import { mapHeadshots } from "@/lib/headshots/map";
+import * as sources from "@/lib/headshots/sources";
+import type { NbaPlayerIndexRow } from "@/lib/headshots/sources";
 
-interface OurPlayerRow {
+type OurPlayerRow = {
   id: number;
   fullName: string;
-}
+};
 
 // `findMany` is generic and mocked without call-site args (see prisma.player.findMany
 // below), so `vi.mocked(...).mockResolvedValue(...)` type-checks against the full
 // Player row shape regardless of the `select` map.ts actually passes at runtime.
 // Only `id`/`fullName` vary per test; the rest are match-irrelevant filler.
-interface FullPlayerRow extends OurPlayerRow {
+type FullPlayerRow = {
   firstName: string;
   lastName: string;
   teamId: number | null;
@@ -23,9 +23,17 @@ interface FullPlayerRow extends OurPlayerRow {
   position: string | null;
   jerseyNumber: string | null;
   nbaPersonId: number | null;
+  heightInches: number | null;
+  weightLbs: number | null;
+  birthDate: Date | null;
+  college: string | null;
+  country: string | null;
+  draftYear: number | null;
+  draftRound: number | null;
+  draftNumber: number | null;
   createdAt: Date;
   updatedAt: Date;
-}
+} & OurPlayerRow;
 
 const toFullPlayerRow = (row: OurPlayerRow): FullPlayerRow => ({
   firstName: "First",
@@ -35,6 +43,14 @@ const toFullPlayerRow = (row: OurPlayerRow): FullPlayerRow => ({
   position: null,
   jerseyNumber: null,
   nbaPersonId: null,
+  heightInches: null,
+  weightLbs: null,
+  birthDate: null,
+  college: null,
+  country: null,
+  draftYear: null,
+  draftRound: null,
+  draftNumber: null,
   createdAt: new Date("2026-01-01T00:00:00Z"),
   updatedAt: new Date("2026-01-01T00:00:00Z"),
   ...row,
@@ -95,6 +111,29 @@ describe("mapHeadshots", () => {
     expect(prisma.player.update).toHaveBeenCalledWith({
       where: { id: 20 },
       data: { nbaPersonId: 1630162 },
+    });
+  });
+
+  it("matches names that differ only in punctuation (A.J. Green vs AJ Green)", async () => {
+    mockIndex([
+      { personId: 1631260, fullName: "AJ Green" },
+      { personId: 202340, fullName: "Devonte' Graham" },
+    ]);
+    mockFindMany([
+      { id: 60, fullName: "A.J. Green" },
+      { id: 61, fullName: "Devonte Graham" },
+    ]);
+
+    const result = await mapHeadshots();
+
+    expect(result).toEqual({ matched: 2, unmatched: [] });
+    expect(prisma.player.update).toHaveBeenCalledWith({
+      where: { id: 60 },
+      data: { nbaPersonId: 1631260 },
+    });
+    expect(prisma.player.update).toHaveBeenCalledWith({
+      where: { id: 61 },
+      data: { nbaPersonId: 202340 },
     });
   });
 

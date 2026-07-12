@@ -4,7 +4,8 @@ Operating rules for this repo. The README covers stack, layout, and routes; this
 
 ## Structure
 
-- Source lives under `src/` (`src/app`, `src/components`, `src/lib`, `src/styles`); `prisma/`, `public/`, config files, `.github/`, and `.husky/` stay at the repo root. Path references below (e.g. `styles/globals.scss`, `lib/foo.ts`) are under `src/`, and the `@/*` import alias maps to `src/*`.
+- Source lives under `src/` (`src/app`, `src/components`, `src/lib`, `src/styles`); `prisma/`, `public/`, config files, `.github/`, and `.husky/` stay at the repo root. Path references below (e.g. `styles/globals.scss`, `lib/foo.ts`) are under `src/`, and the `@/*` import alias maps to `src/*` (`@public/*` and `@generated/*` map to the root `public/` and `generated/` dirs).
+- Import via aliases, never parent-relative paths (`../`); lint enforces this. Same-directory `./` imports (co-located styles, tests) are fine.
 
 ## Workflow
 
@@ -18,6 +19,7 @@ Operating rules for this repo. The README covers stack, layout, and routes; this
 
 ## Typescript
 
+- Always use type aliases. Never use TypeScript interfaces anywhere, including `declare global` augmentations; lint enforces this (`@typescript-eslint/consistent-type-definitions`).
 - Use type guards wherever possible.
 - Never use `any` types; prefer type narrowing or type guards
 - Never under any circumstance cast types and never double cast: `as any as string`
@@ -37,6 +39,7 @@ Operating rules for this repo. The README covers stack, layout, and routes; this
 
 - Prefer `reduce` over `for` loops when possible. Never use `for/in` or `for/of` loops; reach for `Array.prototype` methods (`map`, `filter`, `reduce`, `flatMap`, etc.) when the value is an array.
 - Prefer double-bang (`!!value`) for boolean conversion.
+- Prefer short-circuit (`&&`) over a ternary when the else branch is `null` or `undefined`, especially in React rendering. Do: `{isActive && <Badge />}`. Don't: `{isActive ? <Badge /> : null}`. Guard the condition so it is a real boolean (`!!count && ...`), never a bare number that could render `0`.
 - Prefer optional chaining (`?.`). When optional chaining is used, ALWAYS pair it with nullish coalescing (`??`) to supply a fallback.
 - Prefer a single configurable object parameter over multiple positional parameters so argument order doesn't matter. Don't: `doSomething(foo, bar, hello)`. Do: `doSomething({ foo, bar, hello })`.
 

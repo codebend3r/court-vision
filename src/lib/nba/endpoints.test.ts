@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { fetchPlayerGameLogs, fetchPlayerIndex, fetchSeasonStats } from "./endpoints";
+import { fetchPlayerGameLogs, fetchPlayerIndex, fetchSeasonStats } from "@/lib/nba/endpoints";
 
 const noopSleep = async (): Promise<void> => {};
 const okResponse = (body: unknown): Response =>

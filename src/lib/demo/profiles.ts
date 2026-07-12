@@ -1,9 +1,9 @@
-export interface MeanSpread {
+export type MeanSpread = {
   mean: number;
   spread: number;
-}
+};
 
-export interface DemoProfile {
+export type DemoProfile = {
   fullName: string;
   gamesPlayed: number;
   minutes: MeanSpread;
@@ -19,7 +19,7 @@ export interface DemoProfile {
   stl: MeanSpread;
   blk: MeanSpread;
   tov: MeanSpread;
-}
+};
 
 // Plausible 2025-26 per-game profiles for five NBA stars — not official stats.
 export const DEMO_PROFILES: DemoProfile[] = [

@@ -4,12 +4,14 @@ import { GameLogInput } from "@/lib/stats/inputs";
 
 import {
   aggregateSeasonStats,
+  parseHeightInches,
+  parseWeightLbs,
   toGameLogInput,
   toPlayerInputs,
   toPlayerInput,
   deriveGameContext,
 } from "./transform";
-import { BdlStat } from "./schemas";
+import { BdlStat } from "@/lib/balldontlie/schemas";
 
 const teamAbbrById = new Map<number, string>([
   [10, "GSW"],
@@ -125,6 +127,8 @@ describe("deriveGameContext", () => {
       homeAway: "home",
       opponentAbbr: "BOS",
       winLoss: "L",
+      teamScore: 100,
+      opponentScore: 110,
       matchup: "MIN vs. BOS",
     });
     expect(ctx.gameDate.toISOString()).toBe("2025-10-22T00:00:00.000Z");
@@ -136,8 +140,16 @@ describe("deriveGameContext", () => {
       homeAway: "away",
       opponentAbbr: "MIN",
       winLoss: "W",
+      teamScore: 110,
+      opponentScore: 100,
       matchup: "BOS @ MIN",
     });
+  });
+
+  it("nulls the scores of an unplayed game", () => {
+    const unplayed = { ...game, home_team_score: 0, visitor_team_score: 0 };
+    const ctx = deriveGameContext({ game: unplayed, teamId: 18, teamAbbr: "MIN", teamAbbrById });
+    expect(ctx).toMatchObject({ winLoss: null, teamScore: null, opponentScore: null });
   });
 });
 
@@ -188,6 +200,25 @@ describe("aggregateSeasonStats", () => {
       minutes: 68,
     });
   });
+
+  it("excludes DNP games (0 minutes) from games played", () => {
+    const dnpStat: BdlStat = {
+      ...awayStat,
+      id: 3,
+      min: "0",
+      pts: 0,
+      game: { ...awayStat.game, id: 18600, date: "2025-10-26" },
+    };
+    const logs: GameLogInput[] = [homeStat, awayStat, dnpStat].map((stat) =>
+      toGameLogInput({ stat, teamAbbrById }),
+    );
+    const [season] = aggregateSeasonStats(logs);
+    // Three logs, but the DNP does not count as a game played.
+    expect(season.gamesPlayed).toBe(2);
+    // Totals and minutes still include the DNP (which contributes zeros).
+    expect(season.pts).toBe(49);
+    expect(season.minutes).toBe(68);
+  });
 });
 
 describe("toPlayerInput", () => {
@@ -199,6 +230,13 @@ describe("toPlayerInput", () => {
         last_name: "Edwards",
         position: "G",
         jersey_number: "5",
+        height: "6-4",
+        weight: "225",
+        college: "Georgia",
+        country: "USA",
+        draft_year: 2020,
+        draft_round: 1,
+        draft_number: 1,
         team: { id: 18, abbreviation: "MIN" },
       },
     });
@@ -211,6 +249,13 @@ describe("toPlayerInput", () => {
       teamAbbr: "MIN",
       position: "G",
       jerseyNumber: "5",
+      heightInches: 76,
+      weightLbs: 225,
+      college: "Georgia",
+      country: "USA",
+      draftYear: 2020,
+      draftRound: 1,
+      draftNumber: 1,
     });
   });
 
@@ -224,5 +269,18 @@ describe("toPlayerInput", () => {
       position: null,
       jerseyNumber: null,
     });
+  });
+});
+
+describe("player measurement parsing", () => {
+  it("normalizes feet/inches and pounds", () => {
+    expect(parseHeightInches("6-2")).toBe(74);
+    expect(parseWeightLbs("185")).toBe(185);
+  });
+
+  it("returns null for blank or malformed measurements", () => {
+    expect(parseHeightInches("")).toBeNull();
+    expect(parseHeightInches("6-12")).toBeNull();
+    expect(parseWeightLbs("unknown")).toBeNull();
   });
 });

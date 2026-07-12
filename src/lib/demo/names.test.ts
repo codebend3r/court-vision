@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizeName } from "./names";
+import { normalizeName } from "@/lib/demo/names";
 
 describe("normalizeName", () => {
   it("lowercases and strips diacritics", () => {

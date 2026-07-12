@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_ACTIVE_KEYS, getChartChrome, getStatMeta } from "./statMeta";
+import {
+  DEFAULT_ACTIVE_KEYS,
+  getChartChrome,
+  getStatMeta,
+} from "@/components/PlayerStatChart/statMeta";
 
 const DARK_COUNTING_COLORS = [
   "#3987e5",

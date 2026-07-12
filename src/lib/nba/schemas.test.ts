@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { gameLogRowSchema, playerIndexRowSchema, seasonStatsRowSchema } from "./schemas";
+import { gameLogRowSchema, playerIndexRowSchema, seasonStatsRowSchema } from "@/lib/nba/schemas";
 
 describe("playerIndexRowSchema", () => {
   it("parses a valid identity row", () => {

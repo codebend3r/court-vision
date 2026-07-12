@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { bdlPage, bdlPaginatedPage, bdlStatSchema, bdlTeamSchema } from "./schemas";
+import {
+  bdlPage,
+  bdlPaginatedPage,
+  bdlPlayerSchema,
+  bdlStatSchema,
+  bdlTeamSchema,
+} from "@/lib/balldontlie/schemas";
 
 const team = { id: 1, abbreviation: "ATL", full_name: "Atlanta Hawks", extra: "ignored" };
 
@@ -51,6 +57,29 @@ describe("bdlTeamSchema", () => {
       id: 1,
       abbreviation: "ATL",
       full_name: "Atlanta Hawks",
+    });
+  });
+});
+
+describe("bdlPlayerSchema", () => {
+  it("retains profile and draft metadata", () => {
+    const player = bdlPlayerSchema.parse({
+      id: 115,
+      first_name: "Stephen",
+      last_name: "Curry",
+      height: "6-2",
+      weight: "185",
+      college: "Davidson",
+      country: "USA",
+      draft_year: 2009,
+      draft_round: 1,
+      draft_number: 7,
+    });
+    expect(player).toMatchObject({
+      height: "6-2",
+      weight: "185",
+      college: "Davidson",
+      draft_year: 2009,
     });
   });
 });

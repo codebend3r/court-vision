@@ -1,5 +1,5 @@
-import { bdlFetch, BdlParamValue } from "./client";
-import { PER_PAGE, SEASON_YEAR, THROTTLE_MS } from "./constants";
+import { bdlFetch, BdlParamValue } from "@/lib/balldontlie/client";
+import { PER_PAGE, SEASON_YEAR, THROTTLE_MS } from "@/lib/balldontlie/constants";
 import {
   BdlGame,
   BdlPlayer,
@@ -13,20 +13,20 @@ import {
   bdlTeamSchema,
 } from "./schemas";
 
-export interface BdlPageProgress {
+export type BdlPageProgress = {
   endpoint: string;
   page: number;
   pageRows: number;
   totalRows: number;
   nextCursor: number | null;
-}
+};
 
-export interface BdlClientDeps {
+export type BdlClientDeps = {
   fetchImpl?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
   apiKey?: string;
   onPage?: (progress: BdlPageProgress) => void;
-}
+};
 
 const defaultSleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
@@ -92,9 +92,14 @@ export const fetchAllPlayers = async (
 ): Promise<BdlPlayer[]> => {
   const { deps = {}, throttleMs = THROTTLE_MS } = args;
   const sleep = deps.sleep ?? defaultSleep;
+  const onPage = deps.onPage ?? noopOnPage;
   const pageSchema = bdlPaginatedPage(bdlPlayerSchema);
 
-  const loadPage = async (cursor: number | null, acc: BdlPlayer[]): Promise<BdlPlayer[]> => {
+  const loadPage = async (
+    cursor: number | null,
+    acc: BdlPlayer[],
+    pageNumber: number,
+  ): Promise<BdlPlayer[]> => {
     const cursorParam: Record<string, BdlParamValue> =
       cursor === null ? {} : { cursor: String(cursor) };
     const raw = await bdlFetch({
@@ -107,14 +112,21 @@ export const fetchAllPlayers = async (
     const page = pageSchema.parse(raw);
     const combined = acc.concat(page.data);
     const next = page.meta.next_cursor ?? null;
+    onPage({
+      endpoint: "players",
+      page: pageNumber,
+      pageRows: page.data.length,
+      totalRows: combined.length,
+      nextCursor: next,
+    });
     if (next === null) {
       return combined;
     }
     await sleep(throttleMs);
-    return loadPage(next, combined);
+    return loadPage(next, combined, pageNumber + 1);
   };
 
-  return loadPage(null, []);
+  return loadPage(null, [], 1);
 };
 
 export const fetchTeamGames = async (args: {

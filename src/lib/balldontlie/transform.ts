@@ -1,21 +1,38 @@
 import { GameLogInput, PlayerInput, SeasonStatsInput } from "@/lib/stats/inputs";
 import { parseGameDate, parseMinutes } from "@/lib/stats/parse";
 
-import { SEASON_LABEL, SEASON_TYPE } from "./constants";
-import { BdlGame, BdlPlayer, BdlStat } from "./schemas";
+import { SEASON_LABEL, SEASON_TYPE } from "@/lib/balldontlie/constants";
+import { BdlGame, BdlPlayer, BdlStat } from "@/lib/balldontlie/schemas";
 
 export const blankToNull = (value: string | null | undefined): string | null => {
   const trimmed = (value ?? "").trim();
   return trimmed === "" ? null : trimmed;
 };
 
-export interface GameContext {
+export const parseHeightInches = (value: string | null | undefined): number | null => {
+  const match = /^(\d+)\s*-\s*(\d+)$/.exec((value ?? "").trim());
+  if (match === null) return null;
+  const feet = Number(match[1]);
+  const inches = Number(match[2]);
+  return inches < 12 ? feet * 12 + inches : null;
+};
+
+export const parseWeightLbs = (value: string | null | undefined): number | null => {
+  const normalized = (value ?? "").trim();
+  if (!/^\d+$/.test(normalized)) return null;
+  const weight = Number(normalized);
+  return weight > 0 ? weight : null;
+};
+
+export type GameContext = {
   homeAway: "home" | "away";
   opponentAbbr: string | null;
   winLoss: string | null;
+  teamScore: number | null;
+  opponentScore: number | null;
   matchup: string;
   gameDate: Date;
-}
+};
 
 export const deriveGameContext = (args: {
   game: BdlGame;
@@ -29,12 +46,16 @@ export const deriveGameContext = (args: {
   const opponentAbbr = teamAbbrById.get(opponentTeamId) ?? null;
   const teamScore = homeAway === "home" ? game.home_team_score : game.visitor_team_score;
   const opponentScore = homeAway === "home" ? game.visitor_team_score : game.home_team_score;
+  // 0-0 means the game has not been played, so there is no score to keep.
+  const played = teamScore > 0 || opponentScore > 0;
   const winLoss = teamScore > opponentScore ? "W" : teamScore < opponentScore ? "L" : null;
   const separator = homeAway === "away" ? "@" : "vs.";
   return {
     homeAway,
     opponentAbbr,
     winLoss,
+    teamScore: played ? teamScore : null,
+    opponentScore: played ? opponentScore : null,
     matchup: `${teamAbbr} ${separator} ${opponentAbbr ?? ""}`.trim(),
     gameDate: parseGameDate(game.date),
   };
@@ -128,7 +149,9 @@ export const aggregateSeasonStats = (logs: GameLogInput[]): SeasonStatsInput[] =
     };
     acc.set(log.playerId, {
       ...current,
-      gamesPlayed: current.gamesPlayed + 1,
+      // Games played counts appearances only; a DNP (0 minutes) is on the
+      // roster but did not play, so it must not inflate the count.
+      gamesPlayed: current.gamesPlayed + (log.minutes > 0 ? 1 : 0),
       minutes: current.minutes + log.minutes,
       fgm: current.fgm + log.fgm,
       fga: current.fga + log.fga,
@@ -161,5 +184,12 @@ export const toPlayerInput = (args: { player: BdlPlayer }): PlayerInput => {
     teamAbbr: player.team?.abbreviation ?? null,
     position: blankToNull(player.position),
     jerseyNumber: blankToNull(player.jersey_number),
+    heightInches: parseHeightInches(player.height),
+    weightLbs: parseWeightLbs(player.weight),
+    college: blankToNull(player.college),
+    country: blankToNull(player.country),
+    draftYear: player.draft_year ?? null,
+    draftRound: player.draft_round ?? null,
+    draftNumber: player.draft_number ?? null,
   };
 };

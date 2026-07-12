@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { parseMatchup, toGameLogInput, toPlayerInput, toSeasonStatsInput } from "./transform";
+import {
+  parseMatchup,
+  toGameLogInput,
+  toPlayerInput,
+  toSeasonStatsInput,
+} from "@/lib/nba/transform";
 
 describe("parseMatchup", () => {
   it("detects a home game", () => {

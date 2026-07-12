@@ -1,8 +1,8 @@
-import { BDL_BASE_URL, getApiKey } from "./constants";
+import { BDL_BASE_URL, getApiKey } from "@/lib/balldontlie/constants";
 
 export type BdlParamValue = string | string[];
 
-export interface BdlFetchOptions {
+export type BdlFetchOptions = {
   endpoint: string;
   params?: Record<string, BdlParamValue>;
   apiKey?: string;
@@ -10,7 +10,7 @@ export interface BdlFetchOptions {
   sleep?: (ms: number) => Promise<void>;
   maxRetries?: number;
   timeoutMs?: number;
-}
+};
 
 const defaultSleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
@@ -65,7 +65,20 @@ export async function bdlFetch({
         }
         throw new Error(`Balldontlie request failed (${response.status}) for ${endpoint}`);
       }
-      return await response.json();
+      const body = await response.text();
+      try {
+        const parsed: unknown = JSON.parse(body);
+        return parsed;
+      } catch {
+        // A 200 with an empty or truncated body is a transient upstream hiccup
+        // (the connection was cut before the JSON finished); retry it like any
+        // other flaky response rather than failing the whole run.
+        if (retriesLeft > 0) {
+          await sleep(backoffMs(maxRetries - retriesLeft));
+          return attempt(retriesLeft - 1);
+        }
+        throw new Error(`Balldontlie sent an unparseable body for ${endpoint}`);
+      }
     } catch (error) {
       if (retriesLeft > 0 && isRetryableError(error)) {
         await sleep(backoffMs(maxRetries - retriesLeft));

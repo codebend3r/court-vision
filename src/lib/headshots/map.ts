@@ -1,45 +1,45 @@
 import { normalizeName } from "@/lib/demo/names";
 import { prisma } from "@/lib/prisma";
 
-import { fetchNbaPlayerIndex } from "./sources";
+import { fetchNbaPlayerIndex } from "@/lib/headshots/sources";
+import { isMainModule } from "@/lib/runtime";
 
-// Bun sets `import.meta.main` on the entry module. @types/node's ImportMeta
-// doesn't declare it, so augment the global interface (declaration merging,
-// same pattern as src/lib/prisma.ts and src/lib/balldontlie/sync.ts) rather
-// than adding bun-types or casting.
-declare global {
-  interface ImportMeta {
-    readonly main: boolean;
-  }
-}
-
-export interface MapHeadshotsDeps {
+export type MapHeadshotsDeps = {
   fetchImpl?: typeof fetch;
-}
+};
 
-export interface MapHeadshotsResult {
+export type MapHeadshotsResult = {
   matched: number;
   unmatched: string[];
-}
+};
 
-interface NamedRow {
+type NamedRow = {
   fullName: string;
-}
+};
+
+// Sources disagree on punctuation ("A.J. Green" here vs "AJ Green" in the NBA
+// index, apostrophes, hyphens), so the match key drops everything but letters,
+// digits, and single spaces after diacritic normalization.
+const matchKey = (name: string): string =>
+  normalizeName(name)
+    .replace(/[^a-z0-9 ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 
 // Groups rows by normalized full name. A key with more than one row means an
 // ambiguous name on that side of the match (two of our players sharing a
 // normalized name, or the NBA index listing two people under one name).
 const groupByNormalizedName = <T extends NamedRow>(rows: T[]): Map<string, T[]> =>
   rows.reduce((map, row) => {
-    const key = normalizeName(row.fullName);
+    const key = matchKey(row.fullName);
     map.set(key, (map.get(key) ?? []).concat(row));
     return map;
   }, new Map<string, T[]>());
 
-interface PersonMatch {
+type PersonMatch = {
   id: number;
   nbaPersonId: number;
-}
+};
 
 // Only players with at least one game log get mapped (the plan's "current
 // players" set — see docs/superpowers/plans/2026-07-11-player-headshots.md).
@@ -96,7 +96,7 @@ export async function mapHeadshots(deps: MapHeadshotsDeps = {}): Promise<MapHead
   return { matched: matches.length, unmatched };
 }
 
-if (import.meta.main) {
+if (isMainModule({ moduleUrl: import.meta.url })) {
   mapHeadshots()
     .then((result) => {
       console.log(

@@ -4,3 +4,139 @@
   letter-spacing: var(--tracking-wide);
   color: var(--color-text-muted);
 }
+
+@mixin control-focus-ring {
+  outline: none;
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--color-focus-ring);
+}
+
+// Text-like fields: text/email/password/date/etc. inputs and selects.
+@mixin control-field {
+  height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--control-radius);
+  background: var(--color-control-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+
+  &::placeholder {
+    color: var(--color-control-placeholder);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+    border-color: var(--color-control-accent);
+  }
+
+  &:disabled {
+    opacity: var(--control-disabled-opacity);
+    cursor: not-allowed;
+  }
+}
+
+@mixin control-toggle {
+  appearance: none;
+  display: grid;
+  place-content: center;
+  width: var(--control-size);
+  height: var(--control-size);
+  border: 1px solid var(--color-control-border);
+  background: var(--color-control-bg);
+  cursor: pointer;
+
+  &::before {
+    content: "";
+    transform: scale(0);
+    background: var(--color-surface);
+  }
+
+  &:checked {
+    border-color: var(--color-control-accent);
+    background: var(--color-control-accent);
+
+    &::before {
+      transform: scale(1);
+    }
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+  }
+
+  &:disabled {
+    opacity: var(--control-disabled-opacity);
+    cursor: not-allowed;
+  }
+}
+
+@mixin control-checkbox {
+  @include control-toggle;
+  border-radius: var(--radius-sm);
+
+  &::before {
+    width: var(--space-3);
+    height: var(--space-3);
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+  }
+}
+
+@mixin control-radio {
+  @include control-toggle;
+  border-radius: var(--radius-full);
+
+  &::before {
+    width: var(--space-2);
+    height: var(--space-2);
+    border-radius: var(--radius-full);
+  }
+}
+
+@mixin control-range {
+  appearance: none;
+  width: 100%;
+  height: var(--control-size);
+  background: transparent;
+  cursor: pointer;
+
+  &::-webkit-slider-runnable-track {
+    height: var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--color-control-border);
+  }
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: var(--space-4);
+    height: var(--space-4);
+    margin-top: calc((var(--space-1) - var(--space-4)) / 2);
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--color-control-accent);
+  }
+
+  &::-moz-range-track {
+    height: var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--color-control-border);
+  }
+
+  &::-moz-range-thumb {
+    width: var(--space-4);
+    height: var(--space-4);
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--color-control-accent);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+    border-radius: var(--radius-full);
+  }
+
+  &:disabled {
+    opacity: var(--control-disabled-opacity);
+    cursor: not-allowed;
+  }
+}

@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { PlayerAvatar } from "./PlayerAvatar";
+import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 
 afterEach(cleanup);
 
@@ -47,6 +47,31 @@ describe("PlayerAvatar", () => {
     render(<PlayerAvatar fullName="Zion" nbaPersonId={null} size="sm" />);
 
     expect(screen.getByText("Z")).toBeInTheDocument();
+  });
+
+  it("borders the image with the team's primary color", () => {
+    render(
+      <PlayerAvatar fullName="Anthony Edwards" nbaPersonId={1630162} size="sm" teamAbbr="MIN" />,
+    );
+
+    // Minnesota Timberwolves primary, same source as TeamChip
+    expect(screen.getByRole("img", { name: "Anthony Edwards" })).toHaveStyle({
+      borderColor: "#0C2340",
+    });
+  });
+
+  it("borders the initials fallback with the team's primary color", () => {
+    render(<PlayerAvatar fullName="Anthony Edwards" nbaPersonId={null} size="sm" teamAbbr="MIN" />);
+
+    expect(screen.getByRole("img", { name: "Anthony Edwards" })).toHaveStyle({
+      borderColor: "#0C2340",
+    });
+  });
+
+  it("keeps the default border when the team is unknown or absent", () => {
+    render(<PlayerAvatar fullName="Anthony Edwards" nbaPersonId={null} size="sm" teamAbbr="???" />);
+
+    expect(screen.getByRole("img", { name: "Anthony Edwards" })).not.toHaveAttribute("style");
   });
 
   it("replaces the image with the initials fallback when the image errors", () => {

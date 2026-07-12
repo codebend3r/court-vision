@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { withNuqsTestingAdapter, type UrlUpdateEvent } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { PlayerStatFilters } from "./PlayerStatFilters";
+import { PlayerStatFilters } from "@/components/PlayerStatFilters/PlayerStatFilters";
 
 afterEach(cleanup);
 
@@ -21,7 +21,7 @@ describe("PlayerStatFilters", () => {
 
     expect(screen.getByRole("group", { name: "Stat mode" })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Timeframe" })).toBeInTheDocument();
-    ["Avg", "Totals", "Per 36", "L10", "L20", "L30", "Season"].map((label) =>
+    ["Avg", "Game", "Totals", "Per 36", "L5", "L10", "L20", "L40", "L60", "Season"].map((label) =>
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument(),
     );
   });

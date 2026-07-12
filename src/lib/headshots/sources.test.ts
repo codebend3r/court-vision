@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { fetchNbaPlayerIndex, NBA_DATA_PY_URL } from "./sources";
+import { fetchNbaPlayerIndex, NBA_DATA_PY_URL } from "@/lib/headshots/sources";
 
 // Mirrors the real nba_api `data.py` shape: a flat
 // `players = [[id, lastName, firstName, fullName, isActive], ...]` block, plus

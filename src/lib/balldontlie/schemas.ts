@@ -28,6 +28,13 @@ export const bdlPlayerSchema = z.object({
   last_name: z.string(),
   position: z.string().nullable().optional(),
   jersey_number: z.string().nullable().optional(),
+  height: z.string().nullable().optional(),
+  weight: z.string().nullable().optional(),
+  college: z.string().nullable().optional(),
+  country: z.string().nullable().optional(),
+  draft_year: z.number().int().nullable().optional(),
+  draft_round: z.number().int().nullable().optional(),
+  draft_number: z.number().int().nullable().optional(),
   team: bdlNestedTeamSchema.nullable().optional(),
 });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { nbaFetch } from "./client";
+import { nbaFetch } from "@/lib/nba/client";
 
 const noopSleep = async (): Promise<void> => {};
 

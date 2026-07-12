@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
-import { SiteHeader } from "./SiteHeader";
+import { SiteHeader } from "@/components/SiteHeader/SiteHeader";
 
 afterEach(() => {
   cleanup();
