@@ -43,6 +43,13 @@ const TEAM_BY_ABBREVIATION: Map<string, NbaTeam> = new Map(
   NBA_TEAMS.map((team) => [team.abbreviation, team]),
 );
 
+export type TeamColors = { name: string; primary: string; secondary: string };
+
+// Single source of truth for team colors so other components (e.g. the player
+// avatar border) always match the chip.
+export const teamColorsFor = ({ team }: { team: string | null }): TeamColors | null =>
+  team === null ? null : (TEAM_BY_ABBREVIATION.get(team) ?? null);
+
 export function TeamChip({ team, size = "md" }: { team: string; size?: TeamChipSize }) {
   const details = TEAM_BY_ABBREVIATION.get(team);
   const className = size === "sm" ? `${styles.chip} ${styles.sm}` : styles.chip;

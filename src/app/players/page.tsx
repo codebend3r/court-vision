@@ -122,6 +122,7 @@ export default async function PlayersPage({
                           fullName={row.fullName}
                           nbaPersonId={row.nbaPersonId}
                           size="sm"
+                          teamAbbr={row.teamAbbr}
                         />
                         <Link href={`/players/${row.id}`}>{row.firstName}</Link>
                       </span>

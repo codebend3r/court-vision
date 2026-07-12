@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 
+import { teamColorsFor } from "@/components/TeamChip/TeamChip";
 import { headshotUrl } from "@/lib/headshots/url";
 
 import styles from "@/components/PlayerAvatar/PlayerAvatar.module.scss";
@@ -15,6 +16,7 @@ export type PlayerAvatarProps = {
   fullName: string;
   nbaPersonId: number | null;
   size: PlayerAvatarSize;
+  teamAbbr?: string | null;
 };
 
 const initialsFor = (fullName: string): string => {
@@ -24,14 +26,22 @@ const initialsFor = (fullName: string): string => {
   return `${first}${last}`.toUpperCase();
 };
 
-export function PlayerAvatar({ fullName, nbaPersonId, size }: PlayerAvatarProps) {
+export function PlayerAvatar({ fullName, nbaPersonId, size, teamAbbr = null }: PlayerAvatarProps) {
   const [failed, setFailed] = useState(false);
   const dimension = SIZE_PX[size];
-  const sizeClass = styles[size];
+  const teamColors = teamColorsFor({ team: teamAbbr });
+  const teamRingClass = teamColors === null ? "" : ` ${styles.teamRing}`;
+  const sizeClass = `${styles[size]}${teamRingClass}`;
+  const teamStyle = teamColors === null ? undefined : { borderColor: teamColors.primary };
 
   if (nbaPersonId === null || failed) {
     return (
-      <span className={`${styles.avatar} ${sizeClass}`} role="img" aria-label={fullName}>
+      <span
+        className={`${styles.avatar} ${sizeClass}`}
+        style={teamStyle}
+        role="img"
+        aria-label={fullName}
+      >
         {initialsFor(fullName)}
       </span>
     );
@@ -44,6 +54,7 @@ export function PlayerAvatar({ fullName, nbaPersonId, size }: PlayerAvatarProps)
       width={dimension}
       height={dimension}
       className={`${styles.avatar} ${sizeClass} ${styles.image}`}
+      style={teamStyle}
       onError={() => setFailed(true)}
     />
   );
