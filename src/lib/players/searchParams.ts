@@ -46,7 +46,9 @@ export const PLAYER_GAME_RANGES: readonly PlayerGameRange[] = [
   "last60",
 ];
 export type PlayerStatMode = "average" | "total";
-export const DEFAULT_SORT_KEY: PlayerSortKey = "firstName";
+// The landing view sorts by points, highest first, so the leaderboard shows
+// on arrival without query params.
+export const DEFAULT_SORT_KEY: PlayerSortKey = "pts";
 export const DEFAULT_SORT_DIR: SortDirection = "desc";
 
 export type PlayersSearchParams = {

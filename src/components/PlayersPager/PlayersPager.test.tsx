@@ -20,7 +20,7 @@ const defaultProps: PlayersPagerProps = {
   page: 1,
   size: 50,
   totalPages: 1,
-  sort: "firstName",
+  sort: "pts",
   dir: "desc",
   range: "all",
   mode: "average",

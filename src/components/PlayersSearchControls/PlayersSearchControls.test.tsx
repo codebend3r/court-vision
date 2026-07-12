@@ -26,7 +26,7 @@ afterEach(() => {
 const defaultProps: PlayersSearchControlsProps = {
   q: "",
   size: 50,
-  sort: "firstName",
+  sort: "pts",
   dir: "desc",
   range: "all",
   mode: "average",

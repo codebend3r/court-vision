@@ -65,7 +65,7 @@ describe("PlayersPage", () => {
 
     render(
       await PlayersPage({
-        searchParams: Promise.resolve({ page: "2", size: "25" }),
+        searchParams: Promise.resolve({ page: "2", size: "25", sort: "firstName" }),
       }),
     );
 
@@ -128,7 +128,7 @@ describe("PlayersPage", () => {
     expect(screen.getByText("27")).toBeInTheDocument();
   });
 
-  it("renders sortable name headers with the default first name descending sort", async () => {
+  it("marks the default points-descending sort active with no query params", async () => {
     vi.mocked(searchPlayers).mockResolvedValue({
       rows: [
         {
@@ -147,18 +147,18 @@ describe("PlayersPage", () => {
 
     render(await PlayersPage({ searchParams: Promise.resolve({}) }));
 
+    // Landing view defaults to points, highest first.
+    const ptsHeader = screen.getByRole("columnheader", { name: "PTS" });
+    expect(ptsHeader).toHaveAttribute("aria-sort", "descending");
     const firstNameHeader = screen.getByRole("columnheader", { name: "First name" });
-    expect(firstNameHeader).toHaveAttribute("aria-sort", "descending");
-    const lastNameHeader = screen.getByRole("columnheader", { name: "Last name" });
-    expect(lastNameHeader).not.toHaveAttribute("aria-sort");
+    expect(firstNameHeader).not.toHaveAttribute("aria-sort");
 
+    // The active PTS header toggles direction; its default is omitted from the href.
+    expect(screen.getByRole("link", { name: "PTS" })).toHaveAttribute("href", "/players?dir=asc");
+    // An inactive header sorts by its own column.
     expect(screen.getByRole("link", { name: "First name" })).toHaveAttribute(
       "href",
-      "/players?dir=asc",
-    );
-    expect(screen.getByRole("link", { name: "Last name" })).toHaveAttribute(
-      "href",
-      "/players?sort=lastName",
+      "/players?sort=firstName",
     );
   });
 
@@ -198,7 +198,7 @@ describe("PlayersPage", () => {
     );
     expect(screen.getByRole("link", { name: "First name" })).toHaveAttribute(
       "href",
-      "/players?q=curry",
+      "/players?q=curry&sort=firstName",
     );
   });
 
@@ -236,9 +236,10 @@ describe("PlayersPage", () => {
 
     render(await PlayersPage({ searchParams: Promise.resolve({ range: "last5", mode: "total" }) }));
 
-    expect(screen.getByRole("link", { name: "PTS" })).toHaveAttribute(
+    // REB is not the default sort, so its header links to a reb sort.
+    expect(screen.getByRole("link", { name: "REB" })).toHaveAttribute(
       "href",
-      "/players?sort=pts&range=last5&mode=total",
+      "/players?sort=reb&range=last5&mode=total",
     );
     expect(screen.getByText("140")).toBeInTheDocument();
   });
