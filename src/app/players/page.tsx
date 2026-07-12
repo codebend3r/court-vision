@@ -4,7 +4,7 @@ import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayersPager } from "@/components/PlayersPager/PlayersPager";
 import { PlayersSearchControls } from "@/components/PlayersSearchControls/PlayersSearchControls";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
-import { searchPlayers } from "@/lib/players/search";
+import { searchPlayers, type PlayerStats } from "@/lib/players/search";
 import {
   buildPlayersHref,
   parsePlayersSearchParams,
@@ -26,6 +26,75 @@ const formatPerGame = (total: number, gamesPlayed: number): string =>
 
 const formatPercentage = (made: number, attempted: number): string =>
   attempted > 0 ? (made / attempted).toFixed(3).replace(/^0/, "") : "—";
+
+// Each numeric column pairs its sort key with how to read the value, so the
+// header link and the body cell always agree on which column is highlighted.
+type StatColumn = {
+  label: string;
+  sortKey: PlayerSortKey;
+  value: (args: { stats: PlayerStats; formatCountingStat: (value: number) => string }) => string;
+};
+
+const STAT_COLUMNS: readonly StatColumn[] = [
+  { label: "GP", sortKey: "gamesPlayed", value: ({ stats }) => String(stats.gamesPlayed) },
+  {
+    label: "PTS",
+    sortKey: "pts",
+    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.pts),
+  },
+  {
+    label: "REB",
+    sortKey: "reb",
+    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.reb),
+  },
+  {
+    label: "AST",
+    sortKey: "ast",
+    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.ast),
+  },
+  {
+    label: "STL",
+    sortKey: "stl",
+    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.stl),
+  },
+  {
+    label: "BLK",
+    sortKey: "blk",
+    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.blk),
+  },
+  {
+    label: "FGM",
+    sortKey: "fgm",
+    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.fgm),
+  },
+  {
+    label: "FGA",
+    sortKey: "fga",
+    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.fga),
+  },
+  {
+    label: "3PM",
+    sortKey: "fg3m",
+    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.fg3m),
+  },
+  {
+    label: "3PA",
+    sortKey: "fg3a",
+    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.fg3a),
+  },
+  { label: "FG%", sortKey: "fgPct", value: ({ stats }) => formatPercentage(stats.fgm, stats.fga) },
+  {
+    label: "3P%",
+    sortKey: "fg3Pct",
+    value: ({ stats }) => formatPercentage(stats.fg3m, stats.fg3a),
+  },
+  { label: "FT%", sortKey: "ftPct", value: ({ stats }) => formatPercentage(stats.ftm, stats.fta) },
+  {
+    label: "TOV",
+    sortKey: "tov",
+    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.tov),
+  },
+];
 
 export default async function PlayersPage({
   searchParams,
@@ -57,7 +126,11 @@ export default async function PlayersPage({
   const renderSortableHeader = ({ label, sortKey }: { label: string; sortKey: PlayerSortKey }) => {
     const isActive = params.sort === sortKey;
     return (
-      <th aria-sort={isActive ? (params.dir === "asc" ? "ascending" : "descending") : undefined}>
+      <th
+        key={sortKey}
+        aria-sort={isActive ? (params.dir === "asc" ? "ascending" : "descending") : undefined}
+        data-sort-active={isActive || undefined}
+      >
         <Link
           href={buildPlayersHref({ ...params, page: 1, sort: sortKey, dir: nextDir({ sortKey }) })}
           className={styles.sortLink}
@@ -115,20 +188,9 @@ export default async function PlayersPage({
                   {renderSortableHeader({ label: "Last name", sortKey: "lastName" })}
                   <th>Team</th>
                   <th>Position</th>
-                  {renderSortableHeader({ label: "GP", sortKey: "gamesPlayed" })}
-                  {renderSortableHeader({ label: "PTS", sortKey: "pts" })}
-                  {renderSortableHeader({ label: "REB", sortKey: "reb" })}
-                  {renderSortableHeader({ label: "AST", sortKey: "ast" })}
-                  {renderSortableHeader({ label: "STL", sortKey: "stl" })}
-                  {renderSortableHeader({ label: "BLK", sortKey: "blk" })}
-                  {renderSortableHeader({ label: "FGM", sortKey: "fgm" })}
-                  {renderSortableHeader({ label: "FGA", sortKey: "fga" })}
-                  {renderSortableHeader({ label: "3PM", sortKey: "fg3m" })}
-                  {renderSortableHeader({ label: "3PA", sortKey: "fg3a" })}
-                  {renderSortableHeader({ label: "FG%", sortKey: "fgPct" })}
-                  {renderSortableHeader({ label: "3P%", sortKey: "fg3Pct" })}
-                  {renderSortableHeader({ label: "FT%", sortKey: "ftPct" })}
-                  {renderSortableHeader({ label: "TOV", sortKey: "tov" })}
+                  {STAT_COLUMNS.map((column) =>
+                    renderSortableHeader({ label: column.label, sortKey: column.sortKey }),
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -145,7 +207,7 @@ export default async function PlayersPage({
                           {(page - 1) * params.size + index + 1}
                         </td>
                       )}
-                      <td>
+                      <td data-sort-active={params.sort === "firstName" || undefined}>
                         <span className={styles.nameCell}>
                           <PlayerAvatar
                             fullName={row.fullName}
@@ -156,53 +218,22 @@ export default async function PlayersPage({
                           <Link href={`/players/${row.id}`}>{row.firstName}</Link>
                         </span>
                       </td>
-                      <td>
+                      <td data-sort-active={params.sort === "lastName" || undefined}>
                         <Link href={`/players/${row.id}`}>{row.lastName}</Link>
                       </td>
                       <td>
                         {row.teamAbbr === null ? "—" : <TeamChip team={row.teamAbbr} size="sm" />}
                       </td>
                       <td>{row.position ?? "—"}</td>
-                      <td className={styles.numeric}>{stats ? String(stats.gamesPlayed) : "—"}</td>
-                      <td className={styles.numeric}>
-                        {stats ? formatCountingStat(stats.pts) : "—"}
-                      </td>
-                      <td className={styles.numeric}>
-                        {stats ? formatCountingStat(stats.reb) : "—"}
-                      </td>
-                      <td className={styles.numeric}>
-                        {stats ? formatCountingStat(stats.ast) : "—"}
-                      </td>
-                      <td className={styles.numeric}>
-                        {stats ? formatCountingStat(stats.stl) : "—"}
-                      </td>
-                      <td className={styles.numeric}>
-                        {stats ? formatCountingStat(stats.blk) : "—"}
-                      </td>
-                      <td className={styles.numeric}>
-                        {stats ? formatCountingStat(stats.fgm) : "—"}
-                      </td>
-                      <td className={styles.numeric}>
-                        {stats ? formatCountingStat(stats.fga) : "—"}
-                      </td>
-                      <td className={styles.numeric}>
-                        {stats ? formatCountingStat(stats.fg3m) : "—"}
-                      </td>
-                      <td className={styles.numeric}>
-                        {stats ? formatCountingStat(stats.fg3a) : "—"}
-                      </td>
-                      <td className={styles.numeric}>
-                        {stats ? formatPercentage(stats.fgm, stats.fga) : "—"}
-                      </td>
-                      <td className={styles.numeric}>
-                        {stats ? formatPercentage(stats.fg3m, stats.fg3a) : "—"}
-                      </td>
-                      <td className={styles.numeric}>
-                        {stats ? formatPercentage(stats.ftm, stats.fta) : "—"}
-                      </td>
-                      <td className={styles.numeric}>
-                        {stats ? formatCountingStat(stats.tov) : "—"}
-                      </td>
+                      {STAT_COLUMNS.map((column) => (
+                        <td
+                          key={column.sortKey}
+                          className={styles.numeric}
+                          data-sort-active={params.sort === column.sortKey || undefined}
+                        >
+                          {stats ? column.value({ stats, formatCountingStat }) : "—"}
+                        </td>
+                      ))}
                     </tr>
                   );
                 })}

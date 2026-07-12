@@ -21,11 +21,21 @@
     @include micro-label;
     padding: var(--space-2) var(--space-3);
     text-align: left;
+
+    &[data-sort-active="true"] {
+      background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
+      color: var(--color-accent);
+      box-shadow: inset 0 -2px 0 var(--color-accent);
+    }
   }
 
   td {
     padding: var(--space-2) var(--space-3);
     border-top: 1px solid var(--color-border);
+
+    &[data-sort-active="true"] {
+      background: color-mix(in srgb, var(--color-accent) 7%, transparent);
+    }
   }
 
   td.numeric {
