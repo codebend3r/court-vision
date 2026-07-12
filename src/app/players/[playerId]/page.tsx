@@ -7,7 +7,13 @@ import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { PlayerStatChart } from "@/components/PlayerStatChart/PlayerStatChart";
 import { PlayerStatFilters } from "@/components/PlayerStatFilters/PlayerStatFilters";
 import { SeasonStatCard } from "@/components/SeasonStatCard/SeasonStatCard";
-import { formatBirthDate, formatDraft, formatHeight, formatWeight } from "@/lib/players/format";
+import {
+  formatBirthDate,
+  formatDraft,
+  formatExperience,
+  formatHeight,
+  formatWeight,
+} from "@/lib/players/format";
 import { buildSeasonAverageLine } from "@/lib/players/seasonAverages";
 import { prisma } from "@/lib/prisma";
 import { buildStatSeries } from "@/lib/stats/cumulative";
@@ -74,6 +80,13 @@ export default async function PlayerPage({
         draftYear: player.draftYear,
         draftRound: player.draftRound,
         draftNumber: player.draftNumber,
+      }),
+    },
+    {
+      label: "Experience",
+      value: formatExperience({
+        draftYear: player.draftYear,
+        seasonStartYear: Number.parseInt(SEASON, 10),
       }),
     },
   ].filter(isPresentFact);

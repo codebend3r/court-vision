@@ -25,6 +25,21 @@ export const formatBirthDate = (args: { birthDate: Date | null }): string | null
   );
 };
 
+// Seasons in the league counted inclusively from the draft season: a player
+// drafted in 2021 is in their 5th season during 2025-26. Undrafted players
+// (null draft year) have no derivable count and return null.
+export const formatExperience = (args: {
+  draftYear: number | null;
+  seasonStartYear: number;
+}): string | null => {
+  const { draftYear, seasonStartYear } = args;
+  if (draftYear === null || draftYear > seasonStartYear) {
+    return null;
+  }
+  const seasons = seasonStartYear - draftYear + 1;
+  return seasons === 1 ? "1 season" : `${seasons} seasons`;
+};
+
 export const formatOrdinal = (args: { value: number }): string => {
   const { value } = args;
   const mod100 = value % 100;

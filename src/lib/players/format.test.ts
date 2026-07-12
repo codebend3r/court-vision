@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatBirthDate,
   formatDraft,
+  formatExperience,
   formatHeight,
   formatOrdinal,
   formatWeight,
@@ -41,6 +42,21 @@ describe("formatBirthDate", () => {
 
   it("returns null when absent", () => {
     expect(formatBirthDate({ birthDate: null })).toBeNull();
+  });
+});
+
+describe("formatExperience", () => {
+  it("counts seasons inclusively from the draft season", () => {
+    expect(formatExperience({ draftYear: 2021, seasonStartYear: 2025 })).toBe("5 seasons");
+  });
+
+  it("labels a player drafted this season with a single season", () => {
+    expect(formatExperience({ draftYear: 2025, seasonStartYear: 2025 })).toBe("1 season");
+  });
+
+  it("returns null for undrafted players and future draft years", () => {
+    expect(formatExperience({ draftYear: null, seasonStartYear: 2025 })).toBeNull();
+    expect(formatExperience({ draftYear: 2026, seasonStartYear: 2025 })).toBeNull();
   });
 });
 

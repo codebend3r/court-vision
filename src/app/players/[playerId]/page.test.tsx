@@ -184,6 +184,8 @@ describe("PlayerPage", () => {
     expect(screen.getByText("Duke")).toBeInTheDocument();
     expect(screen.getByText("USA")).toBeInTheDocument();
     expect(screen.getByText("2020 · Rd 1 · Pick 5")).toBeInTheDocument();
+    // drafted 2020, so 2025-26 is their 6th season
+    expect(screen.getByText("6 seasons")).toBeInTheDocument();
     // birthDate is null, so the Born fact is omitted entirely
     expect(screen.queryByText("Born")).not.toBeInTheDocument();
   });
