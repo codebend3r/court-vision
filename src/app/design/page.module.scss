@@ -90,6 +90,98 @@
   @include micro-label;
 }
 
+.spacingDemos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-6);
+}
+
+.spacingDemo {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.spacingDemoRow {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.gapTrack {
+  display: grid;
+  grid-auto-flow: column;
+  justify-content: start;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.gapBox {
+  width: var(--space-6);
+  height: var(--space-6);
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+}
+
+.padBox {
+  justify-self: start;
+  display: grid;
+  border: 1px dashed var(--color-accent);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.padInner {
+  display: block;
+  width: var(--space-8);
+  height: var(--space-8);
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+}
+
+.prose {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 60ch;
+
+  p {
+    margin: 0;
+  }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+  }
+}
+
+.emphasisGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.emphasisSample,
+.emphasisBold,
+.emphasisItalic,
+.emphasisBoldItalic {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.emphasisBold {
+  font-weight: var(--font-weight-bold);
+}
+
+.emphasisItalic {
+  font-style: italic;
+}
+
+.emphasisBoldItalic {
+  font-weight: var(--font-weight-bold);
+  font-style: italic;
+}
+
 .radiusGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));

@@ -34,6 +34,8 @@ const SPACING_TOKENS: readonly string[] = [
 
 const RADIUS_TOKENS: readonly string[] = ["--radius-sm", "--radius-md", "--radius-lg"];
 
+const SPACING_DEMO_TOKENS: readonly string[] = ["--space-2", "--space-4", "--space-6"];
+
 const TYPEFACES: readonly { name: string; cssVar: string }[] = [
   { name: "Chakra Petch — display", cssVar: "--font-display" },
   { name: "IBM Plex Sans — body", cssVar: "--font-sans" },
@@ -115,6 +117,7 @@ const DESIGN_SECTIONS = [
   { id: "typefaces", label: "Typefaces" },
   { id: "headings", label: "Headings" },
   { id: "font-weights", label: "Font weights" },
+  { id: "body-text", label: "Body text" },
   { id: "spacing", label: "Spacing" },
   { id: "radius", label: "Radius" },
   { id: "form-controls", label: "Form controls" },
@@ -222,6 +225,33 @@ export default function DesignPage() {
         </div>
       </section>
 
+      <section id="body-text" className={styles.section}>
+        <h2>Body text</h2>
+        <div className={styles.prose}>
+          <p>
+            Court Vision surfaces the players <strong>trending</strong> in the categories you care
+            about. Track a <em>hot streak</em> across the last ten games, or flag a{" "}
+            <strong>
+              <em>must-add breakout</em>
+            </strong>{" "}
+            before the rest of your league notices. Inline values like a <code>32.4%</code> usage
+            rate stay legible in <a href="#colors">running copy</a>.
+          </p>
+          <p>
+            Paragraphs set the body typeface at <code>--font-size-md</code> on a 1.5 line height.
+            Reach for <strong>&lt;strong&gt;</strong> when a word needs weight and{" "}
+            <em>&lt;em&gt;</em> when it needs emphasis; the two combine for the rare line that wants
+            both.
+          </p>
+        </div>
+        <div className={styles.emphasisGrid}>
+          <p className={styles.emphasisSample}>Regular weight, roman</p>
+          <p className={styles.emphasisBold}>Bold weight</p>
+          <p className={styles.emphasisItalic}>Italic style</p>
+          <p className={styles.emphasisBoldItalic}>Bold and italic</p>
+        </div>
+      </section>
+
       <section id="spacing" className={styles.section}>
         <h2>Spacing</h2>
         <div className={styles.spacingStack}>
@@ -231,6 +261,32 @@ export default function DesignPage() {
               <span className={styles.spacingLabel}>{token}</span>
             </div>
           ))}
+        </div>
+        <div className={styles.spacingDemos}>
+          <div className={styles.spacingDemo}>
+            <h3 className={styles.groupTitle}>Gap</h3>
+            {SPACING_DEMO_TOKENS.map((token) => (
+              <div key={token} className={styles.spacingDemoRow}>
+                <span className={styles.specimenName}>{`gap: ${token}`}</span>
+                <div className={styles.gapTrack} style={{ gap: `var(${token})` }}>
+                  {[0, 1, 2, 3].map((box) => (
+                    <span key={box} className={styles.gapBox} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className={styles.spacingDemo}>
+            <h3 className={styles.groupTitle}>Padding</h3>
+            {SPACING_DEMO_TOKENS.map((token) => (
+              <div key={token} className={styles.spacingDemoRow}>
+                <span className={styles.specimenName}>{`padding: ${token}`}</span>
+                <div className={styles.padBox} style={{ padding: `var(${token})` }}>
+                  <span className={styles.padInner} />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
