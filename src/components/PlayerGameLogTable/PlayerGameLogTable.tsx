@@ -64,8 +64,13 @@ const COLUMNS: readonly Column[] = [
     key: "winLoss",
     label: "Result",
     render: ({ winLoss, teamScore, opponentScore }) => {
+      // typeof guards (not null checks) so rows missing the score fields
+      // entirely (e.g. a Prisma client generated before the score migration)
+      // degrade to a bare W/L instead of an undefined-undefined score.
       const score =
-        teamScore !== null && opponentScore !== null ? `${teamScore}-${opponentScore}` : null;
+        typeof teamScore === "number" && typeof opponentScore === "number"
+          ? `${teamScore}-${opponentScore}`
+          : null;
       if (winLoss !== "W" && winLoss !== "L") {
         return winLoss ?? "—";
       }
