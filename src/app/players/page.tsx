@@ -64,7 +64,7 @@ export default async function PlayersPage({
           data-active={isActive ? "true" : "false"}
         >
           {label}
-          {isActive ? <span aria-hidden="true">{params.dir === "asc" ? "▲" : "▼"}</span> : null}
+          {isActive && <span aria-hidden="true">{params.dir === "asc" ? "▲" : "▼"}</span>}
         </Link>
       </th>
     );
@@ -89,7 +89,7 @@ export default async function PlayersPage({
             : `No players match "${params.q}".`
           : `Showing ${rangeStart}–${rangeEnd} of ${total}`}
       </p>
-      {total > 0 ? (
+      {total > 0 && (
         <>
           <PlayersPager
             q={params.q}
@@ -217,7 +217,7 @@ export default async function PlayersPage({
             minimums={params.minimums}
           />
         </>
-      ) : null}
+      )}
     </main>
   );
 }
