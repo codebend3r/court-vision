@@ -74,11 +74,13 @@ model PlayerGameLog {
   seasonType   String
   teamId       Int
   teamAbbr     String
-  matchup      String
-  opponentAbbr String?
-  homeAway     String
-  winLoss      String?
-  minutes      Float
+  matchup       String
+  opponentAbbr  String?
+  homeAway      String
+  winLoss       String?
+  teamScore     Int?
+  opponentScore Int?
+  minutes       Float
   fgm          Int
   fga          Int
   fg3m         Int

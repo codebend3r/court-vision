@@ -15,6 +15,8 @@ const buildRow = (overrides: Partial<PlayerGameLogTableRow>): PlayerGameLogTable
   gameDate: "2026-03-10T00:00:00.000Z",
   matchup: "MIA vs. WSH",
   winLoss: "W",
+  teamScore: 118,
+  opponentScore: 102,
   minutes: 42,
   fgm: 20,
   fga: 43,
@@ -121,5 +123,23 @@ describe("PlayerGameLogTable", () => {
 
     expect(screen.getByText("W").className).toMatch(/win/i);
     expect(screen.getByText("L").className).toMatch(/loss/i);
+  });
+
+  it("shows the game score next to the result", () => {
+    renderTable({
+      rows: [buildRow({ winLoss: "L", teamScore: 102, opponentScore: 118 })],
+    });
+
+    const resultCell = screen.getByText("L").closest("td");
+    expect(resultCell).toHaveTextContent("L 102-118");
+  });
+
+  it("omits the score when it is not recorded", () => {
+    renderTable({
+      rows: [buildRow({ teamScore: null, opponentScore: null })],
+    });
+
+    const resultCell = screen.getByText("W").closest("td");
+    expect(resultCell).toHaveTextContent(/^W$/);
   });
 });

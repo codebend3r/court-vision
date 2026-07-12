@@ -52,6 +52,8 @@ const buildLog = (overrides: Partial<Record<string, unknown>> = {}) => ({
   opponentAbbr: "LAL",
   homeAway: "home",
   winLoss: "W",
+  teamScore: 121,
+  opponentScore: 110,
   minutes: 34,
   fgm: 10,
   fga: 20,

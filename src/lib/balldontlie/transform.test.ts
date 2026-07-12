@@ -127,6 +127,8 @@ describe("deriveGameContext", () => {
       homeAway: "home",
       opponentAbbr: "BOS",
       winLoss: "L",
+      teamScore: 100,
+      opponentScore: 110,
       matchup: "MIN vs. BOS",
     });
     expect(ctx.gameDate.toISOString()).toBe("2025-10-22T00:00:00.000Z");
@@ -138,8 +140,16 @@ describe("deriveGameContext", () => {
       homeAway: "away",
       opponentAbbr: "MIN",
       winLoss: "W",
+      teamScore: 110,
+      opponentScore: 100,
       matchup: "BOS @ MIN",
     });
+  });
+
+  it("nulls the scores of an unplayed game", () => {
+    const unplayed = { ...game, home_team_score: 0, visitor_team_score: 0 };
+    const ctx = deriveGameContext({ game: unplayed, teamId: 18, teamAbbr: "MIN", teamAbbrById });
+    expect(ctx).toMatchObject({ winLoss: null, teamScore: null, opponentScore: null });
   });
 });
 

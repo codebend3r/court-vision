@@ -12,6 +12,8 @@ export type PlayerGameLogTableRow = {
   gameDate: string;
   matchup: string;
   winLoss: string | null;
+  teamScore: number | null;
+  opponentScore: number | null;
   minutes: number;
   fgm: number;
   fga: number;
@@ -61,12 +63,19 @@ const COLUMNS: readonly Column[] = [
   {
     key: "winLoss",
     label: "Result",
-    render: ({ winLoss }) =>
-      winLoss === "W" || winLoss === "L" ? (
-        <span className={winLoss === "W" ? styles.win : styles.loss}>{winLoss}</span>
-      ) : (
-        (winLoss ?? "—")
-      ),
+    render: ({ winLoss, teamScore, opponentScore }) => {
+      const score =
+        teamScore !== null && opponentScore !== null ? `${teamScore}-${opponentScore}` : null;
+      if (winLoss !== "W" && winLoss !== "L") {
+        return winLoss ?? "—";
+      }
+      return (
+        <>
+          <span className={winLoss === "W" ? styles.win : styles.loss}>{winLoss}</span>
+          {!!score && <span className={styles.score}> {score}</span>}
+        </>
+      );
+    },
   },
   { key: "minutes", label: "MIN", align: "right" },
   { key: "pts", label: "PTS", align: "right" },
