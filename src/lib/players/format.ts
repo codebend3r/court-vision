@@ -25,6 +25,14 @@ export const formatBirthDate = (args: { birthDate: Date | null }): string | null
   );
 };
 
+export const formatOrdinal = (args: { value: number }): string => {
+  const { value } = args;
+  const mod100 = value % 100;
+  const suffix =
+    mod100 >= 11 && mod100 <= 13 ? "th" : (["th", "st", "nd", "rd"][value % 10] ?? "th");
+  return `${value}${suffix}`;
+};
+
 export const formatDraft = (args: {
   draftYear: number | null;
   draftRound: number | null;

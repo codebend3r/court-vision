@@ -6,7 +6,9 @@ import { PlayerGameLogTable } from "@/components/PlayerGameLogTable/PlayerGameLo
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { PlayerStatChart } from "@/components/PlayerStatChart/PlayerStatChart";
 import { PlayerStatFilters } from "@/components/PlayerStatFilters/PlayerStatFilters";
+import { SeasonStatCard } from "@/components/SeasonStatCard/SeasonStatCard";
 import { formatBirthDate, formatDraft, formatHeight, formatWeight } from "@/lib/players/format";
+import { buildSeasonAverageLine } from "@/lib/players/seasonAverages";
 import { prisma } from "@/lib/prisma";
 import { buildStatSeries } from "@/lib/stats/cumulative";
 import { gamesForSpan, loadStatFilters } from "@/lib/stats/searchParams";
@@ -18,6 +20,9 @@ export const dynamic = "force-dynamic";
 // Player.id is a Postgres INT4; anything outside its range would make Prisma
 // throw (a 500) instead of rendering a 404.
 const MAX_INT4 = 2147483647;
+
+const SEASON = "2025-26";
+const SEASON_TYPE = "Regular Season";
 
 export default async function PlayerPage({
   params,
@@ -42,6 +47,12 @@ export default async function PlayerPage({
     where: { playerId: numericId },
     orderBy: { gameDate: "asc" },
   });
+  // The whole qualified pool is needed to place this player's averages on the
+  // league leaderboards, not just their own row.
+  const seasonRows = await prisma.playerSeasonStats.findMany({
+    where: { season: SEASON, seasonType: SEASON_TYPE },
+  });
+  const seasonLine = buildSeasonAverageLine({ rows: seasonRows, playerId: numericId }) ?? [];
   const { mode, span } = await loadStatFilters(searchParams ?? Promise.resolve({}));
   const windowSize = gamesForSpan({ span });
   const windowLogs = windowSize === null ? logs : logs.slice(-windowSize);
@@ -82,7 +93,9 @@ export default async function PlayerPage({
             {!!player.teamAbbr && <TeamChip team={player.teamAbbr} size="sm" />}
             {!!player.position && <span>{player.position}</span>}
             {!!player.jerseyNumber && <span>#{player.jerseyNumber}</span>}
-            <span>2025-26 · {logs.length} games</span>
+            <span>
+              {SEASON} · {logs.length} games
+            </span>
           </p>
           {facts.length > 0 && (
             <dl className={styles.facts}>
@@ -95,6 +108,11 @@ export default async function PlayerPage({
             </dl>
           )}
         </span>
+        {seasonLine.length > 0 && (
+          <div className={styles.headerCard}>
+            <SeasonStatCard season={SEASON} stats={seasonLine} />
+          </div>
+        )}
       </header>
       {series.length === 0 ? (
         <p className={styles.empty}>No game logs for this player yet.</p>

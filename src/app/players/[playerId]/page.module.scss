@@ -8,9 +8,24 @@
 
 .header {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-4);
+}
+
+.headerCard {
+  display: grid;
+  align-self: start;
+}
+
+@media (max-width: 1180px) {
+  .header {
+    grid-template-columns: auto 1fr;
+  }
+
+  .headerCard {
+    grid-column: 1 / -1;
+  }
 }
 
 .headerText {

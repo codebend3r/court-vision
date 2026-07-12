@@ -28,11 +28,13 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     player: { findUnique: vi.fn() },
     playerGameLog: { findMany: vi.fn() },
+    playerSeasonStats: { findMany: vi.fn() },
   },
 }));
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(prisma.playerSeasonStats.findMany).mockResolvedValue([]);
 });
 
 afterEach(cleanup);
@@ -67,6 +69,30 @@ const buildLog = (overrides: Partial<Record<string, unknown>> = {}) => ({
   pts: 29,
   plusMinus: 12,
   ...overrides,
+});
+
+const buildSeasonRow = ({ playerId, pts = 1000 }: { playerId: number; pts?: number }) => ({
+  id: `season-${playerId}`,
+  playerId,
+  season: "2025-26",
+  seasonType: "Regular Season",
+  gamesPlayed: 50,
+  minutes: 1500,
+  fgm: 400,
+  fga: 800,
+  fg3m: 100,
+  fg3a: 250,
+  ftm: 150,
+  fta: 200,
+  oreb: 50,
+  dreb: 200,
+  reb: 250,
+  ast: 300,
+  stl: 60,
+  blk: 40,
+  tov: 110,
+  pts,
+  updatedAt: new Date("2026-01-01T00:00:00Z"),
 });
 
 const player = {
@@ -108,6 +134,33 @@ describe("PlayerPage", () => {
     expect(screen.getAllByRole("button").length).toBeGreaterThan(0);
     const fallback = screen.getByRole("img", { name: "CJ Rivas" });
     expect(fallback.tagName).not.toBe("IMG");
+  });
+
+  it("shows the season averages card with NBA ranks", async () => {
+    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
+    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);
+    vi.mocked(prisma.playerSeasonStats.findMany).mockResolvedValue([
+      buildSeasonRow({ playerId: 3547238 }),
+      buildSeasonRow({ playerId: 2, pts: 1500 }),
+    ]);
+
+    await renderPage({ playerId: "3547238" });
+
+    expect(screen.getByText("Season averages")).toBeInTheDocument();
+    // 1000 points over 50 games
+    expect(screen.getByText("20.0")).toBeInTheDocument();
+    // one qualified player scores more
+    expect(screen.getByText("2nd in NBA")).toBeInTheDocument();
+    expect(screen.getByText("50.0%")).toBeInTheDocument();
+  });
+
+  it("omits the season averages card when the player has no season stats", async () => {
+    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
+    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);
+
+    await renderPage({ playerId: "3547238" });
+
+    expect(screen.queryByText("Season averages")).not.toBeInTheDocument();
   });
 
   it("renders profile facts and jersey number when metadata is present", async () => {

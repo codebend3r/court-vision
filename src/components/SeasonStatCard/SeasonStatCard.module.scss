@@ -1,0 +1,86 @@
+@use "@/styles/mixins" as *;
+
+.card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-accent) 8%, var(--color-surface)),
+    var(--color-surface) 60%
+  );
+}
+
+.cardHeader {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.title {
+  @include micro-label;
+  margin: 0;
+}
+
+.season {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, auto));
+  gap: var(--space-3) var(--space-4);
+  margin: 0;
+}
+
+.stat {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+  align-content: start;
+}
+
+.label {
+  @include micro-label;
+}
+
+.value {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-tight);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.rank {
+  margin: 0;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-text-muted) 12%, transparent);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+
+  &[data-tier="strong"] {
+    background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+    color: var(--color-accent);
+  }
+
+  &[data-tier="elite"] {
+    background: color-mix(in srgb, var(--color-highlight) 16%, transparent);
+    color: var(--color-highlight);
+  }
+
+  &[data-tier="first"] {
+    background: color-mix(in srgb, var(--color-accent-strong) 18%, transparent);
+    color: var(--color-accent-strong);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--color-accent-strong) 35%, transparent);
+  }
+}

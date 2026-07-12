@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { formatBirthDate, formatDraft, formatHeight, formatWeight } from "@/lib/players/format";
+import {
+  formatBirthDate,
+  formatDraft,
+  formatHeight,
+  formatOrdinal,
+  formatWeight,
+} from "@/lib/players/format";
 
 describe("formatHeight", () => {
   it("formats inches as feet and inches", () => {
@@ -35,6 +41,23 @@ describe("formatBirthDate", () => {
 
   it("returns null when absent", () => {
     expect(formatBirthDate({ birthDate: null })).toBeNull();
+  });
+});
+
+describe("formatOrdinal", () => {
+  it("adds the right suffix", () => {
+    expect(formatOrdinal({ value: 1 })).toBe("1st");
+    expect(formatOrdinal({ value: 2 })).toBe("2nd");
+    expect(formatOrdinal({ value: 3 })).toBe("3rd");
+    expect(formatOrdinal({ value: 4 })).toBe("4th");
+    expect(formatOrdinal({ value: 21 })).toBe("21st");
+  });
+
+  it("uses th for the 11 to 13 exceptions", () => {
+    expect(formatOrdinal({ value: 11 })).toBe("11th");
+    expect(formatOrdinal({ value: 12 })).toBe("12th");
+    expect(formatOrdinal({ value: 13 })).toBe("13th");
+    expect(formatOrdinal({ value: 113 })).toBe("113th");
   });
 });
 
