@@ -37,3 +37,26 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
+
+.facts {
+  display: grid;
+  grid-auto-flow: column;
+  justify-content: start;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.fact {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.factLabel {
+  @include micro-label;
+}
+
+.factValue {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}

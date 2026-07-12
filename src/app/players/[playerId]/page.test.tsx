@@ -110,6 +110,41 @@ describe("PlayerPage", () => {
     expect(fallback.tagName).not.toBe("IMG");
   });
 
+  it("renders profile facts and jersey number when metadata is present", async () => {
+    vi.mocked(prisma.player.findUnique).mockResolvedValue({
+      ...player,
+      heightInches: 79,
+      weightLbs: 220,
+      college: "Duke",
+      country: "USA",
+      draftYear: 2020,
+      draftRound: 1,
+      draftNumber: 5,
+    });
+    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);
+
+    await renderPage({ playerId: "3547238" });
+
+    expect(screen.getByText("#0")).toBeInTheDocument();
+    expect(screen.getByText(`6'7"`)).toBeInTheDocument();
+    expect(screen.getByText("220 lb")).toBeInTheDocument();
+    expect(screen.getByText("Duke")).toBeInTheDocument();
+    expect(screen.getByText("USA")).toBeInTheDocument();
+    expect(screen.getByText("2020 · Rd 1 · Pick 5")).toBeInTheDocument();
+    // birthDate is null, so the Born fact is omitted entirely
+    expect(screen.queryByText("Born")).not.toBeInTheDocument();
+  });
+
+  it("omits the facts list when no metadata is present", async () => {
+    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
+    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);
+
+    await renderPage({ playerId: "3547238" });
+
+    expect(screen.queryByText("Height")).not.toBeInTheDocument();
+    expect(screen.queryByText("Draft")).not.toBeInTheDocument();
+  });
+
   it("renders the NBA CDN headshot in the header when the player has an nbaPersonId", async () => {
     vi.mocked(prisma.player.findUnique).mockResolvedValue({ ...player, nbaPersonId: 1630162 });
     vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);

@@ -6,6 +6,7 @@ import { PlayerGameLogTable } from "@/components/PlayerGameLogTable/PlayerGameLo
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { PlayerStatChart } from "@/components/PlayerStatChart/PlayerStatChart";
 import { PlayerStatFilters } from "@/components/PlayerStatFilters/PlayerStatFilters";
+import { formatBirthDate, formatDraft, formatHeight, formatWeight } from "@/lib/players/format";
 import { prisma } from "@/lib/prisma";
 import { buildStatSeries } from "@/lib/stats/cumulative";
 import { gamesForSpan, loadStatFilters } from "@/lib/stats/searchParams";
@@ -46,17 +47,53 @@ export default async function PlayerPage({
   const windowLogs = windowSize === null ? logs : logs.slice(-windowSize);
   const series = buildStatSeries({ logs: windowLogs, mode });
 
+  const isPresentFact = (fact: {
+    label: string;
+    value: string | null;
+  }): fact is { label: string; value: string } => !!fact.value;
+  const facts = [
+    { label: "Height", value: formatHeight({ heightInches: player.heightInches }) },
+    { label: "Weight", value: formatWeight({ weightLbs: player.weightLbs }) },
+    { label: "Born", value: formatBirthDate({ birthDate: player.birthDate }) },
+    { label: "Country", value: player.country },
+    { label: "College", value: player.college },
+    {
+      label: "Draft",
+      value: formatDraft({
+        draftYear: player.draftYear,
+        draftRound: player.draftRound,
+        draftNumber: player.draftNumber,
+      }),
+    },
+  ].filter(isPresentFact);
+
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <PlayerAvatar fullName={player.fullName} nbaPersonId={player.nbaPersonId} size="lg" />
+        <PlayerAvatar
+          fullName={player.fullName}
+          nbaPersonId={player.nbaPersonId}
+          size="lg"
+          teamAbbr={player.teamAbbr}
+        />
         <span className={styles.headerText}>
           <h1>{player.fullName}</h1>
           <p className={styles.meta}>
             {!!player.teamAbbr && <TeamChip team={player.teamAbbr} size="sm" />}
             {!!player.position && <span>{player.position}</span>}
+            {!!player.jerseyNumber && <span>#{player.jerseyNumber}</span>}
             <span>2025-26 · {logs.length} games</span>
           </p>
+          {facts.length > 0 && (
+            <dl className={styles.facts}>
+              {facts.map(({ label, value }) => (
+                <div key={label} className={styles.fact}>
+                  <dt className={styles.factLabel}>{label}</dt>
+                  <dd className={styles.factValue}>{value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
         </span>
       </header>
       {series.length === 0 ? (
