@@ -4,6 +4,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { ReactNode } from "react";
 
 import { SideNav } from "@/components/SideNav/SideNav";
+import { SiteFooter } from "@/components/SiteFooter/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader/SiteHeader";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
@@ -54,6 +55,7 @@ export default function RootLayout({
               <SideNav />
               <div className={styles.content}>{children}</div>
             </div>
+            <SiteFooter />
           </ThemeProvider>
         </NuqsAdapter>
       </body>
