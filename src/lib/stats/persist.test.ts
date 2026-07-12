@@ -10,6 +10,9 @@ vi.mock("@/lib/prisma", () => ({
     player: { upsert: vi.fn() },
     playerSeasonStats: { upsert: vi.fn() },
     playerGameLog: { upsert: vi.fn() },
+    // The array form runs a batch of upserts in one transaction; resolve with
+    // the operations it was handed so callers see a normal completion.
+    $transaction: vi.fn((operations: unknown[]) => Promise.resolve(operations)),
   },
 }));
 
@@ -131,5 +134,79 @@ describe("upsertGameLogs", () => {
       create: log,
       update: log,
     });
+  });
+});
+
+const baseGameLog: GameLogInput = {
+  playerId: 201939,
+  gameId: "base",
+  gameDate: new Date("2025-10-22T00:00:00Z"),
+  season: "2025-26",
+  seasonType: "Regular Season",
+  teamId: 1610612744,
+  teamAbbr: "GSW",
+  matchup: "GSW vs. LAL",
+  opponentAbbr: "LAL",
+  homeAway: "home",
+  winLoss: "W",
+  minutes: 34,
+  fgm: 10,
+  fga: 20,
+  fg3m: 5,
+  fg3a: 11,
+  ftm: 4,
+  fta: 4,
+  oreb: 1,
+  dreb: 4,
+  reb: 5,
+  ast: 8,
+  stl: 2,
+  blk: 0,
+  tov: 3,
+  pts: 29,
+  plusMinus: 12,
+};
+
+describe("chunked, resilient writes", () => {
+  it("commits at most 250 upserts per transaction", async () => {
+    const logs = Array.from({ length: 501 }, (_, index) => ({
+      ...baseGameLog,
+      gameId: `game-${index}`,
+      playerId: index,
+    }));
+
+    const count = await upsertGameLogs(logs);
+
+    expect(count).toBe(501);
+    expect(prisma.playerGameLog.upsert).toHaveBeenCalledTimes(501);
+    // 501 rows chunk into transactions of 250, 250, and 1.
+    expect(prisma.$transaction).toHaveBeenCalledTimes(3);
+  });
+
+  it("retries a chunk after a transient connection drop, then succeeds", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.mocked(prisma.$transaction).mockRejectedValueOnce(
+        new Error("Connection terminated unexpectedly"),
+      );
+
+      const pending = upsertGameLogs([baseGameLog]);
+      await vi.runAllTimersAsync();
+
+      await expect(pending).resolves.toBe(1);
+      // One failed attempt plus one successful retry.
+      expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not retry an error that is not a connection drop", async () => {
+    vi.mocked(prisma.$transaction).mockRejectedValueOnce(
+      new Error("Unique constraint failed on the fields: (playerId, gameId)"),
+    );
+
+    await expect(upsertGameLogs([baseGameLog])).rejects.toThrow("Unique constraint failed");
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
   });
 });
