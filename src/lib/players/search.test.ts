@@ -20,7 +20,6 @@ const defaultParams: PlayersSearchParams = {
   q: "",
   page: 1,
   size: 25,
-  includeRetired: false,
   sort: "firstName",
   dir: "desc",
   range: "all",
@@ -136,21 +135,6 @@ describe("searchPlayers", () => {
         gameLogs: { some: {} },
         fullName: { contains: "curry", mode: "insensitive" },
       },
-      select: expectedSelect,
-      orderBy: [{ firstName: "desc" }, { lastName: "desc" }, { id: "asc" }],
-      skip: 0,
-      take: 25,
-    });
-  });
-
-  it("excludes gameLogs filter when includeRetired is true", async () => {
-    vi.mocked(prisma.player.findMany).mockResolvedValue([]);
-    vi.mocked(prisma.player.count).mockResolvedValue(0);
-
-    await searchPlayers({ ...defaultParams, includeRetired: true });
-
-    expect(prisma.player.findMany).toHaveBeenCalledWith({
-      where: {},
       select: expectedSelect,
       orderBy: [{ firstName: "desc" }, { lastName: "desc" }, { id: "asc" }],
       skip: 0,

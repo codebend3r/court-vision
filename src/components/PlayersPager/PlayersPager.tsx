@@ -17,7 +17,6 @@ export type PlayersPagerProps = {
   q: string;
   page: number;
   size: number;
-  includeRetired: boolean;
   totalPages: number;
   sort: PlayerSortKey;
   dir: SortDirection;
@@ -30,7 +29,6 @@ export function PlayersPager({
   q,
   page,
   size,
-  includeRetired,
   totalPages,
   sort,
   dir,
@@ -48,7 +46,6 @@ export function PlayersPager({
           q,
           page: nextPage,
           size,
-          includeRetired,
           sort,
           dir,
           range,

@@ -26,7 +26,6 @@ afterEach(() => {
 const defaultProps: PlayersSearchControlsProps = {
   q: "",
   size: 50,
-  includeRetired: false,
   sort: "firstName",
   dir: "desc",
   range: "all",
@@ -89,16 +88,6 @@ describe("PlayersSearchControls", () => {
     expect(replace).toHaveBeenCalledWith("/players?size=25");
   });
 
-  it("navigates immediately on retired toggle, preserving q and size", () => {
-    render(<PlayersSearchControls {...defaultProps} q="cur" size={25} />);
-
-    const checkbox = screen.getByRole("checkbox");
-    fireEvent.click(checkbox);
-
-    expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith("/players?q=cur&size=25&retired=1");
-  });
-
   it("changes the game range and stat display while preserving the other filter", () => {
     const { rerender } = render(<PlayersSearchControls {...defaultProps} mode="total" />);
 
@@ -159,7 +148,7 @@ describe("PlayersSearchControls", () => {
     expect(replace).toHaveBeenCalledTimes(0);
   });
 
-  it("cancels pending debounce timer on immediate navigation (size, retired)", () => {
+  it("cancels pending debounce timer on immediate navigation (size)", () => {
     render(<PlayersSearchControls {...defaultProps} />);
 
     const input = screen.getByLabelText("Search players");

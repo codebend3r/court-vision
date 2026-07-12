@@ -8,7 +8,6 @@ describe("parsePlayersSearchParams", () => {
       q: "",
       page: 1,
       size: 50,
-      includeRetired: false,
       sort: "firstName",
       dir: "desc",
       range: "all",
@@ -29,8 +28,6 @@ describe("parsePlayersSearchParams", () => {
     [{ size: "50" }, { size: 50 }],
     [{ size: "33" }, { size: 50 }],
     [{ size: "" }, { size: 50 }],
-    [{ retired: "1" }, { includeRetired: true }],
-    [{ retired: "true" }, { includeRetired: false }],
     [{ sort: "lastName" }, { sort: "lastName" }],
     [{ sort: "firstName" }, { sort: "firstName" }],
     [{ sort: "teamAbbr" }, { sort: "firstName" }],
@@ -56,7 +53,6 @@ describe("buildPlayersHref", () => {
     q: "",
     page: 1,
     size: 50,
-    includeRetired: false,
     sort: "firstName",
     dir: "desc",
     range: "all",
@@ -83,15 +79,12 @@ describe("buildPlayersHref", () => {
         q: "curry",
         page: 2,
         size: 25,
-        includeRetired: true,
         sort: "lastName",
         dir: "desc",
         range: "last5",
         mode: "total",
         minimums: false,
       }),
-    ).toBe(
-      "/players?q=curry&page=2&size=25&retired=1&sort=lastName&range=last5&mode=total&minimums=0",
-    );
+    ).toBe("/players?q=curry&page=2&size=25&sort=lastName&range=last5&mode=total&minimums=0");
   });
 });

@@ -19,7 +19,6 @@ const defaultProps: PlayersPagerProps = {
   q: "",
   page: 1,
   size: 50,
-  includeRetired: false,
   totalPages: 1,
   sort: "firstName",
   dir: "desc",

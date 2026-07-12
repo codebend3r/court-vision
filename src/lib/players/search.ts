@@ -199,9 +199,10 @@ const statSortValue = ({ row, args }: { row: PlayerRow; args: PlayersSearchParam
 };
 
 export const searchPlayers = async (args: PlayersSearchParams): Promise<PlayersSearchResult> => {
-  const { q, page, size, includeRetired, sort, dir, range } = args;
+  const { q, page, size, sort, dir, range } = args;
+  // Retired players (no game logs) are never shown.
   const where: Prisma.PlayerWhereInput = {
-    ...(includeRetired ? {} : { gameLogs: { some: {} } }),
+    gameLogs: { some: {} },
     ...(q === "" ? {} : { fullName: { contains: q, mode: "insensitive" } }),
   };
   const orderBy: Prisma.PlayerOrderByWithRelationInput[] =

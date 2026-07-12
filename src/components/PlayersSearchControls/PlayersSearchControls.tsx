@@ -22,7 +22,6 @@ import styles from "@/components/PlayersSearchControls/PlayersSearchControls.mod
 export type PlayersSearchControlsProps = {
   q: string;
   size: number;
-  includeRetired: boolean;
   sort: PlayerSortKey;
   dir: SortDirection;
   range: PlayerGameRange;
@@ -35,7 +34,6 @@ const DEBOUNCE_MS = 300;
 export function PlayersSearchControls({
   q,
   size,
-  includeRetired,
   sort,
   dir,
   range,
@@ -83,7 +81,6 @@ export function PlayersSearchControls({
           q: trimmed,
           page: 1,
           size,
-          includeRetired,
           sort,
           dir,
           range,
@@ -101,23 +98,6 @@ export function PlayersSearchControls({
         q,
         page: 1,
         size: newSize,
-        includeRetired,
-        sort,
-        dir,
-        range,
-        mode,
-        minimums,
-      }),
-    );
-  };
-
-  const onRetiredChange = () => {
-    navigate(
-      buildPlayersHref({
-        q,
-        page: 1,
-        size,
-        includeRetired: !includeRetired,
         sort,
         dir,
         range,
@@ -134,7 +114,6 @@ export function PlayersSearchControls({
         q,
         page: 1,
         size,
-        includeRetired,
         sort,
         dir,
         range: event.target.value,
@@ -151,7 +130,6 @@ export function PlayersSearchControls({
         q,
         page: 1,
         size,
-        includeRetired,
         sort,
         dir,
         range,
@@ -167,7 +145,6 @@ export function PlayersSearchControls({
         q,
         page: 1,
         size,
-        includeRetired,
         sort,
         dir,
         range,
@@ -199,10 +176,6 @@ export function PlayersSearchControls({
           </option>
         ))}
       </select>
-      <label className={styles.retiredLabel}>
-        <input type="checkbox" checked={includeRetired} onChange={onRetiredChange} />
-        Include retired players
-      </label>
       <label className={styles.filterLabel}>
         Games
         <select

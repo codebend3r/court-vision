@@ -53,7 +53,6 @@ export type PlayersSearchParams = {
   q: string;
   page: number;
   size: number;
-  includeRetired: boolean;
   sort: PlayerSortKey;
   dir: SortDirection;
   range: PlayerGameRange;
@@ -74,7 +73,6 @@ export const parsePlayersSearchParams = (raw: {
   q?: string;
   page?: string;
   size?: string;
-  retired?: string;
   sort?: string;
   dir?: string;
   range?: string;
@@ -92,7 +90,7 @@ export const parsePlayersSearchParams = (raw: {
   const mode: PlayerStatMode = isPlayerStatMode(raw.mode) ? raw.mode : "average";
   // NBA qualifying minimums apply by default; only an explicit 0 disables them.
   const minimums = raw.minimums !== "0";
-  return { q, page, size, includeRetired: raw.retired === "1", sort, dir, range, mode, minimums };
+  return { q, page, size, sort, dir, range, mode, minimums };
 };
 
 export const buildPlayersHref = (args: PlayersSearchParams): string => {
@@ -105,9 +103,6 @@ export const buildPlayersHref = (args: PlayersSearchParams): string => {
   }
   if (args.size !== DEFAULT_PAGE_SIZE) {
     params.set("size", String(args.size));
-  }
-  if (args.includeRetired) {
-    params.set("retired", "1");
   }
   if (args.sort !== DEFAULT_SORT_KEY) {
     params.set("sort", args.sort);

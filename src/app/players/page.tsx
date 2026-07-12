@@ -37,7 +37,6 @@ export default async function PlayersPage({
     q: firstValue(raw.q),
     page: firstValue(raw.page),
     size: firstValue(raw.size),
-    retired: firstValue(raw.retired),
     sort: firstValue(raw.sort),
     dir: firstValue(raw.dir),
     range: firstValue(raw.range),
@@ -77,7 +76,6 @@ export default async function PlayersPage({
       <PlayersSearchControls
         q={params.q}
         size={params.size}
-        includeRetired={params.includeRetired}
         sort={params.sort}
         dir={params.dir}
         range={params.range}
@@ -97,7 +95,6 @@ export default async function PlayersPage({
             q={params.q}
             page={page}
             size={params.size}
-            includeRetired={params.includeRetired}
             totalPages={totalPages}
             sort={params.sort}
             dir={params.dir}
@@ -212,7 +209,6 @@ export default async function PlayersPage({
             q={params.q}
             page={page}
             size={params.size}
-            includeRetired={params.includeRetired}
             totalPages={totalPages}
             sort={params.sort}
             dir={params.dir}
