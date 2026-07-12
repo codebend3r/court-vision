@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
+import { PlayersPager } from "@/components/PlayersPager/PlayersPager";
 import { PlayersSearchControls } from "@/components/PlayersSearchControls/PlayersSearchControls";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { searchPlayers } from "@/lib/players/search";
@@ -74,10 +75,8 @@ export default async function PlayersPage({
       <h1>Players</h1>
       <PlayersSearchControls
         q={params.q}
-        page={page}
         size={params.size}
         includeRetired={params.includeRetired}
-        totalPages={totalPages}
         sort={params.sort}
         dir={params.dir}
         range={params.range}
@@ -91,95 +90,119 @@ export default async function PlayersPage({
           : `Showing ${rangeStart}–${rangeEnd} of ${total}`}
       </p>
       {total > 0 ? (
-        <div className={styles.tableScroller}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                {isStatSort && (
-                  <th className={styles.numeric} title="Rank in the current sort">
-                    #
-                  </th>
-                )}
-                {renderSortableHeader({ label: "First name", sortKey: "firstName" })}
-                {renderSortableHeader({ label: "Last name", sortKey: "lastName" })}
-                <th>Team</th>
-                <th>Position</th>
-                {renderSortableHeader({ label: "PTS", sortKey: "pts" })}
-                {renderSortableHeader({ label: "REB", sortKey: "reb" })}
-                {renderSortableHeader({ label: "AST", sortKey: "ast" })}
-                {renderSortableHeader({ label: "STL", sortKey: "stl" })}
-                {renderSortableHeader({ label: "BLK", sortKey: "blk" })}
-                {renderSortableHeader({ label: "3PM", sortKey: "fg3m" })}
-                {renderSortableHeader({ label: "FG%", sortKey: "fgPct" })}
-                {renderSortableHeader({ label: "FT%", sortKey: "ftPct" })}
-                {renderSortableHeader({ label: "TOV", sortKey: "tov" })}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, index) => {
-                const stats = row.stats ?? row.seasonStats?.[0];
-                const formatCountingStat = (value: number) =>
-                  params.mode === "total"
-                    ? String(value)
-                    : formatPerGame(value, stats?.gamesPlayed ?? 0);
-                return (
-                  <tr key={row.id}>
-                    {isStatSort && (
-                      <td className={`${styles.numeric} ${styles.rank}`}>
-                        {(page - 1) * params.size + index + 1}
+        <>
+          <PlayersPager
+            q={params.q}
+            page={page}
+            size={params.size}
+            includeRetired={params.includeRetired}
+            totalPages={totalPages}
+            sort={params.sort}
+            dir={params.dir}
+            range={params.range}
+            mode={params.mode}
+          />
+          <div className={styles.tableScroller}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  {isStatSort && (
+                    <th className={styles.numeric} title="Rank in the current sort">
+                      #
+                    </th>
+                  )}
+                  {renderSortableHeader({ label: "First name", sortKey: "firstName" })}
+                  {renderSortableHeader({ label: "Last name", sortKey: "lastName" })}
+                  <th>Team</th>
+                  <th>Position</th>
+                  {renderSortableHeader({ label: "PTS", sortKey: "pts" })}
+                  {renderSortableHeader({ label: "REB", sortKey: "reb" })}
+                  {renderSortableHeader({ label: "AST", sortKey: "ast" })}
+                  {renderSortableHeader({ label: "STL", sortKey: "stl" })}
+                  {renderSortableHeader({ label: "BLK", sortKey: "blk" })}
+                  {renderSortableHeader({ label: "3PM", sortKey: "fg3m" })}
+                  {renderSortableHeader({ label: "FG%", sortKey: "fgPct" })}
+                  {renderSortableHeader({ label: "FT%", sortKey: "ftPct" })}
+                  {renderSortableHeader({ label: "TOV", sortKey: "tov" })}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, index) => {
+                  const stats = row.stats ?? row.seasonStats?.[0];
+                  const formatCountingStat = (value: number) =>
+                    params.mode === "total"
+                      ? String(value)
+                      : formatPerGame(value, stats?.gamesPlayed ?? 0);
+                  return (
+                    <tr key={row.id}>
+                      {isStatSort && (
+                        <td className={`${styles.numeric} ${styles.rank}`}>
+                          {(page - 1) * params.size + index + 1}
+                        </td>
+                      )}
+                      <td>
+                        <span className={styles.nameCell}>
+                          <PlayerAvatar
+                            fullName={row.fullName}
+                            nbaPersonId={row.nbaPersonId}
+                            size="sm"
+                            teamAbbr={row.teamAbbr}
+                          />
+                          <Link href={`/players/${row.id}`}>{row.firstName}</Link>
+                        </span>
                       </td>
-                    )}
-                    <td>
-                      <span className={styles.nameCell}>
-                        <PlayerAvatar
-                          fullName={row.fullName}
-                          nbaPersonId={row.nbaPersonId}
-                          size="sm"
-                          teamAbbr={row.teamAbbr}
-                        />
-                        <Link href={`/players/${row.id}`}>{row.firstName}</Link>
-                      </span>
-                    </td>
-                    <td>
-                      <Link href={`/players/${row.id}`}>{row.lastName}</Link>
-                    </td>
-                    <td>
-                      {row.teamAbbr === null ? "—" : <TeamChip team={row.teamAbbr} size="sm" />}
-                    </td>
-                    <td>{row.position ?? "—"}</td>
-                    <td className={styles.numeric}>
-                      {stats ? formatCountingStat(stats.pts) : "—"}
-                    </td>
-                    <td className={styles.numeric}>
-                      {stats ? formatCountingStat(stats.reb) : "—"}
-                    </td>
-                    <td className={styles.numeric}>
-                      {stats ? formatCountingStat(stats.ast) : "—"}
-                    </td>
-                    <td className={styles.numeric}>
-                      {stats ? formatCountingStat(stats.stl) : "—"}
-                    </td>
-                    <td className={styles.numeric}>
-                      {stats ? formatCountingStat(stats.blk) : "—"}
-                    </td>
-                    <td className={styles.numeric}>
-                      {stats ? formatCountingStat(stats.fg3m) : "—"}
-                    </td>
-                    <td className={styles.numeric}>
-                      {stats ? formatPercentage(stats.fgm, stats.fga) : "—"}
-                    </td>
-                    <td className={styles.numeric}>
-                      {stats ? formatPercentage(stats.ftm, stats.fta) : "—"}
-                    </td>
-                    <td className={styles.numeric}>
-                      {stats ? formatCountingStat(stats.tov) : "—"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      <td>
+                        <Link href={`/players/${row.id}`}>{row.lastName}</Link>
+                      </td>
+                      <td>
+                        {row.teamAbbr === null ? "—" : <TeamChip team={row.teamAbbr} size="sm" />}
+                      </td>
+                      <td>{row.position ?? "—"}</td>
+                      <td className={styles.numeric}>
+                        {stats ? formatCountingStat(stats.pts) : "—"}
+                      </td>
+                      <td className={styles.numeric}>
+                        {stats ? formatCountingStat(stats.reb) : "—"}
+                      </td>
+                      <td className={styles.numeric}>
+                        {stats ? formatCountingStat(stats.ast) : "—"}
+                      </td>
+                      <td className={styles.numeric}>
+                        {stats ? formatCountingStat(stats.stl) : "—"}
+                      </td>
+                      <td className={styles.numeric}>
+                        {stats ? formatCountingStat(stats.blk) : "—"}
+                      </td>
+                      <td className={styles.numeric}>
+                        {stats ? formatCountingStat(stats.fg3m) : "—"}
+                      </td>
+                      <td className={styles.numeric}>
+                        {stats ? formatPercentage(stats.fgm, stats.fga) : "—"}
+                      </td>
+                      <td className={styles.numeric}>
+                        {stats ? formatPercentage(stats.ftm, stats.fta) : "—"}
+                      </td>
+                      <td className={styles.numeric}>
+                        {stats ? formatCountingStat(stats.tov) : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <PlayersPager
+            q={params.q}
+            page={page}
+            size={params.size}
+            includeRetired={params.includeRetired}
+            totalPages={totalPages}
+            sort={params.sort}
+            dir={params.dir}
+            range={params.range}
+            mode={params.mode}
+          />
+        </>
       ) : null}
     </main>
   );

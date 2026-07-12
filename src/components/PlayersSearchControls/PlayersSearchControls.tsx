@@ -19,10 +19,8 @@ import styles from "@/components/PlayersSearchControls/PlayersSearchControls.mod
 
 export type PlayersSearchControlsProps = {
   q: string;
-  page: number;
   size: number;
   includeRetired: boolean;
-  totalPages: number;
   sort: PlayerSortKey;
   dir: SortDirection;
   range: PlayerGameRange;
@@ -33,10 +31,8 @@ const DEBOUNCE_MS = 300;
 
 export function PlayersSearchControls({
   q,
-  page,
   size,
   includeRetired,
-  totalPages,
   sort,
   dir,
   range,
@@ -104,14 +100,6 @@ export function PlayersSearchControls({
         mode,
       }),
     );
-  };
-
-  const onPrev = () => {
-    navigate(buildPlayersHref({ q, page: page - 1, size, includeRetired, sort, dir, range, mode }));
-  };
-
-  const onNext = () => {
-    navigate(buildPlayersHref({ q, page: page + 1, size, includeRetired, sort, dir, range, mode }));
   };
 
   const onRangeChange = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -200,22 +188,6 @@ export function PlayersSearchControls({
           <option value="total">Totals</option>
         </select>
       </label>
-      <div className={styles.pager}>
-        <button type="button" onClick={onPrev} disabled={page <= 1} className={styles.pagerButton}>
-          Previous
-        </button>
-        <span>
-          Page {page} of {totalPages}
-        </span>
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={page >= totalPages}
-          className={styles.pagerButton}
-        >
-          Next
-        </button>
-      </div>
     </section>
   );
 }

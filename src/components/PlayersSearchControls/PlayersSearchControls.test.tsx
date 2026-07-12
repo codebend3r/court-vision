@@ -25,10 +25,8 @@ afterEach(() => {
 
 const defaultProps: PlayersSearchControlsProps = {
   q: "",
-  page: 1,
   size: 50,
   includeRetired: false,
-  totalPages: 1,
   sort: "firstName",
   dir: "desc",
   range: "all",
@@ -81,7 +79,7 @@ describe("PlayersSearchControls", () => {
   });
 
   it("navigates immediately on size change, resetting page to 1", () => {
-    render(<PlayersSearchControls {...defaultProps} page={3} />);
+    render(<PlayersSearchControls {...defaultProps} />);
 
     const select = screen.getByLabelText("Page size");
     fireEvent.change(select, { target: { value: "25" } });
@@ -100,24 +98,6 @@ describe("PlayersSearchControls", () => {
     expect(replace).toHaveBeenCalledWith("/players?q=cur&size=25&retired=1");
   });
 
-  it("navigates to the next page, preserving size", () => {
-    render(<PlayersSearchControls {...defaultProps} page={2} size={25} totalPages={3} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Next" }));
-
-    expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith("/players?page=3&size=25");
-  });
-
-  it("preserves a non-default sort and dir on navigation", () => {
-    render(<PlayersSearchControls {...defaultProps} sort="lastName" dir="asc" totalPages={3} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Next" }));
-
-    expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith("/players?page=2&sort=lastName&dir=asc");
-  });
-
   it("changes the game range and stat display while preserving the other filter", () => {
     const { rerender } = render(<PlayersSearchControls {...defaultProps} mode="total" />);
 
@@ -127,18 +107,6 @@ describe("PlayersSearchControls", () => {
     rerender(<PlayersSearchControls {...defaultProps} range="last20" />);
     fireEvent.change(screen.getByLabelText("Stat display"), { target: { value: "total" } });
     expect(replace).toHaveBeenLastCalledWith("/players?range=last20&mode=total");
-  });
-
-  it("disables the Previous button on the first page", () => {
-    render(<PlayersSearchControls {...defaultProps} page={1} totalPages={3} />);
-
-    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
-  });
-
-  it("disables the Next button on the last page", () => {
-    render(<PlayersSearchControls {...defaultProps} page={3} totalPages={3} />);
-
-    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
   });
 
   it("cancels a pending debounce timer on unmount", () => {
@@ -172,7 +140,7 @@ describe("PlayersSearchControls", () => {
     expect(replace).toHaveBeenCalledTimes(0);
   });
 
-  it("cancels pending debounce timer on immediate navigation (size, retired, pager)", () => {
+  it("cancels pending debounce timer on immediate navigation (size, retired)", () => {
     render(<PlayersSearchControls {...defaultProps} />);
 
     const input = screen.getByLabelText("Search players");
