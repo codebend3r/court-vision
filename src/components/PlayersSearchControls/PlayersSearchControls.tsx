@@ -8,7 +8,6 @@ import {
   isPlayerGameRange,
   isPlayerStatMode,
   MAX_QUERY_LENGTH,
-  PAGE_SIZES,
   type PlayerSortKey,
   type PlayerGameRange,
   type PlayerStatMode,
@@ -91,22 +90,6 @@ export function PlayersSearchControls({
     }, DEBOUNCE_MS);
   };
 
-  const onSizeChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const newSize = Number.parseInt(event.target.value, 10);
-    navigate(
-      buildPlayersHref({
-        q,
-        page: 1,
-        size: newSize,
-        sort,
-        dir,
-        range,
-        mode,
-        minimums,
-      }),
-    );
-  };
-
   const onRangeChange = (event: ChangeEvent<HTMLSelectElement>) => {
     if (!isPlayerGameRange(event.target.value)) return;
     navigate(
@@ -169,13 +152,6 @@ export function PlayersSearchControls({
         maxLength={MAX_QUERY_LENGTH}
         className={styles.search}
       />
-      <select value={size} onChange={onSizeChange} aria-label="Page size" className={styles.select}>
-        {PAGE_SIZES.map((pageSize) => (
-          <option key={pageSize} value={pageSize}>
-            {pageSize}
-          </option>
-        ))}
-      </select>
       <label className={styles.filterLabel}>
         Games
         <select

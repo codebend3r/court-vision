@@ -66,4 +66,20 @@ describe("PlayersPager", () => {
 
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
   });
+
+  it("changes the page size and resets to page 1, preserving other filters", () => {
+    render(<PlayersPager {...defaultProps} page={4} range="last20" totalPages={9} />);
+
+    fireEvent.change(screen.getByLabelText("Page size"), { target: { value: "25" } });
+
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledWith("/players?size=25&range=last20");
+  });
+
+  it("labels the page size control", () => {
+    render(<PlayersPager {...defaultProps} size={25} />);
+
+    const select = screen.getByLabelText("Page size");
+    expect(select).toHaveValue("25");
+  });
 });

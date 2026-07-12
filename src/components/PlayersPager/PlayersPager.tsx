@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { ChangeEvent, useTransition } from "react";
 
 import {
   buildPlayersHref,
+  PAGE_SIZES,
   type PlayerGameRange,
   type PlayerSortKey,
   type PlayerStatMode,
@@ -39,13 +40,13 @@ export function PlayersPager({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const goTo = ({ nextPage }: { nextPage: number }) => {
+  const goTo = ({ nextPage, nextSize }: { nextPage: number; nextSize?: number }) => {
     startTransition(() => {
       router.replace(
         buildPlayersHref({
           q,
           page: nextPage,
-          size,
+          size: nextSize ?? size,
           sort,
           dir,
           range,
@@ -56,6 +57,11 @@ export function PlayersPager({
     });
   };
 
+  const onSizeChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    // A larger or smaller page reshuffles the rows, so return to page 1.
+    goTo({ nextPage: 1, nextSize: Number.parseInt(event.target.value, 10) });
+  };
+
   return (
     <nav
       className={styles.pager}
@@ -63,6 +69,16 @@ export function PlayersPager({
       data-pending={isPending ? "true" : "false"}
       aria-busy={isPending}
     >
+      <label className={styles.sizeLabel}>
+        Page size
+        <select value={size} onChange={onSizeChange} className={styles.select}>
+          {PAGE_SIZES.map((pageSize) => (
+            <option key={pageSize} value={pageSize}>
+              {pageSize}
+            </option>
+          ))}
+        </select>
+      </label>
       <button
         type="button"
         onClick={() => goTo({ nextPage: page - 1 })}

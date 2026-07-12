@@ -78,16 +78,6 @@ describe("PlayersSearchControls", () => {
     expect(replace).toHaveBeenCalledTimes(0);
   });
 
-  it("navigates immediately on size change, resetting page to 1", () => {
-    render(<PlayersSearchControls {...defaultProps} />);
-
-    const select = screen.getByLabelText("Page size");
-    fireEvent.change(select, { target: { value: "25" } });
-
-    expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith("/players?size=25");
-  });
-
   it("changes the game range and stat display while preserving the other filter", () => {
     const { rerender } = render(<PlayersSearchControls {...defaultProps} mode="total" />);
 
@@ -148,23 +138,23 @@ describe("PlayersSearchControls", () => {
     expect(replace).toHaveBeenCalledTimes(0);
   });
 
-  it("cancels pending debounce timer on immediate navigation (size)", () => {
+  it("cancels pending debounce timer on immediate navigation (game range)", () => {
     render(<PlayersSearchControls {...defaultProps} />);
 
     const input = screen.getByLabelText("Search players");
-    const select = screen.getByLabelText("Page size");
+    const select = screen.getByLabelText("Game range");
 
     // Type "cur" — debounce timer is pending.
     fireEvent.change(input, { target: { value: "cur" } });
 
-    // Immediately change size (before timer fires). This should cancel the pending timer.
-    fireEvent.change(select, { target: { value: "25" } });
+    // Immediately change the range (before timer fires). This cancels the pending timer.
+    fireEvent.change(select, { target: { value: "last20" } });
 
     // Advance 300ms. The pending debounce should have been cancelled,
-    // so replace should be called exactly ONCE (the size navigation).
+    // so replace should be called exactly ONCE (the range navigation).
     advance(300);
 
     expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith("/players?size=25");
+    expect(replace).toHaveBeenCalledWith("/players?range=last20");
   });
 });
