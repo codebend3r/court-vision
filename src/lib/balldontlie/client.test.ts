@@ -70,4 +70,37 @@ describe("bdlFetch", () => {
     ).rejects.toThrow(/failed \(500\)/);
     expect(fetchImpl).toHaveBeenCalledTimes(3);
   });
+
+  it("retries a 200 with a truncated body, then resolves", async () => {
+    const truncated = new Response("", {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(truncated)
+      .mockResolvedValueOnce(jsonResponse({ data: [7] }));
+    const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
+    const result = await bdlFetch({ endpoint: "teams", apiKey: "k", fetchImpl, sleep });
+    expect(result).toEqual({ data: [7] });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenCalledTimes(1);
+  });
+
+  it("throws after exhausting retries on an unparseable body", async () => {
+    // A Response body can only be read once, so hand back a fresh one per call,
+    // the way a real fetch does.
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementation(() =>
+        Promise.resolve(
+          new Response("", { status: 200, headers: { "content-type": "application/json" } }),
+        ),
+      );
+    const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
+    await expect(
+      bdlFetch({ endpoint: "teams", apiKey: "k", fetchImpl, sleep, maxRetries: 2 }),
+    ).rejects.toThrow(/unparseable body/);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+  });
 });
