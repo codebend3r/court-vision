@@ -1,10 +1,12 @@
 import { bdlFetch, BdlParamValue } from "@/lib/balldontlie/client";
 import { PER_PAGE, SEASON_YEAR, THROTTLE_MS } from "@/lib/balldontlie/constants";
 import {
+  BdlAdvancedStat,
   BdlGame,
   BdlPlayer,
   BdlStat,
   BdlTeam,
+  bdlAdvancedStatSchema,
   bdlGameRowSchema,
   bdlPage,
   bdlPaginatedPage,
@@ -72,6 +74,52 @@ export const fetchAllStats = async (deps: BdlClientDeps = {}): Promise<BdlStat[]
     const next = page.meta.next_cursor ?? null;
     onPage({
       endpoint: "stats",
+      page: pageNumber,
+      pageRows: page.data.length,
+      totalRows: combined.length,
+      nextCursor: next,
+    });
+    if (next === null) {
+      return combined;
+    }
+    await sleep(THROTTLE_MS);
+    return loadPage(next, combined, pageNumber + 1);
+  };
+
+  return loadPage(null, [], 1);
+};
+
+export const fetchAllAdvancedStats = async (
+  deps: BdlClientDeps = {},
+): Promise<BdlAdvancedStat[]> => {
+  const sleep = deps.sleep ?? defaultSleep;
+  const onPage = deps.onPage ?? noopOnPage;
+  const pageSchema = bdlPaginatedPage(bdlAdvancedStatSchema);
+
+  const loadPage = async (
+    cursor: number | null,
+    acc: BdlAdvancedStat[],
+    pageNumber: number,
+  ): Promise<BdlAdvancedStat[]> => {
+    const cursorParam: Record<string, BdlParamValue> =
+      cursor === null ? {} : { cursor: String(cursor) };
+    const raw = await bdlFetch({
+      endpoint: "stats/advanced",
+      params: {
+        seasons: [SEASON_YEAR],
+        postseason: "false",
+        per_page: PER_PAGE,
+        ...cursorParam,
+      },
+      apiKey: deps.apiKey,
+      fetchImpl: deps.fetchImpl,
+      sleep: deps.sleep,
+    });
+    const page = pageSchema.parse(raw);
+    const combined = acc.concat(page.data);
+    const next = page.meta.next_cursor ?? null;
+    onPage({
+      endpoint: "stats/advanced",
       page: pageNumber,
       pageRows: page.data.length,
       totalRows: combined.length,

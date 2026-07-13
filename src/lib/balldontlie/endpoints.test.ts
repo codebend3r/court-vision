@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { fetchAllStats, fetchTeams } from "@/lib/balldontlie/endpoints";
+import { fetchAllAdvancedStats, fetchAllStats, fetchTeams } from "@/lib/balldontlie/endpoints";
 
 const jsonResponse = (body: unknown): Response =>
   new Response(JSON.stringify(body), {
@@ -110,6 +110,95 @@ describe("fetchAllStats", () => {
       totalRows: 2,
       nextCursor: null,
     });
+  });
+});
+
+const advancedRow = (id: number, playerId: number) => ({
+  id,
+  pie: 0.15,
+  pace: 98.4,
+  assist_percentage: 21.3,
+  assist_ratio: 18.9,
+  assist_to_turnover: 2.1,
+  defensive_rating: 108.2,
+  defensive_rebound_percentage: 14.5,
+  effective_field_goal_percentage: 0.556,
+  net_rating: 6.4,
+  offensive_rating: 114.6,
+  offensive_rebound_percentage: 3.1,
+  rebound_percentage: 8.8,
+  true_shooting_percentage: 0.612,
+  turnover_ratio: 9.2,
+  usage_percentage: 28.7,
+  player: { id: playerId, first_name: "Test", last_name: "Player", team_id: 10 },
+  team: { id: 10, abbreviation: "GSW" },
+  game: {
+    id: 900 + id,
+    date: "2025-10-22",
+    season: 2025,
+    home_team_id: 10,
+    visitor_team_id: 2,
+    home_team_score: 112,
+    visitor_team_score: 108,
+    postseason: false,
+  },
+});
+
+describe("fetchAllAdvancedStats", () => {
+  it("requests /stats/advanced, follows the cursor, throttles, and concatenates", async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ data: [advancedRow(1, 10)], meta: { next_cursor: 2 } }))
+      .mockResolvedValueOnce(jsonResponse({ data: [advancedRow(2, 11)], meta: {} }));
+    const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
+
+    const stats = await fetchAllAdvancedStats({ apiKey: "k", fetchImpl, sleep });
+
+    expect(stats).toHaveLength(2);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenCalledTimes(1);
+    const firstUrl = fetchImpl.mock.calls[0]?.[0]?.toString() ?? "";
+    const secondUrl = fetchImpl.mock.calls[1]?.[0]?.toString() ?? "";
+    expect(firstUrl).toContain("/stats/advanced?");
+    expect(firstUrl).toContain("seasons[]=2025");
+    expect(firstUrl).toContain("postseason=false");
+    expect(firstUrl).not.toContain("cursor=");
+    expect(secondUrl).toContain("cursor=2");
+  });
+
+  it("reports per-page progress through onPage with the stats/advanced label", async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ data: [advancedRow(1, 10)], meta: { next_cursor: 2 } }))
+      .mockResolvedValueOnce(jsonResponse({ data: [advancedRow(2, 11)], meta: {} }));
+    const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
+    const onPage = vi.fn();
+
+    await fetchAllAdvancedStats({ apiKey: "k", fetchImpl, sleep, onPage });
+
+    expect(onPage).toHaveBeenCalledTimes(2);
+    expect(onPage).toHaveBeenNthCalledWith(1, {
+      endpoint: "stats/advanced",
+      page: 1,
+      pageRows: 1,
+      totalRows: 1,
+      nextCursor: 2,
+    });
+    expect(onPage).toHaveBeenNthCalledWith(2, {
+      endpoint: "stats/advanced",
+      page: 2,
+      pageRows: 1,
+      totalRows: 2,
+      nextCursor: null,
+    });
+  });
+
+  it("rejects a page response missing meta entirely", async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(jsonResponse({ data: [advancedRow(1, 10)] }));
+
+    await expect(fetchAllAdvancedStats({ apiKey: "k", fetchImpl })).rejects.toThrow();
   });
 });
 

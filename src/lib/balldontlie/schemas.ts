@@ -107,6 +107,36 @@ export const bdlStatSchema = z.object({
 
 export type BdlStat = z.infer<typeof bdlStatSchema>;
 
+// `/v1/stats/advanced` rows carry per-game advanced metrics alongside the same
+// nested player/team/game objects as `/v1/stats`. The nested game uses the flat
+// `home_team_id`/`visitor_team_id` shape (`bdlGameSchema`), and the extra keys
+// BDL sends on the nested team/game (conference, status, ist_stage, ...) are
+// stripped by Zod. Every metric is nullable: BDL returns `null` for players who
+// logged no minutes, so a required number would fail the whole page mid-run.
+export const bdlAdvancedStatSchema = z.object({
+  id: z.number(),
+  pie: z.number().nullable(),
+  pace: z.number().nullable(),
+  assist_percentage: z.number().nullable(),
+  assist_ratio: z.number().nullable(),
+  assist_to_turnover: z.number().nullable(),
+  defensive_rating: z.number().nullable(),
+  defensive_rebound_percentage: z.number().nullable(),
+  effective_field_goal_percentage: z.number().nullable(),
+  net_rating: z.number().nullable(),
+  offensive_rating: z.number().nullable(),
+  offensive_rebound_percentage: z.number().nullable(),
+  rebound_percentage: z.number().nullable(),
+  true_shooting_percentage: z.number().nullable(),
+  turnover_ratio: z.number().nullable(),
+  usage_percentage: z.number().nullable(),
+  player: bdlNestedPlayerSchema,
+  team: bdlNestedTeamSchema,
+  game: bdlGameSchema,
+});
+
+export type BdlAdvancedStat = z.infer<typeof bdlAdvancedStatSchema>;
+
 // `/v1/teams` is a single-page endpoint whose live response omits `meta`
 // entirely, so this envelope keeps `meta` optional. Do NOT reuse it for
 // cursor-paginated endpoints — see `bdlPaginatedPage` below.
