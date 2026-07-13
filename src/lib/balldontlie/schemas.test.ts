@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  bdlAdvancedStatSchema,
   bdlPage,
   bdlPaginatedPage,
   bdlPlayerSchema,
@@ -103,6 +104,95 @@ describe("bdlStatSchema", () => {
   it("rejects a row missing the game object", () => {
     const withoutGame = { ...statRow, game: undefined };
     expect(() => bdlStatSchema.parse(withoutGame)).toThrow();
+  });
+});
+
+const advancedStatRow = {
+  id: 15531179,
+  pie: 0.152,
+  pace: 98.4,
+  assist_percentage: 21.3,
+  assist_ratio: 18.9,
+  assist_to_turnover: 2.1,
+  defensive_rating: 108.2,
+  defensive_rebound_percentage: 14.5,
+  effective_field_goal_percentage: 0.556,
+  net_rating: 6.4,
+  offensive_rating: 114.6,
+  offensive_rebound_percentage: 3.1,
+  rebound_percentage: 8.8,
+  true_shooting_percentage: 0.612,
+  turnover_ratio: 9.2,
+  usage_percentage: 28.7,
+  player: {
+    id: 115,
+    first_name: "Stephen",
+    last_name: "Curry",
+    position: "G",
+    height: "6-2",
+    weight: "185",
+    jersey_number: "30",
+    college: "Davidson",
+    country: "USA",
+    draft_year: 2009,
+    draft_round: 1,
+    draft_number: 7,
+    team_id: 10,
+  },
+  team: {
+    id: 10,
+    conference: "West",
+    division: "Pacific",
+    city: "Golden State",
+    name: "Warriors",
+    full_name: "Golden State Warriors",
+    abbreviation: "GSW",
+  },
+  game: {
+    id: 18422,
+    date: "2025-10-22",
+    season: 2025,
+    status: "Final",
+    period: 4,
+    time: "",
+    postseason: false,
+    postponed: false,
+    home_team_score: 112,
+    visitor_team_score: 108,
+    home_team_id: 10,
+    visitor_team_id: 2,
+    ist_stage: null,
+  },
+};
+
+describe("bdlAdvancedStatSchema", () => {
+  it("parses an advanced row and strips extra nested keys", () => {
+    const parsed = bdlAdvancedStatSchema.parse(advancedStatRow);
+    expect(parsed.pie).toBe(0.152);
+    expect(parsed.usage_percentage).toBe(28.7);
+    expect(parsed.player.id).toBe(115);
+    expect(parsed.team.abbreviation).toBe("GSW");
+    expect(parsed.game.home_team_id).toBe(10);
+    // extra nested fields (conference, status, ...) are dropped by Zod
+    expect(parsed.team).not.toHaveProperty("conference");
+    expect(parsed.game).not.toHaveProperty("status");
+  });
+
+  it("accepts null metric values for players who logged no minutes", () => {
+    const nulled = {
+      ...advancedStatRow,
+      pie: null,
+      pace: null,
+      offensive_rating: null,
+      usage_percentage: null,
+    };
+    const parsed = bdlAdvancedStatSchema.parse(nulled);
+    expect(parsed.pie).toBeNull();
+    expect(parsed.usage_percentage).toBeNull();
+  });
+
+  it("rejects a row missing the game object", () => {
+    expect(() => bdlAdvancedStatSchema.parse({ ...advancedStatRow, game: undefined })).toThrow();
   });
 });
 

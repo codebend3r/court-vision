@@ -58,7 +58,9 @@ export async function seedDemo(deps: BdlClientDeps = {}): Promise<SyncSummary> {
 
   const gameLogs = await upsertGameLogs(gameLogInputs);
   const seasonStats = await upsertSeasonStats(aggregateSeasonStats(gameLogInputs));
-  return { players, seasonStats, gameLogs };
+  // The demo seed generates box scores only; advanced metrics come from the
+  // Balldontlie sync.
+  return { players, seasonStats, gameLogs, advancedGameLogs: 0 };
 }
 
 if (isMainModule({ moduleUrl: import.meta.url })) {

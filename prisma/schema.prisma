@@ -33,6 +33,7 @@ model Player {
   draftNumber  Int?
   seasonStats  PlayerSeasonStats[]
   gameLogs     PlayerGameLog[]
+  advancedGameLogs PlayerAdvancedGameLog[]
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
 }
@@ -109,5 +110,39 @@ model PlayerGameLog {
 
   @@unique([playerId, gameId])
   @@index([gameDate])
+  @@index([playerId, gameDate])
+}
+
+// Per-game advanced metrics from Balldontlie's /v1/stats/advanced. Kept in
+// its own table (same [playerId, gameId] identity as PlayerGameLog) so the
+// advanced sync can replace seasons independently of box-score logs. Metrics
+// are nullable: BDL returns null for players who logged no minutes.
+model PlayerAdvancedGameLog {
+  id                           String   @id @default(cuid())
+  player                       Player   @relation(fields: [playerId], references: [id])
+  playerId                     Int
+  gameId                       String
+  gameDate                     DateTime
+  season                       String
+  seasonType                   String
+  teamId                       Int
+  teamAbbr                     String
+  pie                          Float?
+  pace                         Float?
+  assistPercentage             Float?
+  assistRatio                  Float?
+  assistToTurnover             Float?
+  defensiveRating              Float?
+  defensiveReboundPercentage   Float?
+  effectiveFieldGoalPercentage Float?
+  netRating                    Float?
+  offensiveRating              Float?
+  offensiveReboundPercentage   Float?
+  reboundPercentage            Float?
+  trueShootingPercentage       Float?
+  turnoverRatio                Float?
+  usagePercentage              Float?
+
+  @@unique([playerId, gameId])
   @@index([playerId, gameDate])
 }
