@@ -6,12 +6,13 @@ import {
   aggregateSeasonStats,
   parseHeightInches,
   parseWeightLbs,
+  toAdvancedGameLogInput,
   toGameLogInput,
   toPlayerInputs,
   toPlayerInput,
   deriveGameContext,
 } from "./transform";
-import { BdlStat } from "@/lib/balldontlie/schemas";
+import { BdlAdvancedStat, BdlStat } from "@/lib/balldontlie/schemas";
 
 const teamAbbrById = new Map<number, string>([
   [10, "GSW"],
@@ -182,6 +183,15 @@ describe("toGameLogInput", () => {
     expect(log.matchup).toBe("GSW @ BOS");
     expect(log.winLoss).toBe("L");
   });
+
+  it("derives the season label from the row's game, not a constant", () => {
+    const historic: BdlStat = {
+      ...homeStat,
+      game: { ...homeStat.game, id: 777, date: "2020-12-22", season: 2020 },
+    };
+    const log = toGameLogInput({ stat: historic, teamAbbrById });
+    expect(log.season).toBe("2020-21");
+  });
 });
 
 describe("aggregateSeasonStats", () => {
@@ -218,6 +228,100 @@ describe("aggregateSeasonStats", () => {
     // Totals and minutes still include the DNP (which contributes zeros).
     expect(season.pts).toBe(49);
     expect(season.minutes).toBe(68);
+  });
+});
+
+describe("aggregateSeasonStats across seasons", () => {
+  it("keeps one row per player per season", () => {
+    const current = toGameLogInput({ stat: homeStat, teamAbbrById });
+    const historic = toGameLogInput({
+      stat: {
+        ...awayStat,
+        game: { ...awayStat.game, id: 777, date: "2020-12-22", season: 2020 },
+      },
+      teamAbbrById,
+    });
+    const rows = aggregateSeasonStats([current, historic]);
+    expect(rows).toHaveLength(2);
+    const seasons = rows.map((row) => row.season).sort();
+    expect(seasons).toEqual(["2020-21", "2025-26"]);
+    expect(rows.every((row) => row.playerId === 115)).toBe(true);
+  });
+});
+
+describe("toAdvancedGameLogInput", () => {
+  const advancedStat: BdlAdvancedStat = {
+    id: 50,
+    pie: 0.152,
+    pace: 98.4,
+    assist_percentage: 21.3,
+    assist_ratio: 18.9,
+    assist_to_turnover: 2.1,
+    defensive_rating: 108.2,
+    defensive_rebound_percentage: 14.5,
+    effective_field_goal_percentage: 0.556,
+    net_rating: 6.4,
+    offensive_rating: 114.6,
+    offensive_rebound_percentage: 3.1,
+    rebound_percentage: 8.8,
+    true_shooting_percentage: 0.612,
+    turnover_ratio: 9.2,
+    usage_percentage: 28.7,
+    player: {
+      id: 115,
+      first_name: "Stephen",
+      last_name: "Curry",
+      position: "G",
+      jersey_number: "30",
+      team_id: 10,
+    },
+    team: { id: 10, abbreviation: "GSW" },
+    game: {
+      id: 18422,
+      date: "2020-12-22",
+      season: 2020,
+      home_team_id: 10,
+      visitor_team_id: 2,
+      home_team_score: 112,
+      visitor_team_score: 108,
+      postseason: false,
+    },
+  };
+
+  it("maps identity, season, and camel-cased metrics", () => {
+    const input = toAdvancedGameLogInput({ stat: advancedStat });
+    expect(input).toMatchObject({
+      playerId: 115,
+      gameId: "18422",
+      season: "2020-21",
+      seasonType: "Regular Season",
+      teamId: 10,
+      teamAbbr: "GSW",
+      pie: 0.152,
+      pace: 98.4,
+      assistPercentage: 21.3,
+      assistRatio: 18.9,
+      assistToTurnover: 2.1,
+      defensiveRating: 108.2,
+      defensiveReboundPercentage: 14.5,
+      effectiveFieldGoalPercentage: 0.556,
+      netRating: 6.4,
+      offensiveRating: 114.6,
+      offensiveReboundPercentage: 3.1,
+      reboundPercentage: 8.8,
+      trueShootingPercentage: 0.612,
+      turnoverRatio: 9.2,
+      usagePercentage: 28.7,
+    });
+    expect(input.gameDate.toISOString()).toBe("2020-12-22T00:00:00.000Z");
+  });
+
+  it("passes null metrics through", () => {
+    const input = toAdvancedGameLogInput({
+      stat: { ...advancedStat, pie: null, usage_percentage: null },
+    });
+    expect(input.pie).toBeNull();
+    expect(input.usagePercentage).toBeNull();
   });
 });
 

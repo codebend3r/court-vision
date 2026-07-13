@@ -2,14 +2,28 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { prisma } from "@/lib/prisma";
 
-import { GameLogInput, PlayerInput, SeasonStatsInput } from "@/lib/stats/inputs";
-import { upsertGameLogs, upsertPlayers, upsertSeasonStats } from "@/lib/stats/persist";
+import {
+  AdvancedGameLogInput,
+  GameLogInput,
+  PlayerInput,
+  SeasonStatsInput,
+} from "@/lib/stats/inputs";
+import {
+  upsertAdvancedGameLogs,
+  upsertGameLogs,
+  upsertPlayers,
+  upsertSeasonStats,
+} from "@/lib/stats/persist";
 
 vi.mock("@/lib/prisma", () => {
   const client = {
     player: { upsert: vi.fn() },
     playerSeasonStats: { upsert: vi.fn() },
     playerGameLog: {
+      deleteMany: vi.fn(() => Promise.resolve({ count: 0 })),
+      createMany: vi.fn(() => Promise.resolve({ count: 0 })),
+    },
+    playerAdvancedGameLog: {
       deleteMany: vi.fn(() => Promise.resolve({ count: 0 })),
       createMany: vi.fn(() => Promise.resolve({ count: 0 })),
     },
@@ -176,6 +190,56 @@ describe("upsertGameLogs", () => {
     expect(count).toBe(0);
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(prisma.playerGameLog.deleteMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("upsertAdvancedGameLogs", () => {
+  const baseAdvancedLog: AdvancedGameLogInput = {
+    playerId: 201939,
+    gameId: "base",
+    gameDate: new Date("2020-12-22T00:00:00Z"),
+    season: "2020-21",
+    seasonType: "Regular Season",
+    teamId: 1610612744,
+    teamAbbr: "GSW",
+    pie: 0.152,
+    pace: 98.4,
+    assistPercentage: 21.3,
+    assistRatio: 18.9,
+    assistToTurnover: 2.1,
+    defensiveRating: 108.2,
+    defensiveReboundPercentage: 14.5,
+    effectiveFieldGoalPercentage: 0.556,
+    netRating: 6.4,
+    offensiveRating: 114.6,
+    offensiveReboundPercentage: 3.1,
+    reboundPercentage: 8.8,
+    trueShootingPercentage: 0.612,
+    turnoverRatio: 9.2,
+    usagePercentage: 28.7,
+  };
+
+  it("replaces a season's advanced logs with chunked inserts in one transaction", async () => {
+    const logs = Array.from({ length: 1500 }, (_, index) => ({
+      ...baseAdvancedLog,
+      gameId: `game-${index}`,
+      playerId: index,
+    }));
+
+    const count = await upsertAdvancedGameLogs(logs);
+
+    expect(count).toBe(1500);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.playerAdvancedGameLog.deleteMany).toHaveBeenCalledWith({
+      where: { OR: [{ season: "2020-21", seasonType: "Regular Season" }] },
+    });
+    expect(prisma.playerAdvancedGameLog.createMany).toHaveBeenCalledTimes(2);
+  });
+
+  it("does no work when there are no rows", async () => {
+    const count = await upsertAdvancedGameLogs([]);
+    expect(count).toBe(0);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 });
 

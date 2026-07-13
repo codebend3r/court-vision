@@ -39,6 +39,31 @@ export type SeasonStatsInput = {
   pts: number;
 };
 
+export type AdvancedGameLogInput = {
+  playerId: number;
+  gameId: string;
+  gameDate: Date;
+  season: string;
+  seasonType: string;
+  teamId: number;
+  teamAbbr: string;
+  pie: number | null;
+  pace: number | null;
+  assistPercentage: number | null;
+  assistRatio: number | null;
+  assistToTurnover: number | null;
+  defensiveRating: number | null;
+  defensiveReboundPercentage: number | null;
+  effectiveFieldGoalPercentage: number | null;
+  netRating: number | null;
+  offensiveRating: number | null;
+  offensiveReboundPercentage: number | null;
+  reboundPercentage: number | null;
+  trueShootingPercentage: number | null;
+  turnoverRatio: number | null;
+  usagePercentage: number | null;
+};
+
 export type GameLogInput = {
   playerId: number;
   gameId: string;

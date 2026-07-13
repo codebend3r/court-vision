@@ -24,7 +24,9 @@ export async function syncNba(deps: NbaClientDeps = {}): Promise<SyncSummary> {
     return runningTotal + written;
   }, Promise.resolve(0));
 
-  return { players, seasonStats, gameLogs };
+  // The NBA.com sync predates advanced metrics; only the Balldontlie sync
+  // writes them.
+  return { players, seasonStats, gameLogs, advancedGameLogs: 0 };
 }
 
 if (isMainModule({ moduleUrl: import.meta.url })) {

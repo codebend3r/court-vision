@@ -113,7 +113,7 @@ describe("seedDemo", () => {
 
     const summary = await seedDemo({ apiKey: "k" });
 
-    expect(summary).toEqual({ players: 6, seasonStats: 5, gameLogs: 15 });
+    expect(summary).toEqual({ players: 6, seasonStats: 5, gameLogs: 15, advancedGameLogs: 0 });
 
     expect(upsertPlayers).toHaveBeenCalledTimes(1);
     const playerInputs = upsertPlayers.mock.calls[0]?.[0] ?? [];

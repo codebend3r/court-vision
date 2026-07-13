@@ -72,7 +72,7 @@ describe("fetchAllStats", () => {
       .mockResolvedValueOnce(jsonResponse({ data: [statRow(2, 11)], meta: {} }));
     const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
 
-    const stats = await fetchAllStats({ apiKey: "k", fetchImpl, sleep });
+    const stats = await fetchAllStats({ deps: { apiKey: "k", fetchImpl, sleep } });
 
     expect(stats).toHaveLength(2);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
@@ -93,7 +93,7 @@ describe("fetchAllStats", () => {
     const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
     const onPage = vi.fn();
 
-    await fetchAllStats({ apiKey: "k", fetchImpl, sleep, onPage });
+    await fetchAllStats({ deps: { apiKey: "k", fetchImpl, sleep, onPage } });
 
     expect(onPage).toHaveBeenCalledTimes(2);
     expect(onPage).toHaveBeenNthCalledWith(1, {
@@ -110,6 +110,16 @@ describe("fetchAllStats", () => {
       totalRows: 2,
       nextCursor: null,
     });
+  });
+
+  it("requests an overridden season", async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(jsonResponse({ data: [statRow(1, 10)], meta: {} }));
+
+    await fetchAllStats({ deps: { apiKey: "k", fetchImpl }, season: "2020" });
+
+    expect(fetchImpl.mock.calls[0]?.[0]?.toString() ?? "").toContain("seasons[]=2020");
   });
 });
 
@@ -152,7 +162,7 @@ describe("fetchAllAdvancedStats", () => {
       .mockResolvedValueOnce(jsonResponse({ data: [advancedRow(2, 11)], meta: {} }));
     const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
 
-    const stats = await fetchAllAdvancedStats({ apiKey: "k", fetchImpl, sleep });
+    const stats = await fetchAllAdvancedStats({ deps: { apiKey: "k", fetchImpl, sleep } });
 
     expect(stats).toHaveLength(2);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
@@ -174,7 +184,7 @@ describe("fetchAllAdvancedStats", () => {
     const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
     const onPage = vi.fn();
 
-    await fetchAllAdvancedStats({ apiKey: "k", fetchImpl, sleep, onPage });
+    await fetchAllAdvancedStats({ deps: { apiKey: "k", fetchImpl, sleep, onPage } });
 
     expect(onPage).toHaveBeenCalledTimes(2);
     expect(onPage).toHaveBeenNthCalledWith(1, {
@@ -198,7 +208,17 @@ describe("fetchAllAdvancedStats", () => {
       .fn<typeof fetch>()
       .mockResolvedValue(jsonResponse({ data: [advancedRow(1, 10)] }));
 
-    await expect(fetchAllAdvancedStats({ apiKey: "k", fetchImpl })).rejects.toThrow();
+    await expect(fetchAllAdvancedStats({ deps: { apiKey: "k", fetchImpl } })).rejects.toThrow();
+  });
+
+  it("requests an overridden season", async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(jsonResponse({ data: [advancedRow(1, 10)], meta: {} }));
+
+    await fetchAllAdvancedStats({ deps: { apiKey: "k", fetchImpl }, season: "2020" });
+
+    expect(fetchImpl.mock.calls[0]?.[0]?.toString() ?? "").toContain("seasons[]=2020");
   });
 });
 

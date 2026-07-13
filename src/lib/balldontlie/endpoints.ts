@@ -45,7 +45,10 @@ export const fetchTeams = async (deps: BdlClientDeps = {}): Promise<BdlTeam[]> =
   return bdlPage(bdlTeamSchema).parse(raw).data;
 };
 
-export const fetchAllStats = async (deps: BdlClientDeps = {}): Promise<BdlStat[]> => {
+export const fetchAllStats = async (
+  args: { deps?: BdlClientDeps; season?: string } = {},
+): Promise<BdlStat[]> => {
+  const { deps = {}, season = SEASON_YEAR } = args;
   const sleep = deps.sleep ?? defaultSleep;
   const onPage = deps.onPage ?? noopOnPage;
   const pageSchema = bdlPaginatedPage(bdlStatSchema);
@@ -60,7 +63,7 @@ export const fetchAllStats = async (deps: BdlClientDeps = {}): Promise<BdlStat[]
     const raw = await bdlFetch({
       endpoint: "stats",
       params: {
-        seasons: [SEASON_YEAR],
+        seasons: [season],
         postseason: "false",
         per_page: PER_PAGE,
         ...cursorParam,
@@ -90,8 +93,9 @@ export const fetchAllStats = async (deps: BdlClientDeps = {}): Promise<BdlStat[]
 };
 
 export const fetchAllAdvancedStats = async (
-  deps: BdlClientDeps = {},
+  args: { deps?: BdlClientDeps; season?: string } = {},
 ): Promise<BdlAdvancedStat[]> => {
+  const { deps = {}, season = SEASON_YEAR } = args;
   const sleep = deps.sleep ?? defaultSleep;
   const onPage = deps.onPage ?? noopOnPage;
   const pageSchema = bdlPaginatedPage(bdlAdvancedStatSchema);
@@ -106,7 +110,7 @@ export const fetchAllAdvancedStats = async (
     const raw = await bdlFetch({
       endpoint: "stats/advanced",
       params: {
-        seasons: [SEASON_YEAR],
+        seasons: [season],
         postseason: "false",
         per_page: PER_PAGE,
         ...cursorParam,

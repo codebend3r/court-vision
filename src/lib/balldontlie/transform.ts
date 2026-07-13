@@ -1,8 +1,13 @@
-import { GameLogInput, PlayerInput, SeasonStatsInput } from "@/lib/stats/inputs";
+import {
+  AdvancedGameLogInput,
+  GameLogInput,
+  PlayerInput,
+  SeasonStatsInput,
+} from "@/lib/stats/inputs";
 import { parseGameDate, parseMinutes } from "@/lib/stats/parse";
 
-import { SEASON_LABEL, SEASON_TYPE } from "@/lib/balldontlie/constants";
-import { BdlGame, BdlPlayer, BdlStat } from "@/lib/balldontlie/schemas";
+import { SEASON_TYPE, seasonLabelFromYear } from "@/lib/balldontlie/constants";
+import { BdlAdvancedStat, BdlGame, BdlPlayer, BdlStat } from "@/lib/balldontlie/schemas";
 
 export const blankToNull = (value: string | null | undefined): string | null => {
   const trimmed = (value ?? "").trim();
@@ -100,7 +105,9 @@ export const toGameLogInput = (args: {
   return {
     playerId: stat.player.id,
     gameId: String(game.id),
-    season: SEASON_LABEL,
+    // Each row carries its own season (the start year), so a multi-season
+    // fetch stamps every log with the season it belongs to.
+    season: seasonLabelFromYear(game.season),
     seasonType: SEASON_TYPE,
     teamId: team.id,
     teamAbbr: team.abbreviation,
@@ -125,11 +132,14 @@ export const toGameLogInput = (args: {
 };
 
 export const aggregateSeasonStats = (logs: GameLogInput[]): SeasonStatsInput[] => {
+  // Keyed by player AND season so a multi-season backfill aggregates each
+  // season separately instead of collapsing a career into one row.
   const byPlayer = logs.reduce((acc, log) => {
-    const current = acc.get(log.playerId) ?? {
+    const key = `${log.playerId}|${log.season}`;
+    const current = acc.get(key) ?? {
       playerId: log.playerId,
-      season: SEASON_LABEL,
-      seasonType: SEASON_TYPE,
+      season: log.season,
+      seasonType: log.seasonType,
       gamesPlayed: 0,
       minutes: 0,
       fgm: 0,
@@ -147,7 +157,7 @@ export const aggregateSeasonStats = (logs: GameLogInput[]): SeasonStatsInput[] =
       tov: 0,
       pts: 0,
     };
-    acc.set(log.playerId, {
+    acc.set(key, {
       ...current,
       // Games played counts appearances only; a DNP (0 minutes) is on the
       // roster but did not play, so it must not inflate the count.
@@ -169,8 +179,37 @@ export const aggregateSeasonStats = (logs: GameLogInput[]): SeasonStatsInput[] =
       pts: current.pts + log.pts,
     });
     return acc;
-  }, new Map<number, SeasonStatsInput>());
+  }, new Map<string, SeasonStatsInput>());
   return Array.from(byPlayer.values());
+};
+
+export const toAdvancedGameLogInput = (args: { stat: BdlAdvancedStat }): AdvancedGameLogInput => {
+  const { stat } = args;
+  const { game, team } = stat;
+  return {
+    playerId: stat.player.id,
+    gameId: String(game.id),
+    gameDate: parseGameDate(game.date),
+    season: seasonLabelFromYear(game.season),
+    seasonType: SEASON_TYPE,
+    teamId: team.id,
+    teamAbbr: team.abbreviation,
+    pie: stat.pie,
+    pace: stat.pace,
+    assistPercentage: stat.assist_percentage,
+    assistRatio: stat.assist_ratio,
+    assistToTurnover: stat.assist_to_turnover,
+    defensiveRating: stat.defensive_rating,
+    defensiveReboundPercentage: stat.defensive_rebound_percentage,
+    effectiveFieldGoalPercentage: stat.effective_field_goal_percentage,
+    netRating: stat.net_rating,
+    offensiveRating: stat.offensive_rating,
+    offensiveReboundPercentage: stat.offensive_rebound_percentage,
+    reboundPercentage: stat.rebound_percentage,
+    trueShootingPercentage: stat.true_shooting_percentage,
+    turnoverRatio: stat.turnover_ratio,
+    usagePercentage: stat.usage_percentage,
+  };
 };
 
 export const toPlayerInput = (args: { player: BdlPlayer }): PlayerInput => {

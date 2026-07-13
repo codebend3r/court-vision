@@ -26,7 +26,7 @@ describe("syncNba", () => {
 
     const summary = await syncNba();
 
-    expect(summary).toEqual({ players: 1, seasonStats: 0, gameLogs: 0 });
+    expect(summary).toEqual({ players: 1, seasonStats: 0, gameLogs: 0, advancedGameLogs: 0 });
     expect(upsertPlayers).toHaveBeenCalledWith([
       {
         id: 1629029,
