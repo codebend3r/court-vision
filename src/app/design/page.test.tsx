@@ -19,7 +19,7 @@ describe("DesignPage", () => {
     const nav = screen.getByRole("navigation", { name: "Design system sections" });
     const links = Array.from(nav.querySelectorAll("a"));
 
-    expect(links).toHaveLength(10);
+    expect(links).toHaveLength(11);
     expect(links.map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
       ["Colors", "#colors"],
       ["Chart palettes", "#chart-palettes"],
@@ -28,6 +28,7 @@ describe("DesignPage", () => {
       ["Typefaces", "#typefaces"],
       ["Headings", "#headings"],
       ["Font weights", "#font-weights"],
+      ["Body text", "#body-text"],
       ["Spacing", "#spacing"],
       ["Radius", "#radius"],
       ["Form controls", "#form-controls"],
@@ -38,7 +39,7 @@ describe("DesignPage", () => {
     }
   });
 
-  it("renders the ten section headings", () => {
+  it("renders the eleven section headings", () => {
     render(
       <ThemeProvider>
         <DesignPage />
@@ -52,9 +53,23 @@ describe("DesignPage", () => {
     expect(screen.getByRole("heading", { name: "Typefaces" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Headings" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Font weights" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Body text" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Spacing" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Radius" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Form controls" })).toBeInTheDocument();
+  });
+
+  it("renders regular, bold, and italic body-text specimens", () => {
+    render(
+      <ThemeProvider>
+        <DesignPage />
+      </ThemeProvider>,
+    );
+
+    expect(screen.getByText("Regular weight, roman")).toBeInTheDocument();
+    expect(screen.getByText("Bold weight")).toBeInTheDocument();
+    expect(screen.getByText("Italic style")).toBeInTheDocument();
+    expect(screen.getByText("Bold and italic")).toBeInTheDocument();
   });
 
   it("renders a chip for every NBA team", () => {
