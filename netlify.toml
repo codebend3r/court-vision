@@ -2,3 +2,10 @@
 # the next/image loader in src/lib/images/netlifyLoader.ts.
 [images]
   remote_images = ["https://cdn\\.nba\\.com/.*"]
+
+# The Supabase publishable key is public by design — it ships in the client
+# bundle and is guarded by row-level security, not secrecy. Exempt it from
+# Netlify's secrets scanner, which otherwise blocks the build on detecting
+# the inlined NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY value.
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
