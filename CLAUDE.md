@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Operating rules for this repo. The README covers stack, layout, and routes; this file is conventions only.
+Operating rules for this repo. The README is a lean getting-started guide; this file is conventions only.
 
 ## Structure
 
