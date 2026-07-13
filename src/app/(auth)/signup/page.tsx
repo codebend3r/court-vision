@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getUser } from "@/lib/auth/session";
 
-import authStyles from "../auth.module.scss";
+import authStyles from "@/app/(auth)/auth.module.scss";
 import { SignupForm } from "./SignupForm";
 
 export default async function SignupPage() {
