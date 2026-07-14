@@ -1,13 +1,18 @@
 import Link from "next/link";
 
+import { ComingSoonPanel } from "@/components/ComingSoonPanel/ComingSoonPanel";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayersPager } from "@/components/PlayersPager/PlayersPager";
 import { PlayersSearchControls } from "@/components/PlayersSearchControls/PlayersSearchControls";
+import { PlayersTabs } from "@/components/PlayersTabs/PlayersTabs";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { searchPlayers, type PlayerStats } from "@/lib/players/search";
+import { searchPlayersAdvanced } from "@/lib/players/searchAdvanced";
 import {
   buildPlayersHref,
   parsePlayersSearchParams,
+  type AdvancedMetricKey,
+  type AdvancedSortKey,
   type PlayerSortKey,
   type SortDirection,
 } from "@/lib/players/searchParams";
@@ -96,6 +101,71 @@ const STAT_COLUMNS: readonly StatColumn[] = [
   },
 ];
 
+// TS%/eFG%/usage-style metrics are fractions (display like FG%); the rest are
+// rating/ratio-style numbers (display to one decimal).
+const PERCENTAGE_METRIC_KEYS: readonly AdvancedMetricKey[] = [
+  "assistPercentage",
+  "defensiveReboundPercentage",
+  "effectiveFieldGoalPercentage",
+  "offensiveReboundPercentage",
+  "reboundPercentage",
+  "trueShootingPercentage",
+  "usagePercentage",
+];
+
+const formatAdvancedMetric = ({
+  metricKey,
+  value,
+}: {
+  metricKey: AdvancedMetricKey;
+  value: number | null;
+}): string => {
+  if (value === null) return "—";
+  return PERCENTAGE_METRIC_KEYS.includes(metricKey)
+    ? value.toFixed(3).replace(/^0/, "")
+    : value.toFixed(1);
+};
+
+type AdvancedStatColumn = {
+  label: string;
+  sortKey: AdvancedMetricKey;
+};
+
+const ADVANCED_STAT_COLUMNS: readonly AdvancedStatColumn[] = [
+  { label: "PIE", sortKey: "pie" },
+  { label: "Pace", sortKey: "pace" },
+  { label: "AST%", sortKey: "assistPercentage" },
+  { label: "AST Ratio", sortKey: "assistRatio" },
+  { label: "AST/TO", sortKey: "assistToTurnover" },
+  { label: "DRTG", sortKey: "defensiveRating" },
+  { label: "DREB%", sortKey: "defensiveReboundPercentage" },
+  { label: "EFG%", sortKey: "effectiveFieldGoalPercentage" },
+  { label: "Net Rtg", sortKey: "netRating" },
+  { label: "ORTG", sortKey: "offensiveRating" },
+  { label: "OREB%", sortKey: "offensiveReboundPercentage" },
+  { label: "REB%", sortKey: "reboundPercentage" },
+  { label: "TS%", sortKey: "trueShootingPercentage" },
+  { label: "TOV Ratio", sortKey: "turnoverRatio" },
+  { label: "USG%", sortKey: "usagePercentage" },
+];
+
+const renderSummary = ({
+  total,
+  q,
+  rangeStart,
+  rangeEnd,
+}: {
+  total: number;
+  q: string;
+  rangeStart: number;
+  rangeEnd: number;
+}): string =>
+  total === 0
+    ? q === ""
+      ? "No players yet — the season data hasn't been synced."
+      : `No players match "${q}".`
+    : `Showing ${rangeStart}–${rangeEnd} of ${total}`;
+
 export default async function PlayersPage({
   searchParams,
 }: {
@@ -111,19 +181,39 @@ export default async function PlayersPage({
     range: firstValue(raw.range),
     mode: firstValue(raw.mode),
     minimums: firstValue(raw.minimums),
+    tab: firstValue(raw.tab),
   });
-  const { rows, total, page } = await searchPlayers(params);
-  const totalPages = Math.max(1, Math.ceil(total / params.size));
-  const rangeStart = total === 0 ? 0 : (page - 1) * params.size + 1;
-  const rangeEnd = Math.min(total, page * params.size);
 
-  const nextDir = ({ sortKey }: { sortKey: PlayerSortKey }): SortDirection =>
+  const tabsNav = (
+    <PlayersTabs active={params.tab} q={params.q} size={params.size} range={params.range} />
+  );
+
+  if (params.tab === "fantasy") {
+    return (
+      <main className={styles.page}>
+        <h1>Players</h1>
+        {tabsNav}
+        <ComingSoonPanel
+          title="Fantasy Value"
+          description="A blended fantasy score across scoring, efficiency, and role is on the way."
+        />
+      </main>
+    );
+  }
+
+  const nextDir = ({ sortKey }: { sortKey: PlayerSortKey | AdvancedSortKey }): SortDirection =>
     params.sort === sortKey ? (params.dir === "desc" ? "asc" : "desc") : "desc";
 
   // Rank only means something when the rows are ordered by a stat.
   const isStatSort = params.sort !== "firstName" && params.sort !== "lastName";
 
-  const renderSortableHeader = ({ label, sortKey }: { label: string; sortKey: PlayerSortKey }) => {
+  const renderSortableHeader = ({
+    label,
+    sortKey,
+  }: {
+    label: string;
+    sortKey: PlayerSortKey | AdvancedSortKey;
+  }) => {
     const isActive = params.sort === sortKey;
     return (
       <th
@@ -143,9 +233,131 @@ export default async function PlayersPage({
     );
   };
 
+  if (params.tab === "advanced") {
+    const { rows, total, page } = await searchPlayersAdvanced(params);
+    const totalPages = Math.max(1, Math.ceil(total / params.size));
+    const rangeStart = total === 0 ? 0 : (page - 1) * params.size + 1;
+    const rangeEnd = Math.min(total, page * params.size);
+
+    return (
+      <main className={styles.page}>
+        <h1>Players</h1>
+        {tabsNav}
+        <PlayersSearchControls
+          q={params.q}
+          size={params.size}
+          sort={params.sort}
+          dir={params.dir}
+          range={params.range}
+          mode={params.mode}
+          minimums={params.minimums}
+          tab={params.tab}
+        />
+        <p className={styles.summary}>
+          {renderSummary({ total, q: params.q, rangeStart, rangeEnd })}
+        </p>
+        {total > 0 && (
+          <>
+            <PlayersPager
+              q={params.q}
+              page={page}
+              size={params.size}
+              totalPages={totalPages}
+              sort={params.sort}
+              dir={params.dir}
+              range={params.range}
+              mode={params.mode}
+              minimums={params.minimums}
+              tab={params.tab}
+            />
+            <div className={styles.tableScroller}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    {isStatSort && (
+                      <th className={styles.numeric} title="Rank in the current sort">
+                        #
+                      </th>
+                    )}
+                    {renderSortableHeader({ label: "First name", sortKey: "firstName" })}
+                    {renderSortableHeader({ label: "Last name", sortKey: "lastName" })}
+                    <th>Team</th>
+                    <th>Position</th>
+                    {ADVANCED_STAT_COLUMNS.map((column) =>
+                      renderSortableHeader({ label: column.label, sortKey: column.sortKey }),
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, index) => (
+                    <tr key={row.id}>
+                      {isStatSort && (
+                        <td className={`${styles.numeric} ${styles.rank}`}>
+                          {(page - 1) * params.size + index + 1}
+                        </td>
+                      )}
+                      <td data-sort-active={params.sort === "firstName" || undefined}>
+                        <span className={styles.nameCell}>
+                          <PlayerAvatar
+                            fullName={row.fullName}
+                            nbaPersonId={row.nbaPersonId}
+                            size="sm"
+                            teamAbbr={row.teamAbbr}
+                          />
+                          <Link href={`/players/${row.id}`}>{row.firstName}</Link>
+                        </span>
+                      </td>
+                      <td data-sort-active={params.sort === "lastName" || undefined}>
+                        <Link href={`/players/${row.id}`}>{row.lastName}</Link>
+                      </td>
+                      <td>
+                        {row.teamAbbr === null ? "—" : <TeamChip team={row.teamAbbr} size="sm" />}
+                      </td>
+                      <td>{row.position ?? "—"}</td>
+                      {ADVANCED_STAT_COLUMNS.map((column) => (
+                        <td
+                          key={column.sortKey}
+                          className={styles.numeric}
+                          data-sort-active={params.sort === column.sortKey || undefined}
+                        >
+                          {formatAdvancedMetric({
+                            metricKey: column.sortKey,
+                            value: row.stats[column.sortKey],
+                          })}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <PlayersPager
+              q={params.q}
+              page={page}
+              size={params.size}
+              totalPages={totalPages}
+              sort={params.sort}
+              dir={params.dir}
+              range={params.range}
+              mode={params.mode}
+              minimums={params.minimums}
+              tab={params.tab}
+            />
+          </>
+        )}
+      </main>
+    );
+  }
+
+  const { rows, total, page } = await searchPlayers(params);
+  const totalPages = Math.max(1, Math.ceil(total / params.size));
+  const rangeStart = total === 0 ? 0 : (page - 1) * params.size + 1;
+  const rangeEnd = Math.min(total, page * params.size);
+
   return (
     <main className={styles.page}>
       <h1>Players</h1>
+      {tabsNav}
       <PlayersSearchControls
         q={params.q}
         size={params.size}
@@ -154,13 +366,10 @@ export default async function PlayersPage({
         range={params.range}
         mode={params.mode}
         minimums={params.minimums}
+        tab={params.tab}
       />
       <p className={styles.summary}>
-        {total === 0
-          ? params.q === ""
-            ? "No players yet — the season data hasn't been synced."
-            : `No players match "${params.q}".`
-          : `Showing ${rangeStart}–${rangeEnd} of ${total}`}
+        {renderSummary({ total, q: params.q, rangeStart, rangeEnd })}
       </p>
       {total > 0 && (
         <>
@@ -174,6 +383,7 @@ export default async function PlayersPage({
             range={params.range}
             mode={params.mode}
             minimums={params.minimums}
+            tab={params.tab}
           />
           <div className={styles.tableScroller}>
             <table className={styles.table}>
@@ -250,6 +460,7 @@ export default async function PlayersPage({
             range={params.range}
             mode={params.mode}
             minimums={params.minimums}
+            tab={params.tab}
           />
         </>
       )}
