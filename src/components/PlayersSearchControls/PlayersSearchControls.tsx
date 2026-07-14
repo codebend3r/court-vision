@@ -8,6 +8,7 @@ import {
   isPlayerGameRange,
   isPlayerStatMode,
   MAX_QUERY_LENGTH,
+  type AdvancedSortKey,
   type PlayerSortKey,
   type PlayerGameRange,
   type PlayerStatMode,
@@ -22,7 +23,7 @@ import styles from "@/components/PlayersSearchControls/PlayersSearchControls.mod
 export type PlayersSearchControlsProps = {
   q: string;
   size: number;
-  sort: PlayerSortKey;
+  sort: PlayerSortKey | AdvancedSortKey;
   dir: SortDirection;
   range: PlayerGameRange;
   mode: PlayerStatMode;
@@ -86,6 +87,7 @@ export function PlayersSearchControls({
           range,
           mode,
           minimums,
+          tab: "regular",
         }),
       );
     }, DEBOUNCE_MS);
@@ -103,6 +105,7 @@ export function PlayersSearchControls({
         range: event.target.value,
         mode,
         minimums,
+        tab: "regular",
       }),
     );
   };
@@ -119,6 +122,7 @@ export function PlayersSearchControls({
         range,
         mode: event.target.value,
         minimums,
+        tab: "regular",
       }),
     );
   };
@@ -134,6 +138,7 @@ export function PlayersSearchControls({
         range,
         mode,
         minimums: checked,
+        tab: "regular",
       }),
     );
   };

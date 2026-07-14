@@ -6,6 +6,7 @@ import { ChangeEvent, useTransition } from "react";
 import {
   buildPlayersHref,
   PAGE_SIZES,
+  type AdvancedSortKey,
   type PlayerGameRange,
   type PlayerSortKey,
   type PlayerStatMode,
@@ -19,7 +20,7 @@ export type PlayersPagerProps = {
   page: number;
   size: number;
   totalPages: number;
-  sort: PlayerSortKey;
+  sort: PlayerSortKey | AdvancedSortKey;
   dir: SortDirection;
   range: PlayerGameRange;
   mode: PlayerStatMode;
@@ -52,6 +53,7 @@ export function PlayersPager({
           range,
           mode,
           minimums,
+          tab: "regular",
         }),
       );
     });
