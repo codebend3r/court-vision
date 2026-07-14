@@ -36,7 +36,7 @@ type AdvancedGameLogRow = Record<AdvancedMetricKey, number | null> & {
   season: string;
 };
 
-export type AdvancedPlayerCandidate = {
+type AdvancedPlayerCandidate = {
   id: number;
   firstName: string;
   lastName: string;

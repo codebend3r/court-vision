@@ -6,10 +6,13 @@ export type ComingSoonPanelProps = {
 };
 
 export function ComingSoonPanel({ title, description }: ComingSoonPanelProps) {
+  const titleId = `coming-soon-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
   return (
-    <section className={styles.panel} aria-label={title}>
+    <section className={styles.panel} aria-labelledby={titleId}>
       <span className={styles.badge}>Coming soon</span>
-      <h2 className={styles.title}>{title}</h2>
+      <h2 id={titleId} className={styles.title}>
+        {title}
+      </h2>
       <p className={styles.description}>{description}</p>
     </section>
   );

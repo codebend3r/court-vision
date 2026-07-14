@@ -13,4 +13,12 @@ describe("ComingSoonPanel", () => {
     expect(screen.getByText("A blended score is on the way.")).toBeInTheDocument();
     expect(screen.getByText("Coming soon")).toBeInTheDocument();
   });
+
+  it("labels the panel section via aria-labelledby pointing at its heading id", () => {
+    render(<ComingSoonPanel title="Fantasy Value" description="A blended score is on the way." />);
+
+    const heading = screen.getByRole("heading", { name: "Fantasy Value" });
+    const section = screen.getByRole("region", { name: "Fantasy Value" });
+    expect(section).toHaveAttribute("aria-labelledby", heading.id);
+  });
 });
