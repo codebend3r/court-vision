@@ -94,7 +94,7 @@ describe("searchPlayersAdvanced", () => {
         seasonStats: [{ season: "2025-26" }],
         advancedGameLogs: [buildLog({ pie: 20 }), buildLog({ pie: null }), buildLog({ pie: 10 })],
       },
-    ] as unknown as Awaited<ReturnType<typeof prisma.player.findMany>>;
+    ];
     vi.mocked(prisma.player.findMany).mockResolvedValue(rows);
 
     const result = await searchPlayersAdvanced({ ...defaultParams, sort: "pie", range: "last5" });
@@ -119,7 +119,7 @@ describe("searchPlayersAdvanced", () => {
           buildLog({ season: "2024-25", pie: 5 }),
         ],
       },
-    ] as unknown as Awaited<ReturnType<typeof prisma.player.findMany>>;
+    ];
     vi.mocked(prisma.player.findMany).mockResolvedValue(rows);
 
     const result = await searchPlayersAdvanced({ ...defaultParams, sort: "pie", range: "all" });
@@ -152,15 +152,11 @@ describe("searchPlayersAdvanced", () => {
       advancedGameLogs: [],
     };
 
-    vi.mocked(prisma.player.findMany).mockResolvedValue([noData, withData] as unknown as Awaited<
-      ReturnType<typeof prisma.player.findMany>
-    >);
+    vi.mocked(prisma.player.findMany).mockResolvedValue([noData, withData]);
     const ascending = await searchPlayersAdvanced({ ...defaultParams, sort: "pie", dir: "asc" });
     expect(ascending.rows.map((row) => row.id)).toEqual([1, 2]);
 
-    vi.mocked(prisma.player.findMany).mockResolvedValue([noData, withData] as unknown as Awaited<
-      ReturnType<typeof prisma.player.findMany>
-    >);
+    vi.mocked(prisma.player.findMany).mockResolvedValue([noData, withData]);
     const descending = await searchPlayersAdvanced({ ...defaultParams, sort: "pie", dir: "desc" });
     expect(descending.rows.map((row) => row.id)).toEqual([1, 2]);
   });
@@ -180,10 +176,8 @@ describe("searchPlayersAdvanced", () => {
       },
     ];
     vi.mocked(prisma.player.findMany)
-      .mockResolvedValueOnce([] as unknown as Awaited<ReturnType<typeof prisma.player.findMany>>)
-      .mockResolvedValueOnce(
-        secondPageRows as unknown as Awaited<ReturnType<typeof prisma.player.findMany>>,
-      );
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce(secondPageRows);
     vi.mocked(prisma.player.count).mockResolvedValue(30);
 
     const result = await searchPlayersAdvanced({
@@ -207,5 +201,80 @@ describe("searchPlayersAdvanced", () => {
     const result = await searchPlayersAdvanced({ ...defaultParams, sort: "firstName" });
 
     expect(result).toEqual({ rows: [], total: 0, page: 1 });
+  });
+
+  it("sizes the advancedGameLogs fetch to the requested range at the query level", async () => {
+    vi.mocked(prisma.player.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.player.count).mockResolvedValue(0);
+
+    await searchPlayersAdvanced({ ...defaultParams, sort: "firstName", range: "last5" });
+
+    expect(prisma.player.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          advancedGameLogs: expect.objectContaining({ take: 5 }),
+        }),
+      }),
+    );
+  });
+
+  it("uses the full fetch limit for the all range", async () => {
+    vi.mocked(prisma.player.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.player.count).mockResolvedValue(0);
+
+    await searchPlayersAdvanced({ ...defaultParams, sort: "firstName", range: "all" });
+
+    expect(prisma.player.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          advancedGameLogs: expect.objectContaining({ take: 100 }),
+        }),
+      }),
+    );
+  });
+
+  it("computes gamesWithData as the max non-null metric count, not the window size", async () => {
+    const rows = [
+      {
+        id: 1,
+        firstName: "Zeta",
+        lastName: "Five",
+        fullName: "Zeta Five",
+        teamAbbr: "ZZZ",
+        position: "G",
+        nbaPersonId: null,
+        seasonStats: [{ season: "2025-26" }],
+        advancedGameLogs: [
+          buildLog({ pie: 10 }),
+          buildLog({ pie: 12 }),
+          {
+            gameDate: new Date("2025-11-03"),
+            season: "2025-26",
+            pie: null,
+            pace: null,
+            assistPercentage: null,
+            assistRatio: null,
+            assistToTurnover: null,
+            defensiveRating: null,
+            defensiveReboundPercentage: null,
+            effectiveFieldGoalPercentage: null,
+            netRating: null,
+            offensiveRating: null,
+            offensiveReboundPercentage: null,
+            reboundPercentage: null,
+            trueShootingPercentage: null,
+            turnoverRatio: null,
+            usagePercentage: null,
+          },
+        ],
+      },
+    ];
+    vi.mocked(prisma.player.findMany).mockResolvedValue(rows);
+
+    const result = await searchPlayersAdvanced({ ...defaultParams, sort: "pie", range: "last5" });
+
+    // 3 games in the window, but only 2 have any metric data at all — gamesWithData
+    // should reflect that (2), not the window size (3).
+    expect(result.rows[0].stats.gamesWithData).toBe(2);
   });
 });

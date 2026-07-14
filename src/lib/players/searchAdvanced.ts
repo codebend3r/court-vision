@@ -36,7 +36,7 @@ type AdvancedGameLogRow = Record<AdvancedMetricKey, number | null> & {
   season: string;
 };
 
-type AdvancedPlayerCandidate = {
+export type AdvancedPlayerCandidate = {
   id: number;
   firstName: string;
   lastName: string;
@@ -70,7 +70,10 @@ const advancedMetricSelect = {
 // from the sync); 100 leaves comfortable margin without an unbounded fetch.
 const ADVANCED_GAME_LOG_FETCH_LIMIT = 100;
 
-const advancedRowSelect = {
+const gameCountFor = (range: PlayerGameRange): number | null =>
+  range === "all" ? null : Number.parseInt(range.replace("last", ""), 10);
+
+const advancedRowSelectFor = (range: PlayerGameRange) => ({
   id: true,
   firstName: true,
   lastName: true,
@@ -86,14 +89,14 @@ const advancedRowSelect = {
   },
   advancedGameLogs: {
     orderBy: { gameDate: "desc" as const },
-    take: ADVANCED_GAME_LOG_FETCH_LIMIT,
+    take: gameCountFor(range) ?? ADVANCED_GAME_LOG_FETCH_LIMIT,
     select: {
       gameDate: true,
       season: true,
       ...advancedMetricSelect,
     },
   },
-};
+});
 
 const emptyAdvancedStats = (): PlayerAdvancedStats => ({
   pie: null,
@@ -117,19 +120,27 @@ const emptyAdvancedStats = (): PlayerAdvancedStats => ({
 const average = (values: readonly number[]): number | null =>
   values.length === 0 ? null : values.reduce((sum, value) => sum + value, 0) / values.length;
 
-const gameCountFor = (range: PlayerGameRange): number | null =>
-  range === "all" ? null : Number.parseInt(range.replace("last", ""), 10);
-
-const toAdvancedStats = ({ logs }: { logs: readonly AdvancedGameLogRow[] }): PlayerAdvancedStats =>
-  ADVANCED_METRIC_KEYS.reduce<PlayerAdvancedStats>(
+const toAdvancedStats = ({
+  logs,
+}: {
+  logs: readonly AdvancedGameLogRow[];
+}): PlayerAdvancedStats => {
+  const gamesWithData =
+    logs.length === 0
+      ? 0
+      : Math.max(
+          ...ADVANCED_METRIC_KEYS.map((key) => logs.filter((log) => log[key] !== null).length),
+        );
+  return ADVANCED_METRIC_KEYS.reduce<PlayerAdvancedStats>(
     (stats, key) => ({
       ...stats,
       [key]: average(
         logs.map((log) => log[key]).filter((value): value is number => value !== null),
       ),
     }),
-    { ...emptyAdvancedStats(), gamesWithData: logs.length },
+    { ...emptyAdvancedStats(), gamesWithData },
   );
+};
 
 const toAdvancedPlayerRow = ({
   row,
@@ -170,7 +181,7 @@ export const searchPlayersAdvanced = async (
       : [{ firstName: dir }, { lastName: dir }, { id: "asc" }];
 
   if (isAdvancedMetricKey(sort)) {
-    const candidates = await prisma.player.findMany({ where, select: advancedRowSelect });
+    const candidates = await prisma.player.findMany({ where, select: advancedRowSelectFor(range) });
     const sortedRows = candidates
       .map((row) => toAdvancedPlayerRow({ row, range }))
       .sort((a, b) => {
@@ -200,7 +211,7 @@ export const searchPlayersAdvanced = async (
   const pageQuery = (pageNumber: number) =>
     prisma.player.findMany({
       where,
-      select: advancedRowSelect,
+      select: advancedRowSelectFor(range),
       orderBy,
       skip: (pageNumber - 1) * size,
       take: size,
