@@ -47,6 +47,24 @@ const buildLog = (overrides: { gameDate?: Date; season?: string; pie?: number | 
   usagePercentage: 0.25,
 });
 
+// prisma.player.findMany's real return type is the full Player model
+// regardless of the select passed at the call site, so every fixture row
+// needs these scalar fields even though the advanced-stats code never reads them.
+const playerScalarDefaults = {
+  teamId: null,
+  jerseyNumber: null,
+  heightInches: null,
+  weightLbs: null,
+  birthDate: null,
+  college: null,
+  country: null,
+  draftYear: null,
+  draftRound: null,
+  draftNumber: null,
+  createdAt: new Date("2025-01-01"),
+  updatedAt: new Date("2025-01-01"),
+};
+
 describe("searchPlayersAdvanced", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -84,6 +102,7 @@ describe("searchPlayersAdvanced", () => {
   it("averages non-null metrics over the last-N games and skips null-metric games", async () => {
     const rows = [
       {
+        ...playerScalarDefaults,
         id: 1,
         firstName: "Alpha",
         lastName: "One",
@@ -106,6 +125,7 @@ describe("searchPlayersAdvanced", () => {
   it("scopes the all range to the player's latest season", async () => {
     const rows = [
       {
+        ...playerScalarDefaults,
         id: 1,
         firstName: "Beta",
         lastName: "Two",
@@ -130,6 +150,7 @@ describe("searchPlayersAdvanced", () => {
 
   it("sorts by a metric with null values sinking to the bottom regardless of direction", async () => {
     const withData = {
+      ...playerScalarDefaults,
       id: 1,
       firstName: "Gamma",
       lastName: "Three",
@@ -141,6 +162,7 @@ describe("searchPlayersAdvanced", () => {
       advancedGameLogs: [buildLog({ pie: 12 })],
     };
     const noData = {
+      ...playerScalarDefaults,
       id: 2,
       firstName: "Delta",
       lastName: "Four",
@@ -164,6 +186,7 @@ describe("searchPlayersAdvanced", () => {
   it("clamps the page when the requested page exceeds available data", async () => {
     const secondPageRows = [
       {
+        ...playerScalarDefaults,
         id: 2,
         firstName: "Echo",
         lastName: "",
@@ -236,6 +259,7 @@ describe("searchPlayersAdvanced", () => {
   it("computes gamesWithData as the max non-null metric count, not the window size", async () => {
     const rows = [
       {
+        ...playerScalarDefaults,
         id: 1,
         firstName: "Zeta",
         lastName: "Five",
