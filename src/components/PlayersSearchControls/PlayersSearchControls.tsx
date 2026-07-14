@@ -12,6 +12,7 @@ import {
   type PlayerSortKey,
   type PlayerGameRange,
   type PlayerStatMode,
+  type PlayersTab,
   type SortDirection,
 } from "@/lib/players/searchParams";
 
@@ -28,6 +29,7 @@ export type PlayersSearchControlsProps = {
   range: PlayerGameRange;
   mode: PlayerStatMode;
   minimums: boolean;
+  tab?: PlayersTab;
 };
 
 const DEBOUNCE_MS = 300;
@@ -40,6 +42,7 @@ export function PlayersSearchControls({
   range,
   mode,
   minimums,
+  tab = "regular",
 }: PlayersSearchControlsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -87,7 +90,7 @@ export function PlayersSearchControls({
           range,
           mode,
           minimums,
-          tab: "regular",
+          tab,
         }),
       );
     }, DEBOUNCE_MS);
@@ -105,7 +108,7 @@ export function PlayersSearchControls({
         range: event.target.value,
         mode,
         minimums,
-        tab: "regular",
+        tab,
       }),
     );
   };
@@ -122,7 +125,7 @@ export function PlayersSearchControls({
         range,
         mode: event.target.value,
         minimums,
-        tab: "regular",
+        tab,
       }),
     );
   };
@@ -138,7 +141,7 @@ export function PlayersSearchControls({
         range,
         mode,
         minimums: checked,
-        tab: "regular",
+        tab,
       }),
     );
   };
@@ -174,35 +177,39 @@ export function PlayersSearchControls({
           <option value="last60">Last 60 games</option>
         </select>
       </label>
-      <label className={styles.filterLabel}>
-        Stats
-        <select
-          value={mode}
-          onChange={onModeChange}
-          aria-label="Stat display"
-          className={styles.select}
-        >
-          <option value="average">Averages</option>
-          <option value="total">Totals</option>
-        </select>
-      </label>
-      <span className={styles.minimums}>
-        <Switch label="Qualifying minimums" checked={minimums} onChange={onMinimumsChange} />
-        <InfoTip label="About qualifying minimums">
-          <span className={styles.infoIntro}>
-            NBA percentage leaders must clear a minimum of made shots to qualify. With this on,
-            players below the cutoff drop to the bottom of the sort.
-          </span>
-          <dl className={styles.infoList}>
-            <dt>FG%</dt>
-            <dd>300 made field goals</dd>
-            <dt>3P%</dt>
-            <dd>82 made threes</dd>
-            <dt>FT%</dt>
-            <dd>125 made free throws</dd>
-          </dl>
-        </InfoTip>
-      </span>
+      {tab === "regular" && (
+        <label className={styles.filterLabel}>
+          Stats
+          <select
+            value={mode}
+            onChange={onModeChange}
+            aria-label="Stat display"
+            className={styles.select}
+          >
+            <option value="average">Averages</option>
+            <option value="total">Totals</option>
+          </select>
+        </label>
+      )}
+      {tab === "regular" && (
+        <span className={styles.minimums}>
+          <Switch label="Qualifying minimums" checked={minimums} onChange={onMinimumsChange} />
+          <InfoTip label="About qualifying minimums">
+            <span className={styles.infoIntro}>
+              NBA percentage leaders must clear a minimum of made shots to qualify. With this on,
+              players below the cutoff drop to the bottom of the sort.
+            </span>
+            <dl className={styles.infoList}>
+              <dt>FG%</dt>
+              <dd>300 made field goals</dd>
+              <dt>3P%</dt>
+              <dd>82 made threes</dd>
+              <dt>FT%</dt>
+              <dd>125 made free throws</dd>
+            </dl>
+          </InfoTip>
+        </span>
+      )}
     </section>
   );
 }

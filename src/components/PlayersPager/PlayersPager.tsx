@@ -10,6 +10,7 @@ import {
   type PlayerGameRange,
   type PlayerSortKey,
   type PlayerStatMode,
+  type PlayersTab,
   type SortDirection,
 } from "@/lib/players/searchParams";
 
@@ -25,6 +26,7 @@ export type PlayersPagerProps = {
   range: PlayerGameRange;
   mode: PlayerStatMode;
   minimums: boolean;
+  tab?: PlayersTab;
 };
 
 export function PlayersPager({
@@ -37,6 +39,7 @@ export function PlayersPager({
   range,
   mode,
   minimums,
+  tab = "regular",
 }: PlayersPagerProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -53,7 +56,7 @@ export function PlayersPager({
           range,
           mode,
           minimums,
-          tab: "regular",
+          tab,
         }),
       );
     });

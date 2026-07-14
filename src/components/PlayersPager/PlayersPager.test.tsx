@@ -82,4 +82,12 @@ describe("PlayersPager", () => {
     const select = screen.getByLabelText("Page size");
     expect(select).toHaveValue("25");
   });
+
+  it("includes the tab when navigating to another page", () => {
+    render(<PlayersPager {...defaultProps} tab="advanced" sort="pie" totalPages={3} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+
+    expect(replace).toHaveBeenCalledWith("/players?page=2&tab=advanced");
+  });
 });
