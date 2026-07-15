@@ -25,6 +25,7 @@ const defaultParams: PlayersSearchParams = {
   range: "all",
   mode: "average",
   minimums: true,
+  tab: "regular",
 };
 
 const expectedSelect = {

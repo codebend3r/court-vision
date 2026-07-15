@@ -157,4 +157,28 @@ describe("PlayersSearchControls", () => {
     expect(replace).toHaveBeenCalledTimes(1);
     expect(replace).toHaveBeenCalledWith("/players?range=last20");
   });
+
+  it("shows the stat display select and minimums switch on the regular tab", () => {
+    render(<PlayersSearchControls {...defaultProps} tab="regular" />);
+
+    expect(screen.getByLabelText("Stat display")).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Qualifying minimums" })).toBeInTheDocument();
+  });
+
+  it("hides the stat display select and qualifying minimums switch on the advanced tab", () => {
+    render(<PlayersSearchControls {...defaultProps} tab="advanced" />);
+
+    expect(screen.queryByLabelText("Stat display")).not.toBeInTheDocument();
+    expect(screen.queryByRole("switch", { name: "Qualifying minimums" })).not.toBeInTheDocument();
+  });
+
+  it("includes the tab in the search navigation href", () => {
+    render(<PlayersSearchControls {...defaultProps} tab="advanced" sort="pie" />);
+
+    const input = screen.getByLabelText("Search players");
+    fireEvent.change(input, { target: { value: "cur" } });
+    advance(300);
+
+    expect(replace).toHaveBeenLastCalledWith("/players?q=cur&tab=advanced");
+  });
 });

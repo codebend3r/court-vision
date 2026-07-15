@@ -2,11 +2,16 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { searchPlayers } from "@/lib/players/search";
+import { searchPlayersAdvanced } from "@/lib/players/searchAdvanced";
 
 import PlayersPage from "@/app/players/page";
 
 vi.mock("@/lib/players/search", () => ({
   searchPlayers: vi.fn(),
+}));
+
+vi.mock("@/lib/players/searchAdvanced", () => ({
+  searchPlayersAdvanced: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -310,5 +315,79 @@ describe("PlayersPage", () => {
     render(await PlayersPage({ searchParams: Promise.resolve({ q: ["curry", "x"] }) }));
 
     expect(searchPlayers).toHaveBeenCalledWith(expect.objectContaining({ q: "curry" }));
+  });
+});
+
+describe("PlayersPage tabs", () => {
+  it("renders the tab navigation with Regular Stats active by default", async () => {
+    vi.mocked(searchPlayers).mockResolvedValue({ rows: [], total: 0, page: 1 });
+
+    render(await PlayersPage({ searchParams: Promise.resolve({}) }));
+
+    expect(screen.getByRole("link", { name: /Regular Stats/ })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("renders the advanced stats table when tab=advanced", async () => {
+    vi.mocked(searchPlayersAdvanced).mockResolvedValue({
+      rows: [
+        {
+          id: 1,
+          firstName: "Stephen",
+          lastName: "Curry",
+          fullName: "Stephen Curry",
+          teamAbbr: "GSW",
+          position: "G",
+          nbaPersonId: null,
+          stats: {
+            pie: 15.234,
+            pace: 98.6,
+            assistPercentage: 0.412,
+            assistRatio: 30.1,
+            assistToTurnover: 2.5,
+            defensiveRating: 108.2,
+            defensiveReboundPercentage: 0.1,
+            effectiveFieldGoalPercentage: 0.588,
+            netRating: 6.4,
+            offensiveRating: 114.6,
+            offensiveReboundPercentage: 0.02,
+            reboundPercentage: 0.06,
+            trueShootingPercentage: 0.634,
+            turnoverRatio: 12.3,
+            usagePercentage: 0.301,
+            gamesWithData: 10,
+          },
+        },
+      ],
+      total: 1,
+      page: 1,
+    });
+
+    render(await PlayersPage({ searchParams: Promise.resolve({ tab: "advanced" }) }));
+
+    expect(screen.getByRole("link", { name: /Advanced Stats/ })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("columnheader", { name: "PIE" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "TS%" })).toBeInTheDocument();
+    expect(screen.getByText("15.2")).toBeInTheDocument();
+    expect(screen.getByText(".634")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Stat display")).not.toBeInTheDocument();
+  });
+
+  it("renders a coming-soon panel for the fantasy tab with no controls or table", async () => {
+    render(await PlayersPage({ searchParams: Promise.resolve({ tab: "fantasy" }) }));
+
+    expect(screen.getByRole("link", { name: /Fantasy Value/ })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByText("Coming soon")).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Search players")).not.toBeInTheDocument();
+    expect(searchPlayers).not.toHaveBeenCalled();
   });
 });

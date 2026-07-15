@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { buildPlayersHref, parsePlayersSearchParams } from "@/lib/players/searchParams";
+import {
+  buildPlayersHref,
+  isAdvancedMetricKey,
+  parsePlayersSearchParams,
+} from "@/lib/players/searchParams";
 
 describe("parsePlayersSearchParams", () => {
   it("returns defaults for empty input", () => {
@@ -13,6 +17,7 @@ describe("parsePlayersSearchParams", () => {
       range: "all",
       mode: "average",
       minimums: true,
+      tab: "regular",
     });
   });
 
@@ -43,8 +48,38 @@ describe("parsePlayersSearchParams", () => {
     [{ minimums: "0" }, { minimums: false }],
     [{ minimums: "1" }, { minimums: true }],
     [{ minimums: "false" }, { minimums: true }],
+    [{ tab: "advanced" }, { tab: "advanced" }],
+    [{ tab: "fantasy" }, { tab: "fantasy" }],
+    [{ tab: "bogus" }, { tab: "regular" }],
+    [{ tab: "" }, { tab: "regular" }],
   ])("normalizes %j", (raw, expected) => {
     expect(parsePlayersSearchParams(raw)).toMatchObject(expected);
+  });
+
+  it("validates sort against the advanced tab's own key set, defaulting to pie", () => {
+    expect(parsePlayersSearchParams({ tab: "advanced", sort: "usagePercentage" })).toMatchObject({
+      tab: "advanced",
+      sort: "usagePercentage",
+    });
+    expect(parsePlayersSearchParams({ tab: "advanced", sort: "pts" })).toMatchObject({
+      tab: "advanced",
+      sort: "pie",
+    });
+    expect(parsePlayersSearchParams({ tab: "advanced", sort: "firstName" })).toMatchObject({
+      tab: "advanced",
+      sort: "firstName",
+    });
+  });
+
+  it("validates sort against the regular tab's own key set, defaulting to pts", () => {
+    expect(parsePlayersSearchParams({ tab: "regular", sort: "pie" })).toMatchObject({
+      tab: "regular",
+      sort: "pts",
+    });
+    expect(parsePlayersSearchParams({ sort: "pie" })).toMatchObject({
+      tab: "regular",
+      sort: "pts",
+    });
   });
 });
 
@@ -58,6 +93,7 @@ describe("buildPlayersHref", () => {
     range: "all",
     mode: "average",
     minimums: true,
+    tab: "regular",
   } as const;
 
   it("returns the bare path when everything is default", () => {
@@ -84,7 +120,28 @@ describe("buildPlayersHref", () => {
         range: "last5",
         mode: "total",
         minimums: false,
+        tab: "regular",
       }),
     ).toBe("/players?q=curry&page=2&size=25&sort=lastName&range=last5&mode=total&minimums=0");
+  });
+
+  it("includes a non-default tab and adjusts the omitted default sort per tab", () => {
+    expect(buildPlayersHref({ ...defaults, tab: "advanced", sort: "pie" })).toBe(
+      "/players?tab=advanced",
+    );
+    expect(buildPlayersHref({ ...defaults, tab: "advanced", sort: "usagePercentage" })).toBe(
+      "/players?tab=advanced&sort=usagePercentage",
+    );
+    expect(buildPlayersHref({ ...defaults, tab: "fantasy" })).toBe("/players?tab=fantasy");
+  });
+});
+
+describe("isAdvancedMetricKey", () => {
+  it("excludes name keys and regular counting-stat keys, includes advanced metric keys", () => {
+    expect(isAdvancedMetricKey("firstName")).toBe(false);
+    expect(isAdvancedMetricKey("lastName")).toBe(false);
+    expect(isAdvancedMetricKey("pts")).toBe(false);
+    expect(isAdvancedMetricKey("pie")).toBe(true);
+    expect(isAdvancedMetricKey("usagePercentage")).toBe(true);
   });
 });
