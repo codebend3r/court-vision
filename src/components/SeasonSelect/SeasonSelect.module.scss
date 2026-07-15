@@ -1,25 +1,11 @@
 @use "@/styles/mixins" as *;
 
-.wrap {
-  display: grid;
+.select {
+  @include control-field;
+  cursor: pointer;
   transition: opacity var(--duration-base) var(--ease-out);
 
   &[data-pending="true"] {
     opacity: 0.6;
   }
-}
-
-.label {
-  display: grid;
-  grid-auto-flow: column;
-  justify-content: start;
-  align-items: center;
-  gap: var(--space-2);
-  @include micro-label;
-}
-
-.select {
-  @include control-field;
-  min-width: 10rem;
-  cursor: pointer;
 }
