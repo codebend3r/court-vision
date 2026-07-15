@@ -1,16 +1,15 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { searchPlayers } from "@/lib/players/search";
-import { searchPlayersAdvanced } from "@/lib/players/searchAdvanced";
+import { searchPlayers, searchPlayersAdvanced } from "@/lib/players/searchCached";
 
 import PlayersPage from "@/app/players/page";
 
-vi.mock("@/lib/players/search", () => ({
+// The page reads through the cached wrappers; mocking that module keeps the
+// render off the real query (and off `unstable_cache`, which has no incremental
+// cache to attach to under vitest).
+vi.mock("@/lib/players/searchCached", () => ({
   searchPlayers: vi.fn(),
-}));
-
-vi.mock("@/lib/players/searchAdvanced", () => ({
   searchPlayersAdvanced: vi.fn(),
 }));
 

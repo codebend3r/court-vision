@@ -6,8 +6,8 @@ import { PlayersPager } from "@/components/PlayersPager/PlayersPager";
 import { PlayersSearchControls } from "@/components/PlayersSearchControls/PlayersSearchControls";
 import { PlayersTabs } from "@/components/PlayersTabs/PlayersTabs";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
-import { searchPlayers, type PlayerStats } from "@/lib/players/search";
-import { searchPlayersAdvanced } from "@/lib/players/searchAdvanced";
+import { type PlayerStats } from "@/lib/players/search";
+import { searchPlayers, searchPlayersAdvanced } from "@/lib/players/searchCached";
 import {
   buildPlayersHref,
   parsePlayersSearchParams,
