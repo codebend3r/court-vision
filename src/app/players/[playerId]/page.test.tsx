@@ -286,6 +286,59 @@ describe("PlayerPage", () => {
     expect(screen.queryAllByRole("button")).toHaveLength(0);
   });
 
+  const multiSeasonLogs = () => [
+    buildLog({ id: "a", season: "2025-26" }),
+    buildLog({ id: "b", gameId: "0022500002", season: "2025-26" }),
+    buildLog({
+      id: "c",
+      gameId: "0022400001",
+      season: "2024-25",
+      gameDate: new Date("2024-11-01T00:00:00Z"),
+    }),
+  ];
+  const multiSeasonStats = () => [
+    { ...buildSeasonRow({ playerId: 3547238 }), season: "2025-26" },
+    { ...buildSeasonRow({ playerId: 3547238 }), id: "s2", season: "2024-25" },
+  ];
+
+  it("renders the season dropdown with each season plus Career, defaulting to latest", async () => {
+    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
+    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue(multiSeasonLogs());
+    vi.mocked(prisma.playerSeasonStats.findMany).mockResolvedValue(multiSeasonStats());
+
+    await renderPage({ playerId: "3547238" });
+
+    expect(screen.getByRole("option", { name: "2025-26" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "2024-25" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Career" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox")).toHaveValue("2025-26");
+    expect(screen.getByText("2025-26 · 2 games", { exact: false })).toBeInTheDocument();
+  });
+
+  it("scopes the header and games count to a chosen past season", async () => {
+    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
+    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue(multiSeasonLogs());
+    vi.mocked(prisma.playerSeasonStats.findMany).mockResolvedValue(multiSeasonStats());
+
+    await renderPage({ playerId: "3547238", query: { season: "2024-25" } });
+
+    expect(screen.getByRole("combobox")).toHaveValue("2024-25");
+    expect(screen.getByText("2024-25 · 1 games", { exact: false })).toBeInTheDocument();
+  });
+
+  it("aggregates every season and drops leaderboard ranks in the career view", async () => {
+    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
+    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue(multiSeasonLogs());
+    vi.mocked(prisma.playerSeasonStats.findMany).mockResolvedValue(multiSeasonStats());
+
+    await renderPage({ playerId: "3547238", query: { season: "career" } });
+
+    expect(screen.getByRole("combobox")).toHaveValue("career");
+    expect(screen.getByText("Career · 3 games", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText("Career averages")).toBeInTheDocument();
+    expect(screen.queryByText(/in NBA$/)).not.toBeInTheDocument();
+  });
+
   it("renders the stat filters alongside the chart", async () => {
     vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
     vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);

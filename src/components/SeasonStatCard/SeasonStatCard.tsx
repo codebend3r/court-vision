@@ -18,7 +18,15 @@ const rankTier = ({ rank, tone }: { rank: number; tone: RankTone }): RankTier =>
           ? "strong"
           : "regular";
 
-export function SeasonStatCard({ season, stats }: { season: string; stats: SeasonAverageStat[] }) {
+export function SeasonStatCard({
+  season,
+  stats,
+  title = "Season averages",
+}: {
+  season: string;
+  stats: SeasonAverageStat[];
+  title?: string;
+}) {
   if (!stats.length) {
     return null;
   }
@@ -27,7 +35,7 @@ export function SeasonStatCard({ season, stats }: { season: string; stats: Seaso
     <section className={styles.card} aria-labelledby="season-averages-title">
       <header className={styles.cardHeader}>
         <h2 id="season-averages-title" className={styles.title}>
-          Season averages
+          {title}
         </h2>
         <span className={styles.season}>{season}</span>
       </header>
