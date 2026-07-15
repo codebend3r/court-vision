@@ -3,10 +3,11 @@ import type { SearchParams } from "nuqs/server";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayerGameLogTable } from "@/components/PlayerGameLogTable/PlayerGameLogTable";
-import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { PlayerStatChart } from "@/components/PlayerStatChart/PlayerStatChart";
 import { PlayerStatFilters } from "@/components/PlayerStatFilters/PlayerStatFilters";
+import { SeasonSelect } from "@/components/SeasonSelect/SeasonSelect";
 import { SeasonStatCard } from "@/components/SeasonStatCard/SeasonStatCard";
+import { TeamChip } from "@/components/TeamChip/TeamChip";
 import {
   formatBirthDate,
   formatDraft,
@@ -14,7 +15,13 @@ import {
   formatHeight,
   formatWeight,
 } from "@/lib/players/format";
-import { buildSeasonAverageLine } from "@/lib/players/seasonAverages";
+import {
+  aggregateCareerTotals,
+  buildCareerAverageLine,
+  buildSeasonAverageLine,
+  type SeasonAverageStat,
+} from "@/lib/players/seasonAverages";
+import { loadSeasonScope, resolveSeasonScope, seasonScopeValue } from "@/lib/players/seasonScope";
 import { prisma } from "@/lib/prisma";
 import { buildStatSeries } from "@/lib/stats/cumulative";
 import { gamesForSpan, loadStatFilters } from "@/lib/stats/searchParams";
@@ -27,8 +34,9 @@ export const dynamic = "force-dynamic";
 // throw (a 500) instead of rendering a 404.
 const MAX_INT4 = 2147483647;
 
-const SEASON = "2025-26";
 const SEASON_TYPE = "Regular Season";
+// Only used to date "Experience" when a player has no season rows at all.
+const FALLBACK_SEASON = "2025-26";
 
 export default async function PlayerPage({
   params,
@@ -49,22 +57,58 @@ export default async function PlayerPage({
   if (player === null) {
     notFound();
   }
+
+  const rawSearchParams = await (searchParams ?? Promise.resolve({}));
+
   const logs = await prisma.playerGameLog.findMany({
     where: { playerId: numericId },
     orderBy: { gameDate: "asc" },
   });
-  // The whole qualified pool is needed to place this player's averages on the
-  // league leaderboards, not just their own row.
-  const seasonRows = await prisma.playerSeasonStats.findMany({
-    where: { season: SEASON, seasonType: SEASON_TYPE },
+  // This player's own per-season totals: the source for aggregating career
+  // stats and for the season leaderboard card.
+  const playerSeasonRows = await prisma.playerSeasonStats.findMany({
+    where: { playerId: numericId, seasonType: SEASON_TYPE },
+    orderBy: { season: "desc" },
   });
-  const seasonLine = buildSeasonAverageLine({ rows: seasonRows, playerId: numericId }) ?? [];
-  // Games played counts appearances only, not DNPs (0-minute roster games).
-  const gamesPlayed = logs.filter((log) => log.minutes > 0).length;
-  const { mode, span } = await loadStatFilters(searchParams ?? Promise.resolve({}));
+  // The dropdown is driven by every season the player has data for, whether
+  // that's an aggregated season row or just game logs, so it still works before
+  // season stats are backfilled. Most recent first.
+  const availableSeasons = [
+    ...new Set([...playerSeasonRows.map((row) => row.season), ...logs.map((log) => log.season)]),
+  ]
+    .sort()
+    .reverse();
+
+  const { season: requestedSeason } = loadSeasonScope(rawSearchParams);
+  const scope = resolveSeasonScope({ requested: requestedSeason, availableSeasons });
+  const isCareer = scope.kind === "career";
+  const selectedSeason = isCareer ? null : scope.season;
+  const scopeLabel = isCareer ? "Career" : scope.season;
+
+  // Every downstream view (games count, chart, log table) is scoped to the
+  // selection; career keeps the full history.
+  const scopedLogs = isCareer ? logs : logs.filter((log) => log.season === selectedSeason);
+  const gamesPlayed = scopedLogs.filter((log) => log.minutes > 0).length;
+
+  let statLine: SeasonAverageStat[] = [];
+  if (isCareer) {
+    const careerTotals = aggregateCareerTotals({ rows: playerSeasonRows, playerId: numericId });
+    statLine = careerTotals ? buildCareerAverageLine({ totals: careerTotals }) : [];
+  } else {
+    // The whole qualified pool is needed to place this player's averages on the
+    // league leaderboards, not just their own row.
+    const seasonRows = await prisma.playerSeasonStats.findMany({
+      where: { season: selectedSeason ?? "", seasonType: SEASON_TYPE },
+    });
+    statLine = buildSeasonAverageLine({ rows: seasonRows, playerId: numericId }) ?? [];
+  }
+
+  const { mode, span } = loadStatFilters(rawSearchParams);
   const windowSize = gamesForSpan({ span });
-  const windowLogs = windowSize === null ? logs : logs.slice(-windowSize);
+  const windowLogs = windowSize === null ? scopedLogs : scopedLogs.slice(-windowSize);
   const series = buildStatSeries({ logs: windowLogs, mode });
+
+  const experienceSeason = selectedSeason ?? availableSeasons[0] ?? FALLBACK_SEASON;
 
   const isPresentFact = (fact: {
     label: string;
@@ -88,7 +132,7 @@ export default async function PlayerPage({
       label: "Experience",
       value: formatExperience({
         draftYear: player.draftYear,
-        seasonStartYear: Number.parseInt(SEASON, 10),
+        seasonStartYear: Number.parseInt(experienceSeason, 10),
       }),
     },
   ].filter(isPresentFact);
@@ -109,7 +153,7 @@ export default async function PlayerPage({
             {!!player.position && <span>{player.position}</span>}
             {!!player.jerseyNumber && <span>#{player.jerseyNumber}</span>}
             <span>
-              {SEASON} · {gamesPlayed} games
+              {scopeLabel} · {gamesPlayed} games
             </span>
           </p>
           {facts.length > 0 && (
@@ -123,20 +167,27 @@ export default async function PlayerPage({
             </dl>
           )}
         </span>
-        {seasonLine.length > 0 && (
+        {statLine.length > 0 && (
           <div className={styles.headerCard}>
-            <SeasonStatCard season={SEASON} stats={seasonLine} />
+            <SeasonStatCard
+              season={scopeLabel}
+              stats={statLine}
+              title={isCareer ? "Career averages" : "Season averages"}
+            />
           </div>
         )}
       </header>
+      {availableSeasons.length > 0 && (
+        <SeasonSelect seasons={availableSeasons} value={seasonScopeValue(scope)} />
+      )}
       {series.length === 0 ? (
-        <p className={styles.empty}>No game logs for this player yet.</p>
+        <p className={styles.empty}>No game logs for this {isCareer ? "player" : "season"} yet.</p>
       ) : (
         <>
           <PlayerStatFilters />
           <PlayerStatChart series={series} mode={mode} />
           <PlayerGameLogTable
-            rows={logs.map((log, index) => ({
+            rows={scopedLogs.map((log, index) => ({
               ...log,
               gameNumber: index + 1,
               gameDate: log.gameDate.toISOString(),

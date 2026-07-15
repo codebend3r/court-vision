@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { buildSeasonAverageLine, type SeasonStatTotals } from "@/lib/players/seasonAverages";
+import {
+  aggregateCareerTotals,
+  buildCareerAverageLine,
+  buildSeasonAverageLine,
+  type SeasonStatTotals,
+} from "@/lib/players/seasonAverages";
 
 const buildRow = (
   overrides: Partial<SeasonStatTotals> & { playerId: number },
@@ -111,5 +116,46 @@ describe("buildSeasonAverageLine", () => {
 
     expect(line?.some((stat) => stat.key === "fg3Pct")).toBe(false);
     expect(line?.some((stat) => stat.key === "pts")).toBe(true);
+  });
+});
+
+describe("aggregateCareerTotals", () => {
+  it("returns null when the player has no season rows", () => {
+    expect(aggregateCareerTotals({ rows: [buildRow({ playerId: 2 })], playerId: 1 })).toBeNull();
+  });
+
+  it("sums only the player's own rows across seasons", () => {
+    const totals = aggregateCareerTotals({
+      rows: [
+        buildRow({ playerId: 1, gamesPlayed: 50, pts: 1000, fgm: 400, fga: 800 }),
+        buildRow({ playerId: 1, gamesPlayed: 30, pts: 600, fgm: 200, fga: 500 }),
+        buildRow({ playerId: 2, gamesPlayed: 82, pts: 2000 }),
+      ],
+      playerId: 1,
+    });
+
+    expect(totals?.gamesPlayed).toBe(80);
+    expect(totals?.pts).toBe(1600);
+    expect(totals?.fgm).toBe(600);
+    expect(totals?.fga).toBe(1300);
+  });
+});
+
+describe("buildCareerAverageLine", () => {
+  it("formats per-game and percentage career values with no leaderboard rank", () => {
+    // 1600 pts / 80 games = 20.0; 600/1300 FG = 46.2%.
+    const totals = aggregateCareerTotals({
+      rows: [
+        buildRow({ playerId: 1, gamesPlayed: 50, pts: 1000, fgm: 400, fga: 800 }),
+        buildRow({ playerId: 1, gamesPlayed: 30, pts: 600, fgm: 200, fga: 500 }),
+      ],
+      playerId: 1,
+    });
+    const line = buildCareerAverageLine({ totals: totals ?? buildRow({ playerId: 1 }) });
+
+    const byKey = new Map(line.map((stat) => [stat.key, stat.value]));
+    expect(byKey.get("pts")).toBe("20.0");
+    expect(byKey.get("fgPct")).toBe("46.2%");
+    expect(line.every((stat) => stat.rank === null)).toBe(true);
   });
 });

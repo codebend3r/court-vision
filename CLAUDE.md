@@ -11,6 +11,7 @@ Operating rules for this repo. The README is a lean getting-started guide; this 
 
 - Never create a new branch unless explicitly asked to. Work on the current branch by default.
 - Auto-commit each logical change without asking. Subject must start with `CV:` (see the `cv-commit-format` skill).
+- PR titles must also start with `CV:` followed by a short title, exactly like commit subjects. CI (`.github/workflows/pr-title.yml`) fails any PR without it; get it right at `gh pr create` time.
 
 ## Tooling
 

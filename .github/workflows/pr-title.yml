@@ -1,0 +1,21 @@
+name: PR Title
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+jobs:
+  cv-prefix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require CV prefix
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [[ "$PR_TITLE" =~ ^CV:\ . ]]; then
+            echo "PR title OK: $PR_TITLE"
+          else
+            echo "::error::PR title must start with 'CV: ' (got: $PR_TITLE)"
+            echo "Fix with: gh pr edit ${{ github.event.pull_request.number }} --title 'CV: <short title>'"
+            exit 1
+          fi

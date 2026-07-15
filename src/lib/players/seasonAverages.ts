@@ -148,3 +148,74 @@ export const buildSeasonAverageLine = (args: {
     };
   }).filter(isPresent);
 };
+
+// Sum a player's per-season totals into one career row. Percentages and
+// per-game averages are always ratios of these summed totals, so career values
+// derive correctly from the aggregate (never an average of averages).
+export const aggregateCareerTotals = (args: {
+  rows: readonly SeasonStatTotals[];
+  playerId: number;
+}): SeasonStatTotals | null => {
+  const own = args.rows.filter((row) => row.playerId === args.playerId);
+  if (own.length === 0) {
+    return null;
+  }
+  return own.reduce<SeasonStatTotals>(
+    (totals, row) => ({
+      playerId: args.playerId,
+      gamesPlayed: totals.gamesPlayed + row.gamesPlayed,
+      minutes: totals.minutes + row.minutes,
+      fgm: totals.fgm + row.fgm,
+      fga: totals.fga + row.fga,
+      fg3m: totals.fg3m + row.fg3m,
+      fg3a: totals.fg3a + row.fg3a,
+      ftm: totals.ftm + row.ftm,
+      fta: totals.fta + row.fta,
+      reb: totals.reb + row.reb,
+      ast: totals.ast + row.ast,
+      stl: totals.stl + row.stl,
+      blk: totals.blk + row.blk,
+      tov: totals.tov + row.tov,
+      pts: totals.pts + row.pts,
+    }),
+    {
+      playerId: args.playerId,
+      gamesPlayed: 0,
+      minutes: 0,
+      fgm: 0,
+      fga: 0,
+      fg3m: 0,
+      fg3a: 0,
+      ftm: 0,
+      fta: 0,
+      reb: 0,
+      ast: 0,
+      stl: 0,
+      blk: 0,
+      tov: 0,
+      pts: 0,
+    },
+  );
+};
+
+// Career averages are league-wide only in principle; ranking a player against
+// every other player's career would need the whole pool aggregated, so career
+// stats show values without a leaderboard rank (rank stays null, which the card
+// renders as a plain value).
+export const buildCareerAverageLine = (args: { totals: SeasonStatTotals }): SeasonAverageStat[] => {
+  const isPresent = (stat: SeasonAverageStat | null): stat is SeasonAverageStat => stat !== null;
+  return STAT_DEFS.map((def): SeasonAverageStat | null => {
+    const value = def.valueOf(args.totals);
+    if (value === null) {
+      return null;
+    }
+    return {
+      key: def.key,
+      label: def.label,
+      value: def.format(value),
+      rank: null,
+      rankTone: def.rankTone,
+      eligibleCount: 0,
+    };
+  }).filter(isPresent);
+};

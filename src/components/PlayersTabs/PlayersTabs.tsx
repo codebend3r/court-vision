@@ -1,4 +1,6 @@
-import Link from "next/link";
+"use client";
+
+import Link, { useLinkStatus } from "next/link";
 
 import {
   buildPlayersHref,
@@ -23,6 +25,18 @@ export type PlayersTabsProps = {
   size: number;
   range: PlayerGameRange;
 };
+
+// Reflects the in-flight navigation of the enclosing <Link>. Rendered inside a
+// Link, `useLinkStatus` flips to pending the moment the tab is clicked and
+// clears once the new stats render, so the spinner (and the table dim it drives
+// via the page's `:has([data-pending])` rule) covers the server round-trip that
+// otherwise reads as a frozen page.
+function TabPending() {
+  const { pending } = useLinkStatus();
+  return pending ? (
+    <span className={styles.spinner} data-pending="true" aria-hidden="true" />
+  ) : null;
+}
 
 export function PlayersTabs({ active, q, size, range }: PlayersTabsProps) {
   return (
@@ -51,6 +65,7 @@ export function PlayersTabs({ active, q, size, range }: PlayersTabsProps) {
               >
                 {entry.label}
                 {entry.tab === "fantasy" && <span className={styles.badge}>Soon</span>}
+                <TabPending />
               </Link>
             </li>
           );
