@@ -45,3 +45,18 @@
   background: color-mix(in srgb, var(--color-highlight) 18%, transparent);
   color: var(--color-highlight);
 }
+
+.spinner {
+  width: var(--font-size-sm);
+  height: var(--font-size-sm);
+  border: 2px solid color-mix(in srgb, var(--color-accent) 35%, transparent);
+  border-top-color: var(--color-accent);
+  border-radius: var(--radius-full);
+  animation: tab-spin 0.6s linear infinite;
+}
+
+@keyframes tab-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

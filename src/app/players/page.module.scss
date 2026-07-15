@@ -12,10 +12,28 @@
   font-size: var(--font-size-sm);
 }
 
+.results {
+  display: grid;
+  gap: var(--space-4);
+  animation: results-enter var(--duration-base) var(--ease-out) both;
+}
+
+@keyframes results-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .table {
   width: 100%;
   min-width: 72rem;
   border-collapse: collapse;
+  transition: opacity var(--duration-base) var(--ease-out);
 
   th {
     @include micro-label;

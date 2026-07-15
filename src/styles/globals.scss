@@ -51,6 +51,11 @@
   --tracking-tight: -0.01em;
   --tracking-wide: 0.12em;
 
+  // Motion
+  --duration-fast: 120ms;
+  --duration-base: 220ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+
   // Form controls
   --color-control-bg: #10142a;
   --color-control-border: var(--color-border);
@@ -135,4 +140,17 @@ h5 {
   --color-focus-ring: rgba(14, 127, 168, 0.28);
 
   color-scheme: light;
+}
+
+// Respect users who ask the OS to minimize motion: collapse every animation
+// and transition to an instant, non-animated swap.
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
