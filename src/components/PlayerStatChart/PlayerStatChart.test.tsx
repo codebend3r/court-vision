@@ -159,9 +159,9 @@ describe("PlayerStatChart", () => {
     const updates: UrlUpdateEvent[] = [];
     const { container } = renderChart({ onUrlUpdate: (event) => updates.push(event) });
 
-    await user.click(screen.getByRole("switch", { name: "Show DNP / DNP-CD" }));
+    await user.click(screen.getByRole("switch", { name: "Games missed" }));
 
-    expect(screen.getByRole("switch", { name: "Show DNP / DNP-CD" })).toBeChecked();
+    expect(screen.getByRole("switch", { name: "Games missed" })).toBeChecked();
     expect(container.querySelectorAll("[data-dnp-marker]")).toHaveLength(2);
     expect(updates.at(-1)?.queryString).toBe("?dnp=true");
   });

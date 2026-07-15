@@ -325,7 +325,7 @@ export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; m
       </div>
 
       <Switch
-        label="Show DNP / DNP-CD"
+        label="Games missed"
         checked={showDnp}
         onChange={({ checked }) => void setShowDnp(checked)}
       />
