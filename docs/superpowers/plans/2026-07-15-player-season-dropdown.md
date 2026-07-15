@@ -37,7 +37,7 @@
 
 - Produces: `CAREER = "career"`, `SEASON_OPTIONS: readonly string[]` (newest first, 2025-26 down to 2020-21), `statFilterParsers.season` (literal parser, no default, `string | null`), `resolveSeasonSelection({ requested, playerSeasons }): string`.
 
-- [ ] **Step 1: Extend the tests** — update the two `toEqual` fallback assertions to include `season: null`, and add:
+- [x] **Step 1: Extend the tests** — update the two `toEqual` fallback assertions to include `season: null`, and add:
 
 ```ts
 import {
@@ -88,9 +88,9 @@ describe("resolveSeasonSelection", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure** — `bun run test src/lib/stats/searchParams.test.ts` fails (no `SEASON_OPTIONS` export).
+- [x] **Step 2: Run to verify failure** — `bun run test src/lib/stats/searchParams.test.ts` fails (no `SEASON_OPTIONS` export).
 
-- [ ] **Step 3: Implement** — in `src/lib/stats/searchParams.ts`, import from constants and add below `DEFAULT_SPAN`:
+- [x] **Step 3: Implement** — in `src/lib/stats/searchParams.ts`, import from constants and add below `DEFAULT_SPAN`:
 
 ```ts
 import {
@@ -127,8 +127,8 @@ export const resolveSeasonSelection = ({
 }): string => requested ?? playerSeasons[0] ?? SEASON_LABEL;
 ```
 
-- [ ] **Step 4: Verify pass** — `bun run test src/lib/stats/searchParams.test.ts` all green.
-- [ ] **Step 5: Commit** — `CV: add season vocabulary to stat search params`
+- [x] **Step 4: Verify pass** — `bun run test src/lib/stats/searchParams.test.ts` all green.
+- [x] **Step 5: Commit** — `CV: add season vocabulary to stat search params`
 
 ### Task 2: `SeasonSelect` binds the shared parsers and injects unplayed seasons
 
@@ -143,9 +143,9 @@ export const resolveSeasonSelection = ({
 - Consumes: `CAREER`, `statFilterParsers` from Task 1.
 - Produces: `SeasonSelect({ seasons, value })`, a bare `<select aria-label="Season">` sized for the header meta line; options are `seasons` in given order, plus the requested-but-unplayed season injected first when `value` is not in `seasons`, plus Career last.
 
-- [ ] **Step 1: Rewrite the test** to the draft's five cases: ordered options plus Career; server-resolved value selected; unplayed value injected first; picking a season writes `?season=`; picking Career writes the sentinel and keeps `?mode=totals`. All queries use `getByRole("combobox", { name: "Season" })`.
-- [ ] **Step 2: Verify failure** — injection case fails against the current component.
-- [ ] **Step 3: Implement** — replace the component body:
+- [x] **Step 1: Rewrite the test** to the draft's five cases: ordered options plus Career; server-resolved value selected; unplayed value injected first; picking a season writes `?season=`; picking Career writes the sentinel and keeps `?mode=totals`. All queries use `getByRole("combobox", { name: "Season" })`.
+- [x] **Step 2: Verify failure** — injection case fails against the current component.
+- [x] **Step 3: Implement** — replace the component body:
 
 ```tsx
 "use client";
@@ -215,8 +215,8 @@ SCSS shrinks to a single class (keep the `control-field` mixin, drop the wrap/la
 }
 ```
 
-- [ ] **Step 4: Verify pass** — `bun run test src/components/SeasonSelect/SeasonSelect.test.tsx`.
-- [ ] **Step 5: Commit** — `CV: bind SeasonSelect to the shared stat filter parsers`
+- [x] **Step 4: Verify pass** — `bun run test src/components/SeasonSelect/SeasonSelect.test.tsx`.
+- [x] **Step 5: Commit** — `CV: bind SeasonSelect to the shared stat filter parsers`
 
 ### Task 3: Page resolution, scoped queries, header dropdown; delete `seasonScope`
 
@@ -230,7 +230,7 @@ SCSS shrinks to a single class (keep the `control-field` mixin, drop the wrap/la
 
 - Consumes: `CAREER`, `loadStatFilters`, `resolveSeasonSelection` (Task 1); `SeasonSelect` (Task 2); existing `aggregateCareerTotals`, `buildCareerAverageLine`, `buildSeasonAverageLine`; `SEASON_LABEL`, `SEASON_TYPE` from `lib/balldontlie/constants`.
 
-- [ ] **Step 1: Update the page tests** (port the draft tests, adjusted):
+- [x] **Step 1: Update the page tests** (port the draft tests, adjusted):
   - `season: null` never appears in assertions (page tests assert rendering + Prisma calls).
   - Extend `buildSeasonRow` with an optional `season = "2025-26"` param.
   - New: "filters the logs to the player's latest season by default" (asserts `where: { playerId, season: "2023-24" }` and combobox value).
@@ -238,8 +238,8 @@ SCSS shrinks to a single class (keep the `control-field` mixin, drop the wrap/la
   - New: "aggregates a rank-less career card spanning the played seasons" (asserts `where: { playerId }` only, "Career averages", span label "2024-25 to 2025-26", "20.0", no "in NBA" pills, combobox "career").
   - Replace the old dropdown/career tests that relied on JS filtering of an all-logs fetch (`renders the season dropdown...`, `scopes the header...`, `aggregates every season...`).
   - Existing no-season-rows tests keep passing via the static meta text fallback (selection resolves to "2025-26").
-- [ ] **Step 2: Verify failures** — `bun run test "src/app/players/[playerId]/page.test.tsx"`.
-- [ ] **Step 3: Rewrite the page data flow** (port draft structure, keep main's card API):
+- [x] **Step 2: Verify failures** — `bun run test "src/app/players/[playerId]/page.test.tsx"`.
+- [x] **Step 3: Rewrite the page data flow** (port draft structure, keep main's card API):
   - Replace `loadSeasonScope`/`resolveSeasonScope`/`seasonScopeValue` imports with `CAREER`, `resolveSeasonSelection` from `@/lib/stats/searchParams` and `SEASON_LABEL`, `SEASON_TYPE` from `@/lib/balldontlie/constants`; drop local `SEASON_TYPE`/`FALLBACK_SEASON`.
   - `const { mode, span, season: requestedSeason } = await loadStatFilters(searchParams ?? Promise.resolve({}));`
   - `playerSeasons` = deduped seasons of `playerSeasonRows` (fetched first, newest first).
@@ -251,9 +251,9 @@ SCSS shrinks to a single class (keep the `control-field` mixin, drop the wrap/la
   - Card: `season={isCareer ? careerSpanLabel : selection}`, title unchanged.
   - Experience fact uses `Number.parseInt(SEASON_LABEL, 10)`.
   - Empty message stays dynamic (`this season` / `this player`).
-- [ ] **Step 4: Delete `seasonScope.ts` + `seasonScope.test.ts`**; `grep -rn seasonScope src/` returns nothing.
-- [ ] **Step 5: Verify pass** — page, SeasonSelect, and full `bun run test`; `bun run lint`.
-- [ ] **Step 6: Commit** — `CV: honor requested seasons and move the dropdown into the header`
+- [x] **Step 4: Delete `seasonScope.ts` + `seasonScope.test.ts`**; `grep -rn seasonScope src/` returns nothing.
+- [x] **Step 5: Verify pass** — page, SeasonSelect, and full `bun run test`; `bun run lint`.
+- [x] **Step 6: Commit** — `CV: honor requested seasons and move the dropdown into the header`
 
 ### Task 4: Span filter label reads "All"
 
@@ -262,16 +262,16 @@ SCSS shrinks to a single class (keep the `control-field` mixin, drop the wrap/la
 - Modify: `src/components/PlayerStatFilters/PlayerStatFilters.tsx`
 - Test: `src/components/PlayerStatFilters/PlayerStatFilters.test.tsx`
 
-- [ ] **Step 1: Update tests** — replace `"Season"` with `"All"` in the two label assertions (`renders both segmented groups`, `presses the defaults`).
-- [ ] **Step 2: Verify failure.**
-- [ ] **Step 3: Implement** — change `season: "Season"` to `season: "All"` in `SPAN_LABELS`, with the comment: the window applies to the whole current selection (a single season or the career), so "Season" would read wrong in the career view.
-- [ ] **Step 4: Verify pass** — `bun run test src/components/PlayerStatFilters/PlayerStatFilters.test.tsx`.
-- [ ] **Step 5: Commit** — `CV: relabel the season span filter to "All"`
+- [x] **Step 1: Update tests** — replace `"Season"` with `"All"` in the two label assertions (`renders both segmented groups`, `presses the defaults`).
+- [x] **Step 2: Verify failure.**
+- [x] **Step 3: Implement** — change `season: "Season"` to `season: "All"` in `SPAN_LABELS`, with the comment: the window applies to the whole current selection (a single season or the career), so "Season" would read wrong in the career view.
+- [x] **Step 4: Verify pass** — `bun run test src/components/PlayerStatFilters/PlayerStatFilters.test.tsx`.
+- [x] **Step 5: Commit** — `CV: relabel the season span filter to "All"`
 
 ### Task 5: Full verification
 
-- [ ] `bun run test` (whole suite), `bun run lint`, `bun run build` all green.
-- [ ] Commit any straggler fixes; body bullets note the spec alignment.
+- [x] `bun run test` (whole suite), `bun run lint`, `bun run build` all green.
+- [x] Commit any straggler fixes; body bullets note the spec alignment.
 
 ## Self-Review
 
