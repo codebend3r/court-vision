@@ -21,16 +21,16 @@ describe("PlayerStatFilters", () => {
 
     expect(screen.getByRole("group", { name: "Stat mode" })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Timeframe" })).toBeInTheDocument();
-    ["Avg", "Game", "Totals", "Per 36", "L5", "L10", "L20", "L40", "L60", "Season"].map((label) =>
+    ["Avg", "Game", "Totals", "Per 36", "L5", "L10", "L20", "L40", "L60", "All"].map((label) =>
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument(),
     );
   });
 
-  it("presses the defaults (Avg + Season) when the URL has no params", () => {
+  it("presses the defaults (Avg + All) when the URL has no params", () => {
     renderFilters();
 
     expect(screen.getByRole("button", { name: "Avg" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Season" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "All" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "Totals" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("button", { name: "L10" })).toHaveAttribute("aria-pressed", "false");
   });
