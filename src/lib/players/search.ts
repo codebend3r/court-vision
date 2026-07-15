@@ -187,6 +187,17 @@ const withDisplayStats = ({
 const MIN_FGM = 300;
 const MIN_FG3M = 82;
 const MIN_FTM = 125;
+// Official NBA per-game leader qualifier: appearances in 70% of the schedule,
+// 58 of 82 games. A lastN range applies the same share to its own window,
+// e.g. 7 of the last 10.
+const QUALIFYING_GAMES_SHARE = 0.7;
+const SCHEDULE_GAMES = 82;
+
+const minQualifyingGames = ({ range }: { range: PlayersSearchParams["range"] }): number => {
+  const windowGames =
+    range === "all" ? SCHEDULE_GAMES : Number.parseInt(range.replace("last", ""), 10);
+  return Math.ceil(windowGames * QUALIFYING_GAMES_SHARE);
+};
 
 const meetsMinimum = ({ row, args }: { row: PlayerRow; args: PlayersSearchParams }): boolean => {
   if (!args.minimums) return true;
@@ -194,6 +205,10 @@ const meetsMinimum = ({ row, args }: { row: PlayerRow; args: PlayersSearchParams
   if (args.sort === "fgPct") return stats.fgm >= MIN_FGM;
   if (args.sort === "fg3Pct") return stats.fg3m >= MIN_FG3M;
   if (args.sort === "ftPct") return stats.ftm >= MIN_FTM;
+  // Per-game averages follow the games-played rule; totals are self-limiting.
+  if (args.mode === "average" && isSortableCountingStatKey(args.sort)) {
+    return stats.gamesPlayed >= minQualifyingGames({ range: args.range });
+  }
   return true;
 };
 

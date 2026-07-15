@@ -447,4 +447,134 @@ describe("searchPlayers", () => {
     });
     expect(withoutMinimums.rows.map((row) => row.id)).toEqual([1, 2]);
   });
+
+  it("sinks players under 58 games on per-game sorts, but not on totals", async () => {
+    const buildGamesRow = ({
+      id,
+      gamesPlayed,
+      pts,
+    }: {
+      id: number;
+      gamesPlayed: number;
+      pts: number;
+    }) => ({
+      id,
+      firstName: `Player${id}`,
+      lastName: `P${id}`,
+      fullName: `Player${id} P${id}`,
+      teamAbbr: "AAA",
+      position: "G",
+      nbaPersonId: null,
+      teamId: 1,
+      jerseyNumber: null,
+      heightInches: null,
+      weightLbs: null,
+      birthDate: null,
+      college: null,
+      country: null,
+      draftYear: null,
+      draftRound: null,
+      draftNumber: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      seasonStats: [
+        {
+          gamesPlayed,
+          fgm: 0,
+          fga: 0,
+          fg3m: 0,
+          fg3a: 0,
+          ftm: 0,
+          fta: 0,
+          reb: 0,
+          ast: 0,
+          stl: 0,
+          blk: 0,
+          tov: 0,
+          pts,
+        },
+      ],
+    });
+    // Player 1 averages 45 over 20 games; player 2 averages 12 over 70 games.
+    const rows = [
+      buildGamesRow({ id: 1, gamesPlayed: 20, pts: 900 }),
+      buildGamesRow({ id: 2, gamesPlayed: 70, pts: 840 }),
+    ];
+
+    vi.mocked(prisma.player.findMany).mockResolvedValue(rows);
+    const averages = await searchPlayers({ ...defaultParams, sort: "pts", dir: "desc" });
+    expect(averages.rows.map((row) => row.id)).toEqual([2, 1]);
+
+    vi.mocked(prisma.player.findMany).mockResolvedValue(rows);
+    const withoutMinimums = await searchPlayers({
+      ...defaultParams,
+      sort: "pts",
+      dir: "desc",
+      minimums: false,
+    });
+    expect(withoutMinimums.rows.map((row) => row.id)).toEqual([1, 2]);
+
+    vi.mocked(prisma.player.findMany).mockResolvedValue(rows);
+    const totals = await searchPlayers({
+      ...defaultParams,
+      sort: "pts",
+      dir: "desc",
+      mode: "total",
+    });
+    expect(totals.rows.map((row) => row.id)).toEqual([1, 2]);
+  });
+
+  it("scales the games-played minimum to a lastN range window", async () => {
+    const buildLogRow = ({ id, games, pts }: { id: number; games: number; pts: number }) => ({
+      id,
+      firstName: `Player${id}`,
+      lastName: `P${id}`,
+      fullName: `Player${id} P${id}`,
+      teamAbbr: "AAA",
+      position: "G",
+      nbaPersonId: null,
+      teamId: 1,
+      jerseyNumber: null,
+      heightInches: null,
+      weightLbs: null,
+      birthDate: null,
+      college: null,
+      country: null,
+      draftYear: null,
+      draftRound: null,
+      draftNumber: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      gameLogs: Array.from({ length: games }, () => ({
+        minutes: 30,
+        fgm: 0,
+        fga: 0,
+        fg3m: 0,
+        fg3a: 0,
+        ftm: 0,
+        fta: 0,
+        reb: 0,
+        ast: 0,
+        stl: 0,
+        blk: 0,
+        tov: 0,
+        pts,
+      })),
+    });
+    // Threshold for last10 is 7 games: player 1 misses it on a higher average,
+    // player 2 clears it on a lower one.
+    const rows = [
+      buildLogRow({ id: 1, games: 6, pts: 20 }),
+      buildLogRow({ id: 2, games: 7, pts: 10 }),
+    ];
+
+    vi.mocked(prisma.player.findMany).mockResolvedValue(rows);
+    const result = await searchPlayers({
+      ...defaultParams,
+      sort: "pts",
+      dir: "desc",
+      range: "last10",
+    });
+    expect(result.rows.map((row) => row.id)).toEqual([2, 1]);
+  });
 });

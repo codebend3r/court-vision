@@ -20,13 +20,16 @@ const MODE_LABELS: Record<StatMode, string> = {
   per36: "Per 36",
 };
 
+// The "season" span means the entire current selection, which the header
+// dropdown can point at a single season or the whole career, so the label
+// reads "All" rather than "Season".
 const SPAN_LABELS: Record<StatSpan, string> = {
   "5": "L5",
   "10": "L10",
   "20": "L20",
   "40": "L40",
   "60": "L60",
-  season: "Season",
+  season: "All",
 };
 
 export function PlayerStatFilters() {

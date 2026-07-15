@@ -196,8 +196,8 @@ export function PlayersSearchControls({
           <Switch label="Qualifying minimums" checked={minimums} onChange={onMinimumsChange} />
           <InfoTip label="About qualifying minimums">
             <span className={styles.infoIntro}>
-              NBA percentage leaders must clear a minimum of made shots to qualify. With this on,
-              players below the cutoff drop to the bottom of the sort.
+              NBA leaders must qualify: percentage leaders by made shots, per-game leaders by games
+              played. With this on, players below the cutoff drop to the bottom of the sort.
             </span>
             <dl className={styles.infoList}>
               <dt>FG%</dt>
@@ -206,6 +206,8 @@ export function PlayersSearchControls({
               <dd>82 made threes</dd>
               <dt>FT%</dt>
               <dd>125 made free throws</dd>
+              <dt>Per game</dt>
+              <dd>70% of the selected span (58 of 82 games)</dd>
             </dl>
           </InfoTip>
         </span>

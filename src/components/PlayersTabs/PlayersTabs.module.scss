@@ -33,8 +33,12 @@
   }
 
   &[data-active="true"] {
+    @include selected-glow;
     color: var(--color-accent);
-    border-bottom-color: var(--color-accent);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
   }
 }
 

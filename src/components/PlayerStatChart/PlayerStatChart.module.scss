@@ -24,8 +24,12 @@
   cursor: pointer;
 
   &[aria-pressed="true"] {
-    border-color: var(--color-accent);
+    @include selected-glow;
     color: var(--color-accent);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
   }
 
   &:disabled {

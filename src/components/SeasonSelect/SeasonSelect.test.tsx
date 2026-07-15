@@ -7,51 +7,67 @@ import { SeasonSelect } from "@/components/SeasonSelect/SeasonSelect";
 
 afterEach(cleanup);
 
-const SEASONS = ["2025-26", "2024-25", "2023-24"];
-
 const renderSelect = ({
+  seasons = ["2025-26", "2023-24"],
   value = "2025-26",
   searchParams = "",
-}: { value?: string; searchParams?: string } = {}) => {
+}: {
+  seasons?: string[];
+  value?: string;
+  searchParams?: string;
+} = {}) => {
   const onUrlUpdate = vi.fn<(event: UrlUpdateEvent) => void>();
-  render(<SeasonSelect seasons={SEASONS} value={value} />, {
+  render(<SeasonSelect seasons={seasons} value={value} />, {
     wrapper: withNuqsTestingAdapter({ searchParams, onUrlUpdate }),
   });
   return { onUrlUpdate };
 };
 
 describe("SeasonSelect", () => {
-  it("lists every season plus a Career option", () => {
+  it("lists the player's seasons in the given order plus Career", () => {
     renderSelect();
 
-    SEASONS.map((season) =>
-      expect(screen.getByRole("option", { name: season })).toBeInTheDocument(),
-    );
-    expect(screen.getByRole("option", { name: "Career" })).toBeInTheDocument();
+    const options = screen.getAllByRole("option");
+    expect(options.map((option) => option.textContent)).toEqual(["2025-26", "2023-24", "Career"]);
   });
 
-  it("shows the resolved scope as the selected value", () => {
-    renderSelect({ value: "2024-25" });
+  it("selects the server-resolved value even when the URL has no param", () => {
+    renderSelect({ value: "2023-24" });
 
-    expect(screen.getByRole("combobox")).toHaveValue("2024-25");
+    expect(screen.getByRole("combobox", { name: "Season" })).toHaveValue("2023-24");
   });
 
-  it("writes the chosen season to the URL", async () => {
+  it("injects an unplayed requested season so the select reflects the URL", () => {
+    renderSelect({ value: "2021-22" });
+
+    expect(screen.getByRole("combobox", { name: "Season" })).toHaveValue("2021-22");
+    const options = screen.getAllByRole("option");
+    expect(options.map((option) => option.textContent)).toEqual([
+      "2021-22",
+      "2025-26",
+      "2023-24",
+      "Career",
+    ]);
+  });
+
+  it("writes the picked season to the URL", async () => {
     const user = userEvent.setup();
     const { onUrlUpdate } = renderSelect();
 
-    await user.selectOptions(screen.getByRole("combobox"), "2023-24");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Season" }), "2023-24");
 
     expect(onUrlUpdate).toHaveBeenCalledTimes(1);
     expect(onUrlUpdate.mock.calls[0][0].searchParams.get("season")).toBe("2023-24");
   });
 
-  it("writes the career sentinel when Career is chosen", async () => {
+  it("writes the career sentinel and keeps other filters", async () => {
     const user = userEvent.setup();
-    const { onUrlUpdate } = renderSelect();
+    const { onUrlUpdate } = renderSelect({ searchParams: "?mode=totals" });
 
-    await user.selectOptions(screen.getByRole("combobox"), "Career");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Season" }), "Career");
 
-    expect(onUrlUpdate.mock.calls[0][0].searchParams.get("season")).toBe("career");
+    const updated = onUrlUpdate.mock.calls[0][0].searchParams;
+    expect(updated.get("season")).toBe("career");
+    expect(updated.get("mode")).toBe("totals");
   });
 });
