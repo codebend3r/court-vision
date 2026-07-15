@@ -22,6 +22,11 @@
   background: var(--color-surface);
   color: var(--color-text);
   font-size: var(--font-size-sm);
+
+  &:focus-visible {
+    @include control-focus-ring;
+    border-color: var(--color-control-accent);
+  }
 }
 
 .filterLabel {

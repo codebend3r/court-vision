@@ -1,3 +1,5 @@
+@use "@/styles/mixins" as *;
+
 .filters {
   display: flex;
   flex-wrap: wrap;
@@ -12,7 +14,6 @@
   display: flex;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  overflow: hidden;
 }
 
 .option {
@@ -23,12 +24,29 @@
   font-size: var(--font-size-sm);
   cursor: pointer;
 
+  // The group no longer clips its children (the selection glow must escape),
+  // so the end options round their own outer corners to match the group.
+  &:first-child {
+    border-start-start-radius: calc(var(--radius-sm) - 1px);
+    border-end-start-radius: calc(var(--radius-sm) - 1px);
+  }
+
+  &:last-child {
+    border-start-end-radius: calc(var(--radius-sm) - 1px);
+    border-end-end-radius: calc(var(--radius-sm) - 1px);
+  }
+
   & + & {
     border-left: 1px solid var(--color-border);
   }
 
   &[aria-pressed="true"] {
+    @include selected-glow;
     background: var(--color-accent);
     color: var(--color-surface);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
   }
 }

@@ -62,6 +62,7 @@
   --color-control-accent: var(--color-accent);
   --color-control-placeholder: #6a7194;
   --color-focus-ring: rgba(63, 195, 232, 0.32);
+  --glow-selected: inset 0 0 10px var(--color-focus-ring), 0 0 10px var(--color-focus-ring);
   --control-height: 2.25rem;
   --control-size: 1.25rem;
   --control-radius: var(--radius-sm);

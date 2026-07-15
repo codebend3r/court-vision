@@ -41,9 +41,12 @@
     text-align: left;
 
     &[data-sort-active="true"] {
+      position: relative;
       background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
       color: var(--color-accent);
-      box-shadow: inset 0 -2px 0 var(--color-accent);
+      box-shadow:
+        inset 0 -2px 0 var(--color-accent),
+        var(--glow-selected);
     }
   }
 
@@ -95,6 +98,10 @@
 
   &[data-active="true"] {
     color: var(--color-accent);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
   }
 }
 
