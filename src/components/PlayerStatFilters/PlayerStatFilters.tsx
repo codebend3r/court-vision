@@ -1,8 +1,10 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useQueryStates } from "nuqs";
-import { useTransition } from "react";
+import { useEffect, useTransition } from "react";
 
+import { useStatModeStore } from "@/lib/stats/modeStore";
 import {
   STAT_MODES,
   STAT_SPANS,
@@ -40,6 +42,19 @@ export function PlayerStatFilters() {
     shallow: false,
     startTransition,
   });
+  const preferredMode = useStatModeStore((state) => state.mode);
+  const setPreferredMode = useStatModeStore((state) => state.setMode);
+  // A shared link's explicit ?mode= wins over the remembered preference, so
+  // only bare URLs (fresh navigations between players) re-apply it.
+  const urlNamesMode = !!(useSearchParams()?.get("mode") ?? "");
+
+  useEffect(() => {
+    // While a click's transition is pending the store already holds the new
+    // mode but the URL doesn't yet; skip so the pick isn't written twice.
+    if (!urlNamesMode && !isPending && mode !== preferredMode) {
+      setFilters({ mode: preferredMode });
+    }
+  }, [urlNamesMode, isPending, mode, preferredMode, setFilters]);
 
   return (
     <section
@@ -53,7 +68,10 @@ export function PlayerStatFilters() {
             key={option}
             type="button"
             aria-pressed={mode === option}
-            onClick={() => setFilters({ mode: option })}
+            onClick={() => {
+              setPreferredMode({ mode: option });
+              setFilters({ mode: option });
+            }}
             className={styles.option}
           >
             {MODE_LABELS[option]}

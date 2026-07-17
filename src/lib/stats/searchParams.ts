@@ -10,10 +10,10 @@ import {
 export type StatMode = "avg" | "game" | "totals" | "per36";
 export type StatSpan = "5" | "10" | "20" | "40" | "60" | "season";
 
-export const STAT_MODES: readonly StatMode[] = ["avg", "game", "totals", "per36"];
+export const STAT_MODES: readonly StatMode[] = ["game", "avg", "totals", "per36"];
 export const STAT_SPANS: readonly StatSpan[] = ["5", "10", "20", "40", "60", "season"];
 
-export const DEFAULT_MODE: StatMode = "avg";
+export const DEFAULT_MODE: StatMode = "game";
 export const DEFAULT_SPAN: StatSpan = "season";
 
 export const CAREER = "career";

@@ -1,6 +1,7 @@
 // Global stylesheet: design tokens and true typographic primitives only.
 // Component styles live in co-located *.module.scss files and must reference
 // these tokens (see CLAUDE.md CSS rules).
+@use "@/styles/mixins" as *;
 
 :root {
   // Color
@@ -14,6 +15,8 @@
   --color-highlight: #ff9f3c;
   --color-win: #3dd68c;
   --color-loss: #ff5c6a;
+  // Extrusion color for retro long-shadow lettering (see long-text-shadow in mixins).
+  --color-retro-shadow: color-mix(in srgb, var(--color-accent) 55%, var(--color-bg));
 
   // Spacing scale
   --space-1: 0.25rem;
@@ -122,6 +125,8 @@ h5 {
   line-height: 1.15;
   letter-spacing: var(--tracking-tight);
   margin: 0;
+  // Em-based steps: the extrusion scales with each heading level's font size.
+  text-shadow: long-text-shadow(var(--color-retro-shadow), 10, 0.025em);
 }
 
 :root[data-theme="light"] {
