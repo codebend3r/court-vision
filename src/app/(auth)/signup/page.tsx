@@ -11,7 +11,7 @@ export default async function SignupPage() {
     redirect("/");
   }
   return (
-    <main className={authStyles.shell}>
+    <main className={authStyles.shell} data-centered>
       <h1 className={authStyles.title}>Create your account</h1>
       <SignupForm />
     </main>

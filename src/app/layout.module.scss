@@ -9,4 +9,14 @@
 .content {
   display: grid;
   align-content: start;
+
+  // Signed out there is no SideNav; take over its auto column too.
+  &:only-child {
+    grid-column: 1 / -1;
+  }
+
+  // Pages that center themselves (auth) need the row stretched to full height.
+  &:has(> [data-centered]) {
+    align-content: stretch;
+  }
 }

@@ -16,7 +16,7 @@ export default async function LoginPage({
   }
   const { next } = await searchParams;
   return (
-    <main className={authStyles.shell}>
+    <main className={authStyles.shell} data-centered>
       <h1 className={authStyles.title}>Sign in</h1>
       <LoginForm next={next ?? "/"} />
     </main>
