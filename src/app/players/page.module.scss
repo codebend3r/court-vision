@@ -46,9 +46,7 @@
       position: relative;
       background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
       color: var(--color-accent);
-      box-shadow:
-        inset 0 -2px 0 var(--color-accent),
-        var(--glow-selected);
+      box-shadow: inset 0 -2px 0 var(--color-accent);
     }
   }
 
@@ -90,7 +88,7 @@
   right: var(--space-2);
   z-index: 30;
   max-width: 19rem;
-  gap: var(--space-1);
+  padding: var(--space-3);
   display: none;
   opacity: 0;
   transform: translateY(calc(-1 * var(--space-1)));

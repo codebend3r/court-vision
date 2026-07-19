@@ -16,7 +16,9 @@ export function AdvancedStatsLegend() {
           <div key={meta.key} className={styles.row}>
             <dt className={styles.abbr}>{meta.label}</dt>
             <dd className={styles.desc}>
-              <strong>{meta.fullName}.</strong> {meta.description}
+              <span>
+                <strong>{meta.fullName}.</strong> {meta.description}
+              </span>
               <code className={styles.formula}>{meta.formula}</code>
             </dd>
           </div>

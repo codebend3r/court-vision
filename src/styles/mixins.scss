@@ -42,18 +42,13 @@
 
 @mixin control-focus-ring {
   outline: none;
-  box-shadow:
-    0 0 0 var(--focus-ring-width) var(--color-focus-ring),
-    var(--glow-selected);
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--color-focus-ring);
 }
 
-// Blue/cyan selection glow lifted from the Switch's checked track; shared by
-// every selected control state (active filters, stat chips, sorted columns).
-@mixin selected-glow {
-  // Positioned so the outer glow paints above later siblings' opaque backgrounds.
-  position: relative;
+// Accent border shared by every selected control state (active filters, stat
+// chips, sorted columns). Flat by design: no glow effects.
+@mixin selected-accent {
   border-color: var(--color-control-accent);
-  box-shadow: var(--glow-selected);
 }
 
 // Text-like fields: text/email/password/date/etc. inputs and selects.
