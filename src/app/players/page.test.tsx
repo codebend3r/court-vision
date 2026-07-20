@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { searchPlayers, searchPlayersAdvanced } from "@/lib/players/searchCached";
@@ -375,6 +375,52 @@ describe("PlayersPage tabs", () => {
     expect(screen.getByText("15.2")).toBeInTheDocument();
     expect(screen.getByText(".634")).toBeInTheDocument();
     expect(screen.queryByLabelText("Stat display")).not.toBeInTheDocument();
+  });
+
+  it("describes advanced headers via a tooltip and renders the legend", async () => {
+    vi.mocked(searchPlayersAdvanced).mockResolvedValue({
+      rows: [
+        {
+          id: 1,
+          firstName: "Stephen",
+          lastName: "Curry",
+          fullName: "Stephen Curry",
+          teamAbbr: "GSW",
+          position: "G",
+          nbaPersonId: null,
+          stats: {
+            pie: 15.234,
+            pace: 98.6,
+            assistPercentage: 0.412,
+            assistRatio: 30.1,
+            assistToTurnover: 2.5,
+            defensiveRating: 108.2,
+            defensiveReboundPercentage: 0.1,
+            effectiveFieldGoalPercentage: 0.588,
+            netRating: 6.4,
+            offensiveRating: 114.6,
+            offensiveReboundPercentage: 0.02,
+            reboundPercentage: 0.06,
+            trueShootingPercentage: 0.634,
+            turnoverRatio: 12.3,
+            usagePercentage: 0.301,
+            gamesWithData: 10,
+          },
+        },
+      ],
+      total: 1,
+      page: 1,
+    });
+
+    render(await PlayersPage({ searchParams: Promise.resolve({ tab: "advanced" }) }));
+
+    const tsHeader = screen.getByRole("columnheader", { name: "TS%" });
+    const tsLink = within(tsHeader).getByRole("link");
+    expect(tsLink).toHaveAttribute("aria-describedby", "stat-tip-trueShootingPercentage");
+    expect(document.getElementById("stat-tip-trueShootingPercentage")).toHaveTextContent(
+      "PTS ÷ (2 × (FGA + 0.44 × FTA))",
+    );
+    expect(screen.getByText("What do these stats mean?")).toBeInTheDocument();
   });
 
   it("renders a coming-soon panel for the fantasy tab with no controls or table", async () => {

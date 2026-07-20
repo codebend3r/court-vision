@@ -87,7 +87,7 @@
 }
 
 .input:checked + .track {
-  @include selected-glow;
+  @include selected-accent;
 
   .legendOn {
     opacity: 1;

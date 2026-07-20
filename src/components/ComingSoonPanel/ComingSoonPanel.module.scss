@@ -12,10 +12,10 @@
 
 .badge {
   @include micro-label;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-full);
-  background: color-mix(in srgb, var(--color-highlight) 18%, transparent);
+  // Bold so the glyphs hold their own against the long-shadow extrusion.
+  font-weight: var(--font-weight-bold);
   color: var(--color-highlight);
+  text-shadow: long-text-shadow(var(--color-retro-shadow), 5);
 }
 
 .title {

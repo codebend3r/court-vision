@@ -1,11 +1,13 @@
 import Link from "next/link";
 
+import { AdvancedStatsLegend } from "@/components/AdvancedStatsLegend/AdvancedStatsLegend";
 import { ComingSoonPanel } from "@/components/ComingSoonPanel/ComingSoonPanel";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayersPager } from "@/components/PlayersPager/PlayersPager";
 import { PlayersSearchControls } from "@/components/PlayersSearchControls/PlayersSearchControls";
 import { PlayersTabs } from "@/components/PlayersTabs/PlayersTabs";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
+import { ADVANCED_STAT_META, type AdvancedStatMeta } from "@/lib/players/advancedStatMeta";
 import { type PlayerStats } from "@/lib/players/search";
 import { searchPlayers, searchPlayersAdvanced } from "@/lib/players/searchCached";
 import {
@@ -126,29 +128,6 @@ const formatAdvancedMetric = ({
     : value.toFixed(1);
 };
 
-type AdvancedStatColumn = {
-  label: string;
-  sortKey: AdvancedMetricKey;
-};
-
-const ADVANCED_STAT_COLUMNS: readonly AdvancedStatColumn[] = [
-  { label: "PIE", sortKey: "pie" },
-  { label: "Pace", sortKey: "pace" },
-  { label: "AST%", sortKey: "assistPercentage" },
-  { label: "AST Ratio", sortKey: "assistRatio" },
-  { label: "AST/TO", sortKey: "assistToTurnover" },
-  { label: "DRTG", sortKey: "defensiveRating" },
-  { label: "DREB%", sortKey: "defensiveReboundPercentage" },
-  { label: "EFG%", sortKey: "effectiveFieldGoalPercentage" },
-  { label: "Net Rtg", sortKey: "netRating" },
-  { label: "ORTG", sortKey: "offensiveRating" },
-  { label: "OREB%", sortKey: "offensiveReboundPercentage" },
-  { label: "REB%", sortKey: "reboundPercentage" },
-  { label: "TS%", sortKey: "trueShootingPercentage" },
-  { label: "TOV Ratio", sortKey: "turnoverRatio" },
-  { label: "USG%", sortKey: "usagePercentage" },
-];
-
 const renderSummary = ({
   total,
   q,
@@ -216,11 +195,14 @@ export default async function PlayersPage({
   const renderSortableHeader = ({
     label,
     sortKey,
+    meta,
   }: {
     label: string;
     sortKey: PlayerSortKey | AdvancedSortKey;
+    meta?: AdvancedStatMeta;
   }) => {
     const isActive = params.sort === sortKey;
+    const tipId = meta && `stat-tip-${meta.key}`;
     return (
       <th
         key={sortKey}
@@ -231,10 +213,22 @@ export default async function PlayersPage({
           href={buildPlayersHref({ ...params, page: 1, sort: sortKey, dir: nextDir({ sortKey }) })}
           className={styles.sortLink}
           data-active={isActive ? "true" : "false"}
+          aria-describedby={tipId}
         >
           {label}
           {isActive && <span aria-hidden="true">{params.dir === "asc" ? "▲" : "▼"}</span>}
         </Link>
+        {!!meta && (
+          // `hidden` keeps the bubble out of the header's accessible name; the
+          // hover/focus CSS (author origin) overrides the UA display:none.
+          <span role="tooltip" id={tipId} className={styles.headerTip} hidden>
+            <span className={styles.headerTipName}>
+              {meta.label} — {meta.fullName}
+            </span>
+            <span>{meta.description}</span>
+            <span className={styles.headerTipFormula}>{meta.formula}</span>
+          </span>
+        )}
       </th>
     );
   };
@@ -290,8 +284,8 @@ export default async function PlayersPage({
                       {renderSortableHeader({ label: "Last name", sortKey: "lastName" })}
                       <th>Team</th>
                       <th>Position</th>
-                      {ADVANCED_STAT_COLUMNS.map((column) =>
-                        renderSortableHeader({ label: column.label, sortKey: column.sortKey }),
+                      {ADVANCED_STAT_META.map((meta) =>
+                        renderSortableHeader({ label: meta.label, sortKey: meta.key, meta }),
                       )}
                     </tr>
                   </thead>
@@ -321,15 +315,15 @@ export default async function PlayersPage({
                           {row.teamAbbr === null ? "—" : <TeamChip team={row.teamAbbr} size="sm" />}
                         </td>
                         <td>{row.position ?? "—"}</td>
-                        {ADVANCED_STAT_COLUMNS.map((column) => (
+                        {ADVANCED_STAT_META.map((meta) => (
                           <td
-                            key={column.sortKey}
+                            key={meta.key}
                             className={styles.numeric}
-                            data-sort-active={params.sort === column.sortKey || undefined}
+                            data-sort-active={params.sort === meta.key || undefined}
                           >
                             {formatAdvancedMetric({
-                              metricKey: column.sortKey,
-                              value: row.stats[column.sortKey],
+                              metricKey: meta.key,
+                              value: row.stats[meta.key],
                             })}
                           </td>
                         ))}
@@ -338,6 +332,7 @@ export default async function PlayersPage({
                   </tbody>
                 </table>
               </div>
+              <AdvancedStatsLegend />
               <PlayersPager
                 q={params.q}
                 page={page}

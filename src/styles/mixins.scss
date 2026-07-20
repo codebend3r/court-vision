@@ -1,3 +1,17 @@
+@use "sass:list";
+
+// Retro long-shadow lettering: stacked $step-offset copies so the shadow reads
+// as one solid diagonal extrusion rather than a blurred drop shadow. Pass an
+// em-based $step to scale the extrusion with the element's font size; keep
+// each step at or below ~1px at the rendered size so the extrusion stays solid.
+@function long-text-shadow($color, $length, $step: 1px) {
+  $shadow: ();
+  @for $i from 1 through $length {
+    $shadow: list.append($shadow, #{$i * $step} #{$i * $step} $color, comma);
+  }
+  @return $shadow;
+}
+
 @mixin micro-label {
   text-transform: uppercase;
   font-size: var(--font-size-xs);
@@ -5,20 +19,36 @@
   color: var(--color-text-muted);
 }
 
-@mixin control-focus-ring {
-  outline: none;
-  box-shadow:
-    0 0 0 var(--focus-ring-width) var(--color-focus-ring),
-    var(--glow-selected);
+// Shared tooltip bubble box: InfoTip's floating hint and the players table's
+// header tips must stay visually identical. Positioning/reveal stays local.
+@mixin tooltip-bubble {
+  display: grid;
+  gap: var(--space-2);
+  width: max-content;
+  max-width: 17rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
 }
 
-// Blue/cyan selection glow lifted from the Switch's checked track; shared by
-// every selected control state (active filters, stat chips, sorted columns).
-@mixin selected-glow {
-  // Positioned so the outer glow paints above later siblings' opaque backgrounds.
-  position: relative;
+@mixin control-focus-ring {
+  outline: none;
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--color-focus-ring);
+}
+
+// Accent border shared by every selected control state (active filters, stat
+// chips, sorted columns). Flat by design: no glow effects.
+@mixin selected-accent {
   border-color: var(--color-control-accent);
-  box-shadow: var(--glow-selected);
 }
 
 // Text-like fields: text/email/password/date/etc. inputs and selects.

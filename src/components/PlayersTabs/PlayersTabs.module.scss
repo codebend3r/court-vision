@@ -33,7 +33,7 @@
   }
 
   &[data-active="true"] {
-    @include selected-glow;
+    @include selected-accent;
     color: var(--color-accent);
   }
 

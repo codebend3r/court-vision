@@ -23,9 +23,13 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
 
-  // The group no longer clips its children (the selection glow must escape),
-  // so the end options round their own outer corners to match the group.
+  // The group must not clip its children (the lifted key and its hard shadow
+  // escape the strip), so the end options round their own outer corners.
   &:first-child {
     border-start-start-radius: calc(var(--radius-sm) - 1px);
     border-end-start-radius: calc(var(--radius-sm) - 1px);
@@ -40,10 +44,21 @@
     border-left: 1px solid var(--color-border);
   }
 
+  // Half-lift preview of the selected mechanic.
+  &:hover:not([aria-pressed="true"]) {
+    color: var(--color-text);
+    transform: translate(-1px, -1px);
+    box-shadow: 1px 1px 0 0 var(--color-retro-shadow);
+  }
+
   &[aria-pressed="true"] {
-    @include selected-glow;
     background: var(--color-accent);
     color: var(--color-surface);
+    border-radius: var(--radius-sm);
+    // Lift out of the strip onto a hard shadow. The transform's stacking
+    // context keeps the raised key painted above its flat siblings.
+    transform: translate(-2px, -2px);
+    box-shadow: 3px 3px 0 0 var(--color-retro-shadow);
   }
 
   &:focus-visible {

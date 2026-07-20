@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { SideNav } from "@/components/SideNav/SideNav";
 import { SiteFooter } from "@/components/SiteFooter/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader/SiteHeader";
+import { getUser } from "@/lib/auth/session";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
 import "@/styles/globals.scss";
@@ -40,11 +41,12 @@ export const metadata: Metadata = {
 
 const themeInitScript = `(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark"){t=window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";}document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="dark";}})();`;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
+  const user = await getUser();
   return (
     <html
       lang="en"
@@ -59,7 +61,7 @@ export default function RootLayout({
           <ThemeProvider>
             <SiteHeader />
             <div className={styles.shell}>
-              <SideNav />
+              {!!user && <SideNav />}
               <div className={styles.content}>{children}</div>
             </div>
             <SiteFooter />

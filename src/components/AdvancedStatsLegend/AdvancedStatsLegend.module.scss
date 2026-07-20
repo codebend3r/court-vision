@@ -1,0 +1,82 @@
+.legend {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  list-style: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &:hover {
+    color: var(--color-text);
+  }
+}
+
+.chevron {
+  color: var(--color-accent);
+  font-size: var(--font-size-xs);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.legend[open] .chevron {
+  transform: rotate(90deg);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(28rem, 1fr));
+  column-gap: var(--space-8);
+  margin: 0;
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.abbr {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+
+.desc {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  margin: 0;
+  color: var(--color-text-muted);
+
+  strong {
+    color: var(--color-text);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+// Same recessed chip as the header tooltip's formula line.
+.formula {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-control-bg);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}

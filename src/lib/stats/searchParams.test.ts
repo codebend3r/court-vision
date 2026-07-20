@@ -11,7 +11,7 @@ describe("loadStatFilters", () => {
   it("falls back to defaults when params are absent", async () => {
     const result = await loadStatFilters({});
 
-    expect(result).toEqual({ mode: "avg", span: "season", season: null });
+    expect(result).toEqual({ mode: "game", span: "season", season: null });
   });
 
   it("parses valid mode and span literals", async () => {
@@ -36,7 +36,7 @@ describe("loadStatFilters", () => {
   it("falls back to defaults on invalid values", async () => {
     const result = await loadStatFilters({ mode: "bogus", span: "15" });
 
-    expect(result).toEqual({ mode: "avg", span: "season", season: null });
+    expect(result).toEqual({ mode: "game", span: "season", season: null });
   });
 
   it("falls back to defaults on array values", async () => {

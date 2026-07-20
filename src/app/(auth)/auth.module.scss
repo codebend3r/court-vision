@@ -3,7 +3,10 @@
   gap: var(--space-6);
   padding: var(--space-8) var(--space-6);
   justify-items: start;
+  align-content: center;
+  width: 100%;
   max-width: 26rem;
+  justify-self: center;
 }
 
 .title {

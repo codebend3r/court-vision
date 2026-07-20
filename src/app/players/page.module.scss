@@ -37,6 +37,8 @@
 
   th {
     @include micro-label;
+    // Anchor for the header tooltip bubble.
+    position: relative;
     padding: var(--space-2) var(--space-3);
     text-align: left;
 
@@ -44,9 +46,7 @@
       position: relative;
       background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
       color: var(--color-accent);
-      box-shadow:
-        inset 0 -2px 0 var(--color-accent),
-        var(--glow-selected);
+      box-shadow: inset 0 -2px 0 var(--color-accent);
     }
   }
 
@@ -75,6 +75,55 @@
 .tableScroller {
   max-width: 100%;
   overflow-x: auto;
+}
+
+// Header tooltips (Advanced tab): the whole th is the hover/focus trigger so
+// clicking still sorts. Hidden state is display:none — a visibility-hidden
+// bubble would still extend the scroller's scrollable overflow — with
+// @starting-style providing the fade on browsers that transition display.
+.headerTip {
+  @include tooltip-bubble;
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: var(--space-2);
+  z-index: 30;
+  max-width: 19rem;
+  padding: var(--space-3);
+  display: none;
+  opacity: 0;
+  transform: translateY(calc(-1 * var(--space-1)));
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease,
+    display 140ms allow-discrete;
+}
+
+.table th:hover .headerTip,
+.table th:focus-within .headerTip {
+  display: grid;
+  opacity: 1;
+  transform: translateY(0);
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--space-1)));
+  }
+}
+
+.headerTipName {
+  font-family: var(--font-display);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-accent);
+}
+
+.headerTipFormula {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-control-bg);
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
 }
 
 .numeric {
