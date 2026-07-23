@@ -19,7 +19,7 @@ describe("DesignPage", () => {
     const nav = screen.getByRole("navigation", { name: "Design system sections" });
     const links = Array.from(nav.querySelectorAll("a"));
 
-    expect(links).toHaveLength(11);
+    expect(links).toHaveLength(12);
     expect(links.map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
       ["Colors", "#colors"],
       ["Chart palettes", "#chart-palettes"],
@@ -32,11 +32,29 @@ describe("DesignPage", () => {
       ["Spacing", "#spacing"],
       ["Radius", "#radius"],
       ["Form controls", "#form-controls"],
+      ["Buttons", "#buttons"],
     ]);
 
     for (const link of links) {
       expect(document.querySelector(link.getAttribute("href") ?? "")).toBeInTheDocument();
     }
+  });
+
+  it("catalogs every button variation standalone and in groups", () => {
+    render(
+      <ThemeProvider>
+        <DesignPage />
+      </ThemeProvider>,
+    );
+
+    ["Primary", "Secondary", "Ghost", "Danger", "Retro chip", "Retro dashed"].map((name) => {
+      expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    });
+    expect(screen.getByRole("group", { name: "Retro chip group" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Action group" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Pager group" })).toBeInTheDocument();
+    // Retro chips expose a pressed (pushed-in) state.
+    expect(screen.getAllByRole("button", { name: "Pressed", pressed: true }).length).toBe(2);
   });
 
   it("renders the eleven section headings", () => {

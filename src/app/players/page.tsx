@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { AdvancedStatsLegend } from "@/components/AdvancedStatsLegend/AdvancedStatsLegend";
-import { ComingSoonPanel } from "@/components/ComingSoonPanel/ComingSoonPanel";
+import { FantasyValueView } from "@/components/FantasyValueView/FantasyValueView";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayersPager } from "@/components/PlayersPager/PlayersPager";
 import { PlayersSearchControls } from "@/components/PlayersSearchControls/PlayersSearchControls";
@@ -18,6 +18,8 @@ import {
   type PlayerSortKey,
   type SortDirection,
 } from "@/lib/players/searchParams";
+import { getFantasyPool } from "@/lib/valuation/loader";
+import { loadFantasySearchParams } from "@/lib/valuation/searchParams";
 
 import styles from "@/app/players/page.module.scss";
 
@@ -174,14 +176,16 @@ export default async function PlayersPage({
   const resultsKey = `${params.tab}:${params.sort}:${params.dir}:${params.range}:${params.mode}:${params.page}`;
 
   if (params.tab === "fantasy") {
+    // Fantasy owns its URL state via nuqs; only `range` selects server data.
+    // Everything else (weights, exclusions, sort, paging) computes client-side
+    // in FantasyValueView from this one cached pool payload.
+    const { range } = await loadFantasySearchParams(raw);
+    const lines = await getFantasyPool({ range });
     return (
       <main className={styles.page}>
         <h1>Players</h1>
         {tabsNav}
-        <ComingSoonPanel
-          title="Fantasy Value"
-          description="A blended fantasy score across scoring, efficiency, and role is on the way."
-        />
+        <FantasyValueView lines={lines} />
       </main>
     );
   }

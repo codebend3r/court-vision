@@ -9,6 +9,8 @@ import { useSideNavStore } from "@/components/SideNav/sideNavStore";
 
 const NAV_ENTRIES = [
   { href: "/players", label: "Players", shortLabel: "P" },
+  { href: "/teams", label: "Teams", shortLabel: "T" },
+  { href: "/my-teams", label: "My Teams", shortLabel: "M" },
   { href: "/design", label: "Design", shortLabel: "D" },
 ];
 
@@ -25,7 +27,11 @@ export function SideNav() {
     <nav className={styles.nav} aria-label="Site" data-collapsed={isCollapsed ? "true" : "false"}>
       <ul className={styles.list}>
         {NAV_ENTRIES.map((entry) => {
-          const isActive = pathname === entry.href;
+          // /team (the detail page) belongs to Teams; /my-teams/create to My Teams.
+          const isActive =
+            pathname === entry.href ||
+            (entry.href === "/teams" && pathname === "/team") ||
+            (entry.href === "/my-teams" && pathname.startsWith("/my-teams/"));
           return (
             <li key={entry.href} className={styles.item}>
               <Link

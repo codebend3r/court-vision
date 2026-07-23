@@ -423,6 +423,59 @@
   color: var(--color-text-muted);
 }
 
+.buttonDanger {
+  height: var(--control-height);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-loss);
+  border-radius: var(--control-radius);
+  background: none;
+  color: var(--color-loss);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+
+  &:focus-visible {
+    @include control-focus-ring;
+  }
+
+  &:disabled {
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
+    opacity: var(--control-disabled-opacity);
+    cursor: not-allowed;
+  }
+}
+
+// The purple retro-shadow variation (see retro-button in styles/mixins.scss).
+.retroChip {
+  @include retro-button;
+}
+
+.retroChipAction {
+  @include retro-button-dashed;
+}
+
+.buttonSpecimens {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.buttonSpecimen {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+
+// A button group is just a wrapping flex row — every variant composes into
+// one without extra styles.
+.buttonGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .note {
   margin: 0;
   font-size: var(--font-size-xs);

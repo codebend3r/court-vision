@@ -12,6 +12,76 @@
   @return $shadow;
 }
 
+// Box-shadow counterpart to long-text-shadow: stacked solid offsets so a
+// button reads as a chunky retro extrusion, never a blurred glow.
+@function long-box-shadow($color, $length, $step: 1px) {
+  $shadow: ();
+  @for $i from 1 through $length {
+    $shadow: list.append($shadow, #{$i * $step} #{$i * $step} 0 $color, comma);
+  }
+  @return $shadow;
+}
+
+// Retro-shadow button, the purple variation of the long-shadow lettering.
+// Raised at rest, lifts on hover, and presses INTO its extrusion when active
+// or toggled on — works standalone or inside a flex button group.
+@mixin retro-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-accent-purple);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  box-shadow: long-box-shadow(var(--color-retro-shadow-purple), 4);
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+
+  &:hover:not(:disabled) {
+    transform: translate(-1px, -1px);
+    box-shadow: long-box-shadow(var(--color-retro-shadow-purple), 5);
+  }
+
+  &:active:not(:disabled),
+  &[aria-pressed="true"]:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: long-box-shadow(var(--color-retro-shadow-purple), 2);
+    color: var(--color-accent-purple);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+  }
+
+  &:disabled {
+    transform: none;
+    border-color: var(--color-border);
+    box-shadow: none;
+    color: var(--color-text-muted);
+    opacity: var(--control-disabled-opacity);
+    cursor: not-allowed;
+  }
+}
+
+// Dashed companion for bulk actions ("Clear all") that ride along in a retro
+// button group without competing with the toggles.
+@mixin retro-button-dashed {
+  @include retro-button;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--color-accent-purple) 45%, var(--color-border));
+  color: var(--color-text-muted);
+
+  &:hover:not(:disabled) {
+    border-color: var(--color-accent-purple);
+    color: var(--color-accent-purple);
+  }
+}
+
 @mixin micro-label {
   text-transform: uppercase;
   font-size: var(--font-size-xs);

@@ -121,7 +121,41 @@ const DESIGN_SECTIONS = [
   { id: "spacing", label: "Spacing" },
   { id: "radius", label: "Radius" },
   { id: "form-controls", label: "Form controls" },
+  { id: "buttons", label: "Buttons" },
 ] as const;
+
+// Every button variation in the app, in one catalog. Each renders standalone
+// and inside a button group.
+const BUTTON_VARIANTS: readonly {
+  name: string;
+  className:
+    | "buttonPrimary"
+    | "buttonSecondary"
+    | "buttonGhost"
+    | "buttonDanger"
+    | "retroChip"
+    | "retroChipAction";
+  usedBy: string;
+}[] = [
+  { name: "Primary", className: "buttonPrimary", usedBy: "form submits (login, signup)" },
+  {
+    name: "Secondary",
+    className: "buttonSecondary",
+    usedBy: "pagers, Reset, Cancel, Delete team",
+  },
+  { name: "Ghost", className: "buttonGhost", usedBy: "low-emphasis inline actions" },
+  { name: "Danger", className: "buttonDanger", usedBy: "modal confirms (Remove player)" },
+  {
+    name: "Retro chip",
+    className: "retroChip",
+    usedBy: "stat chart toggles — the purple long-shadow variation",
+  },
+  {
+    name: "Retro dashed",
+    className: "retroChipAction",
+    usedBy: "bulk actions in a retro group (Clear all)",
+  },
+];
 
 export default function DesignPage() {
   return (
@@ -431,21 +465,99 @@ export default function DesignPage() {
           </div>
         </div>
 
-        <div className={styles.controlGroup}>
-          <h3 className={styles.groupTitle}>Buttons</h3>
-          <div className={styles.buttonRow}>
-            <input type="submit" value="Save lineup" className={styles.buttonPrimary} />
-            <input type="button" value="Preview stats" className={styles.buttonSecondary} />
-            <input type="reset" value="Clear form" className={styles.buttonGhost} />
-            <input type="button" value="Disabled" disabled className={styles.buttonSecondary} />
-          </div>
-        </div>
-
         <p className={styles.note}>
           {
             'type="hidden" renders nothing and type="image" is a legacy graphical submit button; both are omitted.'
           }
         </p>
+      </section>
+
+      <section id="buttons" className={styles.section}>
+        <h2>Buttons</h2>
+
+        <div className={styles.controlGroup}>
+          <h3 className={styles.groupTitle}>Standalone</h3>
+          <div className={styles.buttonSpecimens}>
+            {BUTTON_VARIANTS.map((variant) => (
+              <div key={variant.name} className={styles.buttonSpecimen}>
+                <span className={styles.specimenName}>
+                  {variant.name} — {variant.usedBy}
+                </span>
+                <div className={styles.buttonRow}>
+                  <button type="button" className={styles[variant.className]}>
+                    {variant.name}
+                  </button>
+                  <button type="button" disabled className={styles[variant.className]}>
+                    Disabled
+                  </button>
+                  {(variant.className === "retroChip" ||
+                    variant.className === "retroChipAction") && (
+                    <button type="button" aria-pressed="true" className={styles[variant.className]}>
+                      Pressed
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div className={styles.buttonSpecimen}>
+              <span className={styles.specimenName}>Legacy input buttons</span>
+              <div className={styles.buttonRow}>
+                <input type="submit" value="Save lineup" className={styles.buttonPrimary} />
+                <input type="button" value="Preview stats" className={styles.buttonSecondary} />
+                <input type="reset" value="Clear form" className={styles.buttonGhost} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.controlGroup}>
+          <h3 className={styles.groupTitle}>Button groups</h3>
+          <div className={styles.buttonSpecimens}>
+            <div className={styles.buttonSpecimen}>
+              <span className={styles.specimenName}>Retro chip group — stat toggles</span>
+              <div className={styles.buttonGroup} role="group" aria-label="Retro chip group">
+                {["PTS", "REB", "AST", "STL"].map((label, index) => (
+                  <button
+                    key={label}
+                    type="button"
+                    aria-pressed={index < 2}
+                    className={styles.retroChip}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button type="button" className={styles.retroChipAction}>
+                  Clear all
+                </button>
+              </div>
+            </div>
+            <div className={styles.buttonSpecimen}>
+              <span className={styles.specimenName}>Action group — primary flow</span>
+              <div className={styles.buttonGroup} role="group" aria-label="Action group">
+                <button type="button" className={styles.buttonPrimary}>
+                  Save team
+                </button>
+                <button type="button" className={styles.buttonSecondary}>
+                  Cancel
+                </button>
+                <button type="button" className={styles.buttonDanger}>
+                  Remove player
+                </button>
+              </div>
+            </div>
+            <div className={styles.buttonSpecimen}>
+              <span className={styles.specimenName}>Pager group — secondary pair</span>
+              <div className={styles.buttonGroup} role="group" aria-label="Pager group">
+                <button type="button" className={styles.buttonSecondary}>
+                  Previous
+                </button>
+                <button type="button" disabled className={styles.buttonSecondary}>
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
   );
