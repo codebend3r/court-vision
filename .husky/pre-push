@@ -3,8 +3,6 @@ set -e
 
 echo "Running pre-push hook"
 
-bun run build
-
 git fetch -p
 
 git --no-pager log --decorate --oneline -n 10

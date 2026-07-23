@@ -1,0 +1,6 @@
+# Revisions to ignore in `git blame` (configure once with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs)
+#
+# Add the full SHA of any commit that is a pure, repo-wide reformat
+# (e.g. a one-time Oxfmt run) on its own line below, so `git blame` skips
+# it. Do not list commits that also contain real code changes.

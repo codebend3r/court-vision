@@ -45,7 +45,7 @@
   // Font family
   --font-sans: var(--font-body-next), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-display-next), var(--font-sans);
-  --font-mono: var(--font-mono-next), ui-monospace, "SF Mono", Menlo, monospace;
+  --font-mono: var(--font-mono-next), ui-monospace, "SF Mono", menlo, monospace;
 
   // Font weights (display loads 400/500/700, body loads 400/500/600)
   --font-weight-regular: 400;
@@ -97,9 +97,6 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-}
-
-body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
@@ -133,7 +130,7 @@ h5 {
 
 :root[data-theme="light"] {
   --color-bg: #f7f8fc;
-  --color-surface: #ffffff;
+  --color-surface: #fff;
   --color-border: #dfe3f0;
   --color-text: #171b2e;
   --color-text-muted: #5a6280;
@@ -143,7 +140,7 @@ h5 {
   --color-win: #0f8a4f;
   --color-loss: #c9283e;
 
-  --color-control-bg: #ffffff;
+  --color-control-bg: #fff;
   --color-control-placeholder: #7c86a6;
   --color-focus-ring: rgba(14, 127, 168, 0.28);
 
@@ -156,9 +153,9 @@ h5 {
   *,
   *::before,
   *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
+    animation-duration: 0.001ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.001ms;
+    scroll-behavior: auto;
   }
 }

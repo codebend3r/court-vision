@@ -22,6 +22,7 @@ export function Switch({ label, checked, defaultChecked, disabled, onChange }: S
       <input
         type="checkbox"
         role="switch"
+        aria-checked={checked}
         className={styles.input}
         checked={checked}
         defaultChecked={defaultChecked}

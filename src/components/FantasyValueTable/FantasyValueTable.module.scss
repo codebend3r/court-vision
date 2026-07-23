@@ -13,10 +13,15 @@
 
   th {
     @include micro-label;
-    // Anchor for the header tooltip bubble.
+    // Anchor for the header tooltip bubble. anchor-scope confines the shared
+    // name to each th's own subtree — without it, every tooltip resolves
+    // against the LAST th in the row carrying the name (the SGP column), not
+    // its parent.
     position: relative;
     padding: var(--space-2) var(--space-3);
     text-align: left;
+    anchor-name: --fantasy-header;
+    anchor-scope: --fantasy-header;
 
     &[data-sort-active="true"] {
       background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
@@ -52,7 +57,7 @@
 }
 
 .numeric {
-  text-align: right !important;
+  text-align: right;
   white-space: nowrap;
 }
 
@@ -106,14 +111,6 @@
 .blockedCell {
   color: var(--color-text-muted);
   opacity: 0.7;
-}
-
-// Each header anchors its own tooltip. anchor-scope confines the shared name
-// to each th's own subtree — without it, every tooltip resolves against the
-// LAST th in the row carrying the name (the SGP column), not its parent.
-.table th {
-  anchor-name: --fantasy-header;
-  anchor-scope: --fantasy-header;
 }
 
 // Fixed 20rem width, independent of the column. Preferred placement is above

@@ -25,13 +25,16 @@ jobs:
       - name: Generate Prisma client
         run: bunx prisma generate
 
-      - name: Prettier
-        run: bun run prettier:check
+      - name: Format (Oxfmt)
+        run: bun run format:check
 
-      - name: ESLint
+      - name: Lint (Oxlint)
         run: bun run lint
 
-      - name: TypeScript
+      - name: Lint SCSS (Gale)
+        run: bun run lint:scss
+
+      - name: TypeScript (tsgo)
         run: bun run typecheck
 
       - name: Vitest
