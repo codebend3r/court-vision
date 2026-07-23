@@ -1,0 +1,20 @@
+{
+  "extends": "gale:recommended",
+  "rules": {
+    "no-descending-specificity": "off",
+    "no-duplicate-selectors": "warning",
+    "property-no-unknown": [
+      "error",
+      {
+        "ignoreProperties": [
+          "anchor-name",
+          "anchor-scope",
+          "position-anchor",
+          "position-area",
+          "position-try",
+          "position-try-fallbacks"
+        ]
+      }
+    ]
+  }
+}

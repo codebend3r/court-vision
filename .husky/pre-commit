@@ -3,7 +3,15 @@ set -e
 
 echo "Running pre-commit hook"
 
-bun run prettier:quick && \
+# Auto-format staged files in place with Oxfmt (replaces pretty-quick), then re-stage.
+staged=$(git diff --cached --name-only --diff-filter=ACMR |
+  grep -E '\.(ts|tsx|js|jsx|mjs|cjs|json|jsonc|scss|css|md|mdx|ya?ml|toml|html)$' || true)
+if [ -n "$staged" ]; then
+  echo "$staged" | xargs oxfmt --write
+  echo "$staged" | xargs git add
+fi
+
 bun run typecheck && \
 bun run lint && \
+bun run lint:scss && \
 bun run test

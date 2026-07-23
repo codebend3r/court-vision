@@ -1,8 +1,0 @@
-.next/
-out/
-build/
-coverage/
-generated/
-bun.lock
-next-env.d.ts
-prisma/migrations/

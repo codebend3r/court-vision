@@ -1,7 +1,7 @@
 # Netlify Image CDN: allow transforming remote NBA headshots requested by
 # the next/image loader in src/lib/images/netlifyLoader.ts.
 [images]
-  remote_images = ["https://cdn\\.nba\\.com/.*"]
+remote_images = ["https://cdn\\.nba\\.com/.*"]
 
 # The Supabase publishable key and project URL are public by design — both
 # ship in the client bundle (Next.js inlines NEXT_PUBLIC_* vars) and access is
@@ -9,4 +9,4 @@
 # secrets scanner, which otherwise blocks the build on detecting their inlined
 # values (in the bundle and in the auth design docs that reference the URL).
 [build.environment]
-  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_SUPABASE_URL"
+SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_SUPABASE_URL"
