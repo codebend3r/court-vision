@@ -1,14 +1,12 @@
 "use client";
 
 import Link from "next/link";
-
+import styles from "@/components/FantasyValueTable/FantasyValueTable.module.scss";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
-import { methodMeta, type FantasyMethodKey } from "@/lib/valuation/registry";
-import { type FantasySortKey } from "@/lib/valuation/searchParams";
-import { type FantasyPlayerValues, type FantasyStatLine } from "@/lib/valuation/types";
-
-import styles from "@/components/FantasyValueTable/FantasyValueTable.module.scss";
+import { type FantasyMethodKey, methodMeta } from "@/lib/valuation/registry";
+import type { FantasySortKey } from "@/lib/valuation/searchParams";
+import type { FantasyPlayerValues, FantasyStatLine } from "@/lib/valuation/types";
 
 export type FantasyTableRow = FantasyStatLine & { values: FantasyPlayerValues; rank: number };
 

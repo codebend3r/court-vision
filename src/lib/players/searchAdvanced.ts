@@ -1,14 +1,12 @@
-import { Prisma } from "@generated/prisma/client";
-
-import { prisma } from "@/lib/prisma";
-
+import type { Prisma } from "@generated/prisma/client";
 import {
   ADVANCED_METRIC_KEYS,
-  isAdvancedMetricKey,
   type AdvancedMetricKey,
+  isAdvancedMetricKey,
   type PlayerGameRange,
   type PlayersSearchParams,
 } from "@/lib/players/searchParams";
+import { prisma } from "@/lib/prisma";
 
 export type PlayerAdvancedStats = Record<AdvancedMetricKey, number | null> & {
   gamesWithData: number;

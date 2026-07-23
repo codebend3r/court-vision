@@ -1,10 +1,8 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
-
-import * as persist from "@/lib/stats/persist";
-
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as endpoints from "@/lib/balldontlie/endpoints";
-import { BdlAdvancedStat, BdlStat } from "@/lib/balldontlie/schemas";
+import type { BdlAdvancedStat, BdlStat } from "@/lib/balldontlie/schemas";
 import { syncBalldontlie } from "@/lib/balldontlie/sync";
+import * as persist from "@/lib/stats/persist";
 
 const statRow: BdlStat = {
   id: 1,

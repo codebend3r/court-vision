@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { isUsernameTaken } from "@/lib/auth/signup";
 import { isValidUsername, normalizeUsername } from "@/lib/auth/username";

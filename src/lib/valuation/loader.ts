@@ -1,9 +1,8 @@
 import { unstable_cache } from "next/cache";
-
+import type { PlayerGameRange } from "@/lib/players/searchParams";
 import { prisma } from "@/lib/prisma";
-import { type PlayerGameRange } from "@/lib/players/searchParams";
 import { aggregateWindowLogs } from "@/lib/valuation/aggregate";
-import { type FantasyStatLine } from "@/lib/valuation/types";
+import type { FantasyStatLine } from "@/lib/valuation/types";
 
 const identitySelect = {
   id: true,

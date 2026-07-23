@@ -20,7 +20,7 @@ Operating rules for this repo. The README is a lean getting-started guide; this 
 
 ## Typescript
 
-- Always use type aliases. Never use TypeScript interfaces anywhere, including `declare global` augmentations; lint enforces this (`@typescript-eslint/consistent-type-definitions`).
+- Always use type aliases. Never use TypeScript interfaces anywhere, including `declare global` augmentations; Biome enforces this (`useConsistentTypeDefinitions`).
 - Use type guards wherever possible.
 - Never use `any` types; prefer type narrowing or type guards
 - Never under any circumstance cast types and never double cast: `as any as string`

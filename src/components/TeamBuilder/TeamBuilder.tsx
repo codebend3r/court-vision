@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChangeEvent, DragEvent, useMemo, useState } from "react";
+import { type ChangeEvent, type DragEvent, useMemo, useState } from "react";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
+import styles from "@/components/TeamBuilder/TeamBuilder.module.scss";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import {
   autoAssignSlotId,
@@ -16,19 +17,17 @@ import {
   rosteredIds,
   rosterSize,
   SLOT_META,
-  slotMeta,
   type SlotKind,
+  slotMeta,
 } from "@/lib/fantasyTeams/slots";
 import { useFantasyTeamsStore } from "@/lib/fantasyTeams/store";
-import {
-  type FantasyTeam,
-  type FantasyTeamPlayer,
-  type RosterSlot,
-  type RosterSlotType,
-  type SlotCounts,
+import type {
+  FantasyTeam,
+  FantasyTeamPlayer,
+  RosterSlot,
+  RosterSlotType,
+  SlotCounts,
 } from "@/lib/fantasyTeams/types";
-
-import styles from "@/components/TeamBuilder/TeamBuilder.module.scss";
 
 export type TeamBuilderProps = {
   players: FantasyTeamPlayer[];
@@ -336,11 +335,13 @@ export function TeamBuilder({ players, team }: TeamBuilderProps) {
       </section>
 
       {pendingRemoval !== null && (
+        // biome-ignore lint/a11y/noStaticElementInteractions: the overlay is a pointer-only dismiss target behind the dialog.
         <div
           className={styles.modalOverlay}
           role="presentation"
           onClick={() => setPendingRemoval(null)}
         >
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: the click handler only stops overlay-dismiss propagation; it triggers no action. */}
           <section
             role="dialog"
             aria-modal="true"

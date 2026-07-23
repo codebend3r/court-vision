@@ -1,8 +1,7 @@
 "use client";
 
-import { useTheme } from "@/lib/theme/ThemeProvider";
-
 import styles from "@/components/ThemeToggle/ThemeToggle.module.scss";
+import { useTheme } from "@/lib/theme/ThemeProvider";
 
 export function ThemeToggle() {
   const { theme, mounted, toggleTheme } = useTheme();

@@ -1,10 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-import { prisma } from "@/lib/prisma";
-
 import { mapHeadshots } from "@/lib/headshots/map";
-import * as sources from "@/lib/headshots/sources";
 import type { NbaPlayerIndexRow } from "@/lib/headshots/sources";
+import * as sources from "@/lib/headshots/sources";
+import { prisma } from "@/lib/prisma";
 
 type OurPlayerRow = {
   id: number;

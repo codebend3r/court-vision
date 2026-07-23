@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { type FantasyTeam } from "@/lib/fantasyTeams/types";
+import type { FantasyTeam } from "@/lib/fantasyTeams/types";
 
 type FantasyTeamsState = {
   teams: FantasyTeam[];

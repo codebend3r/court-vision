@@ -1,10 +1,8 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
+import TeamPage from "@/app/team/page";
 import { getTeamRoster, getTeamStats } from "@/lib/teams/loader";
 import { buildTeamStats } from "@/lib/teams/stats";
-
-import TeamPage from "@/app/team/page";
 
 vi.mock("@/lib/teams/loader", () => ({
   getTeamStats: vi.fn(),

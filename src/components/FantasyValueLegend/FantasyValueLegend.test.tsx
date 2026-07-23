@@ -26,7 +26,7 @@ describe("FantasyValueLegend", () => {
       <FantasyValueLegend poolSize={156} windowLabel="Last 10 games" basis="total" />,
     );
     const details = openLegend(container);
-    FANTASY_METHODS.map((method) => {
+    FANTASY_METHODS.forEach((method) => {
       expect(within(details).getByText(`${method.fullName}.`)).toBeInTheDocument();
     });
     expect(within(details).getByText(/156/)).toBeInTheDocument();

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { SEASON_TYPE } from "@/lib/balldontlie/constants";
-import { BdlGame } from "@/lib/balldontlie/schemas";
+import type { BdlGame } from "@/lib/balldontlie/schemas";
 
 import { generateGameLogs } from "@/lib/demo/generate";
 import { DEMO_PROFILES } from "@/lib/demo/profiles";
@@ -80,7 +80,9 @@ describe("generateGameLogs", () => {
         row.blk,
         row.tov,
         row.pts,
-      ].forEach((value) => expect(value).toBeGreaterThanOrEqual(0));
+      ].forEach((value) => {
+        expect(value).toBeGreaterThanOrEqual(0);
+      });
       expect(row.season).toBe("2025-26");
       expect(row.seasonType).toBe(SEASON_TYPE);
       expect(["home", "away"]).toContain(row.homeAway);

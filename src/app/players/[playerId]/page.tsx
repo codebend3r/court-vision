@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { SearchParams } from "nuqs/server";
-
+import styles from "@/app/players/[playerId]/page.module.scss";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayerGameLogTable } from "@/components/PlayerGameLogTable/PlayerGameLogTable";
 import { PlayerStatChart } from "@/components/PlayerStatChart/PlayerStatChart";
@@ -30,8 +30,6 @@ import {
   loadStatFilters,
   resolveSeasonSelection,
 } from "@/lib/stats/searchParams";
-
-import styles from "@/app/players/[playerId]/page.module.scss";
 
 export const dynamic = "force-dynamic";
 
@@ -102,7 +100,7 @@ export default async function PlayerPage({
   // The card labels the career with its actual data span (the backfill only
   // reaches 2020-21), so a veteran's card doesn't imply a full career.
   const careerSpanLabel =
-    !!oldestSeason && oldestSeason !== newestSeason
+    oldestSeason && oldestSeason !== newestSeason
       ? `${oldestSeason} to ${newestSeason ?? ""}`
       : (newestSeason ?? SEASON_LABEL);
 

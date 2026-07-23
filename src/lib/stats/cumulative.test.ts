@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildStatSeries, CumulativeSourceLog } from "@/lib/stats/cumulative";
+import { buildStatSeries, type CumulativeSourceLog } from "@/lib/stats/cumulative";
 
 describe("buildStatSeries (avg mode)", () => {
   it("returns empty array for empty input", () => {

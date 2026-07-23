@@ -1,18 +1,16 @@
 import { describe, expect, it } from "vitest";
-
-import { GameLogInput } from "@/lib/stats/inputs";
-
+import type { BdlAdvancedStat, BdlStat } from "@/lib/balldontlie/schemas";
+import type { GameLogInput } from "@/lib/stats/inputs";
 import {
   aggregateSeasonStats,
+  deriveGameContext,
   parseHeightInches,
   parseWeightLbs,
   toAdvancedGameLogInput,
   toGameLogInput,
-  toPlayerInputs,
   toPlayerInput,
-  deriveGameContext,
+  toPlayerInputs,
 } from "./transform";
-import { BdlAdvancedStat, BdlStat } from "@/lib/balldontlie/schemas";
 
 const teamAbbrById = new Map<number, string>([
   [10, "GSW"],

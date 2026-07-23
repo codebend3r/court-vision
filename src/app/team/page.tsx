@@ -1,13 +1,11 @@
 import Link from "next/link";
-
+import styles from "@/app/team/page.module.scss";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { getTeamRoster, getTeamStats } from "@/lib/teams/loader";
 import { teamBySlug } from "@/lib/teams/meta";
 import { loadTeamSearchParams } from "@/lib/teams/searchParams";
 import { ordinal, rankTeams, TEAM_STAT_META } from "@/lib/teams/stats";
-
-import styles from "@/app/team/page.module.scss";
 
 export const dynamic = "force-dynamic";
 
@@ -108,7 +106,7 @@ export default async function TeamPage({
                       <td className={styles.numeric}>{meta.format(teamStats[meta.key])}</td>
                       <td
                         className={styles.numeric}
-                        data-top={!!rank && rank <= 5 ? "true" : undefined}
+                        data-top={rank && rank <= 5 ? "true" : undefined}
                       >
                         {rank === undefined ? "—" : `${ordinal(rank)} of ${leagueSize}`}
                       </td>

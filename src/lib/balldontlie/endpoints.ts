@@ -1,11 +1,11 @@
-import { bdlFetch, BdlParamValue } from "@/lib/balldontlie/client";
+import { type BdlParamValue, bdlFetch } from "@/lib/balldontlie/client";
 import { PER_PAGE, SEASON_YEAR, THROTTLE_MS } from "@/lib/balldontlie/constants";
 import {
-  BdlAdvancedStat,
-  BdlGame,
-  BdlPlayer,
-  BdlStat,
-  BdlTeam,
+  type BdlAdvancedStat,
+  type BdlGame,
+  type BdlPlayer,
+  type BdlStat,
+  type BdlTeam,
   bdlAdvancedStatSchema,
   bdlGameRowSchema,
   bdlPage,

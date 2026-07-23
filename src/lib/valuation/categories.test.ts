@@ -7,7 +7,7 @@ import {
   isCategory,
 } from "@/lib/valuation/categories";
 import { makeStatLine } from "@/lib/valuation/fixtures";
-import { type FantasyStatLine } from "@/lib/valuation/types";
+import type { FantasyStatLine } from "@/lib/valuation/types";
 
 const line = (overrides: Partial<FantasyStatLine> = {}): FantasyStatLine =>
   makeStatLine({
@@ -57,7 +57,9 @@ describe("CATEGORY_META", () => {
 
 describe("isCategory", () => {
   it("accepts every category key and rejects other strings", () => {
-    CATEGORY_KEYS.forEach((key) => expect(isCategory(key)).toBe(true));
+    CATEGORY_KEYS.forEach((key) => {
+      expect(isCategory(key)).toBe(true);
+    });
     expect(isCategory("pie")).toBe(false);
     expect(isCategory("")).toBe(false);
   });

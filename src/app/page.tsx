@@ -1,9 +1,7 @@
 import Link from "next/link";
-
+import styles from "@/app/page.module.scss";
 import { ComingSoonPanel } from "@/components/ComingSoonPanel/ComingSoonPanel";
 import { getProfile } from "@/lib/auth/session";
-
-import styles from "@/app/page.module.scss";
 
 export default async function Home() {
   const profile = await getProfile();

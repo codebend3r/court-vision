@@ -1,10 +1,8 @@
 import Link from "next/link";
-
+import styles from "@/app/my-teams/create/page.module.scss";
 import { TeamBuilder } from "@/components/TeamBuilder/TeamBuilder";
 import { fantasyPlayersFromPool } from "@/lib/fantasyTeams/players";
 import { getFantasyPool } from "@/lib/valuation/loader";
-
-import styles from "@/app/my-teams/create/page.module.scss";
 
 export const dynamic = "force-dynamic";
 

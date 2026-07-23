@@ -3,8 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
-  FantasyValueTable,
   type FantasyTableRow,
+  FantasyValueTable,
 } from "@/components/FantasyValueTable/FantasyValueTable";
 import { makeStatLine } from "@/lib/valuation/fixtures";
 

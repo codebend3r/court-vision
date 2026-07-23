@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { FantasyValueView } from "@/components/FantasyValueView/FantasyValueView";
 import { makeStatLine } from "@/lib/valuation/fixtures";
-import { type FantasyStatLine } from "@/lib/valuation/types";
+import type { FantasyStatLine } from "@/lib/valuation/types";
 
 afterEach(cleanup);
 

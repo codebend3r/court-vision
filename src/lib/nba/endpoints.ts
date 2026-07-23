@@ -4,11 +4,11 @@ import { nbaFetch } from "@/lib/nba/client";
 import { LEAGUE_ID, RESULT_SET_NAMES, SEASON, SEASON_TYPE } from "@/lib/nba/constants";
 import { parseNbaResponse, rowsToObjects, selectResultSet } from "@/lib/nba/parse";
 import {
-  GameLogRow,
-  PlayerIndexRow,
-  SeasonStatsRow,
+  type GameLogRow,
   gameLogRowSchema,
+  type PlayerIndexRow,
   playerIndexRowSchema,
+  type SeasonStatsRow,
   seasonStatsRowSchema,
 } from "./schemas";
 

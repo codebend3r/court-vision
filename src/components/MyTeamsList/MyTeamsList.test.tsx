@@ -9,7 +9,7 @@ vi.mock("next/navigation", () => ({
 import { MyTeamsList } from "@/components/MyTeamsList/MyTeamsList";
 import { buildSlots, DEFAULT_SLOT_COUNTS } from "@/lib/fantasyTeams/slots";
 import { useFantasyTeamsStore } from "@/lib/fantasyTeams/store";
-import { type FantasyTeam } from "@/lib/fantasyTeams/types";
+import type { FantasyTeam } from "@/lib/fantasyTeams/types";
 
 beforeEach(() => {
   useFantasyTeamsStore.setState({ teams: [] });

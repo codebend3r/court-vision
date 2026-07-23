@@ -12,7 +12,7 @@ describe("ADVANCED_STAT_META", () => {
   });
 
   it("has non-empty copy for every entry", () => {
-    ADVANCED_STAT_META.map((meta) => {
+    ADVANCED_STAT_META.forEach((meta) => {
       expect(meta.label).not.toBe("");
       expect(meta.fullName).not.toBe("");
       expect(meta.description).not.toBe("");

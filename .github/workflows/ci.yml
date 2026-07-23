@@ -25,11 +25,11 @@ jobs:
       - name: Generate Prisma client
         run: bunx prisma generate
 
-      - name: Prettier
-        run: bun run prettier:check
+      - name: Biome
+        run: bun run check
 
-      - name: ESLint
-        run: bun run lint
+      - name: Prettier (SCSS and Markdown)
+        run: bun run prettier:check
 
       - name: TypeScript
         run: bun run typecheck

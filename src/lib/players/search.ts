@@ -1,8 +1,6 @@
-import { Prisma } from "@generated/prisma/client";
-
+import type { Prisma } from "@generated/prisma/client";
+import type { PlayersSearchParams } from "@/lib/players/searchParams";
 import { prisma } from "@/lib/prisma";
-
-import { PlayersSearchParams } from "@/lib/players/searchParams";
 
 export type PlayerRow = {
   id: number;

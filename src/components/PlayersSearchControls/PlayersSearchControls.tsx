@@ -1,25 +1,22 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChangeEvent, useEffect, useRef, useTransition } from "react";
-
+import { type ChangeEvent, useEffect, useRef, useTransition } from "react";
+import { InfoTip } from "@/components/InfoTip/InfoTip";
+import styles from "@/components/PlayersSearchControls/PlayersSearchControls.module.scss";
+import { Switch } from "@/components/Switch/Switch";
 import {
+  type AdvancedSortKey,
   buildPlayersHref,
   isPlayerGameRange,
   isPlayerStatMode,
   MAX_QUERY_LENGTH,
-  type AdvancedSortKey,
-  type PlayerSortKey,
   type PlayerGameRange,
+  type PlayerSortKey,
   type PlayerStatMode,
   type PlayersTab,
   type SortDirection,
 } from "@/lib/players/searchParams";
-
-import { InfoTip } from "@/components/InfoTip/InfoTip";
-import { Switch } from "@/components/Switch/Switch";
-
-import styles from "@/components/PlayersSearchControls/PlayersSearchControls.module.scss";
 
 export type PlayersSearchControlsProps = {
   q: string;

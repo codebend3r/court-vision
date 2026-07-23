@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
 import * as endpoints from "@/lib/balldontlie/endpoints";
-import { BdlGame, BdlPlayer, BdlTeam } from "@/lib/balldontlie/schemas";
-import * as persist from "@/lib/stats/persist";
-
+import type { BdlGame, BdlPlayer, BdlTeam } from "@/lib/balldontlie/schemas";
 import { seedDemo } from "@/lib/demo/seed";
+import * as persist from "@/lib/stats/persist";
 
 const teams: BdlTeam[] = [
   { id: 18, abbreviation: "MIN", full_name: "Minnesota Timberwolves" },

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TeamBuilder } from "@/components/TeamBuilder/TeamBuilder";
 import { buildSlots, DEFAULT_SLOT_COUNTS } from "@/lib/fantasyTeams/slots";
 import { useFantasyTeamsStore } from "@/lib/fantasyTeams/store";
-import { type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
+import type { FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({

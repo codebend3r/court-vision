@@ -16,10 +16,12 @@ describe("TEAM_META", () => {
   });
 
   it("puts five teams in each division and fifteen per conference", () => {
-    DIVISIONS.map((division) => {
+    DIVISIONS.forEach((division) => {
       const teams = TEAM_META.filter((team) => team.division === division);
       expect(teams).toHaveLength(5);
-      teams.map((team) => expect(team.conference).toBe(CONFERENCE_BY_DIVISION[division]));
+      teams.forEach((team) => {
+        expect(team.conference).toBe(CONFERENCE_BY_DIVISION[division]);
+      });
     });
     expect(TEAM_META.filter((team) => team.conference === "East")).toHaveLength(15);
     expect(TEAM_META.filter((team) => team.conference === "West")).toHaveLength(15);

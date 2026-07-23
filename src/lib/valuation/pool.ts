@@ -1,16 +1,11 @@
-import { type PlayerGameRange } from "@/lib/players/searchParams";
+import type { PlayerGameRange } from "@/lib/players/searchParams";
 import {
   CATEGORY_KEYS,
-  categoryValue,
   COUNTING_STAT_KEY,
+  categoryValue,
   isCountingCategory,
 } from "@/lib/valuation/categories";
-import {
-  type Basis,
-  type Category,
-  type FantasyStatLine,
-  type PoolStats,
-} from "@/lib/valuation/types";
+import type { Basis, Category, FantasyStatLine, PoolStats } from "@/lib/valuation/types";
 
 // Pool qualification: enough of the window played, at a rotation player's
 // minutes load. Replaces the NBA leader minimums used by the other tabs.

@@ -2,10 +2,8 @@
 
 import { useQueryStates } from "nuqs";
 import { useTransition } from "react";
-
-import { CAREER, statFilterParsers } from "@/lib/stats/searchParams";
-
 import styles from "@/components/SeasonSelect/SeasonSelect.module.scss";
+import { CAREER, statFilterParsers } from "@/lib/stats/searchParams";
 
 export type SeasonSelectProps = {
   seasons: readonly string[];

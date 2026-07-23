@@ -3,14 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-
+import styles from "@/components/MyTeamsList/MyTeamsList.module.scss";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
-import { slotMeta, type SlotKind } from "@/lib/fantasyTeams/slots";
+import { type SlotKind, slotMeta } from "@/lib/fantasyTeams/slots";
 import { teamNameToSlug } from "@/lib/fantasyTeams/slug";
 import { useFantasyTeamsStore } from "@/lib/fantasyTeams/store";
-import { type FantasyTeam } from "@/lib/fantasyTeams/types";
-
-import styles from "@/components/MyTeamsList/MyTeamsList.module.scss";
+import type { FantasyTeam } from "@/lib/fantasyTeams/types";
 
 const KIND_TITLES: Record<SlotKind, string> = {
   starter: "Starters",

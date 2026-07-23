@@ -1,7 +1,6 @@
 import { normalizeName } from "@/lib/demo/names";
-import { prisma } from "@/lib/prisma";
-
 import { fetchNbaPlayerIndex } from "@/lib/headshots/sources";
+import { prisma } from "@/lib/prisma";
 import { isMainModule } from "@/lib/runtime";
 
 export type MapHeadshotsDeps = {

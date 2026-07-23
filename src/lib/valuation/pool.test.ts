@@ -4,10 +4,10 @@ import { makeStatLine } from "@/lib/valuation/fixtures";
 import {
   attemptWeightedPcts,
   computePoolStats,
-  meanSigma,
   MIN_AVG_MINUTES,
+  meanSigma,
 } from "@/lib/valuation/pool";
-import { type FantasyStatLine } from "@/lib/valuation/types";
+import type { FantasyStatLine } from "@/lib/valuation/types";
 
 const line = makeStatLine;
 

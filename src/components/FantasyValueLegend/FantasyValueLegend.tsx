@@ -1,7 +1,6 @@
-import { FANTASY_METHODS } from "@/lib/valuation/registry";
-import { type Basis } from "@/lib/valuation/types";
-
 import styles from "@/components/FantasyValueLegend/FantasyValueLegend.module.scss";
+import { FANTASY_METHODS } from "@/lib/valuation/registry";
+import type { Basis } from "@/lib/valuation/types";
 
 export type FantasyValueLegendProps = {
   poolSize: number;

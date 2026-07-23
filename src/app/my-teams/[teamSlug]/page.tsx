@@ -1,11 +1,9 @@
 import Link from "next/link";
-
+import styles from "@/app/my-teams/[teamSlug]/page.module.scss";
 import { TeamEditor } from "@/components/TeamEditor/TeamEditor";
 import { fantasyPlayersFromPool } from "@/lib/fantasyTeams/players";
 import { teamSlugToName } from "@/lib/fantasyTeams/slug";
 import { getFantasyPool } from "@/lib/valuation/loader";
-
-import styles from "@/app/my-teams/[teamSlug]/page.module.scss";
 
 export const dynamic = "force-dynamic";
 

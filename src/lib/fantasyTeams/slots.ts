@@ -1,10 +1,10 @@
-import { parseEligibleGroups } from "@/lib/valuation/modifiers/positional";
-import {
-  type FantasyTeamPlayer,
-  type RosterSlot,
-  type RosterSlotType,
-  type SlotCounts,
+import type {
+  FantasyTeamPlayer,
+  RosterSlot,
+  RosterSlotType,
+  SlotCounts,
 } from "@/lib/fantasyTeams/types";
+import { parseEligibleGroups } from "@/lib/valuation/modifiers/positional";
 
 export type SlotKind = "starter" | "bench" | "injured";
 

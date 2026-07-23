@@ -34,13 +34,13 @@ describe("teamSlugToName", () => {
 
 describe("round trips", () => {
   it("name → slug → name survives for simple title-cased names", () => {
-    ["Bench Mob", "Dynasty", "Team 2"].map((name) => {
+    ["Bench Mob", "Dynasty", "Team 2"].forEach((name) => {
       expect(teamSlugToName(teamNameToSlug(name))).toBe(name);
     });
   });
 
   it("slug → name → slug is always stable", () => {
-    ["bench-mob", "the-6th-man-s-army", "team-2", "dynasty"].map((slug) => {
+    ["bench-mob", "the-6th-man-s-army", "team-2", "dynasty"].forEach((slug) => {
       expect(teamNameToSlug(teamSlugToName(slug))).toBe(slug);
     });
   });

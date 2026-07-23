@@ -1,10 +1,8 @@
 "use client";
 
-import { ChangeEvent } from "react";
-
-import { PAGE_SIZES } from "@/lib/players/searchParams";
-
+import type { ChangeEvent } from "react";
 import styles from "@/components/FantasyPager/FantasyPager.module.scss";
+import { PAGE_SIZES } from "@/lib/players/searchParams";
 
 export type FantasyPagerProps = {
   page: number;

@@ -1,20 +1,20 @@
 "use client";
 
-import { type ReactElement } from "react";
 import {
   ArrowRight,
   ArrowUpFromLine,
   CircleGauge,
   CirclePlus,
   Crosshair,
+  type LucideIcon,
   Shield,
   Sparkles,
   Target,
   Timer,
   Undo2,
-  type LucideIcon,
 } from "lucide-react";
 import { parseAsBoolean, parseAsString, useQueryState } from "nuqs";
+import type { ReactElement } from "react";
 import {
   CartesianGrid,
   DefaultZIndexes,
@@ -23,24 +23,22 @@ import {
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
+  type TooltipPayload,
   XAxis,
   YAxis,
-  type TooltipPayload,
 } from "recharts";
-
+import styles from "@/components/PlayerStatChart/PlayerStatChart.module.scss";
+import { Switch } from "@/components/Switch/Switch";
+import { TeamMatchup } from "@/components/TeamMatchup/TeamMatchup";
 import type { CumulativePoint } from "@/lib/stats/cumulative";
 import type { StatMode } from "@/lib/stats/searchParams";
 import { useTheme } from "@/lib/theme/ThemeProvider";
-import { Switch } from "@/components/Switch/Switch";
-import { TeamMatchup } from "@/components/TeamMatchup/TeamMatchup";
-
-import styles from "@/components/PlayerStatChart/PlayerStatChart.module.scss";
 import {
+  type ChartChrome,
   DEFAULT_ACTIVE_KEYS,
   getChartChrome,
   getStatMeta,
   STAT_KEYS,
-  type ChartChrome,
   type StatKey,
   type StatMeta,
   type StatPanel,
@@ -122,6 +120,7 @@ function DnpMarker({
   }
 
   return (
+    // biome-ignore lint/a11y/noAriaHiddenOnFocusable: Recharts supplies interaction behavior; this decorative marker must stay hidden.
     <circle
       data-dnp-marker
       aria-hidden="true"
@@ -169,7 +168,7 @@ type StatTooltipProps = {
 };
 
 function StatTooltip({ active, payload, metas, mode }: StatTooltipProps): ReactElement | null {
-  if (!active || !payload || !payload.length) {
+  if (!active || !payload?.length) {
     return null;
   }
 
@@ -333,7 +332,7 @@ export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; m
       <div className={styles.panels}>
         <section className={styles.panel}>
           <h3 className={styles.panelTitle}>{COUNTING_TITLE_BY_MODE[mode]}</h3>
-          {!!countingActive.length ? (
+          {countingActive.length ? (
             <StatLineChart
               metas={countingActive}
               series={series}

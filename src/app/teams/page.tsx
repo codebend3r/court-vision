@@ -1,6 +1,7 @@
 import Link from "next/link";
-
+import styles from "@/app/teams/page.module.scss";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
+import { getTeamStats } from "@/lib/teams/loader";
 import {
   CONFERENCE_BY_DIVISION,
   CONFERENCES,
@@ -8,11 +9,8 @@ import {
   TEAM_META,
   type TeamMeta,
 } from "@/lib/teams/meta";
-import { getTeamStats } from "@/lib/teams/loader";
 import { loadTeamsSearchParams, TEAMS_VIEWS, type TeamsView } from "@/lib/teams/searchParams";
-import { type TeamSeasonStats } from "@/lib/teams/stats";
-
-import styles from "@/app/teams/page.module.scss";
+import type { TeamSeasonStats } from "@/lib/teams/stats";
 
 export const dynamic = "force-dynamic";
 

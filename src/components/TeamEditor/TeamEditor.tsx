@@ -4,11 +4,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { TeamBuilder } from "@/components/TeamBuilder/TeamBuilder";
+import styles from "@/components/TeamEditor/TeamEditor.module.scss";
 import { teamNameToSlug } from "@/lib/fantasyTeams/slug";
 import { useFantasyTeamsStore } from "@/lib/fantasyTeams/store";
-import { type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
-
-import styles from "@/components/TeamEditor/TeamEditor.module.scss";
+import type { FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
 
 export type TeamEditorProps = {
   slug: string;

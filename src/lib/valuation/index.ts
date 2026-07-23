@@ -1,15 +1,15 @@
-import { type PlayerGameRange } from "@/lib/players/searchParams";
+import type { PlayerGameRange } from "@/lib/players/searchParams";
 import { scoreGScore } from "@/lib/valuation/methods/gscore";
 import { scorePoints } from "@/lib/valuation/methods/points";
 import { scoreZScore } from "@/lib/valuation/methods/zscore";
 import { positionalValues } from "@/lib/valuation/modifiers/positional";
 import { replacementLevel } from "@/lib/valuation/modifiers/replacement";
 import { computePoolStats } from "@/lib/valuation/pool";
-import {
-  type FantasyPlayerValues,
-  type FantasyStatLine,
-  type PoolStats,
-  type ValuationConfig,
+import type {
+  FantasyPlayerValues,
+  FantasyStatLine,
+  PoolStats,
+  ValuationConfig,
 } from "@/lib/valuation/types";
 
 // Small leagues still standardize against a broad pool so values stay stable

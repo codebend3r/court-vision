@@ -1,9 +1,4 @@
-import {
-  type Basis,
-  type Category,
-  type CountingCategory,
-  type FantasyStatLine,
-} from "@/lib/valuation/types";
+import type { Basis, Category, CountingCategory, FantasyStatLine } from "@/lib/valuation/types";
 
 export type CategoryKind = "counting" | "ratio";
 

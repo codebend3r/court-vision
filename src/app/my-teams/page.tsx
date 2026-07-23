@@ -1,8 +1,6 @@
 import Link from "next/link";
-
-import { MyTeamsList } from "@/components/MyTeamsList/MyTeamsList";
-
 import styles from "@/app/my-teams/page.module.scss";
+import { MyTeamsList } from "@/components/MyTeamsList/MyTeamsList";
 
 export default function MyTeamsPage() {
   return (

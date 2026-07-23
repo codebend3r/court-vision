@@ -59,6 +59,7 @@ export function TeamChip({ team, size = "md" }: { team: string; size?: TeamChipS
   }
 
   return (
+    // biome-ignore lint/a11y/useAriaPropsSupportedByRole: the label expands the visible team abbreviation.
     <span
       className={className}
       title={details.name}

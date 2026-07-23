@@ -1,11 +1,9 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
 import { parseAsString, useQueryStates } from "nuqs";
-
-import { TeamMatchup } from "@/components/TeamMatchup/TeamMatchup";
-
+import { type ReactNode, useMemo } from "react";
 import styles from "@/components/PlayerGameLogTable/PlayerGameLogTable.module.scss";
+import { TeamMatchup } from "@/components/TeamMatchup/TeamMatchup";
 
 export type PlayerGameLogTableRow = {
   id: string;

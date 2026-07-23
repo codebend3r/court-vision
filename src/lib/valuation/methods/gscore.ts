@@ -1,11 +1,11 @@
 import { categoryValue } from "@/lib/valuation/categories";
-import {
-  type Category,
-  type CategoryContribution,
-  type FantasyStatLine,
-  type PlayerValue,
-  type PoolStats,
-  type ValuationConfig,
+import type {
+  Category,
+  CategoryContribution,
+  FantasyStatLine,
+  PlayerValue,
+  PoolStats,
+  ValuationConfig,
 } from "@/lib/valuation/types";
 
 // G-Score (PRD §6.2 sketch): the Z-Score numerator over a denominator that

@@ -1,10 +1,8 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
-
-import { ThemeProvider } from "@/lib/theme/ThemeProvider";
-
 import { ThemeToggle } from "@/components/ThemeToggle/ThemeToggle";
+import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
 afterEach(() => {
   cleanup();

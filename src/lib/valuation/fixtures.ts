@@ -1,4 +1,4 @@
-import { type FantasyStatLine, type StatKey } from "@/lib/valuation/types";
+import type { FantasyStatLine, StatKey } from "@/lib/valuation/types";
 
 const STAT_KEYS: readonly StatKey[] = [
   "pts",

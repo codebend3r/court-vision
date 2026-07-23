@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
 import { useQueryStates } from "nuqs";
+import { useMemo } from "react";
 
 import {
   FantasyControls,
@@ -10,16 +10,15 @@ import {
 import { FantasyPager } from "@/components/FantasyPager/FantasyPager";
 import { FantasyValueLegend } from "@/components/FantasyValueLegend/FantasyValueLegend";
 import {
-  FantasyValueTable,
   type FantasyTableRow,
+  FantasyValueTable,
 } from "@/components/FantasyValueTable/FantasyValueTable";
-import { type PlayerGameRange } from "@/lib/players/searchParams";
+import styles from "@/components/FantasyValueView/FantasyValueView.module.scss";
+import type { PlayerGameRange } from "@/lib/players/searchParams";
 import { CATEGORY_KEYS } from "@/lib/valuation/categories";
 import { valuePlayers } from "@/lib/valuation/index";
-import { fantasyParsers, type FantasySortKey } from "@/lib/valuation/searchParams";
-import { type FantasyPlayerValues, type FantasyStatLine } from "@/lib/valuation/types";
-
-import styles from "@/components/FantasyValueView/FantasyValueView.module.scss";
+import { type FantasySortKey, fantasyParsers } from "@/lib/valuation/searchParams";
+import type { FantasyPlayerValues, FantasyStatLine } from "@/lib/valuation/types";
 
 const WINDOW_LABELS: Record<PlayerGameRange, string> = {
   all: "All games",

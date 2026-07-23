@@ -1,9 +1,8 @@
 "use client";
 
+import styles from "@/components/ChartPaletteSwatches/ChartPaletteSwatches.module.scss";
 import { getStatMeta } from "@/components/PlayerStatChart/statMeta";
 import { useTheme } from "@/lib/theme/ThemeProvider";
-
-import styles from "@/components/ChartPaletteSwatches/ChartPaletteSwatches.module.scss";
 
 export function ChartPaletteSwatches() {
   const { theme } = useTheme();

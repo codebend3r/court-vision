@@ -1,11 +1,9 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
+import PlayerPage from "@/app/players/[playerId]/page";
 import { prisma } from "@/lib/prisma";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
-
-import PlayerPage from "@/app/players/[playerId]/page";
 
 const renderPage = async ({
   playerId,
@@ -16,10 +14,12 @@ const renderPage = async ({
 }) =>
   render(
     <ThemeProvider>
-      {await PlayerPage({
-        params: Promise.resolve({ playerId }),
-        searchParams: Promise.resolve(query),
-      })}
+      {
+        await PlayerPage({
+          params: Promise.resolve({ playerId }),
+          searchParams: Promise.resolve(query),
+        })
+      }
     </ThemeProvider>,
     { wrapper: withNuqsTestingAdapter({ searchParams: query }) },
   );

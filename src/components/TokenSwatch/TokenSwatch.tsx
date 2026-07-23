@@ -1,20 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-import { useTheme } from "@/lib/theme/ThemeProvider";
-
 import styles from "@/components/TokenSwatch/TokenSwatch.module.scss";
+import { useTheme } from "@/lib/theme/ThemeProvider";
 
 export function TokenSwatch({ token }: { token: string }) {
   const { theme } = useTheme();
   const [value, setValue] = useState("");
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: theme intentionally retriggers the computed-style read.
   useEffect(() => {
     // getComputedStyle is a browser-only API unavailable during SSR, so the
     // computed token value can only be read post-mount; re-running on
     // `theme` re-reads the CSS custom property after a toggle.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads a browser-only computed style, not a subscribable external store
     setValue(getComputedStyle(document.documentElement).getPropertyValue(token));
   }, [theme, token]);
 

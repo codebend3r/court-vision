@@ -1,10 +1,9 @@
 import { SEASON_LABEL, SEASON_TYPE } from "@/lib/balldontlie/constants";
-import { BdlGame } from "@/lib/balldontlie/schemas";
+import type { BdlGame } from "@/lib/balldontlie/schemas";
 import { deriveGameContext } from "@/lib/balldontlie/transform";
-import { GameLogInput } from "@/lib/stats/inputs";
-
 import { createPrng, gaussian } from "@/lib/demo/prng";
-import { DemoProfile, MeanSpread } from "@/lib/demo/profiles";
+import type { DemoProfile, MeanSpread } from "@/lib/demo/profiles";
+import type { GameLogInput } from "@/lib/stats/inputs";
 
 const nonNegInt = (args: { rng: () => number; meanSpread: MeanSpread }): number => {
   const { rng, meanSpread } = args;

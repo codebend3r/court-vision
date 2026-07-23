@@ -4,7 +4,7 @@ import { CATEGORY_KEYS } from "@/lib/valuation/categories";
 import { makeStatLine } from "@/lib/valuation/fixtures";
 import { scoreGScore } from "@/lib/valuation/methods/gscore";
 import { computePoolStats } from "@/lib/valuation/pool";
-import { type FantasyStatLine, type ValuationConfig } from "@/lib/valuation/types";
+import type { FantasyStatLine, ValuationConfig } from "@/lib/valuation/types";
 
 // Per-game points 2, 4, 6, 8 across the pool (n = 50 games). Every player
 // carries a game-level points variance of 100, injected via sq:

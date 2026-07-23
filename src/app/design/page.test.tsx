@@ -1,10 +1,8 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-
+import DesignPage from "@/app/design/page";
 import { NBA_TEAMS } from "@/components/TeamChip/TeamChip";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
-
-import DesignPage from "@/app/design/page";
 
 afterEach(cleanup);
 
@@ -47,7 +45,7 @@ describe("DesignPage", () => {
       </ThemeProvider>,
     );
 
-    ["Primary", "Secondary", "Ghost", "Danger", "Retro chip", "Retro dashed"].map((name) => {
+    ["Primary", "Secondary", "Ghost", "Danger", "Retro chip", "Retro dashed"].forEach((name) => {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     });
     expect(screen.getByRole("group", { name: "Retro chip group" })).toBeInTheDocument();

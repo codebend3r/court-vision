@@ -1,4 +1,4 @@
-import { type Basis, type FantasyStatLine } from "@/lib/valuation/types";
+import type { Basis, FantasyStatLine } from "@/lib/valuation/types";
 
 // Points-League Linear (PRD §6.4): the dot product of the stat line with the
 // league's scoring settings. No pool, no standardization. These defaults are

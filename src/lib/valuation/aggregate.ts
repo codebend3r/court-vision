@@ -1,4 +1,4 @@
-import { type StatKey } from "@/lib/valuation/types";
+import type { StatKey } from "@/lib/valuation/types";
 
 export type WindowLog = Record<StatKey, number> & { minutes: number };
 

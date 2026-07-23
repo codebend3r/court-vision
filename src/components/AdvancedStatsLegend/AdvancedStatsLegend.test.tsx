@@ -22,7 +22,7 @@ describe("AdvancedStatsLegend", () => {
     }
     details.open = true;
 
-    ADVANCED_STAT_META.map((meta) => {
+    ADVANCED_STAT_META.forEach((meta) => {
       expect(within(details).getByText(meta.label)).toBeInTheDocument();
       expect(within(details).getByText(`${meta.fullName}.`)).toBeInTheDocument();
       expect(within(details).getByText(meta.formula)).toBeInTheDocument();

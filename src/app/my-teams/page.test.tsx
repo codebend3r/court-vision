@@ -1,9 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-
-import { useFantasyTeamsStore } from "@/lib/fantasyTeams/store";
-
 import MyTeamsPage from "@/app/my-teams/page";
+import { useFantasyTeamsStore } from "@/lib/fantasyTeams/store";
 
 beforeEach(() => {
   useFantasyTeamsStore.setState({ teams: [] });

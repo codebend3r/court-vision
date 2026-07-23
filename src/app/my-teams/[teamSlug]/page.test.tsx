@@ -1,12 +1,10 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
+import EditTeamPage from "@/app/my-teams/[teamSlug]/page";
 import { buildSlots, DEFAULT_SLOT_COUNTS } from "@/lib/fantasyTeams/slots";
 import { useFantasyTeamsStore } from "@/lib/fantasyTeams/store";
 import { makeStatLine } from "@/lib/valuation/fixtures";
 import { getFantasyPool } from "@/lib/valuation/loader";
-
-import EditTeamPage from "@/app/my-teams/[teamSlug]/page";
 
 vi.mock("@/lib/valuation/loader", () => ({
   getFantasyPool: vi.fn(),

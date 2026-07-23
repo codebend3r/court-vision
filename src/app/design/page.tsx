@@ -1,9 +1,8 @@
+import styles from "@/app/design/page.module.scss";
 import { ChartPaletteSwatches } from "@/components/ChartPaletteSwatches/ChartPaletteSwatches";
 import { Switch } from "@/components/Switch/Switch";
 import { NBA_TEAMS, TeamChip } from "@/components/TeamChip/TeamChip";
 import { TokenSwatch } from "@/components/TokenSwatch/TokenSwatch";
-
-import styles from "@/app/design/page.module.scss";
 
 const COLOR_TOKENS: readonly string[] = [
   "--color-bg",
@@ -515,6 +514,7 @@ export default function DesignPage() {
           <div className={styles.buttonSpecimens}>
             <div className={styles.buttonSpecimen}>
               <span className={styles.specimenName}>Retro chip group — stat toggles</span>
+              {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would require changing the established control layout */}
               <div className={styles.buttonGroup} role="group" aria-label="Retro chip group">
                 {["PTS", "REB", "AST", "STL"].map((label, index) => (
                   <button
@@ -533,6 +533,7 @@ export default function DesignPage() {
             </div>
             <div className={styles.buttonSpecimen}>
               <span className={styles.specimenName}>Action group — primary flow</span>
+              {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would require changing the established control layout */}
               <div className={styles.buttonGroup} role="group" aria-label="Action group">
                 <button type="button" className={styles.buttonPrimary}>
                   Save team
@@ -547,6 +548,7 @@ export default function DesignPage() {
             </div>
             <div className={styles.buttonSpecimen}>
               <span className={styles.specimenName}>Pager group — secondary pair</span>
+              {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would require changing the established control layout */}
               <div className={styles.buttonGroup} role="group" aria-label="Pager group">
                 <button type="button" className={styles.buttonSecondary}>
                   Previous

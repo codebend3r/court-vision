@@ -1,12 +1,10 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { withNuqsTestingAdapter, type UrlUpdateEvent } from "nuqs/adapters/testing";
+import { type UrlUpdateEvent, withNuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it } from "vitest";
-
+import { PlayerStatChart } from "@/components/PlayerStatChart/PlayerStatChart";
 import type { CumulativePoint } from "@/lib/stats/cumulative";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
-
-import { PlayerStatChart } from "@/components/PlayerStatChart/PlayerStatChart";
 
 afterEach(cleanup);
 

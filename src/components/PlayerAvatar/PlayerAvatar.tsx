@@ -2,11 +2,9 @@
 
 import Image from "next/image";
 import { useState } from "react";
-
+import styles from "@/components/PlayerAvatar/PlayerAvatar.module.scss";
 import { teamColorsFor } from "@/components/TeamChip/TeamChip";
 import { headshotUrl } from "@/lib/headshots/url";
-
-import styles from "@/components/PlayerAvatar/PlayerAvatar.module.scss";
 
 export type PlayerAvatarSize = "sm" | "lg";
 

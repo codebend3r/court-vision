@@ -1,19 +1,23 @@
 import { FREE_TIER_THROTTLE_MS } from "@/lib/balldontlie/constants";
 import {
-  BdlClientDeps,
+  type BdlClientDeps,
   fetchAllPlayers,
   fetchTeamGames,
   fetchTeams,
 } from "@/lib/balldontlie/endpoints";
-import { BdlPlayer } from "@/lib/balldontlie/schemas";
+import type { BdlPlayer } from "@/lib/balldontlie/schemas";
 import { aggregateSeasonStats, toPlayerInput } from "@/lib/balldontlie/transform";
-import { GameLogInput } from "@/lib/stats/inputs";
-import { SyncSummary, upsertGameLogs, upsertPlayers, upsertSeasonStats } from "@/lib/stats/persist";
-
 import { generateGameLogs } from "@/lib/demo/generate";
 import { normalizeName } from "@/lib/demo/names";
 import { DEMO_PROFILES } from "@/lib/demo/profiles";
 import { isMainModule } from "@/lib/runtime";
+import type { GameLogInput } from "@/lib/stats/inputs";
+import {
+  type SyncSummary,
+  upsertGameLogs,
+  upsertPlayers,
+  upsertSeasonStats,
+} from "@/lib/stats/persist";
 
 export async function seedDemo(deps: BdlClientDeps = {}): Promise<SyncSummary> {
   const teams = await fetchTeams(deps);

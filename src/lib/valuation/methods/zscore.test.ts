@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
-
-import { computePoolStats } from "@/lib/valuation/pool";
-import { scoreZScore } from "@/lib/valuation/methods/zscore";
 import { CATEGORY_KEYS } from "@/lib/valuation/categories";
 import { makeStatLine } from "@/lib/valuation/fixtures";
-import { type ValuationConfig } from "@/lib/valuation/types";
+import { scoreZScore } from "@/lib/valuation/methods/zscore";
+import { computePoolStats } from "@/lib/valuation/pool";
+import type { ValuationConfig } from "@/lib/valuation/types";
 
 const line = makeStatLine;
 

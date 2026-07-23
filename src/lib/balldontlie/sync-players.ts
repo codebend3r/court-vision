@@ -1,5 +1,5 @@
 import { FREE_TIER_THROTTLE_MS } from "@/lib/balldontlie/constants";
-import { BdlClientDeps, fetchAllPlayers } from "@/lib/balldontlie/endpoints";
+import { type BdlClientDeps, fetchAllPlayers } from "@/lib/balldontlie/endpoints";
 import { toPlayerInput } from "@/lib/balldontlie/transform";
 import { isMainModule } from "@/lib/runtime";
 import { upsertPlayers } from "@/lib/stats/persist";

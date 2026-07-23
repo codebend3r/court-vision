@@ -1,7 +1,7 @@
 "use client";
 
-import { ChangeEvent, FocusEvent, useEffect, useRef } from "react";
-
+import { type ChangeEvent, type FocusEvent, useEffect, useRef } from "react";
+import styles from "@/components/FantasyControls/FantasyControls.module.scss";
 import {
   isPlayerGameRange,
   isPlayerStatMode,
@@ -11,9 +11,7 @@ import {
 } from "@/lib/players/searchParams";
 import { CATEGORY_KEYS, CATEGORY_META } from "@/lib/valuation/categories";
 import { snapWeight } from "@/lib/valuation/searchParams";
-import { type Category } from "@/lib/valuation/types";
-
-import styles from "@/components/FantasyControls/FantasyControls.module.scss";
+import type { Category } from "@/lib/valuation/types";
 
 export type FantasyControlsChange = Partial<{
   q: string;
@@ -175,6 +173,7 @@ export function FantasyControls({
         </label>
       </span>
 
+      {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would require changing the established control layout */}
       <span className={styles.chips} role="group" aria-label="Categories">
         {includedMeta.map((meta) => {
           const punted = weights[meta.key] === 0;

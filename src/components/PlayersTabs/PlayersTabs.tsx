@@ -1,7 +1,7 @@
 "use client";
 
 import Link, { useLinkStatus } from "next/link";
-
+import styles from "@/components/PlayersTabs/PlayersTabs.module.scss";
 import {
   buildPlayersHref,
   DEFAULT_ADVANCED_SORT_KEY,
@@ -10,8 +10,6 @@ import {
   type PlayerGameRange,
   type PlayersTab,
 } from "@/lib/players/searchParams";
-
-import styles from "@/components/PlayersTabs/PlayersTabs.module.scss";
 
 const TAB_ENTRIES: ReadonlyArray<{ tab: PlayersTab; label: string }> = [
   { tab: "regular", label: "Regular Stats" },

@@ -1,13 +1,12 @@
-import {
+import { SEASON_TYPE, seasonLabelFromYear } from "@/lib/balldontlie/constants";
+import type { BdlAdvancedStat, BdlGame, BdlPlayer, BdlStat } from "@/lib/balldontlie/schemas";
+import type {
   AdvancedGameLogInput,
   GameLogInput,
   PlayerInput,
   SeasonStatsInput,
 } from "@/lib/stats/inputs";
 import { parseGameDate, parseMinutes } from "@/lib/stats/parse";
-
-import { SEASON_TYPE, seasonLabelFromYear } from "@/lib/balldontlie/constants";
-import { BdlAdvancedStat, BdlGame, BdlPlayer, BdlStat } from "@/lib/balldontlie/schemas";
 
 export const blankToNull = (value: string | null | undefined): string | null => {
   const trimmed = (value ?? "").trim();

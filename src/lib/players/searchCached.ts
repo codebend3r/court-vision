@@ -1,14 +1,14 @@
 import { unstable_cache } from "next/cache";
 
 import {
-  searchPlayers as searchPlayersUncached,
   type PlayersSearchResult,
+  searchPlayers as searchPlayersUncached,
 } from "@/lib/players/search";
 import {
-  searchPlayersAdvanced as searchPlayersAdvancedUncached,
   type PlayersAdvancedSearchResult,
+  searchPlayersAdvanced as searchPlayersAdvancedUncached,
 } from "@/lib/players/searchAdvanced";
-import { type PlayersSearchParams } from "@/lib/players/searchParams";
+import type { PlayersSearchParams } from "@/lib/players/searchParams";
 
 // Season stats only change when the sync job runs, so caching each distinct
 // query keeps repeat views instant: switching back to a tab, toggling

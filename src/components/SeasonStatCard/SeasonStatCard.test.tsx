@@ -1,9 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-
-import type { SeasonAverageStat } from "@/lib/players/seasonAverages";
-
 import { SeasonStatCard } from "@/components/SeasonStatCard/SeasonStatCard";
+import type { SeasonAverageStat } from "@/lib/players/seasonAverages";
 
 afterEach(cleanup);
 

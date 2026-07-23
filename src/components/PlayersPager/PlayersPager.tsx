@@ -1,20 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChangeEvent, useTransition } from "react";
-
+import { type ChangeEvent, useTransition } from "react";
+import styles from "@/components/PlayersPager/PlayersPager.module.scss";
 import {
+  type AdvancedSortKey,
   buildPlayersHref,
   PAGE_SIZES,
-  type AdvancedSortKey,
   type PlayerGameRange,
   type PlayerSortKey,
   type PlayerStatMode,
   type PlayersTab,
   type SortDirection,
 } from "@/lib/players/searchParams";
-
-import styles from "@/components/PlayersPager/PlayersPager.module.scss";
 
 export type PlayersPagerProps = {
   q: string;

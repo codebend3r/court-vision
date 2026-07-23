@@ -1,16 +1,16 @@
 import {
   createLoader,
   createParser,
+  type inferParserType,
   parseAsArrayOf,
   parseAsNumberLiteral,
   parseAsString,
   parseAsStringLiteral,
-  type inferParserType,
 } from "nuqs/server";
 
 import { PAGE_SIZES, PLAYER_GAME_RANGES } from "@/lib/players/searchParams";
 import { CATEGORY_KEYS, isCategory } from "@/lib/valuation/categories";
-import { type Category } from "@/lib/valuation/types";
+import type { Category } from "@/lib/valuation/types";
 
 // One sort key per method column plus the name sorts. SGP has no key — it is
 // a blocked placeholder column until denominators exist.

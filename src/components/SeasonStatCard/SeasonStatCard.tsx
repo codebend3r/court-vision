@@ -1,7 +1,6 @@
+import styles from "@/components/SeasonStatCard/SeasonStatCard.module.scss";
 import { formatOrdinal } from "@/lib/players/format";
 import type { RankTone, SeasonAverageStat } from "@/lib/players/seasonAverages";
-
-import styles from "@/components/SeasonStatCard/SeasonStatCard.module.scss";
 
 type RankTier = "first" | "elite" | "strong" | "regular";
 

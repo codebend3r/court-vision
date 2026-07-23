@@ -1,14 +1,18 @@
-import { SyncSummary, upsertGameLogs, upsertPlayers, upsertSeasonStats } from "@/lib/stats/persist";
-
 import { REGULAR_SEASON_DATE_RANGES } from "@/lib/nba/constants";
+import { toGameLogInput, toPlayerInput, toSeasonStatsInput } from "@/lib/nba/transform";
+import { isMainModule } from "@/lib/runtime";
 import {
-  NbaClientDeps,
+  type SyncSummary,
+  upsertGameLogs,
+  upsertPlayers,
+  upsertSeasonStats,
+} from "@/lib/stats/persist";
+import {
   fetchPlayerGameLogs,
   fetchPlayerIndex,
   fetchSeasonStats,
+  type NbaClientDeps,
 } from "./endpoints";
-import { toGameLogInput, toPlayerInput, toSeasonStatsInput } from "@/lib/nba/transform";
-import { isMainModule } from "@/lib/runtime";
 
 export async function syncNba(deps: NbaClientDeps = {}): Promise<SyncSummary> {
   const playerRows = await fetchPlayerIndex(deps);

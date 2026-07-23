@@ -1,13 +1,10 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
 import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
-
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import PlayersPage from "@/app/players/page";
 import { searchPlayers, searchPlayersAdvanced } from "@/lib/players/searchCached";
 import { makeStatLine } from "@/lib/valuation/fixtures";
 import { getFantasyPool } from "@/lib/valuation/loader";
-
-import PlayersPage from "@/app/players/page";
 
 // The page reads through the cached wrappers; mocking that module keeps the
 // render off the real query (and off `unstable_cache`, which has no incremental

@@ -1,5 +1,5 @@
-import { type EmailOtpType } from "@supabase/supabase-js";
-import { NextResponse, type NextRequest } from "next/server";
+import type { EmailOtpType } from "@supabase/supabase-js";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { safeNextPath } from "@/lib/auth/safeNextPath";
 import { createClient } from "@/lib/supabase/server";
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const type = searchParams.get("type");
   const next = safeNextPath(searchParams.get("next"));
 
-  if (!!tokenHash && isOtpType(type)) {
+  if (tokenHash && isOtpType(type)) {
     const supabase = await createClient();
     const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
     if (!error) {

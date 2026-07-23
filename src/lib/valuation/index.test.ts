@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { CATEGORY_KEYS } from "@/lib/valuation/categories";
 import { makeStatLine } from "@/lib/valuation/fixtures";
 import { valuePlayers } from "@/lib/valuation/index";
-import { type ValuationConfig } from "@/lib/valuation/types";
+import type { ValuationConfig } from "@/lib/valuation/types";
 
 const line = makeStatLine;
 
@@ -72,6 +72,8 @@ describe("valuePlayers", () => {
   it("collapses G-Score to Z-Score when within-player variance is zero", () => {
     const lines = [1, 2, 3, 4].map((playerId) => line({ playerId, pts: playerId * 100 }));
     const { values } = valuePlayers({ lines, config: config(), range: "all" });
-    values.forEach((value) => expect(value.g).toBeCloseTo(value.z, 10));
+    values.forEach((value) => {
+      expect(value.g).toBeCloseTo(value.z, 10);
+    });
   });
 });

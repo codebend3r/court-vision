@@ -1,14 +1,6 @@
-import {
-  SyncSummary,
-  upsertAdvancedGameLogs,
-  upsertGameLogs,
-  upsertPlayers,
-  upsertSeasonStats,
-} from "@/lib/stats/persist";
-
 import { BACKFILL_SEASON_YEARS, SEASON_YEAR } from "@/lib/balldontlie/constants";
 import {
-  BdlClientDeps,
+  type BdlClientDeps,
   fetchAllAdvancedStats,
   fetchAllStats,
   fetchTeams,
@@ -20,6 +12,13 @@ import {
   toPlayerInputs,
 } from "@/lib/balldontlie/transform";
 import { isMainModule } from "@/lib/runtime";
+import {
+  type SyncSummary,
+  upsertAdvancedGameLogs,
+  upsertGameLogs,
+  upsertPlayers,
+  upsertSeasonStats,
+} from "@/lib/stats/persist";
 
 const emptySummary: SyncSummary = { players: 0, seasonStats: 0, gameLogs: 0, advancedGameLogs: 0 };
 

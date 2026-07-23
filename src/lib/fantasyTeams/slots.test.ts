@@ -8,11 +8,11 @@ import {
   DEFAULT_SLOT_COUNTS,
   eligibleForSlot,
   resizeSlots,
-  rosterSize,
   rosteredIds,
+  rosterSize,
   SLOT_TYPES,
 } from "@/lib/fantasyTeams/slots";
-import { type FantasyTeamPlayer, type SlotCounts } from "@/lib/fantasyTeams/types";
+import type { FantasyTeamPlayer, SlotCounts } from "@/lib/fantasyTeams/types";
 
 const player = (
   overrides: Partial<FantasyTeamPlayer> & { playerId: number },

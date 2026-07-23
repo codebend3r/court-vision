@@ -3,17 +3,15 @@
 import { useSearchParams } from "next/navigation";
 import { useQueryStates } from "nuqs";
 import { useEffect, useTransition } from "react";
-
+import styles from "@/components/PlayerStatFilters/PlayerStatFilters.module.scss";
 import { useStatModeStore } from "@/lib/stats/modeStore";
 import {
   STAT_MODES,
   STAT_SPANS,
-  statFilterParsers,
   type StatMode,
   type StatSpan,
+  statFilterParsers,
 } from "@/lib/stats/searchParams";
-
-import styles from "@/components/PlayerStatFilters/PlayerStatFilters.module.scss";
 
 const MODE_LABELS: Record<StatMode, string> = {
   avg: "Avg",
@@ -62,6 +60,7 @@ export function PlayerStatFilters() {
       data-pending={isPending ? "true" : "false"}
       aria-busy={isPending}
     >
+      {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would require changing the established control layout */}
       <div className={styles.group} role="group" aria-label="Stat mode">
         {STAT_MODES.map((option) => (
           <button
@@ -78,6 +77,7 @@ export function PlayerStatFilters() {
           </button>
         ))}
       </div>
+      {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would require changing the established control layout */}
       <div className={styles.group} role="group" aria-label="Timeframe">
         {STAT_SPANS.map((option) => (
           <button

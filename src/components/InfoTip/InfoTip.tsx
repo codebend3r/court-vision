@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, type ReactNode } from "react";
+import { type ReactNode, useId } from "react";
 
 import styles from "@/components/InfoTip/InfoTip.module.scss";
 

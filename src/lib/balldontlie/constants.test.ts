@@ -2,9 +2,9 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   BACKFILL_SEASON_YEARS,
+  getApiKey,
   SEASON_LABEL,
   SEASON_YEAR,
-  getApiKey,
   seasonLabelFromYear,
 } from "@/lib/balldontlie/constants";
 

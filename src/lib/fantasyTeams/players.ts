@@ -1,5 +1,5 @@
-import { type FantasyStatLine } from "@/lib/valuation/types";
-import { type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
+import type { FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
+import type { FantasyStatLine } from "@/lib/valuation/types";
 
 // The builder's search pool: identity fields from the cached fantasy stat
 // lines, alphabetized for stable results.

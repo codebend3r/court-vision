@@ -1,5 +1,5 @@
 import Link from "next/link";
-
+import styles from "@/app/players/page.module.scss";
 import { AdvancedStatsLegend } from "@/components/AdvancedStatsLegend/AdvancedStatsLegend";
 import { FantasyValueView } from "@/components/FantasyValueView/FantasyValueView";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
@@ -8,20 +8,18 @@ import { PlayersSearchControls } from "@/components/PlayersSearchControls/Player
 import { PlayersTabs } from "@/components/PlayersTabs/PlayersTabs";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { ADVANCED_STAT_META, type AdvancedStatMeta } from "@/lib/players/advancedStatMeta";
-import { type PlayerStats } from "@/lib/players/search";
+import type { PlayerStats } from "@/lib/players/search";
 import { searchPlayers, searchPlayersAdvanced } from "@/lib/players/searchCached";
 import {
-  buildPlayersHref,
-  parsePlayersSearchParams,
   type AdvancedMetricKey,
   type AdvancedSortKey,
+  buildPlayersHref,
   type PlayerSortKey,
+  parsePlayersSearchParams,
   type SortDirection,
 } from "@/lib/players/searchParams";
 import { getFantasyPool } from "@/lib/valuation/loader";
 import { loadFantasySearchParams } from "@/lib/valuation/searchParams";
-
-import styles from "@/app/players/page.module.scss";
 
 export const dynamic = "force-dynamic";
 

@@ -3,7 +3,8 @@ set -e
 
 echo "Running pre-commit hook"
 
-bun run prettier:quick && \
+bun run check:staged && \
+bun run prettier && \
 bun run typecheck && \
 bun run lint && \
 bun run test
