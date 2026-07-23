@@ -11,6 +11,20 @@
 
   &[data-collapsed="true"] {
     width: 64px;
+
+    .link {
+      grid-template-columns: 1fr 0;
+      padding-inline: var(--space-2);
+    }
+
+    .shortLabel {
+      width: auto;
+    }
+
+    .label {
+      width: 0;
+      overflow: hidden;
+    }
   }
 }
 
@@ -72,22 +86,6 @@
 
 .label {
   white-space: nowrap;
-}
-
-.nav[data-collapsed="true"] {
-  .link {
-    grid-template-columns: 1fr 0;
-    padding-inline: var(--space-2);
-  }
-
-  .shortLabel {
-    width: auto;
-  }
-
-  .label {
-    width: 0;
-    overflow: hidden;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
