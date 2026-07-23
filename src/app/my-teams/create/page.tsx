@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { TeamBuilder } from "@/components/TeamBuilder/TeamBuilder";
+import { buildPlayerInsights } from "@/lib/fantasyTeams/insights";
 import { fantasyPlayersFromPool } from "@/lib/fantasyTeams/players";
 import { getFantasyPool } from "@/lib/valuation/loader";
 
@@ -13,6 +14,7 @@ export default async function CreateTeamPage() {
   // identity, position, and team for every active player this season.
   const lines = await getFantasyPool({ range: "all" });
   const players = fantasyPlayersFromPool({ lines });
+  const insights = buildPlayerInsights({ lines });
 
   return (
     <main className={styles.page}>
@@ -22,7 +24,7 @@ export default async function CreateTeamPage() {
           ← My Teams
         </Link>
       </header>
-      <TeamBuilder players={players} />
+      <TeamBuilder players={players} insights={insights} />
     </main>
   );
 }

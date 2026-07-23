@@ -24,6 +24,10 @@
 }
 
 .save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-4);
   border: 1px solid var(--color-accent);
   border-radius: var(--radius-sm);
@@ -42,6 +46,10 @@
   &:focus-visible {
     @include control-focus-ring;
   }
+}
+
+.saveIcon {
+  flex: none;
 }
 
 .settings {
@@ -131,6 +139,10 @@
   @include micro-label;
   margin: 0;
   color: var(--color-accent);
+  // These are 12px uppercase eyebrows, not display headings. The inherited
+  // retro long-shadow smears the tiny glyphs and drops legibility below AA;
+  // dropping it leaves the crisp accent text (≈8.8:1 on the page bg).
+  text-shadow: none;
 }
 
 .slotList {
@@ -187,7 +199,7 @@
 }
 
 .slotPlayerPosition {
-  color: var(--color-text-muted);
+  color: var(--color-position);
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
 }
@@ -214,8 +226,33 @@
   align-content: start;
 }
 
+// The hover quick-stats panel is a desktop-only affordance; below the column
+// collapse breakpoint it is hidden until a small-screen treatment lands.
+.insightColumn {
+  display: grid;
+
+  @media (max-width: 64rem) {
+    display: none;
+  }
+}
+
+.searchBar {
+  display: grid;
+}
+
 .search {
   @include control-field;
+  width: 100%;
+  height: calc(var(--control-height) * 1.6);
+  padding: 0 var(--space-4);
+  border-width: 2px;
+  border-color: var(--color-control-accent);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-lg);
+
+  &::placeholder {
+    font-size: var(--font-size-lg);
+  }
 }
 
 .noResults {
@@ -234,7 +271,7 @@
 
 .card {
   display: grid;
-  grid-template-columns: auto 1fr auto auto auto;
+  grid-template-columns: auto 1fr auto auto auto auto;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-1) var(--space-2);
@@ -242,6 +279,17 @@
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   cursor: grab;
+
+  // Subtle blue→purple gradient border on hover/keyboard focus. The double
+  // background (surface via padding-box, gradient via border-box) keeps the
+  // rounded corners the border-image approach would drop.
+  &:hover,
+  &:focus-within {
+    border-color: transparent;
+    background:
+      linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+      linear-gradient(135deg, var(--color-accent), var(--color-accent-purple)) border-box;
+  }
 
   &[data-rostered="true"] {
     opacity: 0.5;
@@ -253,8 +301,43 @@
   font-size: var(--font-size-sm);
 }
 
+// Revealed on card hover/focus; its column is always reserved so the reveal
+// never shifts the row. Still focusable while transparent, so keyboard users
+// reach it and :focus-within surfaces it.
+.cardView {
+  opacity: 0;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-accent-purple);
+  border-radius: var(--radius-full);
+  color: var(--color-accent-purple);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.6;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: opacity var(--duration-fast) var(--ease-out);
+
+  .card:hover &,
+  .card:focus-within & {
+    opacity: 1;
+  }
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    opacity: 1;
+    @include control-focus-ring;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
 .cardPosition {
-  color: var(--color-text-muted);
+  color: var(--color-position);
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
 }

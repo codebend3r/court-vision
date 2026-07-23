@@ -15,6 +15,9 @@
   --color-highlight: #ff9f3c;
   --color-win: #3dd68c;
   --color-loss: #ff5c6a;
+  // Player eligibility positions (G / F / C and hyphenated combos). Teal so
+  // they read as their own category, distinct from the blue slot accents.
+  --color-position: #5ec8b0;
   // Extrusion color for retro long-shadow lettering (see long-text-shadow in mixins).
   --color-retro-shadow: color-mix(in srgb, var(--color-accent) 55%, var(--color-bg));
   // Purple variation for retro-shadow buttons (see retro-button in mixins).
@@ -139,6 +142,7 @@ h5 {
   --color-highlight: #b35c00;
   --color-win: #0f8a4f;
   --color-loss: #c9283e;
+  --color-position: #0c7560;
 
   --color-control-bg: #fff;
   --color-control-placeholder: #7c86a6;

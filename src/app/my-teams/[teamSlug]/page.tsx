@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { TeamEditor } from "@/components/TeamEditor/TeamEditor";
+import { buildPlayerInsights } from "@/lib/fantasyTeams/insights";
 import { fantasyPlayersFromPool } from "@/lib/fantasyTeams/players";
 import { teamSlugToName } from "@/lib/fantasyTeams/slug";
 import { getFantasyPool } from "@/lib/valuation/loader";
@@ -13,6 +14,7 @@ export default async function EditTeamPage({ params }: { params: Promise<{ teamS
   const { teamSlug } = await params;
   const lines = await getFantasyPool({ range: "all" });
   const players = fantasyPlayersFromPool({ lines });
+  const insights = buildPlayerInsights({ lines });
 
   return (
     <main className={styles.page}>
@@ -22,7 +24,7 @@ export default async function EditTeamPage({ params }: { params: Promise<{ teamS
           ← My Teams
         </Link>
       </header>
-      <TeamEditor slug={teamSlug} players={players} />
+      <TeamEditor slug={teamSlug} players={players} insights={insights} />
     </main>
   );
 }
