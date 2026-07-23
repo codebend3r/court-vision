@@ -42,14 +42,6 @@
   }
 }
 
-.badge {
-  @include micro-label;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-full);
-  background: color-mix(in srgb, var(--color-highlight) 18%, transparent);
-  color: var(--color-highlight);
-}
-
 .spinner {
   width: var(--font-size-sm);
   height: var(--font-size-sm);

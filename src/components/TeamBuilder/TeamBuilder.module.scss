@@ -1,0 +1,348 @@
+@use "@/styles/mixins" as *;
+
+.builder {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.head {
+  display: grid;
+  grid-template-columns: minmax(16rem, 24rem) auto;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.nameLabel {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.nameInput {
+  @include control-field;
+}
+
+.save {
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-accent);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+
+  &:disabled {
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+  }
+}
+
+.settings {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  list-style: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &:hover {
+    color: var(--color-text);
+  }
+}
+
+.chevron {
+  color: var(--color-accent);
+  font-size: var(--font-size-xs);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.settings[open] .chevron {
+  transform: rotate(90deg);
+}
+
+.settingsBody {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.countLabel {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+.countInput {
+  @include control-field;
+  width: 4rem;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(24rem, 1fr) minmax(20rem, 1fr);
+  align-items: start;
+  gap: var(--space-6);
+
+  @media (max-width: 64rem) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rosterColumn {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.rosterSummary {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.slotGroup {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.slotGroupTitle {
+  @include micro-label;
+  margin: 0;
+  color: var(--color-accent);
+}
+
+.slotList {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// Drop targets. During a drag every slot declares itself: green border for a
+// legal landing spot, red for filled/ineligible — flat borders, no glows.
+.slot {
+  display: grid;
+  grid-template-columns: 3rem 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+
+  &[data-drop="ok"] {
+    border-color: var(--color-win);
+  }
+
+  &[data-drop="no"] {
+    border-color: var(--color-loss);
+    opacity: 0.6;
+  }
+}
+
+.slotType {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-muted);
+}
+
+.slotEmpty {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.slotPlayer {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.slotPlayerName {
+  font-size: var(--font-size-sm);
+}
+
+.slotPlayerPosition {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+.slotRemove {
+  padding: 0 var(--space-1);
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-loss);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+  }
+}
+
+.searchColumn {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.search {
+  @include control-field;
+}
+
+.noResults {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.results {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  cursor: grab;
+
+  &[data-rostered="true"] {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.cardName {
+  font-size: var(--font-size-sm);
+}
+
+.cardPosition {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--color-bg) 70%, transparent);
+}
+
+.modal {
+  display: grid;
+  gap: var(--space-3);
+  width: min(24rem, calc(100vw - var(--space-8)));
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.modalTitle {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.modalBody {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.modalActions {
+  display: grid;
+  grid-auto-flow: column;
+  justify-content: end;
+  gap: var(--space-2);
+}
+
+.modalCancel {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+
+  &:focus-visible {
+    @include control-focus-ring;
+  }
+}
+
+.modalConfirm {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-loss);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-loss);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+
+  &:focus-visible {
+    @include control-focus-ring;
+  }
+}
+
+.cardAdd {
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-accent);
+  font-size: var(--font-size-md);
+  line-height: 1;
+  cursor: pointer;
+
+  &:disabled {
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+  }
+}

@@ -1,0 +1,190 @@
+@use "@/styles/mixins" as *;
+
+.tableScroller {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 72rem;
+  border-collapse: collapse;
+  transition: opacity var(--duration-base) var(--ease-out);
+
+  th {
+    @include micro-label;
+    // Anchor for the header tooltip bubble.
+    position: relative;
+    padding: var(--space-2) var(--space-3);
+    text-align: left;
+
+    &[data-sort-active="true"] {
+      background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
+      color: var(--color-accent);
+      box-shadow: inset 0 -2px 0 var(--color-accent);
+    }
+  }
+
+  td {
+    padding: var(--space-2) var(--space-3);
+    border-top: 1px solid var(--color-border);
+
+    &[data-sort-active="true"] {
+      background: color-mix(in srgb, var(--color-accent) 7%, transparent);
+    }
+
+    &[data-negative="true"] {
+      color: var(--color-loss);
+    }
+  }
+
+  td.numeric {
+    font-family: var(--font-mono);
+  }
+
+  tbody {
+    font-variant-numeric: tabular-nums;
+  }
+
+  tr:hover td {
+    background: var(--color-surface);
+  }
+}
+
+.numeric {
+  text-align: right !important;
+  white-space: nowrap;
+}
+
+.rank {
+  color: var(--color-text-muted);
+}
+
+.nameCell {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+// Sort triggers are buttons (client-side sorting), styled like the other
+// tabs' sort links.
+.sortButton {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+
+  &[data-active="true"] {
+    color: var(--color-accent);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+  }
+}
+
+.table th:nth-child(n + 5) .sortButton {
+  width: 100%;
+  justify-content: end;
+}
+
+// SGP ships blocked (no denominators source yet): a muted placeholder column
+// whose header tooltip explains why.
+.blockedHeader {
+  color: var(--color-text-muted);
+}
+
+.blockedCell {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+// Each header anchors its own tooltip. anchor-scope confines the shared name
+// to each th's own subtree — without it, every tooltip resolves against the
+// LAST th in the row carrying the name (the SGP column), not its parent.
+.table th {
+  anchor-name: --fantasy-header;
+  anchor-scope: --fantasy-header;
+}
+
+// Fixed 20rem width, independent of the column. Preferred placement is above
+// the header via anchor positioning (position: fixed escapes the scroller's
+// overflow clip, which would swallow anything above the first row); browsers
+// without anchor support keep the below-the-header fallback.
+.headerTip {
+  @include tooltip-bubble;
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: var(--space-2);
+  z-index: 30;
+  width: 20rem;
+  padding: var(--space-3);
+  // The SGP header is a .numeric cell; don't inherit its nowrap.
+  white-space: normal;
+  display: none;
+  opacity: 0;
+  transform: translateY(calc(-1 * var(--space-1)));
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease,
+    display 140ms allow-discrete;
+}
+
+.table th:hover .headerTip,
+.table th:focus-within .headerTip {
+  display: grid;
+  opacity: 1;
+  transform: translateY(0);
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--space-1)));
+  }
+}
+
+@supports (anchor-name: --a) {
+  .headerTip {
+    position: fixed;
+    position-anchor: --fantasy-header;
+    top: auto;
+    left: auto;
+    bottom: calc(anchor(top) + var(--space-1));
+    right: anchor(right);
+    // If the viewport clips it (top edge, left edge), flip below / left-align.
+    position-try-fallbacks: flip-block, flip-inline;
+    transform: translateY(var(--space-1));
+  }
+
+  .table th:hover .headerTip,
+  .table th:focus-within .headerTip {
+    @starting-style {
+      opacity: 0;
+      transform: translateY(var(--space-1));
+    }
+  }
+}
+
+.headerTipName {
+  font-family: var(--font-display);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-accent);
+}
+
+.headerTipFormula {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-control-bg);
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+}

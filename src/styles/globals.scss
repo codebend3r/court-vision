@@ -17,6 +17,9 @@
   --color-loss: #ff5c6a;
   // Extrusion color for retro long-shadow lettering (see long-text-shadow in mixins).
   --color-retro-shadow: color-mix(in srgb, var(--color-accent) 55%, var(--color-bg));
+  // Purple variation for retro-shadow buttons (see retro-button in mixins).
+  --color-accent-purple: #9b7dff;
+  --color-retro-shadow-purple: color-mix(in srgb, var(--color-accent-purple) 55%, var(--color-bg));
 
   // Spacing scale
   --space-1: 0.25rem;

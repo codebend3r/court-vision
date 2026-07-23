@@ -39,9 +39,9 @@ describe("PlayersTabs", () => {
     );
   });
 
-  it("shows a Soon badge on the Fantasy Value tab", () => {
+  it("no longer shows a Soon badge on the Fantasy Value tab", () => {
     render(<PlayersTabs active="regular" q="" size={50} range="all" />);
 
-    expect(screen.getByText("Soon")).toBeInTheDocument();
+    expect(screen.queryByText("Soon")).not.toBeInTheDocument();
   });
 });

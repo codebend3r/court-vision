@@ -1,0 +1,167 @@
+@use "@/styles/mixins" as *;
+
+.page {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  justify-items: start;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.identity {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.name {
+  margin: 0;
+}
+
+.context {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.record {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xl);
+  font-variant-numeric: tabular-nums;
+}
+
+// Roster on the left, ranked stats beside it on the right; stacks (roster
+// first) once the viewport can't fit both.
+.content {
+  display: grid;
+  grid-template-columns: minmax(20rem, 26rem) minmax(0, 48rem);
+  align-items: start;
+  gap: var(--space-4);
+  width: 100%;
+
+  @media (max-width: 72rem) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statsCard {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    @include micro-label;
+    padding: var(--space-2) var(--space-4);
+    text-align: left;
+  }
+
+  td {
+    padding: var(--space-2) var(--space-4);
+    border-top: 1px solid var(--color-border);
+  }
+
+  tbody {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.numeric {
+  text-align: right !important;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+
+  // Flat accent for a top-five league rank; no glows.
+  &[data-top="true"] {
+    color: var(--color-win);
+  }
+}
+
+.statLabel {
+  display: block;
+  font-weight: var(--font-weight-semibold);
+}
+
+.statDescription {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.rosterCard {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  width: 100%;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.rosterTitle {
+  @include micro-label;
+  margin: 0;
+  color: var(--color-accent);
+}
+
+.rosterList {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rosterRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  color: var(--color-text);
+
+  &:hover .rosterName {
+    color: var(--color-accent);
+  }
+}
+
+.rosterName {
+  font-size: var(--font-size-sm);
+}
+
+.rosterPosition {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+.rosterJersey {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+.notice {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-highlight);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.back {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}

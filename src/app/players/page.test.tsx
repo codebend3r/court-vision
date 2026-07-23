@@ -1,7 +1,11 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
+
 import { searchPlayers, searchPlayersAdvanced } from "@/lib/players/searchCached";
+import { makeStatLine } from "@/lib/valuation/fixtures";
+import { getFantasyPool } from "@/lib/valuation/loader";
 
 import PlayersPage from "@/app/players/page";
 
@@ -11,6 +15,12 @@ import PlayersPage from "@/app/players/page";
 vi.mock("@/lib/players/searchCached", () => ({
   searchPlayers: vi.fn(),
   searchPlayersAdvanced: vi.fn(),
+}));
+
+// The fantasy tab reads through its own cached loader; mocking keeps the
+// render off prisma and `unstable_cache` for the same reason as above.
+vi.mock("@/lib/valuation/loader", () => ({
+  getFantasyPool: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -423,16 +433,43 @@ describe("PlayersPage tabs", () => {
     expect(screen.getByText("What do these stats mean?")).toBeInTheDocument();
   });
 
-  it("renders a coming-soon panel for the fantasy tab with no controls or table", async () => {
-    render(await PlayersPage({ searchParams: Promise.resolve({ tab: "fantasy" }) }));
+  it("renders one sortable column per valuation method from the pool loader", async () => {
+    vi.mocked(getFantasyPool).mockResolvedValue([
+      makeStatLine({ playerId: 1, pts: 900 }),
+      makeStatLine({ playerId: 2, pts: 500 }),
+    ]);
+
+    render(await PlayersPage({ searchParams: Promise.resolve({ tab: "fantasy" }) }), {
+      wrapper: withNuqsTestingAdapter({ searchParams: "?tab=fantasy" }),
+    });
 
     expect(screen.getByRole("link", { name: /Fantasy Value/ })).toHaveAttribute(
       "aria-current",
       "page",
     );
-    expect(screen.getByText("Coming soon")).toBeInTheDocument();
-    expect(screen.queryByRole("table")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Search players")).not.toBeInTheDocument();
+    expect(getFantasyPool).toHaveBeenCalledWith({ range: "all" });
+    expect(screen.getByRole("columnheader", { name: /Z-Score/ })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /G-Score/ })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /Points/ })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "VORP" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /SGP/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Punt PTS" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Search players")).toBeInTheDocument();
+    expect(screen.queryByText("Coming soon")).not.toBeInTheDocument();
     expect(searchPlayers).not.toHaveBeenCalled();
+  });
+
+  it("passes the range param through to the fantasy pool loader", async () => {
+    vi.mocked(getFantasyPool).mockResolvedValue([]);
+
+    render(
+      await PlayersPage({ searchParams: Promise.resolve({ tab: "fantasy", range: "last10" }) }),
+      {
+        wrapper: withNuqsTestingAdapter({ searchParams: "?tab=fantasy&range=last10" }),
+      },
+    );
+
+    expect(getFantasyPool).toHaveBeenCalledWith({ range: "last10" });
+    expect(screen.getByText(/No players yet/)).toBeInTheDocument();
   });
 });

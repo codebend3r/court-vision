@@ -64,7 +64,6 @@ export function PlayersTabs({ active, q, size, range }: PlayersTabsProps) {
                 data-active={isActive ? "true" : undefined}
               >
                 {entry.label}
-                {entry.tab === "fantasy" && <span className={styles.badge}>Soon</span>}
                 <TabPending />
               </Link>
             </li>
