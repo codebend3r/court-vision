@@ -36,3 +36,12 @@ CREATE POLICY "Profile owner can read" ON public."Profile"
 DROP POLICY IF EXISTS "Profile owner can update" ON public."Profile";
 CREATE POLICY "Profile owner can update" ON public."Profile"
   FOR UPDATE TO authenticated USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
+-- Column-level UPDATE privileges. RLS gates the ROW (owner-only) but not which
+-- COLUMNS change, so the owner-update policy alone would let any signed-in user
+-- PATCH their own `tier` (entitlements), `email`, or `username` (reserved-name
+-- bypass) straight through the public anon key + PostgREST. Restrict client
+-- writes to `displayName` only; `tier`/`email`/`username` are written solely by
+-- server code via the postgres role (Prisma), which bypasses these grants.
+REVOKE UPDATE ON public."Profile" FROM anon, authenticated;
+GRANT UPDATE ("displayName") ON public."Profile" TO authenticated;

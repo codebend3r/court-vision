@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { safeNextPath } from "@/lib/auth/safeNextPath";
 import { getUser } from "@/lib/auth/session";
 
 import authStyles from "@/app/(auth)/auth.module.scss";
@@ -18,7 +19,7 @@ export default async function LoginPage({
   return (
     <main className={authStyles.shell} data-centered>
       <h1 className={authStyles.title}>Sign in</h1>
-      <LoginForm next={next ?? "/"} />
+      <LoginForm next={safeNextPath(next)} />
     </main>
   );
 }
