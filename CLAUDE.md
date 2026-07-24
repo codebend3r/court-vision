@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Operating rules for this repo. The README is a lean getting-started guide; this file is conventions only.
+Operating rules for this repo.
 
 ## Structure
 
@@ -9,9 +9,11 @@ Operating rules for this repo. The README is a lean getting-started guide; this 
 
 ## Workflow
 
-- Never create a new branch unless explicitly asked to. Work on the current branch by default.
-- Auto-commit each logical change without asking. Subject must start with `CV:` (see the `cv-commit-format` skill).
-- PR titles must also start with `CV:` followed by a short title, exactly like commit subjects. CI (`.github/workflows/pr-title.yml`) fails any PR without it; get it right at `gh pr create` time.
+- Do not commit anything until I tell you to.
+- Do not push anything until I tell you to.
+- Do not merge anything until I tell you to.
+- Do not create a PR until I tell you to.
+- Do not create a branch until I tell you to.
 
 ## Tooling
 
@@ -30,11 +32,12 @@ Operating rules for this repo. The README is a lean getting-started guide; this 
 
 - Always use type aliases. Never use TypeScript interfaces anywhere, including `declare global` augmentations
 - Use type guards wherever possible.
+- Unit test all type guard functions
 - Never use `any` types; prefer type narrowing or type guards
 - Never under any circumstance cast types and never double cast: `as any as string`
 - If type can't be inferred and type narrowing is not an option, use `unknown` types
 
-## CSS
+## SCSS/CSS
 
 - Use SCSS modules (`*.module.scss`) for component styles
 - Only use global stylesheets (`styles/globals.scss`) for design tokens and true typographic primitives
@@ -86,3 +89,8 @@ Design specs and implementation plans live in `docs/superpowers/specs/` and `doc
 - Create a commit after every logical change, batch if they are related.
 - Subject must start with `CV:` followed by a short title (e.g., `CV: a short title`).
 - Favor bullet points in the body. Keep it concise and easy to read.
+
+## Pull Requests
+
+- Should follow the same naming convention as commits and every PR title should start with `CV: a short title`
+- - The body of the PR should be minimal and favour bullet points

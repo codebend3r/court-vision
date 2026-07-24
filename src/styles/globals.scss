@@ -15,6 +15,11 @@
   --color-highlight: #ff9f3c;
   --color-win: #3dd68c;
   --color-loss: #ff5c6a;
+  // Player eligibility positions — one hue per group so G / F / C are
+  // distinguishable at a glance (hyphenated combos color each segment).
+  --color-position-g: #4fd1c5; // guard — teal
+  --color-position-f: #f2b872; // forward — amber
+  --color-position-c: #c58bf2; // center — violet
   // Extrusion color for retro long-shadow lettering (see long-text-shadow in mixins).
   --color-retro-shadow: color-mix(in srgb, var(--color-accent) 55%, var(--color-bg));
   // Purple variation for retro-shadow buttons (see retro-button in mixins).
@@ -139,12 +144,26 @@ h5 {
   --color-highlight: #b35c00;
   --color-win: #0f8a4f;
   --color-loss: #c9283e;
+  --color-position-g: #0c7560; // guard — teal
+  --color-position-f: #9a5b00; // forward — amber
+  --color-position-c: #7b3fb0; // center — violet
 
   --color-control-bg: #fff;
   --color-control-placeholder: #7c86a6;
   --color-focus-ring: rgba(14, 127, 168, 0.28);
 
   color-scheme: light;
+}
+
+// Registered angle so the animated-gradient-border mixin (mixins.scss) can
+// spin its conic gradient — a plain custom property can't be animated. The
+// companion `cvBorderSpin` keyframes must be declared inside each consuming
+// CSS module (via `cv-border-spin-keyframes`), because CSS Modules scopes the
+// animation name and a global keyframes wouldn't match the scoped reference.
+@property --cv-border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
 }
 
 // Respect users who ask the OS to minimize motion: collapse every animation

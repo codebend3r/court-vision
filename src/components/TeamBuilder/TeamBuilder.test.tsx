@@ -162,10 +162,28 @@ describe("TeamBuilder", () => {
     expect(teams).toHaveLength(1);
     expect(teams[0]?.id).toBe("team-1");
     expect(teams[0]?.slots.filter((slot) => slot.player !== null)).toHaveLength(2);
-    expect(push).toHaveBeenCalledWith("/my-teams");
+    // Same name → same slug → stay on the page, no navigation.
+    expect(push).not.toHaveBeenCalled();
   });
 
-  it("saves a named team to the store and navigates back", async () => {
+  it("navigates to the new slug when an edit renames the team", async () => {
+    const user = userEvent.setup();
+    const existing = {
+      id: "team-1",
+      name: "Bench Mob",
+      createdAt: "2026-07-23T00:00:00.000Z",
+      slots: buildSlots({ counts: DEFAULT_SLOT_COUNTS }),
+    };
+    useFantasyTeamsStore.setState({ teams: [existing] });
+    render(<TeamBuilder players={players} team={existing} />);
+    await user.clear(screen.getByLabelText("Team name"));
+    await user.type(screen.getByLabelText("Team name"), "Dynasty");
+    await user.click(screen.getByRole("button", { name: "Save team" }));
+    expect(useFantasyTeamsStore.getState().teams[0]?.name).toBe("Dynasty");
+    expect(push).toHaveBeenCalledWith("/my-teams/dynasty");
+  });
+
+  it("saves a new named team and lands on its own page", async () => {
     render(<TeamBuilder players={players} />);
     const user = userEvent.setup();
     expect(screen.getByRole("button", { name: "Save team" })).toBeDisabled();
@@ -177,6 +195,6 @@ describe("TeamBuilder", () => {
     expect(teams).toHaveLength(1);
     expect(teams[0]?.name).toBe("Bench Mob");
     expect(teams[0]?.slots.filter((slot) => slot.player !== null)).toHaveLength(1);
-    expect(push).toHaveBeenCalledWith("/my-teams");
+    expect(push).toHaveBeenCalledWith("/my-teams/bench-mob");
   });
 });

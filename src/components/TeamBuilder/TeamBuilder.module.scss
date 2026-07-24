@@ -1,5 +1,8 @@
 @use "@/styles/mixins" as *;
 
+// Scoped keyframes for the roster-row / search-card animated gradient border.
+@include cv-border-spin-keyframes;
+
 .builder {
   display: grid;
   gap: var(--space-4);
@@ -7,8 +10,7 @@
 
 .head {
   display: grid;
-  grid-template-columns: minmax(16rem, 24rem) auto;
-  align-items: end;
+  grid-template-columns: minmax(16rem, 24rem);
   gap: var(--space-3);
 }
 
@@ -23,8 +25,19 @@
   @include control-field;
 }
 
+.saveBar {
+  display: grid;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
 .save {
-  padding: var(--space-2) var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--color-accent);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
@@ -42,6 +55,10 @@
   &:focus-visible {
     @include control-focus-ring;
   }
+}
+
+.saveIcon {
+  flex: none;
 }
 
 .settings {
@@ -153,6 +170,14 @@
   border-radius: var(--radius-sm);
   background: var(--color-surface);
 
+  // Animated blue→purple→pink border when hovering/focusing a roster row.
+  // Scoped to :not([data-drop]) so an in-progress drag keeps its green/red
+  // drop feedback instead.
+  &:not([data-drop]):hover,
+  &:not([data-drop]):focus-within {
+    @include animated-gradient-border;
+  }
+
   &[data-drop="ok"] {
     border-color: var(--color-win);
   }
@@ -177,9 +202,30 @@
 
 .slotPlayer {
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
   gap: var(--space-2);
+}
+
+// The player's avatar/name/position are a single link to their profile; the
+// remove button stays outside it. Fills the row so clicking anywhere on the
+// player (not the × or slot label) navigates.
+.slotPlayerLink {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  color: inherit;
+  text-decoration: none;
+
+  &:hover .slotPlayerName {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+    border-radius: var(--radius-sm);
+  }
 }
 
 .slotPlayerName {
@@ -187,7 +233,6 @@
 }
 
 .slotPlayerPosition {
-  color: var(--color-text-muted);
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
 }
@@ -214,8 +259,37 @@
   align-content: start;
 }
 
+// The hover quick-stats panel is a desktop-only affordance; below the column
+// collapse breakpoint it is hidden until a small-screen treatment lands. The
+// space-2 gap mirrors .slotGroup (heading → list) so the "Quick look" eyebrow
+// lines up with "Starters" and the panel top lines up with the first player.
+.insightColumn {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+
+  @media (max-width: 64rem) {
+    display: none;
+  }
+}
+
+.searchBar {
+  display: grid;
+}
+
 .search {
   @include control-field;
+  width: 100%;
+  height: calc(var(--control-height) * 1.6);
+  padding: 0 var(--space-4);
+  border-width: 2px;
+  border-color: var(--color-control-accent);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-lg);
+
+  &::placeholder {
+    font-size: var(--font-size-lg);
+  }
 }
 
 .noResults {
@@ -234,7 +308,7 @@
 
 .card {
   display: grid;
-  grid-template-columns: auto 1fr auto auto auto;
+  grid-template-columns: auto 1fr auto auto auto auto;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-1) var(--space-2);
@@ -242,6 +316,12 @@
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   cursor: grab;
+
+  // Same animated blue→purple→pink border on hover/keyboard focus.
+  &:hover,
+  &:focus-within {
+    @include animated-gradient-border;
+  }
 
   &[data-rostered="true"] {
     opacity: 0.5;
@@ -251,6 +331,41 @@
 
 .cardName {
   font-size: var(--font-size-sm);
+}
+
+// Revealed on card hover/focus; its column is always reserved so the reveal
+// never shifts the row. Still focusable while transparent, so keyboard users
+// reach it and :focus-within surfaces it.
+.cardView {
+  opacity: 0;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-accent-purple);
+  border-radius: var(--radius-full);
+  color: var(--color-accent-purple);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.6;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: opacity var(--duration-fast) var(--ease-out);
+
+  .card:hover &,
+  .card:focus-within & {
+    opacity: 1;
+  }
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    opacity: 1;
+    @include control-focus-ring;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .cardPosition {

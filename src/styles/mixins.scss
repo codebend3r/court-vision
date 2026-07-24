@@ -87,6 +87,10 @@
   font-size: var(--font-size-xs);
   letter-spacing: var(--tracking-wide);
   color: var(--color-text-muted);
+  // When used on an h1–h5 these eyebrows inherit the global retro long-shadow,
+  // which smears 12px uppercase glyphs below AA legibility. Cancel it here so
+  // every micro-label heading stays crisp; large display headings keep it.
+  text-shadow: none;
 }
 
 // Shared tooltip bubble box: InfoTip's floating hint and the players table's
@@ -119,6 +123,40 @@
 // chips, sorted columns). Flat by design: no glow effects.
 @mixin selected-accent {
   border-color: var(--color-control-accent);
+}
+
+// Emits the keyframes the animated-gradient-border animation drives. Call once
+// per CSS module that uses `animated-gradient-border`: CSS Modules scopes both
+// the @keyframes name and the animation reference to that module, so a global
+// keyframes would never match the scoped reference.
+@mixin cv-border-spin-keyframes {
+  @keyframes cvBorderSpin {
+    to {
+      --cv-border-angle: 360deg;
+    }
+  }
+}
+
+// Rotating blue→purple→pink conic-gradient border for hover/focus states.
+// Requires the global `--cv-border-angle` @property (globals.scss) and the
+// `cv-border-spin-keyframes` mixin included once in the same module. Uses the
+// double-background trick (surface via padding-box, gradient via border-box)
+// so rounded corners survive; apply to an element that already has a 1px
+// border.
+@mixin animated-gradient-border {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    conic-gradient(
+        from var(--cv-border-angle),
+        var(--color-accent),
+        var(--color-accent-purple),
+        var(--color-accent-strong),
+        var(--color-accent-purple),
+        var(--color-accent)
+      )
+      border-box;
+  animation: cvBorderSpin 2.5s linear infinite;
 }
 
 // Text-like fields: text/email/password/date/etc. inputs and selects.
