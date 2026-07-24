@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationMap": false,
+    "skipLibCheck": true,
+    "incremental": false,
+    "composite": false,
+    "baseUrl": "../..",
+    "paths": {
+      "@/*": ["src/*"],
+      "@generated/*": ["generated/*"],
+      "@public/*": ["public/*"]
+    },
+    "rootDir": "../..",
+    "outDir": "../../types"
+  },
+  "include": ["../../next-env.d.ts", "entry.ts", "provider.tsx"],
+  "exclude": ["../../node_modules"]
+}
