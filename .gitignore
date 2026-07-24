@@ -46,3 +46,12 @@ next-env.d.ts
 
 # scraper cache (local, regeneratable)
 .cache/
+
+# design-sync (claude.ai/design) build output + staged scripts + machine state
+.ds-sync/
+ds-bundle/
+ds-dist/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+types/

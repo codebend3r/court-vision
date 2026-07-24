@@ -1,0 +1,13 @@
+// Brand fonts for the design-sync bundle. The app loads these via
+// next/font/google and exposes them as --font-*-next CSS vars; outside Next
+// those vars are undefined and text falls back to system-ui. Load the same
+// families here and define the vars so previews and designs render on-brand.
+// Remote @import (validate flags [FONT_REMOTE], informational) with a system
+// fallback if the design host blocks the font CDN.
+@import url("https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap");
+
+:root {
+  --font-display-next: "Chakra Petch";
+  --font-body-next: "IBM Plex Sans";
+  --font-mono-next: "IBM Plex Mono";
+}

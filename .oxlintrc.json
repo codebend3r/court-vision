@@ -7,7 +7,7 @@
   "env": {
     "builtin": true
   },
-  "ignorePatterns": [".next/**", "out/**", "build/**", "next-env.d.ts", "generated/**"],
+  "ignorePatterns": [".next/**", "out/**", "build/**", "next-env.d.ts", "generated/**", ".design-sync/**", ".ds-sync/**", "ds-dist/**", "types/**"],
   "rules": {
     "no-array-constructor": "error",
     "no-unused-expressions": "warn",
