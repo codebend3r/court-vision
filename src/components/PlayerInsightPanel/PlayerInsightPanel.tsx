@@ -1,4 +1,5 @@
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
+import { PositionTag } from "@/components/PositionTag/PositionTag";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { type PlayerCategoryInsight, type PlayerInsight } from "@/lib/fantasyTeams/insights";
 import { type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
@@ -42,13 +43,13 @@ export function PlayerInsightPanel({ player, insight }: PlayerInsightPanelProps)
         <PlayerAvatar
           fullName={player.fullName}
           nbaPersonId={player.nbaPersonId}
-          size="sm"
+          size="lg"
           teamAbbr={player.teamAbbr}
         />
         <span className={styles.identity}>
           <span className={styles.name}>{player.fullName}</span>
           <span className={styles.meta}>
-            {!!player.position && <span className={styles.pos}>{player.position}</span>}
+            {!!player.position && <PositionTag position={player.position} className={styles.pos} />}
             {player.teamAbbr !== null && <TeamChip team={player.teamAbbr} size="sm" />}
             <span className={styles.games}>
               {insight.gamesPlayed} GP · {insight.minutesPerGame.toFixed(1)} MPG

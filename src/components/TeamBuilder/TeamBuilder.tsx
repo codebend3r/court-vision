@@ -6,6 +6,7 @@ import { ChangeEvent, DragEvent, useMemo, useState } from "react";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayerInsightPanel } from "@/components/PlayerInsightPanel/PlayerInsightPanel";
+import { PositionTag } from "@/components/PositionTag/PositionTag";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { type PlayerInsight } from "@/lib/fantasyTeams/insights";
 import {
@@ -185,37 +186,6 @@ export function TeamBuilder({ players, team, insights }: TeamBuilderProps) {
             className={styles.nameInput}
           />
         </label>
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={name.trim() === ""}
-          className={styles.save}
-        >
-          <svg
-            viewBox="0 0 16 16"
-            width="15"
-            height="15"
-            aria-hidden="true"
-            focusable="false"
-            className={styles.saveIcon}
-          >
-            <path
-              d="M2.75 2.75h8.19L13.25 5.06V13.25H2.75V2.75Z"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.25"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M5.25 2.75v3.5h5.5v-3.5M5.5 13.25v-3.5h5v3.5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.25"
-              strokeLinejoin="round"
-            />
-          </svg>
-          Save team
-        </button>
       </section>
 
       <details className={styles.settings}>
@@ -255,11 +225,12 @@ export function TeamBuilder({ players, team, insights }: TeamBuilderProps) {
         />
       </section>
 
+      <p className={styles.rosterSummary}>
+        {filled} of {slots.length} slots filled
+      </p>
+
       <section className={styles.columns}>
         <section className={styles.rosterColumn} aria-label="Roster">
-          <p className={styles.rosterSummary}>
-            {filled} of {slots.length} slots filled
-          </p>
           {(["starter", "bench", "injured"] as const).map((kind) => {
             const kindSlots = slots.filter((slot) => slotMeta(slot.type).kind === kind);
             if (kindSlots.length === 0) return null;
@@ -294,18 +265,25 @@ export function TeamBuilder({ players, team, insights }: TeamBuilderProps) {
                           <span className={styles.slotEmpty}>Empty</span>
                         ) : (
                           <span className={styles.slotPlayer}>
-                            <PlayerAvatar
-                              fullName={slot.player.fullName}
-                              nbaPersonId={slot.player.nbaPersonId}
-                              size="sm"
-                              teamAbbr={slot.player.teamAbbr}
-                            />
-                            <span className={styles.slotPlayerName}>{slot.player.fullName}</span>
-                            {!!slot.player.position && (
-                              <span className={styles.slotPlayerPosition}>
-                                {slot.player.position}
-                              </span>
-                            )}
+                            <Link
+                              href={`/players/${slot.player.playerId}`}
+                              className={styles.slotPlayerLink}
+                              aria-label={`View ${slot.player.fullName}'s profile`}
+                            >
+                              <PlayerAvatar
+                                fullName={slot.player.fullName}
+                                nbaPersonId={slot.player.nbaPersonId}
+                                size="sm"
+                                teamAbbr={slot.player.teamAbbr}
+                              />
+                              <span className={styles.slotPlayerName}>{slot.player.fullName}</span>
+                              {!!slot.player.position && (
+                                <PositionTag
+                                  position={slot.player.position}
+                                  className={styles.slotPlayerPosition}
+                                />
+                              )}
+                            </Link>
                             <button
                               type="button"
                               onClick={() =>
@@ -331,6 +309,7 @@ export function TeamBuilder({ players, team, insights }: TeamBuilderProps) {
         <section className={styles.searchColumn} aria-label="Search results">
           {query.trim().length < 2 && (
             <div className={styles.insightColumn}>
+              <h3 className={styles.slotGroupTitle}>Quick look</h3>
               <PlayerInsightPanel
                 player={hoveredPlayer}
                 insight={
@@ -367,7 +346,11 @@ export function TeamBuilder({ players, team, insights }: TeamBuilderProps) {
                   />
                   <span className={styles.cardName}>{player.fullName}</span>
                   {player.teamAbbr !== null && <TeamChip team={player.teamAbbr} size="sm" />}
-                  <span className={styles.cardPosition}>{player.position ?? "—"}</span>
+                  {player.position !== null ? (
+                    <PositionTag position={player.position} className={styles.cardPosition} />
+                  ) : (
+                    <span className={styles.cardPosition}>—</span>
+                  )}
                   <Link
                     href={`/players/${player.playerId}`}
                     className={styles.cardView}
@@ -396,6 +379,40 @@ export function TeamBuilder({ players, team, insights }: TeamBuilderProps) {
             })}
           </ul>
         </section>
+      </section>
+
+      <section className={styles.saveBar}>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={name.trim() === ""}
+          className={styles.save}
+        >
+          <svg
+            viewBox="0 0 16 16"
+            width="15"
+            height="15"
+            aria-hidden="true"
+            focusable="false"
+            className={styles.saveIcon}
+          >
+            <path
+              d="M2.75 2.75h8.19L13.25 5.06V13.25H2.75V2.75Z"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.25"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M5.25 2.75v3.5h5.5v-3.5M5.5 13.25v-3.5h5v3.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.25"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Save team
+        </button>
       </section>
 
       {pendingRemoval !== null && (
