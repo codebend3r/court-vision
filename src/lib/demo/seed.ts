@@ -13,11 +13,16 @@ import { SyncSummary, upsertGameLogs, upsertPlayers, upsertSeasonStats } from "@
 import { generateGameLogs } from "@/lib/demo/generate";
 import { normalizeName } from "@/lib/demo/names";
 import { DEMO_PROFILES } from "@/lib/demo/profiles";
+import { Logger, consoleLogger, silentLogger } from "@/lib/logger";
 import { isMainModule } from "@/lib/runtime";
 
-export async function seedDemo(deps: BdlClientDeps = {}): Promise<SyncSummary> {
+export async function seedDemo(
+  args: { deps?: BdlClientDeps; logger?: Logger } = {},
+): Promise<SyncSummary> {
+  const { deps = {}, logger = silentLogger } = args;
+
   const teams = await fetchTeams(deps);
-  console.log(`Fetched ${teams.length} teams.`);
+  logger(`Fetched ${teams.length} teams.`);
   const teamAbbrById = teams.reduce(
     (map, team) => map.set(team.id, team.abbreviation),
     new Map<number, string>(),
@@ -25,7 +30,7 @@ export async function seedDemo(deps: BdlClientDeps = {}): Promise<SyncSummary> {
 
   const bdlPlayers = await fetchAllPlayers({ deps, throttleMs: FREE_TIER_THROTTLE_MS });
   const players = await upsertPlayers(bdlPlayers.map((player) => toPlayerInput({ player })));
-  console.log(`Fetched ${bdlPlayers.length} players, upserted ${players}.`);
+  logger(`Fetched ${bdlPlayers.length} players, upserted ${players}.`);
 
   const byName = bdlPlayers.reduce(
     (map, player) => map.set(normalizeName(`${player.first_name} ${player.last_name}`), player),
@@ -52,7 +57,7 @@ export async function seedDemo(deps: BdlClientDeps = {}): Promise<SyncSummary> {
       profile,
       teamAbbrById,
     });
-    console.log(`${profile.fullName}: generated ${logs.length} game logs.`);
+    logger(`${profile.fullName}: generated ${logs.length} game logs.`);
     return acc.concat(logs);
   }, Promise.resolve<GameLogInput[]>([]));
 
@@ -64,9 +69,9 @@ export async function seedDemo(deps: BdlClientDeps = {}): Promise<SyncSummary> {
 }
 
 if (isMainModule({ moduleUrl: import.meta.url })) {
-  seedDemo()
+  seedDemo({ logger: consoleLogger })
     .then((summary) => {
-      console.log(
+      consoleLogger(
         `Demo seed complete: ${summary.players} players, ${summary.seasonStats} season rows, ${summary.gameLogs} game logs.`,
       );
     })

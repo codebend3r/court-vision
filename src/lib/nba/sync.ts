@@ -8,6 +8,7 @@ import {
   fetchSeasonStats,
 } from "./endpoints";
 import { toGameLogInput, toPlayerInput, toSeasonStatsInput } from "@/lib/nba/transform";
+import { consoleLogger } from "@/lib/logger";
 import { isMainModule } from "@/lib/runtime";
 
 export async function syncNba(deps: NbaClientDeps = {}): Promise<SyncSummary> {
@@ -32,7 +33,7 @@ export async function syncNba(deps: NbaClientDeps = {}): Promise<SyncSummary> {
 if (isMainModule({ moduleUrl: import.meta.url })) {
   syncNba()
     .then((summary) => {
-      console.log(
+      consoleLogger(
         `NBA sync complete: ${summary.players} players, ${summary.seasonStats} season rows, ${summary.gameLogs} game logs.`,
       );
     })

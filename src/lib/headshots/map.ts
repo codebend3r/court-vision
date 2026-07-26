@@ -2,10 +2,12 @@ import { normalizeName } from "@/lib/demo/names";
 import { prisma } from "@/lib/prisma";
 
 import { fetchNbaPlayerIndex } from "@/lib/headshots/sources";
+import { Logger, consoleLogger, silentLogger } from "@/lib/logger";
 import { isMainModule } from "@/lib/runtime";
 
 export type MapHeadshotsDeps = {
   fetchImpl?: typeof fetch;
+  logger?: Logger;
 };
 
 export type MapHeadshotsResult = {
@@ -46,6 +48,7 @@ type PersonMatch = {
 // Ambiguity on either side (0 or 2+ index matches, or two of our players
 // normalizing identically) is skipped and reported rather than guessed.
 export async function mapHeadshots(deps: MapHeadshotsDeps = {}): Promise<MapHeadshotsResult> {
+  const logger = deps.logger ?? silentLogger;
   const index = await fetchNbaPlayerIndex({ fetchImpl: deps.fetchImpl });
   const indexByName = groupByNormalizedName(index);
 
@@ -88,18 +91,18 @@ export async function mapHeadshots(deps: MapHeadshotsDeps = {}): Promise<MapHead
     });
   }, Promise.resolve());
 
-  console.log(`Matched ${matches.length} player(s) to an NBA person id.`);
+  logger(`Matched ${matches.length} player(s) to an NBA person id.`);
   if (unmatched.length > 0) {
-    console.log(`Unmatched (${unmatched.length}): ${unmatched.join(", ")}`);
+    logger(`Unmatched (${unmatched.length}): ${unmatched.join(", ")}`);
   }
 
   return { matched: matches.length, unmatched };
 }
 
 if (isMainModule({ moduleUrl: import.meta.url })) {
-  mapHeadshots()
+  mapHeadshots({ logger: consoleLogger })
     .then((result) => {
-      console.log(
+      consoleLogger(
         `Headshot mapping complete: ${result.matched} matched, ${result.unmatched.length} unmatched.`,
       );
     })
