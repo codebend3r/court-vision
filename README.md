@@ -32,6 +32,18 @@ filterable views for fantasy decisions.
 Still to come: the heat-score trending leaderboard, SGP (needs a sourced
 standings-gain table), and auction dollar values.
 
+## Design system
+
+The component library is published to Claude Design as a design-system project:
+[claude.ai/design/p/9fa09c9e-0ef3-49b5-8342-277b4eede6a0](https://claude.ai/design/p/9fa09c9e-0ef3-49b5-8342-277b4eede6a0).
+
+It carries the real compiled components, their prop contracts, and the token
+stylesheet, so designs built there map straight back onto this codebase. Run
+`/design-sync` in Claude Code to refresh it. Config, build inputs, authored
+previews, and sync notes live in `.design-sync/`; usage conventions for anyone
+(or anything) composing with the components are in
+`.design-sync/conventions.md`.
+
 ## Getting started
 
 You'll need [Bun](https://bun.sh/) installed.

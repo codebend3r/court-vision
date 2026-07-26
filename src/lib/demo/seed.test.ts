@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import * as endpoints from "@/lib/balldontlie/endpoints";
 import { BdlGame, BdlPlayer, BdlTeam } from "@/lib/balldontlie/schemas";
@@ -99,6 +99,10 @@ const fakeGames: BdlGame[] = [
   },
 ];
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("seedDemo", () => {
   it("fetches teams/players, generates demo game logs per profile, persists, and returns counts", async () => {
     vi.spyOn(endpoints, "fetchTeams").mockResolvedValue(teams);
@@ -111,7 +115,7 @@ describe("seedDemo", () => {
     const upsertGameLogs = vi.spyOn(persist, "upsertGameLogs").mockResolvedValue(15);
     const upsertSeasonStats = vi.spyOn(persist, "upsertSeasonStats").mockResolvedValue(5);
 
-    const summary = await seedDemo({ apiKey: "k" });
+    const summary = await seedDemo({ deps: { apiKey: "k" } });
 
     expect(summary).toEqual({ players: 6, seasonStats: 5, gameLogs: 15, advancedGameLogs: 0 });
 
@@ -146,6 +150,28 @@ describe("seedDemo", () => {
     expect(upsertSeasonStats).toHaveBeenCalledTimes(1);
   });
 
+  it("stays silent unless a logger is supplied", async () => {
+    vi.spyOn(endpoints, "fetchTeams").mockResolvedValue(teams);
+    vi.spyOn(endpoints, "fetchAllPlayers").mockResolvedValue([
+      ...profiledPlayers,
+      unprofiledPlayer,
+    ]);
+    vi.spyOn(endpoints, "fetchTeamGames").mockResolvedValue(fakeGames);
+    vi.spyOn(persist, "upsertPlayers").mockResolvedValue(6);
+    vi.spyOn(persist, "upsertGameLogs").mockResolvedValue(15);
+    vi.spyOn(persist, "upsertSeasonStats").mockResolvedValue(5);
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    const logger = vi.fn();
+
+    await seedDemo({ deps: { apiKey: "k" } });
+    expect(consoleLog).not.toHaveBeenCalled();
+
+    await seedDemo({ deps: { apiKey: "k" }, logger });
+    expect(consoleLog).not.toHaveBeenCalled();
+    expect(logger).toHaveBeenCalledWith("Fetched 5 teams.");
+    expect(logger).toHaveBeenCalledWith("Anthony Edwards: generated 3 game logs.");
+  });
+
   it("rejects when a demo profile has no matching player", async () => {
     vi.spyOn(endpoints, "fetchTeams").mockResolvedValue(teams);
     vi.spyOn(endpoints, "fetchAllPlayers").mockResolvedValue(
@@ -156,7 +182,9 @@ describe("seedDemo", () => {
     vi.spyOn(persist, "upsertGameLogs").mockResolvedValue(0);
     vi.spyOn(persist, "upsertSeasonStats").mockResolvedValue(0);
 
-    await expect(seedDemo({ apiKey: "k" })).rejects.toThrow("Demo profile not resolvable");
+    await expect(seedDemo({ deps: { apiKey: "k" } })).rejects.toThrow(
+      "Demo profile not resolvable",
+    );
   });
 
   it("rejects when a matched demo profile player has no team", async () => {
@@ -175,7 +203,7 @@ describe("seedDemo", () => {
     vi.spyOn(persist, "upsertGameLogs").mockResolvedValue(0);
     vi.spyOn(persist, "upsertSeasonStats").mockResolvedValue(0);
 
-    await expect(seedDemo({ apiKey: "k" })).rejects.toThrow(
+    await expect(seedDemo({ deps: { apiKey: "k" } })).rejects.toThrow(
       "Demo profile not resolvable: Anthony Edwards",
     );
   });
