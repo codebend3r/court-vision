@@ -48,11 +48,13 @@ describe("loadStatFilters", () => {
   it("parses every known season label and the career sentinel", async () => {
     expect((await loadStatFilters({ season: "2025-26" })).season).toBe("2025-26");
     expect((await loadStatFilters({ season: "2020-21" })).season).toBe("2020-21");
+    expect((await loadStatFilters({ season: "2019-20" })).season).toBe("2019-20");
+    expect((await loadStatFilters({ season: "2016-17" })).season).toBe("2016-17");
     expect((await loadStatFilters({ season: "career" })).season).toBe("career");
   });
 
   it("rejects seasons outside the backfill window", async () => {
-    expect((await loadStatFilters({ season: "2019-20" })).season).toBeNull();
+    expect((await loadStatFilters({ season: "2015-16" })).season).toBeNull();
     expect((await loadStatFilters({ season: "bogus" })).season).toBeNull();
   });
 });
@@ -60,8 +62,8 @@ describe("loadStatFilters", () => {
 describe("SEASON_OPTIONS", () => {
   it("lists every backfilled season newest first", () => {
     expect(SEASON_OPTIONS[0]).toBe("2025-26");
-    expect(SEASON_OPTIONS[SEASON_OPTIONS.length - 1]).toBe("2020-21");
-    expect(SEASON_OPTIONS).toHaveLength(6);
+    expect(SEASON_OPTIONS[SEASON_OPTIONS.length - 1]).toBe("2016-17");
+    expect(SEASON_OPTIONS).toHaveLength(10);
   });
 });
 

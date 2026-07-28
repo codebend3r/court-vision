@@ -107,6 +107,57 @@ describe("bdlStatSchema", () => {
   });
 });
 
+// From 2018-19 back, `/v1/stats` returns a row for every rostered player,
+// including inactives, whose every counting stat is null.
+const inactiveStatRow = {
+  ...statRow,
+  id: 13541,
+  min: null,
+  fgm: null,
+  fga: null,
+  fg3m: null,
+  fg3a: null,
+  ftm: null,
+  fta: null,
+  oreb: null,
+  dreb: null,
+  reb: null,
+  ast: null,
+  stl: null,
+  blk: null,
+  turnover: null,
+  pts: null,
+  plus_minus: null,
+};
+
+describe("bdlStatSchema inactive rows", () => {
+  it("parses a row where every counting stat is null", () => {
+    const parsed = bdlStatSchema.parse(inactiveStatRow);
+
+    expect(parsed.pts).toBeNull();
+    expect(parsed.reb).toBeNull();
+    expect(parsed.turnover).toBeNull();
+    expect(parsed.fg3a).toBeNull();
+  });
+
+  it("still rejects an inactive row missing the nested game", () => {
+    const withoutGame = { ...inactiveStatRow, game: undefined };
+
+    expect(() => bdlStatSchema.parse(withoutGame)).toThrow();
+  });
+
+  // Zod validates a page at a time, so one unparseable row would reject the
+  // whole page and abort the season mid-backfill.
+  it("parses a page mixing played and inactive rows", () => {
+    const page = bdlPaginatedPage(bdlStatSchema).parse({
+      data: [statRow, inactiveStatRow],
+      meta: { next_cursor: null, per_page: 100 },
+    });
+
+    expect(page.data).toHaveLength(2);
+  });
+});
+
 const advancedStatRow = {
   id: 15531179,
   pie: 0.152,

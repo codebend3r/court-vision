@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 
+import { SEASON_LABEL } from "@/lib/balldontlie/constants";
 import { prisma } from "@/lib/prisma";
 import { buildTeamStats, type TeamGameResult, type TeamSeasonStats } from "@/lib/teams/stats";
 
@@ -90,11 +91,15 @@ export type TeamRosterPlayer = {
   teamAbbr: string | null;
 };
 
-// Current roster: players whose Balldontlie team is this one, active (has
-// game logs). Ordered by name for the /team roster section.
+// Current roster: players whose Balldontlie team is this one and who logged a
+// game this season. The season filter is load-bearing — `gameLogs: { some: {} }`
+// means "has a log in any backfilled season", which silently widens every time
+// the backfill window does. When the window moved to 2016-17 it admitted 386
+// players whose last game was 2016-2019 but whose Balldontlie team still points
+// at their final club. Ordered by name for the /team roster section.
 const fetchRoster = async (abbr: string): Promise<TeamRosterPlayer[]> =>
   prisma.player.findMany({
-    where: { teamAbbr: abbr, gameLogs: { some: {} } },
+    where: { teamAbbr: abbr, gameLogs: { some: { season: SEASON_LABEL } } },
     select: {
       id: true,
       firstName: true,
