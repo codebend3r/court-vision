@@ -194,6 +194,65 @@ describe("toGameLogInput", () => {
   });
 });
 
+// Seasons 2018-19 and earlier include a row for every rostered player; the
+// inactive ones come back with every counting stat null.
+const inactiveStat: BdlStat = {
+  ...homeStat,
+  id: 99,
+  min: null,
+  fgm: null,
+  fga: null,
+  fg3m: null,
+  fg3a: null,
+  ftm: null,
+  fta: null,
+  oreb: null,
+  dreb: null,
+  reb: null,
+  ast: null,
+  stl: null,
+  blk: null,
+  turnover: null,
+  pts: null,
+  plus_minus: null,
+  game: { ...homeStat.game, id: 90210 },
+};
+
+describe("toGameLogInput inactive rows", () => {
+  it("coalesces every null counting stat to 0", () => {
+    const log = toGameLogInput({ stat: inactiveStat, teamAbbrById });
+
+    expect(log).toMatchObject({
+      minutes: 0,
+      fgm: 0,
+      fga: 0,
+      fg3m: 0,
+      fg3a: 0,
+      ftm: 0,
+      fta: 0,
+      oreb: 0,
+      dreb: 0,
+      reb: 0,
+      ast: 0,
+      stl: 0,
+      blk: 0,
+      tov: 0,
+      pts: 0,
+    });
+    expect(log.plusMinus).toBeNull();
+  });
+
+  it("does not count an inactive row toward gamesPlayed", () => {
+    const logs = [homeStat, inactiveStat].map((stat) => toGameLogInput({ stat, teamAbbrById }));
+
+    const [season] = aggregateSeasonStats(logs);
+
+    expect(season.gamesPlayed).toBe(1);
+    expect(season.pts).toBe(29);
+    expect(season.minutes).toBe(34);
+  });
+});
+
 describe("aggregateSeasonStats", () => {
   it("sums counting stats and counts games played per player", () => {
     const logs: GameLogInput[] = [homeStat, awayStat].map((stat) =>

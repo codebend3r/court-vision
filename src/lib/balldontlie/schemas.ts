@@ -82,23 +82,30 @@ export const bdlGameRowSchema = z
     }),
   );
 
+// Every counting stat is nullable. From 2018-19 back, `/v1/stats` returns a
+// row for each rostered player and sends `null` for all of them when that
+// player was inactive; further back still, whole categories the league had not
+// started tracking are null on played rows too. Zod validates a page at a
+// time, so a required number here would reject the entire page and abort the
+// season mid-backfill. `toGameLogInput` coalesces to 0, which is exactly how
+// 2022-23+ DNP rows already land in the database.
 export const bdlStatSchema = z.object({
   id: z.number(),
   min: z.union([z.string(), z.number()]).nullable(),
-  fgm: z.number(),
-  fga: z.number(),
-  fg3m: z.number(),
-  fg3a: z.number(),
-  ftm: z.number(),
-  fta: z.number(),
-  oreb: z.number(),
-  dreb: z.number(),
-  reb: z.number(),
-  ast: z.number(),
-  stl: z.number(),
-  blk: z.number(),
-  turnover: z.number(),
-  pts: z.number(),
+  fgm: z.number().nullable(),
+  fga: z.number().nullable(),
+  fg3m: z.number().nullable(),
+  fg3a: z.number().nullable(),
+  ftm: z.number().nullable(),
+  fta: z.number().nullable(),
+  oreb: z.number().nullable(),
+  dreb: z.number().nullable(),
+  reb: z.number().nullable(),
+  ast: z.number().nullable(),
+  stl: z.number().nullable(),
+  blk: z.number().nullable(),
+  turnover: z.number().nullable(),
+  pts: z.number().nullable(),
   plus_minus: z.number().nullable().optional(),
   player: bdlNestedPlayerSchema,
   team: bdlNestedTeamSchema,
