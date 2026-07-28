@@ -1,4 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "bun:test";
+
+import type { FetchImpl } from "@/lib/fetchImpl";
 
 import { fetchAllAdvancedStats, fetchAllStats, fetchTeams } from "@/lib/balldontlie/endpoints";
 
@@ -42,7 +44,7 @@ const statRow = (id: number, playerId: number) => ({
 
 describe("fetchTeams", () => {
   it("returns the parsed teams array", async () => {
-    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+    const fetchImpl = vi.fn<FetchImpl>().mockResolvedValue(
       jsonResponse({
         data: [{ id: 1, abbreviation: "ATL", full_name: "Atlanta Hawks" }],
         meta: {},
@@ -54,7 +56,7 @@ describe("fetchTeams", () => {
   });
 
   it("succeeds when the response has no meta key at all", async () => {
-    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+    const fetchImpl = vi.fn<FetchImpl>().mockResolvedValue(
       jsonResponse({
         data: [{ id: 1, abbreviation: "ATL", full_name: "Atlanta Hawks" }],
       }),
@@ -280,7 +282,7 @@ describe("fetchAllPlayers", () => {
 
   it("rejects rows that fail the player schema", async () => {
     const bad = { data: [{ id: "nope" }], meta: { next_cursor: null } };
-    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse(bad));
+    const fetchImpl = vi.fn<FetchImpl>().mockResolvedValue(jsonResponse(bad));
 
     const { fetchAllPlayers } = await import("./endpoints");
     await expect(fetchAllPlayers({ deps: { fetchImpl, apiKey: "k" } })).rejects.toThrow();
@@ -288,7 +290,7 @@ describe("fetchAllPlayers", () => {
 
   it("rejects a page response missing meta entirely, instead of silently stopping pagination", async () => {
     const noMeta = { data: [playerRow] };
-    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse(noMeta));
+    const fetchImpl = vi.fn<FetchImpl>().mockResolvedValue(jsonResponse(noMeta));
 
     const { fetchAllPlayers } = await import("./endpoints");
     await expect(fetchAllPlayers({ deps: { fetchImpl, apiKey: "k" } })).rejects.toThrow();

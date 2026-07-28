@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 
 import { ADVANCED_STAT_META } from "@/lib/players/advancedStatMeta";
 import { ADVANCED_METRIC_KEYS } from "@/lib/players/searchParams";

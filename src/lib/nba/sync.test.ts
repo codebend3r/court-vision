@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "bun:test";
 
 import * as endpoints from "@/lib/nba/endpoints";
 import * as persist from "@/lib/stats/persist";

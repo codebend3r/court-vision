@@ -1,10 +1,10 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { SideNav } from "@/components/SideNav/SideNav";
 import { useSideNavStore } from "@/components/SideNav/sideNavStore";
 
-const pathnameMock = vi.hoisted(() => ({ current: "/" }));
+const pathnameMock = { current: "/" };
 
 vi.mock("next/navigation", () => ({
   usePathname: () => pathnameMock.current,

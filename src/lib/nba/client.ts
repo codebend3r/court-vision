@@ -1,9 +1,11 @@
+import type { FetchImpl } from "@/lib/fetchImpl";
+
 import { NBA_BASE_URL, NBA_HEADERS } from "@/lib/nba/constants";
 
 export type NbaFetchOptions = {
   endpoint: string;
   params: Record<string, string>;
-  fetchImpl?: typeof fetch;
+  fetchImpl?: FetchImpl;
   sleep?: (ms: number) => Promise<void>;
   maxRetries?: number;
   timeoutMs?: number;

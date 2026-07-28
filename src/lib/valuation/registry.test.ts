@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 
 import { ENABLED_METHODS, FANTASY_METHODS } from "@/lib/valuation/registry";
 

@@ -20,6 +20,20 @@ Operating rules for this repo.
 - All scripts run through Bun: `bun install`, `bun dev`, `bun run test`, `bun run build`, `bun run lint`. Never invoke npm or yarn.
 - Pin every `package.json` dependency to an exact version, with no `^` or `~`.
 
+### Tests must run through `bun run test`
+
+Never run bare `bun test` — it reports ~27 false failures.
+
+Tests run on bun:test. Bun stores module mocks per global object, and without
+isolation every test file shares one, so a `vi.mock` in one file is still
+installed when the next file runs. `mock.restore()` does not undo it, and Bun
+has no API that does — per-file isolation is the only mechanism. `bun run test`
+passes `--parallel` (which implies `--isolate`, one worker process per file);
+`bun run test:watch` passes `--isolate`. Bare `bun test` gets neither and fails
+in whichever files happen to run downstream of a leaked mock.
+
+There is no `bunfig.toml` key for this as of Bun 1.3.14 — it is CLI-only.
+
 ## React
 
 - Never use default exports if it can be avoided, prefer named exports

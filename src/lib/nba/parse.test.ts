@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 
 import { parseNbaResponse, rowsToObjects, selectResultSet } from "@/lib/nba/parse";
 

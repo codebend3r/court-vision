@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 
 import { SEASON_TYPE } from "@/lib/balldontlie/constants";
 import { BdlGame } from "@/lib/balldontlie/schemas";

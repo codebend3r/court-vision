@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 
 import { aggregateWindowLogs, type WindowLog } from "@/lib/valuation/aggregate";
 

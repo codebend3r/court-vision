@@ -1,4 +1,6 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "bun:test";
+
+import { restoreEnv, stubEnv } from "@/lib/testing/env";
 
 const getUser = vi.fn();
 const findUnique = vi.fn();
@@ -17,17 +19,17 @@ describe("getProfile", () => {
     getUser.mockReset();
     findUnique.mockReset();
     // Default to a configured Supabase so getUser reaches the (mocked) client.
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test");
+    stubEnv({ key: "NEXT_PUBLIC_SUPABASE_URL", value: "https://example.supabase.co" });
+    stubEnv({ key: "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", value: "sb_publishable_test" });
   });
 
   afterAll(() => {
-    vi.unstubAllEnvs();
+    restoreEnv();
   });
 
   it("returns null without touching auth when Supabase is unconfigured", async () => {
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "");
+    stubEnv({ key: "NEXT_PUBLIC_SUPABASE_URL", value: "" });
+    stubEnv({ key: "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", value: "" });
     expect(await getProfile()).toBeNull();
     expect(getUser).not.toHaveBeenCalled();
     expect(findUnique).not.toHaveBeenCalled();

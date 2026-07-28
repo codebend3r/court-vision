@@ -1,3 +1,5 @@
+import type { FetchImpl } from "@/lib/fetchImpl";
+
 import { z } from "zod";
 
 import { nbaFetch } from "@/lib/nba/client";
@@ -13,7 +15,7 @@ import {
 } from "./schemas";
 
 export type NbaClientDeps = {
-  fetchImpl?: typeof fetch;
+  fetchImpl?: FetchImpl;
   sleep?: (ms: number) => Promise<void>;
 };
 

@@ -1,15 +1,16 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { buildSlots, DEFAULT_SLOT_COUNTS } from "@/lib/fantasyTeams/slots";
 import { useFantasyTeamsStore } from "@/lib/fantasyTeams/store";
 import { makeStatLine } from "@/lib/valuation/fixtures";
-import { getFantasyPool } from "@/lib/valuation/loader";
 
 import EditTeamPage from "@/app/my-teams/[teamSlug]/page";
 
+const getFantasyPool = vi.fn();
+
 vi.mock("@/lib/valuation/loader", () => ({
-  getFantasyPool: vi.fn(),
+  getFantasyPool,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -20,7 +21,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   useFantasyTeamsStore.setState({ teams: [] });
-  vi.mocked(getFantasyPool).mockResolvedValue([makeStatLine({ playerId: 1 })]);
+  getFantasyPool.mockResolvedValue([makeStatLine({ playerId: 1 })]);
 });
 
 afterEach(cleanup);

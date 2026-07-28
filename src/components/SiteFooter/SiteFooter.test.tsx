@@ -1,11 +1,13 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "bun:test";
+
+import { restoreEnv, stubEnv } from "@/lib/testing/env";
 
 import { SiteFooter } from "@/components/SiteFooter/SiteFooter";
 
 afterEach(() => {
   cleanup();
-  vi.unstubAllEnvs();
+  restoreEnv();
 });
 
 describe("SiteFooter", () => {
@@ -25,7 +27,7 @@ describe("SiteFooter", () => {
   });
 
   it("shows the app version from the build environment", () => {
-    vi.stubEnv("NEXT_PUBLIC_APP_VERSION", "9.9.9");
+    stubEnv({ key: "NEXT_PUBLIC_APP_VERSION", value: "9.9.9" });
 
     render(<SiteFooter />);
 
@@ -33,7 +35,7 @@ describe("SiteFooter", () => {
   });
 
   it("omits the version when the environment does not provide one", () => {
-    vi.stubEnv("NEXT_PUBLIC_APP_VERSION", "");
+    stubEnv({ key: "NEXT_PUBLIC_APP_VERSION", value: "" });
 
     render(<SiteFooter />);
 

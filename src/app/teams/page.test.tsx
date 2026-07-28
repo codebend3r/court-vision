@@ -1,18 +1,19 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
-import { getTeamStats } from "@/lib/teams/loader";
 import { buildTeamStats } from "@/lib/teams/stats";
 
 import TeamsPage from "@/app/teams/page";
 
+const getTeamStats = vi.fn();
+
 vi.mock("@/lib/teams/loader", () => ({
-  getTeamStats: vi.fn(),
+  getTeamStats,
 }));
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(getTeamStats).mockResolvedValue({
+  getTeamStats.mockResolvedValue({
     season: "2024-25",
     stats: buildTeamStats({
       results: [

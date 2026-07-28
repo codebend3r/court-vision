@@ -1,26 +1,28 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
 
-import { searchPlayers, searchPlayersAdvanced } from "@/lib/players/searchCached";
 import { makeStatLine } from "@/lib/valuation/fixtures";
-import { getFantasyPool } from "@/lib/valuation/loader";
 
 import PlayersPage from "@/app/players/page";
 
+const searchPlayers = vi.fn();
+const searchPlayersAdvanced = vi.fn();
+const getFantasyPool = vi.fn();
+
 // The page reads through the cached wrappers; mocking that module keeps the
 // render off the real query (and off `unstable_cache`, which has no incremental
-// cache to attach to under vitest).
+// cache to attach to under bun:test).
 vi.mock("@/lib/players/searchCached", () => ({
-  searchPlayers: vi.fn(),
-  searchPlayersAdvanced: vi.fn(),
+  searchPlayers,
+  searchPlayersAdvanced,
 }));
 
 // The fantasy tab reads through its own cached loader; mocking keeps the
 // render off prisma and `unstable_cache` for the same reason as above.
 vi.mock("@/lib/valuation/loader", () => ({
-  getFantasyPool: vi.fn(),
+  getFantasyPool,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -35,7 +37,7 @@ afterEach(cleanup);
 
 describe("PlayersPage", () => {
   it("renders first and last name link columns and a summary for a page of results", async () => {
-    vi.mocked(searchPlayers).mockResolvedValue({
+    searchPlayers.mockResolvedValue({
       rows: [
         {
           id: 1,
@@ -108,7 +110,7 @@ describe("PlayersPage", () => {
   });
 
   it("shows a rank column when sorting by a stat, offset by the page", async () => {
-    vi.mocked(searchPlayers).mockResolvedValue({
+    searchPlayers.mockResolvedValue({
       rows: [
         {
           id: 1,
@@ -146,7 +148,7 @@ describe("PlayersPage", () => {
   });
 
   it("marks the default points-descending sort active with no query params", async () => {
-    vi.mocked(searchPlayers).mockResolvedValue({
+    searchPlayers.mockResolvedValue({
       rows: [
         {
           id: 1,
@@ -180,7 +182,7 @@ describe("PlayersPage", () => {
   });
 
   it("toggles the active header link and marks descending last name sort", async () => {
-    vi.mocked(searchPlayers).mockResolvedValue({
+    searchPlayers.mockResolvedValue({
       rows: [
         {
           id: 1,
@@ -220,7 +222,7 @@ describe("PlayersPage", () => {
   });
 
   it("makes stat headers sortable and renders totals when selected", async () => {
-    vi.mocked(searchPlayers).mockResolvedValue({
+    searchPlayers.mockResolvedValue({
       rows: [
         {
           id: 1,
@@ -262,7 +264,7 @@ describe("PlayersPage", () => {
   });
 
   it("shows a headshot image for a row with an nbaPersonId and initials for a row without", async () => {
-    vi.mocked(searchPlayers).mockResolvedValue({
+    searchPlayers.mockResolvedValue({
       rows: [
         {
           id: 1,
@@ -299,7 +301,7 @@ describe("PlayersPage", () => {
   });
 
   it("shows a not-found message when there are zero matches for a query", async () => {
-    vi.mocked(searchPlayers).mockResolvedValue({ rows: [], total: 0, page: 1 });
+    searchPlayers.mockResolvedValue({ rows: [], total: 0, page: 1 });
 
     render(await PlayersPage({ searchParams: Promise.resolve({ q: "zz" }) }));
 
@@ -308,7 +310,7 @@ describe("PlayersPage", () => {
   });
 
   it("shows a not-synced message when there are zero players and no query", async () => {
-    vi.mocked(searchPlayers).mockResolvedValue({ rows: [], total: 0, page: 1 });
+    searchPlayers.mockResolvedValue({ rows: [], total: 0, page: 1 });
 
     render(await PlayersPage({ searchParams: Promise.resolve({}) }));
 
@@ -319,7 +321,7 @@ describe("PlayersPage", () => {
   });
 
   it("normalizes array search params by taking the first value", async () => {
-    vi.mocked(searchPlayers).mockResolvedValue({ rows: [], total: 0, page: 1 });
+    searchPlayers.mockResolvedValue({ rows: [], total: 0, page: 1 });
 
     render(await PlayersPage({ searchParams: Promise.resolve({ q: ["curry", "x"] }) }));
 
@@ -329,7 +331,7 @@ describe("PlayersPage", () => {
 
 describe("PlayersPage tabs", () => {
   it("renders the tab navigation with Regular Stats active by default", async () => {
-    vi.mocked(searchPlayers).mockResolvedValue({ rows: [], total: 0, page: 1 });
+    searchPlayers.mockResolvedValue({ rows: [], total: 0, page: 1 });
 
     render(await PlayersPage({ searchParams: Promise.resolve({}) }));
 
@@ -340,7 +342,7 @@ describe("PlayersPage tabs", () => {
   });
 
   it("renders the advanced stats table when tab=advanced", async () => {
-    vi.mocked(searchPlayersAdvanced).mockResolvedValue({
+    searchPlayersAdvanced.mockResolvedValue({
       rows: [
         {
           id: 1,
@@ -388,7 +390,7 @@ describe("PlayersPage tabs", () => {
   });
 
   it("describes advanced headers via a tooltip and renders the legend", async () => {
-    vi.mocked(searchPlayersAdvanced).mockResolvedValue({
+    searchPlayersAdvanced.mockResolvedValue({
       rows: [
         {
           id: 1,
@@ -434,7 +436,7 @@ describe("PlayersPage tabs", () => {
   });
 
   it("renders one sortable column per valuation method from the pool loader", async () => {
-    vi.mocked(getFantasyPool).mockResolvedValue([
+    getFantasyPool.mockResolvedValue([
       makeStatLine({ playerId: 1, pts: 900 }),
       makeStatLine({ playerId: 2, pts: 500 }),
     ]);
@@ -460,7 +462,7 @@ describe("PlayersPage tabs", () => {
   });
 
   it("passes the range param through to the fantasy pool loader", async () => {
-    vi.mocked(getFantasyPool).mockResolvedValue([]);
+    getFantasyPool.mockResolvedValue([]);
 
     render(
       await PlayersPage({ searchParams: Promise.resolve({ tab: "fantasy", range: "last10" }) }),

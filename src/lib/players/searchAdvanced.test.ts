@@ -1,19 +1,17 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { searchPlayersAdvanced } from "@/lib/players/searchAdvanced";
 import type { PlayersSearchParams } from "@/lib/players/searchParams";
 
+const findMany = vi.fn();
+const count = vi.fn();
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    player: {
-      findMany: vi.fn(),
-      count: vi.fn(),
-    },
+    player: { findMany, count },
     $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
   },
 }));
-
-import { prisma } from "@/lib/prisma";
 
 const defaultParams: PlayersSearchParams = {
   q: "",
@@ -47,7 +45,7 @@ const buildLog = (overrides: { gameDate?: Date; season?: string; pie?: number | 
   usagePercentage: 0.25,
 });
 
-// prisma.player.findMany's real return type is the full Player model
+// findMany's real return type is the full Player model
 // regardless of the select passed at the call site, so every fixture row
 // needs these scalar fields even though the advanced-stats code never reads them.
 const playerScalarDefaults = {
@@ -71,12 +69,12 @@ describe("searchPlayersAdvanced", () => {
   });
 
   it("calls findMany with the active-player where clause when sorting by name", async () => {
-    vi.mocked(prisma.player.findMany).mockResolvedValue([]);
-    vi.mocked(prisma.player.count).mockResolvedValue(0);
+    findMany.mockResolvedValue([]);
+    count.mockResolvedValue(0);
 
     await searchPlayersAdvanced({ ...defaultParams, sort: "firstName", dir: "asc" });
 
-    expect(prisma.player.findMany).toHaveBeenCalledWith(
+    expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { gameLogs: { some: {} } },
         orderBy: [{ firstName: "asc" }, { lastName: "asc" }, { id: "asc" }],
@@ -87,12 +85,12 @@ describe("searchPlayersAdvanced", () => {
   });
 
   it("adds a fullName search condition when q is provided", async () => {
-    vi.mocked(prisma.player.findMany).mockResolvedValue([]);
-    vi.mocked(prisma.player.count).mockResolvedValue(0);
+    findMany.mockResolvedValue([]);
+    count.mockResolvedValue(0);
 
     await searchPlayersAdvanced({ ...defaultParams, sort: "firstName", q: "curry" });
 
-    expect(prisma.player.findMany).toHaveBeenCalledWith(
+    expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { gameLogs: { some: {} }, fullName: { contains: "curry", mode: "insensitive" } },
       }),
@@ -114,7 +112,7 @@ describe("searchPlayersAdvanced", () => {
         advancedGameLogs: [buildLog({ pie: 20 }), buildLog({ pie: null }), buildLog({ pie: 10 })],
       },
     ];
-    vi.mocked(prisma.player.findMany).mockResolvedValue(rows);
+    findMany.mockResolvedValue(rows);
 
     const result = await searchPlayersAdvanced({ ...defaultParams, sort: "pie", range: "last5" });
 
@@ -140,7 +138,7 @@ describe("searchPlayersAdvanced", () => {
         ],
       },
     ];
-    vi.mocked(prisma.player.findMany).mockResolvedValue(rows);
+    findMany.mockResolvedValue(rows);
 
     const result = await searchPlayersAdvanced({ ...defaultParams, sort: "pie", range: "all" });
 
@@ -174,11 +172,11 @@ describe("searchPlayersAdvanced", () => {
       advancedGameLogs: [],
     };
 
-    vi.mocked(prisma.player.findMany).mockResolvedValue([noData, withData]);
+    findMany.mockResolvedValue([noData, withData]);
     const ascending = await searchPlayersAdvanced({ ...defaultParams, sort: "pie", dir: "asc" });
     expect(ascending.rows.map((row) => row.id)).toEqual([1, 2]);
 
-    vi.mocked(prisma.player.findMany).mockResolvedValue([noData, withData]);
+    findMany.mockResolvedValue([noData, withData]);
     const descending = await searchPlayersAdvanced({ ...defaultParams, sort: "pie", dir: "desc" });
     expect(descending.rows.map((row) => row.id)).toEqual([1, 2]);
   });
@@ -198,10 +196,8 @@ describe("searchPlayersAdvanced", () => {
         advancedGameLogs: [],
       },
     ];
-    vi.mocked(prisma.player.findMany)
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce(secondPageRows);
-    vi.mocked(prisma.player.count).mockResolvedValue(30);
+    findMany.mockResolvedValueOnce([]).mockResolvedValueOnce(secondPageRows);
+    count.mockResolvedValue(30);
 
     const result = await searchPlayersAdvanced({
       ...defaultParams,
@@ -218,8 +214,8 @@ describe("searchPlayersAdvanced", () => {
   });
 
   it("returns empty rows on page 1 when there are zero matches", async () => {
-    vi.mocked(prisma.player.findMany).mockResolvedValue([]);
-    vi.mocked(prisma.player.count).mockResolvedValue(0);
+    findMany.mockResolvedValue([]);
+    count.mockResolvedValue(0);
 
     const result = await searchPlayersAdvanced({ ...defaultParams, sort: "firstName" });
 
@@ -227,12 +223,12 @@ describe("searchPlayersAdvanced", () => {
   });
 
   it("sizes the advancedGameLogs fetch to the requested range at the query level", async () => {
-    vi.mocked(prisma.player.findMany).mockResolvedValue([]);
-    vi.mocked(prisma.player.count).mockResolvedValue(0);
+    findMany.mockResolvedValue([]);
+    count.mockResolvedValue(0);
 
     await searchPlayersAdvanced({ ...defaultParams, sort: "firstName", range: "last5" });
 
-    expect(prisma.player.findMany).toHaveBeenCalledWith(
+    expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         select: expect.objectContaining({
           advancedGameLogs: expect.objectContaining({ take: 5 }),
@@ -242,12 +238,12 @@ describe("searchPlayersAdvanced", () => {
   });
 
   it("uses the full fetch limit for the all range", async () => {
-    vi.mocked(prisma.player.findMany).mockResolvedValue([]);
-    vi.mocked(prisma.player.count).mockResolvedValue(0);
+    findMany.mockResolvedValue([]);
+    count.mockResolvedValue(0);
 
     await searchPlayersAdvanced({ ...defaultParams, sort: "firstName", range: "all" });
 
-    expect(prisma.player.findMany).toHaveBeenCalledWith(
+    expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         select: expect.objectContaining({
           advancedGameLogs: expect.objectContaining({ take: 100 }),
@@ -293,7 +289,7 @@ describe("searchPlayersAdvanced", () => {
         ],
       },
     ];
-    vi.mocked(prisma.player.findMany).mockResolvedValue(rows);
+    findMany.mockResolvedValue(rows);
 
     const result = await searchPlayersAdvanced({ ...defaultParams, sort: "pie", range: "last5" });
 

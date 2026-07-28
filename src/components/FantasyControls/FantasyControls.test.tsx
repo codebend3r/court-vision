@@ -1,6 +1,6 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "bun:test";
 
 import {
   FantasyControls,
@@ -31,7 +31,7 @@ describe("FantasyControls", () => {
     const user = userEvent.setup();
     const { onChange } = renderControls();
     await user.type(screen.getByLabelText("Search players"), "  lebron ");
-    await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith({ q: "lebron", page: 1 }));
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith({ q: "lebron", page: 1 }));
   });
 
   it("emits range and mode changes", async () => {

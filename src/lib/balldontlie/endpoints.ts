@@ -1,3 +1,5 @@
+import type { FetchImpl } from "@/lib/fetchImpl";
+
 import { bdlFetch, BdlParamValue } from "@/lib/balldontlie/client";
 import { PER_PAGE, SEASON_YEAR, THROTTLE_MS } from "@/lib/balldontlie/constants";
 import {
@@ -24,7 +26,7 @@ export type BdlPageProgress = {
 };
 
 export type BdlClientDeps = {
-  fetchImpl?: typeof fetch;
+  fetchImpl?: FetchImpl;
   sleep?: (ms: number) => Promise<void>;
   apiKey?: string;
   onPage?: (progress: BdlPageProgress) => void;

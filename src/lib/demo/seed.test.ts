@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "bun:test";
 
 import * as endpoints from "@/lib/balldontlie/endpoints";
 import { BdlGame, BdlPlayer, BdlTeam } from "@/lib/balldontlie/schemas";

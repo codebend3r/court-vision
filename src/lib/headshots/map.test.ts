@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "bun:test";
 
-import { prisma } from "@/lib/prisma";
+import type { FetchImpl } from "@/lib/fetchImpl";
 
 import { mapHeadshots } from "@/lib/headshots/map";
 import * as sources from "@/lib/headshots/sources";
@@ -11,9 +11,9 @@ type OurPlayerRow = {
   fullName: string;
 };
 
-// `findMany` is generic and mocked without call-site args (see prisma.player.findMany
-// below), so `vi.mocked(...).mockResolvedValue(...)` type-checks against the full
-// Player row shape regardless of the `select` map.ts actually passes at runtime.
+// `findMany` is generic and mocked without call-site args (see the mock below),
+// so `mockResolvedValue(...)` type-checks against the full Player row shape
+// regardless of the `select` map.ts actually passes at runtime.
 // Only `id`/`fullName` vary per test; the rest are match-irrelevant filler.
 type FullPlayerRow = {
   firstName: string;
@@ -56,17 +56,17 @@ const toFullPlayerRow = (row: OurPlayerRow): FullPlayerRow => ({
   ...row,
 });
 
+const findMany = vi.fn<(arg: unknown) => Promise<FullPlayerRow[]>>();
+const update = vi.fn<(arg: unknown) => Promise<unknown>>();
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    player: {
-      findMany: vi.fn<(arg: unknown) => Promise<FullPlayerRow[]>>(),
-      update: vi.fn<(arg: unknown) => Promise<unknown>>(),
-    },
+    player: { findMany, update },
   },
 }));
 
 const mockFindMany = (players: OurPlayerRow[]): void => {
-  vi.mocked(prisma.player.findMany).mockResolvedValue(players.map(toFullPlayerRow));
+  findMany.mockResolvedValue(players.map(toFullPlayerRow));
 };
 
 const mockIndex = (rows: NbaPlayerIndexRow[]): void => {
@@ -84,7 +84,7 @@ describe("mapHeadshots", () => {
 
     await mapHeadshots();
 
-    expect(prisma.player.findMany).toHaveBeenCalledWith({
+    expect(findMany).toHaveBeenCalledWith({
       where: { gameLogs: { some: {} } },
       select: { id: true, fullName: true },
     });
@@ -103,12 +103,12 @@ describe("mapHeadshots", () => {
     const result = await mapHeadshots();
 
     expect(result).toEqual({ matched: 2, unmatched: [] });
-    expect(prisma.player.update).toHaveBeenCalledTimes(2);
-    expect(prisma.player.update).toHaveBeenCalledWith({
+    expect(update).toHaveBeenCalledTimes(2);
+    expect(update).toHaveBeenCalledWith({
       where: { id: 10 },
       data: { nbaPersonId: 1629029 },
     });
-    expect(prisma.player.update).toHaveBeenCalledWith({
+    expect(update).toHaveBeenCalledWith({
       where: { id: 20 },
       data: { nbaPersonId: 1630162 },
     });
@@ -127,11 +127,11 @@ describe("mapHeadshots", () => {
     const result = await mapHeadshots();
 
     expect(result).toEqual({ matched: 2, unmatched: [] });
-    expect(prisma.player.update).toHaveBeenCalledWith({
+    expect(update).toHaveBeenCalledWith({
       where: { id: 60 },
       data: { nbaPersonId: 1631260 },
     });
-    expect(prisma.player.update).toHaveBeenCalledWith({
+    expect(update).toHaveBeenCalledWith({
       where: { id: 61 },
       data: { nbaPersonId: 202340 },
     });
@@ -147,10 +147,8 @@ describe("mapHeadshots", () => {
     const result = await mapHeadshots();
 
     expect(result).toEqual({ matched: 1, unmatched: ["Nobody Matches"] });
-    expect(prisma.player.update).toHaveBeenCalledTimes(1);
-    expect(prisma.player.update).not.toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 30 } }),
-    );
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(update).not.toHaveBeenCalledWith(expect.objectContaining({ where: { id: 30 } }));
   });
 
   it("skips and reports a name with two or more index matches (ambiguous index side)", async () => {
@@ -163,7 +161,7 @@ describe("mapHeadshots", () => {
     const result = await mapHeadshots();
 
     expect(result).toEqual({ matched: 0, unmatched: ["Player X"] });
-    expect(prisma.player.update).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
   });
 
   it("skips and reports both players when two of our players normalize identically", async () => {
@@ -178,13 +176,13 @@ describe("mapHeadshots", () => {
     expect(result.matched).toBe(0);
     expect(result.unmatched).toEqual(expect.arrayContaining(["Twin Guy", "Twin Guy"]));
     expect(result.unmatched).toHaveLength(2);
-    expect(prisma.player.update).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
   });
 
   it("passes fetchImpl through to fetchNbaPlayerIndex", async () => {
     const fetchIndexSpy = vi.spyOn(sources, "fetchNbaPlayerIndex").mockResolvedValue([]);
     mockFindMany([]);
-    const fetchImpl = vi.fn<typeof fetch>();
+    const fetchImpl = vi.fn<FetchImpl>();
 
     await mapHeadshots({ fetchImpl });
 

@@ -1,5 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "bun:test";
 
 import { NBA_TEAMS } from "@/components/TeamChip/TeamChip";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";

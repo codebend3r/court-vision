@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, spyOn, vi } from "bun:test";
 
 const signUpAction = vi.fn();
 
@@ -11,7 +11,13 @@ import { SignupForm } from "./SignupForm";
 afterEach(cleanup);
 
 describe("SignupForm", () => {
-  beforeEach(() => signUpAction.mockReset());
+  beforeEach(() => {
+    signUpAction.mockReset();
+    // The username field debounces a real `/api/username-available` request.
+    // happy-dom resolves that relative URL against the registered origin and
+    // would actually dial it, so answer it here instead of hitting the network.
+    spyOn(globalThis, "fetch").mockResolvedValue(Response.json({ available: true }));
+  });
 
   it("shows the check-email state on success", async () => {
     signUpAction.mockResolvedValue({ ok: true });
