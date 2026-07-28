@@ -11,7 +11,7 @@
     "lint:fix": "oxlint --type-aware --fix",
     "lint:scss": "gale \"src/**/*.scss\"",
     "typecheck": "next typegen && tsgo --noEmit",
-    "test": "bun test --isolate",
+    "test": "bun test --parallel",
     "test:watch": "bun test --isolate --watch",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
