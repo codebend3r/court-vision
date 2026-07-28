@@ -1,19 +1,21 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
-import { getTeamRoster, getTeamStats } from "@/lib/teams/loader";
 import { buildTeamStats } from "@/lib/teams/stats";
 
 import TeamPage from "@/app/team/page";
 
+const getTeamStats = vi.fn();
+const getTeamRoster = vi.fn();
+
 vi.mock("@/lib/teams/loader", () => ({
-  getTeamStats: vi.fn(),
-  getTeamRoster: vi.fn(),
+  getTeamStats,
+  getTeamRoster,
 }));
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(getTeamRoster).mockResolvedValue([
+  getTeamRoster.mockResolvedValue([
     {
       id: 101,
       firstName: "Jalen",
@@ -35,7 +37,7 @@ beforeEach(() => {
       teamAbbr: "NYK",
     },
   ]);
-  vi.mocked(getTeamStats).mockResolvedValue({
+  getTeamStats.mockResolvedValue({
     season: "2024-25",
     stats: buildTeamStats({
       results: [
@@ -129,7 +131,7 @@ describe("TeamPage", () => {
   });
 
   it("notices missing data for a known team without stats", async () => {
-    vi.mocked(getTeamStats).mockResolvedValue({ season: null, stats: [] });
+    getTeamStats.mockResolvedValue({ season: null, stats: [] });
 
     render(await TeamPage({ searchParams: Promise.resolve({ is: "raptors" }) }));
 

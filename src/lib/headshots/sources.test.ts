@@ -1,4 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "bun:test";
+
+import type { FetchImpl } from "@/lib/fetchImpl";
 
 import { fetchNbaPlayerIndex, NBA_DATA_PY_URL } from "@/lib/headshots/sources";
 
@@ -32,7 +34,7 @@ const textResponse = (body: string, init: { status?: number } = {}): Response =>
 
 describe("fetchNbaPlayerIndex", () => {
   it("fetches the nba_api data.py fallback and parses id + full name rows", async () => {
-    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(textResponse(dataPySource));
+    const fetchImpl = vi.fn<FetchImpl>().mockResolvedValue(textResponse(dataPySource));
 
     const rows = await fetchNbaPlayerIndex({ fetchImpl });
 
@@ -53,7 +55,7 @@ describe("fetchNbaPlayerIndex", () => {
 
   it("throws when the parsed row count looks implausibly small", async () => {
     const smallSource = `players = [\n    [1629029, "Dončić", "Luka", "Luka Dončić", True],\n]\n`;
-    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(textResponse(smallSource));
+    const fetchImpl = vi.fn<FetchImpl>().mockResolvedValue(textResponse(smallSource));
 
     await expect(fetchNbaPlayerIndex({ fetchImpl })).rejects.toThrow(/rows/);
   });

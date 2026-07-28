@@ -1,5 +1,5 @@
 import { createSerializer } from "nuqs/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 
 import {
   FANTASY_SORT_KEYS,

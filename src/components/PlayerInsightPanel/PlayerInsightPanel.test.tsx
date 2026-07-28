@@ -1,5 +1,5 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "bun:test";
 
 import { PlayerInsightPanel } from "@/components/PlayerInsightPanel/PlayerInsightPanel";
 import { type PlayerInsight } from "@/lib/fantasyTeams/insights";

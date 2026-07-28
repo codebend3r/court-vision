@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 
 import { computePoolStats } from "@/lib/valuation/pool";
 import { scoreZScore } from "@/lib/valuation/methods/zscore";

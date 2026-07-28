@@ -1,3 +1,5 @@
+import type { FetchImpl } from "@/lib/fetchImpl";
+
 import { z } from "zod";
 
 // PRIMARY source per the plan (docs/superpowers/plans/2026-07-11-player-headshots.md)
@@ -52,7 +54,7 @@ export const parseNbaPlayerIndex = (source: string): NbaPlayerIndexRow[] => {
 
 export const fetchNbaPlayerIndex = async ({
   fetchImpl = globalThis.fetch,
-}: { fetchImpl?: typeof fetch } = {}): Promise<NbaPlayerIndexRow[]> => {
+}: { fetchImpl?: FetchImpl } = {}): Promise<NbaPlayerIndexRow[]> => {
   const response = await fetchImpl(NBA_DATA_PY_URL);
   if (!response.ok) {
     throw new Error(`Failed to fetch NBA player index (${response.status})`);

@@ -1,3 +1,5 @@
+import type { FetchImpl } from "@/lib/fetchImpl";
+
 import { normalizeName } from "@/lib/demo/names";
 import { prisma } from "@/lib/prisma";
 
@@ -6,7 +8,7 @@ import { Logger, consoleLogger, silentLogger } from "@/lib/logger";
 import { isMainModule } from "@/lib/runtime";
 
 export type MapHeadshotsDeps = {
-  fetchImpl?: typeof fetch;
+  fetchImpl?: FetchImpl;
   logger?: Logger;
 };
 

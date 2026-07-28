@@ -37,5 +37,5 @@ jobs:
       - name: TypeScript (tsgo)
         run: bun run typecheck
 
-      - name: Vitest
+      - name: Test
         run: bun run test

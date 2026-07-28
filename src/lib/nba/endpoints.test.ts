@@ -1,4 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "bun:test";
+
+import type { FetchImpl } from "@/lib/fetchImpl";
 
 import { fetchPlayerGameLogs, fetchPlayerIndex, fetchSeasonStats } from "@/lib/nba/endpoints";
 
@@ -12,7 +14,7 @@ const wrap = (name: string, headers: string[], rowSet: unknown[][]): unknown => 
 
 describe("fetchPlayerIndex", () => {
   it("sends season/league params and returns validated rows", async () => {
-    const fetchImpl = vi.fn<typeof fetch>(async () =>
+    const fetchImpl = vi.fn<FetchImpl>(async () =>
       okResponse(
         wrap(
           "PlayerIndex",
@@ -41,7 +43,7 @@ describe("fetchPlayerIndex", () => {
 
 describe("fetchSeasonStats", () => {
   it("sends Regular Season + Totals params", async () => {
-    const fetchImpl = vi.fn<typeof fetch>(async () =>
+    const fetchImpl = vi.fn<FetchImpl>(async () =>
       okResponse(
         wrap(
           "LeagueDashPlayerStats",
@@ -79,7 +81,7 @@ describe("fetchSeasonStats", () => {
 
 describe("fetchPlayerGameLogs", () => {
   it("passes the date window through", async () => {
-    const fetchImpl = vi.fn<typeof fetch>(async () =>
+    const fetchImpl = vi.fn<FetchImpl>(async () =>
       okResponse(
         wrap(
           "PlayerGameLogs",

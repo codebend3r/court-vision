@@ -1,15 +1,17 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "bun:test";
+
+import { restoreEnv, stubEnv } from "@/lib/testing/env";
 
 import { getSupabaseEnv, isSupabaseConfigured } from "@/lib/supabase/env";
 
 afterEach(() => {
-  vi.unstubAllEnvs();
+  restoreEnv();
 });
 
 describe("getSupabaseEnv", () => {
   it("returns the pair when both the url and key are set", () => {
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_abc");
+    stubEnv({ key: "NEXT_PUBLIC_SUPABASE_URL", value: "https://example.supabase.co" });
+    stubEnv({ key: "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", value: "sb_publishable_abc" });
 
     expect(getSupabaseEnv()).toEqual({
       url: "https://example.supabase.co",
@@ -19,8 +21,8 @@ describe("getSupabaseEnv", () => {
   });
 
   it("returns null when either value is missing or blank", () => {
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "");
+    stubEnv({ key: "NEXT_PUBLIC_SUPABASE_URL", value: "https://example.supabase.co" });
+    stubEnv({ key: "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", value: "" });
 
     expect(getSupabaseEnv()).toBeNull();
     expect(isSupabaseConfigured()).toBe(false);

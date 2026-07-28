@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 
 import { buildPlayerInsights } from "@/lib/fantasyTeams/insights";
 import { type FantasyStatLine, type StatKey } from "@/lib/valuation/types";

@@ -1,8 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
-import { prisma } from "@/lib/prisma";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
 import PlayerPage from "@/app/players/[playerId]/page";
@@ -24,17 +23,21 @@ const renderPage = async ({
     { wrapper: withNuqsTestingAdapter({ searchParams: query }) },
   );
 
+const findUniquePlayer = vi.fn();
+const findManyGameLogs = vi.fn();
+const findManySeasonStats = vi.fn();
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    player: { findUnique: vi.fn() },
-    playerGameLog: { findMany: vi.fn() },
-    playerSeasonStats: { findMany: vi.fn() },
+    player: { findUnique: findUniquePlayer },
+    playerGameLog: { findMany: findManyGameLogs },
+    playerSeasonStats: { findMany: findManySeasonStats },
   },
 }));
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(prisma.playerSeasonStats.findMany).mockResolvedValue([]);
+  findManySeasonStats.mockResolvedValue([]);
 });
 
 afterEach(cleanup);
@@ -129,8 +132,8 @@ const player = {
 
 describe("PlayerPage", () => {
   it("renders the player name and chart chips for a known id with logs", async () => {
-    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
-    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([
       buildLog({ id: "log-1" }),
       buildLog({ id: "log-2", gameId: "0022500002" }),
     ]);
@@ -147,8 +150,8 @@ describe("PlayerPage", () => {
   });
 
   it("counts only games played (not DNPs) in the header", async () => {
-    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
-    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([
       buildLog({ id: "log-1" }),
       buildLog({ id: "log-2", gameId: "0022500002" }),
       // A DNP: on the roster but did not play.
@@ -162,9 +165,9 @@ describe("PlayerPage", () => {
   });
 
   it("shows the season averages card with NBA ranks", async () => {
-    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
-    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);
-    vi.mocked(prisma.playerSeasonStats.findMany).mockResolvedValue([
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
+    findManySeasonStats.mockResolvedValue([
       buildSeasonRow({ playerId: 3547238 }),
       buildSeasonRow({ playerId: 2, pts: 1500 }),
     ]);
@@ -180,8 +183,8 @@ describe("PlayerPage", () => {
   });
 
   it("omits the season averages card when the player has no season stats", async () => {
-    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
-    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
 
     await renderPage({ playerId: "3547238" });
 
@@ -189,7 +192,7 @@ describe("PlayerPage", () => {
   });
 
   it("renders profile facts and jersey number when metadata is present", async () => {
-    vi.mocked(prisma.player.findUnique).mockResolvedValue({
+    findUniquePlayer.mockResolvedValue({
       ...player,
       heightInches: 79,
       weightLbs: 220,
@@ -199,7 +202,7 @@ describe("PlayerPage", () => {
       draftRound: 1,
       draftNumber: 5,
     });
-    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
 
     await renderPage({ playerId: "3547238" });
 
@@ -216,8 +219,8 @@ describe("PlayerPage", () => {
   });
 
   it("omits the facts list when no metadata is present", async () => {
-    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
-    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
 
     await renderPage({ playerId: "3547238" });
 
@@ -226,8 +229,8 @@ describe("PlayerPage", () => {
   });
 
   it("renders the NBA CDN headshot in the header when the player has an nbaPersonId", async () => {
-    vi.mocked(prisma.player.findUnique).mockResolvedValue({ ...player, nbaPersonId: 1630162 });
-    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);
+    findUniquePlayer.mockResolvedValue({ ...player, nbaPersonId: 1630162 });
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
 
     await renderPage({ playerId: "3547238" });
 
@@ -237,8 +240,8 @@ describe("PlayerPage", () => {
   });
 
   it("rejects for an unknown id", async () => {
-    vi.mocked(prisma.player.findUnique).mockResolvedValue(null);
-    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([]);
+    findUniquePlayer.mockResolvedValue(null);
+    findManyGameLogs.mockResolvedValue([]);
 
     await expect(
       PlayerPage({
@@ -249,8 +252,8 @@ describe("PlayerPage", () => {
   });
 
   it("rejects for a non-numeric id without querying the database", async () => {
-    vi.mocked(prisma.player.findUnique).mockResolvedValue(null);
-    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([]);
+    findUniquePlayer.mockResolvedValue(null);
+    findManyGameLogs.mockResolvedValue([]);
 
     await expect(
       PlayerPage({
@@ -259,14 +262,14 @@ describe("PlayerPage", () => {
       }),
     ).rejects.toThrow();
 
-    expect(prisma.player.findUnique).not.toHaveBeenCalled();
+    expect(findUniquePlayer).not.toHaveBeenCalled();
   });
 
   it.each([["12abc"], ["99999999999"], ["0"], ["-5"]])(
     "rejects id %s without querying the database",
     async (playerId) => {
-      vi.mocked(prisma.player.findUnique).mockResolvedValue(null);
-      vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([]);
+      findUniquePlayer.mockResolvedValue(null);
+      findManyGameLogs.mockResolvedValue([]);
 
       await expect(
         PlayerPage({
@@ -275,13 +278,13 @@ describe("PlayerPage", () => {
         }),
       ).rejects.toThrow();
 
-      expect(prisma.player.findUnique).not.toHaveBeenCalled();
+      expect(findUniquePlayer).not.toHaveBeenCalled();
     },
   );
 
   it("shows the empty state and no chips when the player has zero logs", async () => {
-    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
-    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([]);
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([]);
 
     render(
       await PlayerPage({
@@ -295,9 +298,9 @@ describe("PlayerPage", () => {
   });
 
   it("renders the season dropdown with each played season plus Career, defaulting to latest", async () => {
-    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
-    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "a" })]);
-    vi.mocked(prisma.playerSeasonStats.findMany).mockResolvedValue([
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "a" })]);
+    findManySeasonStats.mockResolvedValue([
       buildSeasonRow({ playerId: 3547238, season: "2025-26" }),
       buildSeasonRow({ playerId: 3547238, season: "2024-25" }),
     ]);
@@ -311,32 +314,28 @@ describe("PlayerPage", () => {
   });
 
   it("filters the logs to the player's latest season by default", async () => {
-    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
-    vi.mocked(prisma.playerSeasonStats.findMany).mockResolvedValue([
+    findUniquePlayer.mockResolvedValue(player);
+    findManySeasonStats.mockResolvedValue([
       buildSeasonRow({ playerId: 3547238, season: "2023-24" }),
     ]);
-    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([
-      buildLog({ id: "log-1", season: "2023-24" }),
-    ]);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1", season: "2023-24" })]);
 
     await renderPage({ playerId: "3547238" });
 
-    expect(prisma.playerGameLog.findMany).toHaveBeenCalledWith(
+    expect(findManyGameLogs).toHaveBeenCalledWith(
       expect.objectContaining({ where: { playerId: 3547238, season: "2023-24" } }),
     );
     expect(screen.getByRole("combobox", { name: "Season" })).toHaveValue("2023-24");
   });
 
   it("honors an explicit season param even if the player never played it", async () => {
-    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
-    vi.mocked(prisma.playerSeasonStats.findMany).mockResolvedValue([
-      buildSeasonRow({ playerId: 3547238 }),
-    ]);
-    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([]);
+    findUniquePlayer.mockResolvedValue(player);
+    findManySeasonStats.mockResolvedValue([buildSeasonRow({ playerId: 3547238 })]);
+    findManyGameLogs.mockResolvedValue([]);
 
     await renderPage({ playerId: "3547238", query: { season: "2021-22" } });
 
-    expect(prisma.playerGameLog.findMany).toHaveBeenCalledWith(
+    expect(findManyGameLogs).toHaveBeenCalledWith(
       expect.objectContaining({ where: { playerId: 3547238, season: "2021-22" } }),
     );
     expect(screen.getByRole("combobox", { name: "Season" })).toHaveValue("2021-22");
@@ -344,17 +343,17 @@ describe("PlayerPage", () => {
   });
 
   it("aggregates a rank-less career card spanning the played seasons", async () => {
-    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
-    vi.mocked(prisma.playerSeasonStats.findMany).mockResolvedValue([
+    findUniquePlayer.mockResolvedValue(player);
+    findManySeasonStats.mockResolvedValue([
       buildSeasonRow({ playerId: 3547238, season: "2025-26" }),
       buildSeasonRow({ playerId: 3547238, season: "2024-25" }),
     ]);
-    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
 
     await renderPage({ playerId: "3547238", query: { season: "career" } });
 
     // Career fetches every log: no season in the where clause.
-    expect(prisma.playerGameLog.findMany).toHaveBeenCalledWith(
+    expect(findManyGameLogs).toHaveBeenCalledWith(
       expect.objectContaining({ where: { playerId: 3547238 } }),
     );
     expect(screen.getByText("Career averages")).toBeInTheDocument();
@@ -366,8 +365,8 @@ describe("PlayerPage", () => {
   });
 
   it("renders the stat filters alongside the chart", async () => {
-    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
-    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
 
     await renderPage({ playerId: "3547238" });
 
@@ -376,8 +375,8 @@ describe("PlayerPage", () => {
   });
 
   it("titles the counting panel from the mode param", async () => {
-    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
-    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue([buildLog({ id: "log-1" })]);
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
 
     await renderPage({ playerId: "3547238", query: { mode: "totals" } });
 
@@ -392,8 +391,8 @@ describe("PlayerPage", () => {
         gameDate: new Date(Date.UTC(2025, 9, 22 + index)),
       }),
     );
-    vi.mocked(prisma.player.findUnique).mockResolvedValue(player);
-    vi.mocked(prisma.playerGameLog.findMany).mockResolvedValue(logs);
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue(logs);
 
     const { container } = await renderPage({ playerId: "3547238", query: { span: "10" } });
 

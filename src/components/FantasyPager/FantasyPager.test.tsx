@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "bun:test";
 
 import { FantasyPager } from "@/components/FantasyPager/FantasyPager";
 import { PAGE_SIZES } from "@/lib/players/searchParams";

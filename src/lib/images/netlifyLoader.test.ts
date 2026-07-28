@@ -1,21 +1,23 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "bun:test";
+
+import { restoreEnv, stubEnv } from "@/lib/testing/env";
 
 import netlifyImageLoader from "@/lib/images/netlifyLoader";
 
 afterEach(() => {
-  vi.unstubAllEnvs();
+  restoreEnv();
 });
 
 describe("netlifyImageLoader", () => {
   it("returns the source with its requested width in development", () => {
-    vi.stubEnv("NODE_ENV", "development");
+    stubEnv({ key: "NODE_ENV", value: "development" });
 
     const src = "https://cdn.nba.com/headshots/nba/latest/1040x760/201939.png";
     expect(netlifyImageLoader({ src, width: 64 })).toBe(`${src}?w=64`);
   });
 
   it("appends the development width to a source URL with existing query parameters", () => {
-    vi.stubEnv("NODE_ENV", "development");
+    stubEnv({ key: "NODE_ENV", value: "development" });
 
     expect(netlifyImageLoader({ src: "/court-vision-mark.jpg?fit=cover", width: 32 })).toBe(
       "/court-vision-mark.jpg?fit=cover&w=32",
@@ -23,7 +25,7 @@ describe("netlifyImageLoader", () => {
   });
 
   it("builds a Netlify Image CDN URL outside development", () => {
-    vi.stubEnv("NODE_ENV", "production");
+    stubEnv({ key: "NODE_ENV", value: "production" });
 
     expect(
       netlifyImageLoader({
@@ -36,7 +38,7 @@ describe("netlifyImageLoader", () => {
   });
 
   it("defaults quality to 75 and passes an explicit quality through", () => {
-    vi.stubEnv("NODE_ENV", "production");
+    stubEnv({ key: "NODE_ENV", value: "production" });
 
     expect(netlifyImageLoader({ src: "/court-vision-mark.jpg", width: 32, quality: 90 })).toBe(
       "/.netlify/images?url=%2Fcourt-vision-mark.jpg&w=32&q=90",

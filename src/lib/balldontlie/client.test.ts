@@ -1,4 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "bun:test";
+
+import type { FetchImpl } from "@/lib/fetchImpl";
 
 import { bdlFetch } from "@/lib/balldontlie/client";
 
@@ -13,7 +15,7 @@ const jsonResponse = (
 
 describe("bdlFetch", () => {
   it("sends the api key header and serializes array params", async () => {
-    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse({ data: [] }));
+    const fetchImpl = vi.fn<FetchImpl>().mockResolvedValue(jsonResponse({ data: [] }));
     await bdlFetch({
       endpoint: "stats",
       params: { seasons: ["2025"], postseason: "false", per_page: "100" },
@@ -31,7 +33,7 @@ describe("bdlFetch", () => {
 
   it("retries on 429 then resolves, sleeping between attempts", async () => {
     const fetchImpl = vi
-      .fn<typeof fetch>()
+      .fn<FetchImpl>()
       .mockResolvedValueOnce(jsonResponse({ error: "rate limited" }, { status: 429 }))
       .mockResolvedValueOnce(jsonResponse({ data: [1] }));
     const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
@@ -43,7 +45,7 @@ describe("bdlFetch", () => {
 
   it("honors a Retry-After header on 429", async () => {
     const fetchImpl = vi
-      .fn<typeof fetch>()
+      .fn<FetchImpl>()
       .mockResolvedValueOnce(jsonResponse({}, { status: 429, headers: { "retry-after": "2" } }))
       .mockResolvedValueOnce(jsonResponse({ ok: true }));
     const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
@@ -53,7 +55,7 @@ describe("bdlFetch", () => {
 
   it("retries on a network TypeError", async () => {
     const fetchImpl = vi
-      .fn<typeof fetch>()
+      .fn<FetchImpl>()
       .mockRejectedValueOnce(new TypeError("network down"))
       .mockResolvedValueOnce(jsonResponse({ ok: true }));
     const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
@@ -63,7 +65,7 @@ describe("bdlFetch", () => {
   });
 
   it("throws after exhausting retries on 5xx", async () => {
-    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse({}, { status: 500 }));
+    const fetchImpl = vi.fn<FetchImpl>().mockResolvedValue(jsonResponse({}, { status: 500 }));
     const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
     await expect(
       bdlFetch({ endpoint: "teams", apiKey: "k", fetchImpl, sleep, maxRetries: 2 }),
@@ -77,7 +79,7 @@ describe("bdlFetch", () => {
       headers: { "content-type": "application/json" },
     });
     const fetchImpl = vi
-      .fn<typeof fetch>()
+      .fn<FetchImpl>()
       .mockResolvedValueOnce(truncated)
       .mockResolvedValueOnce(jsonResponse({ data: [7] }));
     const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
@@ -91,7 +93,7 @@ describe("bdlFetch", () => {
     // A Response body can only be read once, so hand back a fresh one per call,
     // the way a real fetch does.
     const fetchImpl = vi
-      .fn<typeof fetch>()
+      .fn<FetchImpl>()
       .mockImplementation(() =>
         Promise.resolve(
           new Response("", { status: 200, headers: { "content-type": "application/json" } }),

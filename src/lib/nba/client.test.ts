@@ -1,4 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "bun:test";
+
+import type { FetchImpl } from "@/lib/fetchImpl";
 
 import { nbaFetch } from "@/lib/nba/client";
 
@@ -12,7 +14,7 @@ const errorResponse = (status: number): Response =>
 
 describe("nbaFetch", () => {
   it("requests the right URL with NBA headers and returns parsed JSON", async () => {
-    const fetchImpl = vi.fn<typeof fetch>(async () => okResponse({ resultSets: [] }));
+    const fetchImpl = vi.fn<FetchImpl>(async () => okResponse({ resultSets: [] }));
     const result = await nbaFetch({
       endpoint: "playerindex",
       params: { Season: "2025-26", LeagueID: "00" },

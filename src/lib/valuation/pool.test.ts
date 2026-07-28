@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 
 import { makeStatLine } from "@/lib/valuation/fixtures";
 import {
