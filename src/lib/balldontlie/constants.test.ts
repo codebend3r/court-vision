@@ -34,8 +34,19 @@ describe("seasonLabelFromYear", () => {
 });
 
 describe("BACKFILL_SEASON_YEARS", () => {
-  it("spans 2020 through the current season year, oldest first", () => {
-    expect(BACKFILL_SEASON_YEARS).toEqual(["2020", "2021", "2022", "2023", "2024", "2025"]);
+  it("spans 2016 through the current season year, oldest first", () => {
+    expect(BACKFILL_SEASON_YEARS).toEqual([
+      "2016",
+      "2017",
+      "2018",
+      "2019",
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025",
+    ]);
   });
 });
 
