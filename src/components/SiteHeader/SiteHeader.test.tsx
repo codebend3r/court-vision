@@ -29,6 +29,15 @@ describe("SiteHeader", () => {
     expect(wordmark).toHaveAttribute("href", "/");
   });
 
+  it("renders the logo mark as decorative inside the home link", async () => {
+    getProfile.mockResolvedValue(null);
+    await renderHeader();
+    const wordmark = screen.getByRole("link", { name: "Court Vision" });
+    const mark = wordmark.querySelector("img");
+    expect(mark).toHaveAttribute("alt", "");
+    expect(mark?.getAttribute("src") ?? "").toContain("court-vision-mark.png");
+  });
+
   it("renders the theme toggle", async () => {
     getProfile.mockResolvedValue(null);
     await renderHeader();

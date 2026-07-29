@@ -31,6 +31,8 @@
 
 .mark {
   display: block;
+  // The mark ships with its own navy field, so it reads the same in both themes.
+  border-radius: var(--radius-md);
 }
 
 .actions {
