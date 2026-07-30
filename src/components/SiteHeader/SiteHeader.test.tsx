@@ -35,7 +35,7 @@ describe("SiteHeader", () => {
     const wordmark = screen.getByRole("link", { name: "Court Vision" });
     const mark = wordmark.querySelector("img");
     expect(mark).toHaveAttribute("alt", "");
-    expect(mark?.getAttribute("src") ?? "").toContain("court-vision-mark.png");
+    expect(mark?.getAttribute("src") ?? "").toContain("court-vision-mark-cropped.png");
   });
 
   it("renders the theme toggle", async () => {

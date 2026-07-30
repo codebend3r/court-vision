@@ -32,7 +32,7 @@
 .mark {
   display: block;
   // The mark ships with its own navy field, so it reads the same in both themes.
-  border-radius: var(--radius-md);
+  // Cropped flush to the artwork — no corner rounding, which would clip the bars.
 }
 
 .actions {
