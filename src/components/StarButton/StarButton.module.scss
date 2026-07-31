@@ -1,0 +1,51 @@
+// The star control, shared by every surface (tables, detail page, homepage
+// panel). The container decides where it sits; this file only decides how big
+// it is and what its states look like.
+.star {
+  display: grid;
+  place-items: center;
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+
+  &[data-size="sm"] .icon {
+    width: var(--font-size-md);
+    height: var(--font-size-md);
+  }
+
+  &[data-size="md"] .icon {
+    width: var(--font-size-lg);
+    height: var(--font-size-lg);
+  }
+
+  &:hover {
+    color: var(--color-highlight);
+    transform: scale(1.1);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus-ring);
+    outline-offset: 2px;
+    color: var(--color-highlight);
+  }
+
+  // Starred: filled glyph plus the highlight colour. The fill is the primary
+  // cue so the state survives without colour.
+  &[aria-pressed="true"] {
+    color: var(--color-highlight);
+  }
+
+  &[data-pending] {
+    opacity: var(--control-disabled-opacity);
+  }
+}
+
+.icon {
+  display: block;
+}

@@ -41,3 +41,15 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
+
+// The trend chart spans the full grid: a time series squeezed into a
+// 240px-minimum column would be unreadable.
+.chartCard {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}

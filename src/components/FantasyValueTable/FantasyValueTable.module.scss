@@ -97,7 +97,9 @@
   }
 }
 
-.table th:nth-child(n + 5) .sortButton {
+// Keyed off an explicit class rather than nth-child: the star column shifts
+// every index, and only when signed in.
+.table th.statHeader .sortButton {
   width: 100%;
   justify-content: end;
 }
@@ -178,10 +180,50 @@
   color: var(--color-accent);
 }
 
+// The plain-language "so what" under the technical description. Set apart by a
+// rule and a label rather than by colour alone.
+.headerTipWhy {
+  display: grid;
+  gap: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  // Tooltip copy inherits the header's micro-label casing; this is prose.
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.headerTipWhyLabel {
+  font-family: var(--font-display);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
 .headerTipFormula {
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   background: var(--color-control-bg);
   font-family: var(--font-mono);
   color: var(--color-text-muted);
+}
+
+// Star column: as narrow as its button.
+.starColumn,
+.starCell {
+  width: 1%;
+  padding-inline: var(--space-2);
+}
+
+// Announced by screen readers, invisible on screen — the column needs a name
+// but not a label taking up row width.
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

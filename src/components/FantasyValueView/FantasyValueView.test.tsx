@@ -42,7 +42,7 @@ const fillers = [3, 4, 5, 6].map((playerId) => line({ playerId }));
 const lines = [alpha, beta, ...fillers];
 
 const renderView = ({ searchParams = "?" }: { searchParams?: string } = {}) =>
-  render(<FantasyValueView lines={lines} />, {
+  render(<FantasyValueView isSignedIn={false} lines={lines} />, {
     wrapper: withNuqsTestingAdapter({ searchParams }),
   });
 
@@ -107,7 +107,7 @@ describe("FantasyValueView", () => {
   });
 
   it("notices a tiny pool and stays neutral", () => {
-    render(<FantasyValueView lines={[alpha]} />, {
+    render(<FantasyValueView isSignedIn={false} lines={[alpha]} />, {
       wrapper: withNuqsTestingAdapter({ searchParams: "?" }),
     });
     expect(screen.getByText(/pool is too small/i)).toBeInTheDocument();
@@ -119,7 +119,7 @@ describe("FantasyValueView", () => {
   });
 
   it("renders the empty state without players", () => {
-    render(<FantasyValueView lines={[]} />, {
+    render(<FantasyValueView isSignedIn={false} lines={[]} />, {
       wrapper: withNuqsTestingAdapter({ searchParams: "?" }),
     });
     expect(screen.getByText(/No players yet/)).toBeInTheDocument();

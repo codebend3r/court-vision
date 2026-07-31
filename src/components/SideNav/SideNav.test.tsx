@@ -32,6 +32,28 @@ describe("SideNav", () => {
     expect(screen.getByRole("link", { name: "Players" })).toHaveAttribute("aria-current", "page");
   });
 
+  it("renders the Home link and marks it active on /", () => {
+    pathnameMock.current = "/";
+    render(<SideNav />);
+    const link = screen.getByRole("link", { name: "Home" });
+    expect(link).toHaveAttribute("href", "/");
+    expect(link).toHaveAttribute("aria-current", "page");
+  });
+
+  it("renders the Starred link", () => {
+    pathnameMock.current = "/";
+    render(<SideNav />);
+    const link = screen.getByRole("link", { name: "Starred" });
+    expect(link).toHaveAttribute("href", "/watchlist");
+    expect(link).not.toHaveAttribute("aria-current");
+  });
+
+  it("marks Starred active on /watchlist", () => {
+    pathnameMock.current = "/watchlist";
+    render(<SideNav />);
+    expect(screen.getByRole("link", { name: "Starred" })).toHaveAttribute("aria-current", "page");
+  });
+
   it("renders the Design link", () => {
     pathnameMock.current = "/";
     render(<SideNav />);

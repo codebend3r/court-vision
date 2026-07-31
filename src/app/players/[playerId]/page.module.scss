@@ -75,3 +75,13 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
 }
+
+// The name and its star sit on one row; the container owns the spacing so the
+// heading itself keeps its default typography.
+.nameRow {
+  display: grid;
+  grid-auto-flow: column;
+  justify-content: start;
+  align-items: center;
+  gap: var(--space-2);
+}

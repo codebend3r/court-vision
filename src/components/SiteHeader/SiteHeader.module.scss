@@ -23,9 +23,19 @@
   // Brand-specific wordmark tracking (between --tracking-tight and --tracking-wide).
   letter-spacing: 0.08em;
   text-shadow: long-text-shadow(var(--color-retro-shadow), 7);
+  transition: color var(--duration-fast) var(--ease-out);
 
+  // The wordmark has always linked home, but with no hover affordance it did
+  // not read as clickable. Underlining would fight the retro shadow, so the
+  // colour shift carries it.
   &:hover {
     text-decoration: none;
+    color: var(--color-accent);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+    color: var(--color-accent);
   }
 }
 

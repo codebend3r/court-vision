@@ -5,6 +5,7 @@ export const MAX_QUERY_LENGTH = 100;
 export type PlayerSortKey =
   | "firstName"
   | "lastName"
+  | "starredAt"
   | "gamesPlayed"
   | "pts"
   | "reb"
@@ -22,6 +23,7 @@ export type PlayerSortKey =
 export const PLAYER_SORT_KEYS: readonly PlayerSortKey[] = [
   "firstName",
   "lastName",
+  "starredAt",
   "gamesPlayed",
   "pts",
   "reb",
@@ -53,10 +55,10 @@ export type PlayerStatMode = "average" | "total";
 export const DEFAULT_SORT_KEY: PlayerSortKey = "pts";
 export const DEFAULT_SORT_DIR: SortDirection = "desc";
 
-// The three /players tabs. Fantasy has no data yet; it renders a
-// ComingSoonPanel only.
-export type PlayersTab = "regular" | "advanced" | "fantasy";
-export const PLAYERS_TABS: readonly PlayersTab[] = ["regular", "advanced", "fantasy"];
+// The four /players tabs. Starred lists only the signed-in user's watchlist
+// (lib/watchlist), through the same table the regular tab uses.
+export type PlayersTab = "regular" | "advanced" | "fantasy" | "starred";
+export const PLAYERS_TABS: readonly PlayersTab[] = ["regular", "advanced", "fantasy", "starred"];
 export const DEFAULT_TAB: PlayersTab = "regular";
 
 export const isPlayersTab = (value: string | undefined): value is PlayersTab =>
@@ -108,6 +110,10 @@ export const ADVANCED_SORT_KEYS: readonly AdvancedSortKey[] = [
 // PIE is the single-number "estimate" stat, closest to a default leaderboard sort.
 export const DEFAULT_ADVANCED_SORT_KEY: AdvancedSortKey = "pie";
 
+// The starred tab leads with the most recently starred player: the list is
+// ordered by the act of starring, not by production.
+export const DEFAULT_STARRED_SORT_KEY: PlayerSortKey = "starredAt";
+
 export const isAdvancedSortKey = (value: string | undefined): value is AdvancedSortKey =>
   ADVANCED_SORT_KEYS.some((key) => key === value);
 
@@ -153,14 +159,20 @@ export const parsePlayersSearchParams = (raw: {
   const parsedSize = Number.parseInt(raw.size ?? "", 10);
   const size = PAGE_SIZES.includes(parsedSize) ? parsedSize : DEFAULT_PAGE_SIZE;
   const tab: PlayersTab = isPlayersTab(raw.tab) ? raw.tab : DEFAULT_TAB;
+  const defaultSortForTab: PlayerSortKey | AdvancedSortKey =
+    tab === "advanced"
+      ? DEFAULT_ADVANCED_SORT_KEY
+      : tab === "starred"
+        ? DEFAULT_STARRED_SORT_KEY
+        : DEFAULT_SORT_KEY;
   const sort: PlayerSortKey | AdvancedSortKey =
     tab === "advanced"
       ? isAdvancedSortKey(raw.sort)
         ? raw.sort
-        : DEFAULT_ADVANCED_SORT_KEY
+        : defaultSortForTab
       : isPlayerSortKey(raw.sort)
         ? raw.sort
-        : DEFAULT_SORT_KEY;
+        : defaultSortForTab;
   const dir: SortDirection = raw.dir === "asc" ? "asc" : DEFAULT_SORT_DIR;
   const range: PlayerGameRange = isPlayerGameRange(raw.range) ? raw.range : "all";
   const mode: PlayerStatMode = isPlayerStatMode(raw.mode) ? raw.mode : "average";
@@ -183,7 +195,12 @@ export const buildPlayersHref = (args: PlayersSearchParams): string => {
   if (args.tab !== DEFAULT_TAB) {
     params.set("tab", args.tab);
   }
-  const defaultSort = args.tab === "advanced" ? DEFAULT_ADVANCED_SORT_KEY : DEFAULT_SORT_KEY;
+  const defaultSort =
+    args.tab === "advanced"
+      ? DEFAULT_ADVANCED_SORT_KEY
+      : args.tab === "starred"
+        ? DEFAULT_STARRED_SORT_KEY
+        : DEFAULT_SORT_KEY;
   if (args.sort !== defaultSort) {
     params.set("sort", args.sort);
   }

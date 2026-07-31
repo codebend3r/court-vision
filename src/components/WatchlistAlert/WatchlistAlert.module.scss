@@ -1,0 +1,20 @@
+// A single toast pinned to the bottom of the viewport. It sits above page
+// content but never traps focus: the message is advisory, and the control that
+// triggered it keeps focus so the user can immediately try something else.
+.alert {
+  position: fixed;
+  inset-block-end: var(--space-6);
+  inset-inline: 0;
+  z-index: 50;
+  justify-self: center;
+  width: fit-content;
+  max-width: min(90vw, 32rem);
+  margin-inline: auto;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}

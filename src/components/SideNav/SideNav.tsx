@@ -8,9 +8,11 @@ import styles from "@/components/SideNav/SideNav.module.scss";
 import { useSideNavStore } from "@/components/SideNav/sideNavStore";
 
 const NAV_ENTRIES = [
+  { href: "/", label: "Home", shortLabel: "H" },
   { href: "/players", label: "Players", shortLabel: "P" },
   { href: "/teams", label: "Teams", shortLabel: "T" },
   { href: "/my-teams", label: "My Teams", shortLabel: "M" },
+  { href: "/watchlist", label: "Starred", shortLabel: "S" },
   { href: "/design", label: "Design", shortLabel: "D" },
 ];
 

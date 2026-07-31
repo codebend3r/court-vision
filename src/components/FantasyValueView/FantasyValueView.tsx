@@ -51,6 +51,7 @@ const sortField: Record<
 };
 
 export type FantasyValueViewProps = {
+  isSignedIn: boolean;
   lines: FantasyStatLine[];
 };
 
@@ -58,7 +59,7 @@ export type FantasyValueViewProps = {
 // stat lines once; every config change (weights, exclusions, league size,
 // sort, search, paging) recomputes every method's score in memory with no
 // round trip.
-export function FantasyValueView({ lines }: FantasyValueViewProps) {
+export function FantasyValueView({ lines, isSignedIn }: FantasyValueViewProps) {
   const [params, setParams] = useQueryStates(fantasyParsers);
 
   const included = useMemo(
@@ -187,6 +188,7 @@ export function FantasyValueView({ lines }: FantasyValueViewProps) {
               onSizeChange={({ size }) => setParams({ size, page: 1 })}
             />
             <FantasyValueTable
+              isSignedIn={isSignedIn}
               rows={pageRows}
               sort={params.sort}
               dir={params.dir}
