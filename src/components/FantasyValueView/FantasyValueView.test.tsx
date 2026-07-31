@@ -75,12 +75,12 @@ describe("FantasyValueView", () => {
   it("sorts by another method column on header click", async () => {
     const user = userEvent.setup();
     renderView();
-    await user.click(screen.getByRole("button", { name: /Points/ }));
-    expect(screen.getByRole("columnheader", { name: /Points/ })).toHaveAttribute(
+    await user.click(screen.getByRole("button", { name: /PL Linear/ }));
+    expect(screen.getByRole("columnheader", { name: /PL Linear/ })).toHaveAttribute(
       "aria-sort",
       "descending",
     );
-    // Alpha's 28 points per game lead the Points column despite the FT drag.
+    // Alpha's 28 points per game lead the PL Linear column despite the FT drag.
     expect(within(firstDataRow()).getByText("Alpha")).toBeInTheDocument();
   });
 

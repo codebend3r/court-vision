@@ -32,7 +32,7 @@ describe("FantasyValueLegend", () => {
     expect(within(details).getByText(/156/)).toBeInTheDocument();
     expect(within(details).getByText(/Last 10 games/)).toBeInTheDocument();
     expect(within(details).getByText(/standings-gain denominators/i)).toBeInTheDocument();
-    expect(within(details).getByText(/Points ignores weights/)).toBeInTheDocument();
+    expect(within(details).getByText(/PL Linear\s+ignores weights/)).toBeInTheDocument();
   });
 
   it("pairs every method with a plain-language reason it matters", () => {

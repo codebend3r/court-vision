@@ -49,18 +49,21 @@ describe("FantasyValueTable", () => {
     render(<FantasyValueTable isSignedIn={false} {...defaultProps} rows={rows} />);
     expect(screen.getByRole("columnheader", { name: /Z-Score/ })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: /G-Score/ })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: /Points/ })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /PL Linear/ })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "VORP" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: /Pos VORP/ })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: /SGP/ })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /Sim Value/ })).toBeInTheDocument();
     expect(screen.getAllByText("+2.4").length).toBeGreaterThan(0); // z (vorp/pos share it)
     expect(screen.getByText("+1.8")).toBeInTheDocument(); // g
   });
 
-  it("renders the blocked SGP column as placeholders with an explanation", () => {
+  it("renders a blocked placeholder column per unimplemented method", () => {
     render(<FantasyValueTable isSignedIn={false} {...defaultProps} rows={rows} />);
-    expect(screen.getAllByText("—")).toHaveLength(2); // one per row
+    const blocked = FANTASY_METHODS.filter((method) => !method.available);
+    expect(screen.getAllByText("—")).toHaveLength(rows.length * blocked.length);
     expect(document.getElementById("fantasy-tip-sgp")).toHaveTextContent(/standings-gain/i);
+    expect(document.getElementById("fantasy-tip-simvalue")).toHaveTextContent(/needs a team/i);
   });
 
   it("does not render per-category columns", () => {

@@ -2,7 +2,14 @@
 // and legend so shipping a method is a registry entry plus its math module.
 // `available: false` entries render as placeholder columns with the reason.
 
-export type FantasyMethodKey = "zscore" | "gscore" | "points" | "vorp" | "positional" | "sgp";
+export type FantasyMethodKey =
+  | "zscore"
+  | "gscore"
+  | "points"
+  | "vorp"
+  | "positional"
+  | "sgp"
+  | "simvalue";
 
 export type FantasyMethodMeta = {
   key: FantasyMethodKey;
@@ -43,7 +50,7 @@ export const FANTASY_METHODS: readonly FantasyMethodMeta[] = [
   },
   {
     key: "points",
-    label: "Points",
+    label: "PL Linear",
     fullName: "Points-League Linear",
     description:
       "The stat line priced in points-league scoring: PTS ×1, REB ×1.2, AST ×1.5, STL ×3, BLK ×3, TOV ×−1. Ignores category weights.",
@@ -85,6 +92,19 @@ export const FANTASY_METHODS: readonly FantasyMethodMeta[] = [
     available: false,
     unavailableReason:
       "Needs standings-gain denominators from league history — no sourced defaults table exists yet.",
+  },
+  {
+    key: "simvalue",
+    label: "Sim Value",
+    fullName: "Monte Carlo Matchup Simulation",
+    description:
+      "Replays a season of weekly matchups many times over and prices a player by the marginal category wins they add to one specific roster, rather than to an average one.",
+    whyItMatters:
+      "The only value here that knows what you already have. If your team is stacked with blocks, the next shot-blocker is worth less to you than the ranking says — this is the number that reflects that instead of valuing every player in a vacuum.",
+    formula: "avg over simulated weeks: category wins with player − category wins without",
+    available: false,
+    unavailableReason:
+      "Roster-aware, so it needs a team to value against; this table scores players in isolation and no team is selected here yet.",
   },
 ];
 

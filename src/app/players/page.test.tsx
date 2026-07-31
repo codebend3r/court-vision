@@ -536,7 +536,7 @@ describe("PlayersPage tabs", () => {
     expect(getFantasyPool).toHaveBeenCalledWith({ range: "all" });
     expect(screen.getByRole("columnheader", { name: /Z-Score/ })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: /G-Score/ })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: /Points/ })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /PL Linear/ })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "VORP" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: /SGP/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Punt PTS" })).toBeInTheDocument();
