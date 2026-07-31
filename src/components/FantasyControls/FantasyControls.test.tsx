@@ -6,6 +6,7 @@ import {
   FantasyControls,
   type FantasyControlsProps,
 } from "@/components/FantasyControls/FantasyControls";
+import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
 
 afterEach(cleanup);
 
@@ -17,6 +18,7 @@ const renderControls = (overrides: Partial<FantasyControlsProps> = {}) => {
     mode: "average",
     excluded: [],
     weights: {},
+    scoring: DEFAULT_POINTS_SCORING,
     teams: 12,
     slots: 13,
     onChange,
@@ -84,7 +86,8 @@ describe("FantasyControls", () => {
   it("resets weights and exclusions together", async () => {
     const user = userEvent.setup();
     const { onChange } = renderControls({ weights: { ft: 0 }, excluded: ["tov"] });
-    await user.click(screen.getByRole("button", { name: "Reset" }));
+    // Weights and Scoring each own a Reset; this is the weights one.
+    await user.click(screen.getAllByRole("button", { name: "Reset" })[0]);
     expect(onChange).toHaveBeenCalledWith({ w: {}, x: [] });
   });
 
@@ -100,7 +103,7 @@ describe("FantasyControls", () => {
 
   it("explains what weights and league settings apply to", () => {
     renderControls();
-    expect(screen.getByText(/Points uses points-league scoring instead/)).toBeInTheDocument();
+    expect(screen.getByText(/PL Linear uses the scoring table below instead/)).toBeInTheDocument();
     expect(screen.getByText(/VORP replacement rank/)).toBeInTheDocument();
   });
 });

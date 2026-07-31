@@ -10,8 +10,9 @@ import {
   type PlayerStatMode,
 } from "@/lib/players/searchParams";
 import { CATEGORY_KEYS, CATEGORY_META } from "@/lib/valuation/categories";
-import { snapWeight } from "@/lib/valuation/searchParams";
-import { type Category } from "@/lib/valuation/types";
+import { DEFAULT_POINTS_SCORING, SCORED_KEYS } from "@/lib/valuation/methods/points";
+import { clampScore, snapWeight } from "@/lib/valuation/searchParams";
+import { type Category, type ScoringSettings, type ScoringStatKey } from "@/lib/valuation/types";
 
 import styles from "@/components/FantasyControls/FantasyControls.module.scss";
 
@@ -22,6 +23,7 @@ export type FantasyControlsChange = Partial<{
   mode: PlayerStatMode;
   x: Category[];
   w: Partial<Record<Category, number>>;
+  s: ScoringSettings;
   teams: number;
   slots: number;
 }>;
@@ -32,9 +34,22 @@ export type FantasyControlsProps = {
   mode: PlayerStatMode;
   excluded: readonly Category[];
   weights: Partial<Record<Category, number>>;
+  scoring: ScoringSettings;
   teams: number;
   slots: number;
   onChange: (change: FantasyControlsChange) => void;
+};
+
+// The scoring table is keyed by raw stat, so it needs its own labels — the
+// category meta covers 3PM as "tpm" and has no entry for a points-league line.
+const SCORING_LABELS: Record<ScoringStatKey, string> = {
+  pts: "PTS",
+  reb: "REB",
+  ast: "AST",
+  stl: "STL",
+  blk: "BLK",
+  fg3m: "3PM",
+  tov: "TOV",
 };
 
 const DEBOUNCE_MS = 300;
@@ -64,6 +79,7 @@ export function FantasyControls({
   mode,
   excluded,
   weights,
+  scoring,
   teams,
   slots,
   onChange,
@@ -115,6 +131,14 @@ export function FantasyControls({
       const snapped = snapWeight(Number.parseFloat(event.target.value));
       const cleared = withoutWeight({ weights, category });
       onChange({ w: snapped === 1 ? cleared : { ...cleared, [category]: snapped } });
+    };
+
+  const onScoringBlur =
+    ({ stat }: { stat: ScoringStatKey }) =>
+    (event: FocusEvent<HTMLInputElement>) => {
+      const parsed = Number.parseFloat(event.target.value);
+      const score = Number.isFinite(parsed) ? clampScore(parsed) : DEFAULT_POINTS_SCORING[stat];
+      onChange({ s: { ...scoring, [stat]: score } });
     };
 
   const onLeagueBlur =
@@ -223,8 +247,8 @@ export function FantasyControls({
         </summary>
         <span className={styles.disclosureBody}>
           <span className={styles.hint}>
-            Applies to the category scores: Z-Score, G-Score, VORP, Pos VORP. Points uses
-            points-league scoring instead.
+            Applies to the category scores: Z-Score, G-Score, VORP, Pos VORP, SGP, and Sim Value. PL
+            Linear uses the scoring table below instead.
           </span>
           {includedMeta.map((meta) => (
             <label key={meta.key} className={styles.stepperLabel}>
@@ -242,6 +266,43 @@ export function FantasyControls({
             </label>
           ))}
           <button type="button" onClick={() => onChange({ w: {}, x: [] })} className={styles.reset}>
+            Reset
+          </button>
+        </span>
+      </details>
+
+      <details className={styles.disclosure}>
+        <summary className={styles.summary}>
+          <span className={styles.chevron} aria-hidden="true">
+            ▸
+          </span>
+          Scoring
+        </summary>
+        <span className={styles.disclosureBody}>
+          <span className={styles.hint}>
+            Fantasy points per stat in a points league. Drives the PL Linear column only; the
+            category scores ignore it.
+          </span>
+          {SCORED_KEYS.map((stat) => (
+            <label key={stat} className={styles.stepperLabel}>
+              {SCORING_LABELS[stat]}
+              <input
+                key={`${stat}:${scoring[stat]}`}
+                type="number"
+                min={-10}
+                max={10}
+                step={0.5}
+                defaultValue={scoring[stat]}
+                onBlur={onScoringBlur({ stat })}
+                className={styles.stepper}
+              />
+            </label>
+          ))}
+          <button
+            type="button"
+            onClick={() => onChange({ s: DEFAULT_POINTS_SCORING })}
+            className={styles.reset}
+          >
             Reset
           </button>
         </span>

@@ -87,10 +87,22 @@ describe("fantasyParsers", () => {
   });
 
   it("accepts one sort key per method column plus name sorts", () => {
-    expect(FANTASY_SORT_KEYS).toEqual(["z", "g", "points", "vorp", "pos", "firstName", "lastName"]);
+    expect(FANTASY_SORT_KEYS).toEqual([
+      "z",
+      "g",
+      "points",
+      "vorp",
+      "pos",
+      "sgp",
+      "sim",
+      "firstName",
+      "lastName",
+    ]);
     expect(fantasyParsers.sort.parse("g")).toBe("g");
     expect(fantasyParsers.sort.parse("value")).toBeNull();
-    expect(fantasyParsers.sort.parse("sgp")).toBeNull();
+    // SGP and Sim Value are sortable columns now, not blocked placeholders.
+    expect(fantasyParsers.sort.parse("sgp")).toBe("sgp");
+    expect(fantasyParsers.sort.parse("sim")).toBe("sim");
   });
 
   it("accepts only category keys for exclusions, dropping unknown entries", () => {

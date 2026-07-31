@@ -36,6 +36,8 @@ const METHOD_COLUMNS: readonly MethodColumn[] = [
   { sortKey: "points", methodKey: "points", value: (values) => values.points, signed: false },
   { sortKey: "vorp", methodKey: "vorp", value: (values) => values.vorp, signed: true },
   { sortKey: "pos", methodKey: "positional", value: (values) => values.positional, signed: true },
+  { sortKey: "sgp", methodKey: "sgp", value: (values) => values.sgp, signed: true },
+  { sortKey: "sim", methodKey: "simvalue", value: (values) => values.sim, signed: true },
 ];
 
 const formatScore = ({ value, signed }: { value: number; signed: boolean }): string =>

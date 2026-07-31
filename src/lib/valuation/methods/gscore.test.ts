@@ -1,3 +1,4 @@
+import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
 import { describe, expect, it } from "bun:test";
 
 import { CATEGORY_KEYS } from "@/lib/valuation/categories";
@@ -31,6 +32,7 @@ const config: ValuationConfig = {
   basis: "perGame",
   teams: 12,
   rosterSlots: 13,
+  scoring: DEFAULT_POINTS_SCORING,
 };
 
 const poolStats = computePoolStats({ lines, basis: "perGame", poolSize: 150, range: "all" });

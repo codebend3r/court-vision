@@ -1,3 +1,4 @@
+import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
 import { describe, expect, it } from "bun:test";
 
 import { CATEGORY_KEYS } from "@/lib/valuation/categories";
@@ -13,6 +14,7 @@ const config = (overrides: Partial<ValuationConfig> = {}): ValuationConfig => ({
   basis: "total",
   teams: 12,
   rosterSlots: 13,
+  scoring: DEFAULT_POINTS_SCORING,
   ...overrides,
 });
 

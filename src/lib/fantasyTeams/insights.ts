@@ -5,6 +5,7 @@ import {
   type CategoryKind,
   isCountingCategory,
 } from "@/lib/valuation/categories";
+import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
 import { scoreZScore } from "@/lib/valuation/methods/zscore";
 import { parseEligibleGroups, type PositionGroup } from "@/lib/valuation/modifiers/positional";
 import { computePoolStats } from "@/lib/valuation/pool";
@@ -23,6 +24,7 @@ export const TEAM_BUILDER_VALUATION_CONFIG: ValuationConfig = {
   basis: "perGame",
   teams: 12,
   rosterSlots: 13,
+  scoring: DEFAULT_POINTS_SCORING,
 };
 
 export type PlayerCategoryInsight = {

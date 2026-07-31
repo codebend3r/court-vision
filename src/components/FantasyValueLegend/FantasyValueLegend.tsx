@@ -55,10 +55,11 @@ export function FantasyValueLegend({ poolSize, windowLabel, basis }: FantasyValu
           <dt className={styles.term}>Weights</dt>
           <dd className={styles.desc}>
             <span>
-              Category chips and weights shape the category-based scores (Z-Score, G-Score, and
-              their VORP columns). A weight of 0 punts the category; excluding removes it. PL Linear
-              ignores weights — it uses points-league scoring. Teams × roster slots sets the pool
-              size and the VORP replacement rank.
+              Category chips and weights shape every category-based score (Z-Score, G-Score, their
+              VORP columns, SGP, and Sim Value). A weight of 0 punts the category; excluding removes
+              it. PL Linear ignores weights — it uses the Scoring table instead. Teams × roster
+              slots sets the pool size, the VORP replacement rank, and the synthetic league that SGP
+              and Sim Value measure against.
             </span>
           </dd>
         </div>

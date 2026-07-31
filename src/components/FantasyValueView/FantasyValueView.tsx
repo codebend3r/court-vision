@@ -37,6 +37,8 @@ const NEUTRAL_VALUES = (playerId: number): FantasyPlayerValues => ({
   points: 0,
   vorp: 0,
   positional: 0,
+  sgp: 0,
+  sim: 0,
 });
 
 const sortField: Record<
@@ -48,6 +50,8 @@ const sortField: Record<
   points: (values) => values.points,
   vorp: (values) => values.vorp,
   pos: (values) => values.positional,
+  sgp: (values) => values.sgp,
+  sim: (values) => values.sim,
 };
 
 export type FantasyValueViewProps = {
@@ -78,10 +82,11 @@ export function FantasyValueView({ lines, isSignedIn }: FantasyValueViewProps) {
           basis,
           teams: params.teams,
           rosterSlots: params.slots,
+          scoring: params.s,
         },
         range: params.range,
       }),
-    [lines, included, params.w, basis, params.teams, params.slots, params.range],
+    [lines, included, params.w, basis, params.teams, params.slots, params.s, params.range],
   );
 
   const scored = useMemo(() => {
@@ -157,6 +162,7 @@ export function FantasyValueView({ lines, isSignedIn }: FantasyValueViewProps) {
         mode={params.mode}
         excluded={params.x}
         weights={params.w}
+        scoring={params.s}
         teams={params.teams}
         slots={params.slots}
         onChange={onControlsChange}

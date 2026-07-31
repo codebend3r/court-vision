@@ -85,26 +85,23 @@ export const FANTASY_METHODS: readonly FantasyMethodMeta[] = [
     key: "sgp",
     label: "SGP",
     fullName: "Standings Gain Points",
-    description: "How far a stat moves you up the standings, calibrated to your league's history.",
+    description:
+      "Each category divided by how much of that stat separates two adjacent places in the standings, so the total reads in standings places. The denominators come from a synthetic league drafted out of the current pool, since no league history is available.",
     whyItMatters:
       'The most direct answer to "what do I need to catch third place?" in roto — it prices a stat by how many spots in the standings it buys you, rather than by how rare it is.',
-    formula: "stat ÷ standings-gain denominator per category",
-    available: false,
-    unavailableReason:
-      "Needs standings-gain denominators from league history — no sourced defaults table exists yet.",
+    formula: "Σ per category: stat ÷ ((max − min team total) ÷ (teams − 1)) × weight",
+    available: true,
   },
   {
     key: "simvalue",
     label: "Sim Value",
     fullName: "Monte Carlo Matchup Simulation",
     description:
-      "Replays a season of weekly matchups many times over and prices a player by the marginal category wins they add to one specific roster, rather than to an average one.",
+      "Replays 400 simulated weeks and prices a player by the extra category wins they add to a league-average team, over what a freely available player would give you. Opponents are drawn from the spread between teams in your league settings.",
     whyItMatters:
-      "The only value here that knows what you already have. If your team is stacked with blocks, the next shot-blocker is worth less to you than the ranking says — this is the number that reflects that instead of valuing every player in a vacuum.",
-    formula: "avg over simulated weeks: category wins with player − category wins without",
-    available: false,
-    unavailableReason:
-      "Roster-aware, so it needs a team to value against; this table scores players in isolation and no team is selected here yet.",
+      'Values a player by wins added rather than by raw production, so a stat you are already winning comfortably counts for less. Closest thing here to "will this player actually change my matchups?" — it is measured against an average team, not yet your own roster.',
+    formula: "avg over simulated weeks: weighted category wins with player − without",
+    available: true,
   },
 ];
 

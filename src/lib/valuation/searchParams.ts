@@ -10,17 +10,29 @@ import {
 
 import { PAGE_SIZES, PLAYER_GAME_RANGES } from "@/lib/players/searchParams";
 import { CATEGORY_KEYS, isCategory } from "@/lib/valuation/categories";
+import { DEFAULT_POINTS_SCORING, SCORED_KEYS } from "@/lib/valuation/methods/points";
+import { type ScoringSettings, type ScoringStatKey } from "@/lib/valuation/types";
 import { type Category } from "@/lib/valuation/types";
 
-// One sort key per method column plus the name sorts. SGP has no key — it is
-// a blocked placeholder column until denominators exist.
-export type FantasySortKey = "z" | "g" | "points" | "vorp" | "pos" | "firstName" | "lastName";
+// One sort key per method column plus the name sorts.
+export type FantasySortKey =
+  | "z"
+  | "g"
+  | "points"
+  | "vorp"
+  | "pos"
+  | "sgp"
+  | "sim"
+  | "firstName"
+  | "lastName";
 export const FANTASY_SORT_KEYS: readonly FantasySortKey[] = [
   "z",
   "g",
   "points",
   "vorp",
   "pos",
+  "sgp",
+  "sim",
   "firstName",
   "lastName",
 ];
@@ -64,6 +76,41 @@ const parseAsWeights = createParser({
   eq: (a, b) => serializeWeights(a) === serializeWeights(b),
 });
 
+const isScoringStatKey = (value: string): value is ScoringStatKey =>
+  SCORED_KEYS.some((key) => key === value);
+
+// Points-league scoring is per-stat and can legitimately be negative (turnovers)
+// or fractional, so it is clamped to a sane band rather than snapped like the
+// category weights.
+export const clampScore = (value: number): number =>
+  Math.round(Math.min(10, Math.max(-10, value)) * 100) / 100;
+
+// "reb:1.5,tov:-2" ↔ { reb: 1.5, tov: -2 }, defaults omitted in both directions
+// so an untouched scoring table never reaches the URL.
+export const parseScoring = (value: string): ScoringSettings | null =>
+  value.split(",").reduce<ScoringSettings | null>((acc, pair) => {
+    if (acc === null) return null;
+    const parts = pair.split(":");
+    const key = parts[0];
+    const rawScore = parts[1];
+    if (parts.length !== 2 || key === undefined || rawScore === undefined) return null;
+    if (!isScoringStatKey(key)) return null;
+    const parsed = Number.parseFloat(rawScore);
+    if (!Number.isFinite(parsed)) return null;
+    return { ...acc, [key]: clampScore(parsed) };
+  }, DEFAULT_POINTS_SCORING);
+
+export const serializeScoring = (scoring: ScoringSettings): string =>
+  SCORED_KEYS.flatMap((key) =>
+    scoring[key] === DEFAULT_POINTS_SCORING[key] ? [] : [`${key}:${scoring[key]}`],
+  ).join(",");
+
+const parseAsScoring = createParser({
+  parse: parseScoring,
+  serialize: serializeScoring,
+  eq: (a, b) => serializeScoring(a) === serializeScoring(b),
+});
+
 const parseAsClampedInt = ({ min, max }: { min: number; max: number }) =>
   createParser({
     parse: (value: string) => {
@@ -84,6 +131,7 @@ export const fantasyParsers = {
   dir: parseAsStringLiteral(SORT_DIRECTIONS).withDefault("desc"),
   x: parseAsArrayOf(parseAsStringLiteral(CATEGORY_KEYS)).withDefault([]),
   w: parseAsWeights.withDefault({}),
+  s: parseAsScoring.withDefault(DEFAULT_POINTS_SCORING),
   teams: parseAsClampedInt({ min: 2, max: 30 }).withDefault(12),
   slots: parseAsClampedInt({ min: 1, max: 25 }).withDefault(13),
   range: parseAsStringLiteral(PLAYER_GAME_RANGES).withDefault("all").withOptions({

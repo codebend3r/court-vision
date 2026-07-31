@@ -31,7 +31,7 @@ describe("FantasyValueLegend", () => {
     });
     expect(within(details).getByText(/156/)).toBeInTheDocument();
     expect(within(details).getByText(/Last 10 games/)).toBeInTheDocument();
-    expect(within(details).getByText(/standings-gain denominators/i)).toBeInTheDocument();
+    expect(within(details).getByText(/adjacent places in the standings/i)).toBeInTheDocument();
     expect(within(details).getByText(/PL Linear\s+ignores weights/)).toBeInTheDocument();
   });
 
