@@ -16,8 +16,18 @@ import {
 import { type PlayerGameRange } from "@/lib/players/searchParams";
 import { CATEGORY_KEYS } from "@/lib/valuation/categories";
 import { valuePlayers } from "@/lib/valuation/index";
-import { fantasyParsers, type FantasySortKey } from "@/lib/valuation/searchParams";
-import { type FantasyPlayerValues, type FantasyStatLine } from "@/lib/valuation/types";
+import {
+  fantasyParsers,
+  isWeightedMethodKey,
+  WEIGHTED_METHOD_KEYS,
+  type FantasySortKey,
+} from "@/lib/valuation/searchParams";
+import {
+  type FantasyPlayerValues,
+  type FantasyStatLine,
+  type MethodWeights,
+  type WeightedMethodKey,
+} from "@/lib/valuation/types";
 
 import styles from "@/components/FantasyValueView/FantasyValueView.module.scss";
 
@@ -66,6 +76,13 @@ export type FantasyValueViewProps = {
 export function FantasyValueView({ lines, isSignedIn }: FantasyValueViewProps) {
   const [params, setParams] = useQueryStates(fantasyParsers);
 
+  // Weights belong to the sorted method column; PL Linear and the name sorts
+  // have no weight set to edit.
+  const activeWeightKey: WeightedMethodKey | null = isWeightedMethodKey(params.sort)
+    ? params.sort
+    : null;
+  const activeWeights = (activeWeightKey && params.w[activeWeightKey]) || {};
+
   const included = useMemo(
     () => CATEGORY_KEYS.filter((key) => !params.x.some((excluded) => excluded === key)),
     [params.x],
@@ -78,12 +95,13 @@ export function FantasyValueView({ lines, isSignedIn }: FantasyValueViewProps) {
         lines,
         config: {
           categories: [...included],
-          weights: params.w,
+          weights: {},
           basis,
           teams: params.teams,
           rosterSlots: params.slots,
           scoring: params.s,
         },
+        methodWeights: params.w,
         range: params.range,
       }),
     [lines, included, params.w, basis, params.teams, params.slots, params.s, params.range],
@@ -135,8 +153,20 @@ export function FantasyValueView({ lines, isSignedIn }: FantasyValueViewProps) {
       rank: (page - 1) * params.size + index + 1,
     }));
 
-  const onControlsChange = (change: FantasyControlsChange) => {
-    setParams(change);
+  const onControlsChange = ({ w, ...rest }: FantasyControlsChange) => {
+    // The controls edit a flat weight map; it lands under the sorted column's
+    // key so every other column's stored weights stay untouched.
+    if (w === undefined || activeWeightKey === null) {
+      setParams(rest);
+      return;
+    }
+    const next = WEIGHTED_METHOD_KEYS.reduce<MethodWeights>((acc, key) => {
+      const entry = key === activeWeightKey ? w : params.w[key];
+      return entry === undefined || Object.keys(entry).length === 0
+        ? acc
+        : { ...acc, [key]: entry };
+    }, {});
+    setParams({ ...rest, w: next });
   };
 
   const onSort = ({ sort }: { sort: FantasySortKey }) => {
@@ -161,7 +191,8 @@ export function FantasyValueView({ lines, isSignedIn }: FantasyValueViewProps) {
         range={params.range}
         mode={params.mode}
         excluded={params.x}
-        weights={params.w}
+        weights={activeWeights}
+        sort={params.sort}
         scoring={params.s}
         teams={params.teams}
         slots={params.slots}

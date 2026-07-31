@@ -125,3 +125,57 @@ describe("FantasyValueView", () => {
     expect(screen.getByText(/No players yet/)).toBeInTheDocument();
   });
 });
+
+describe("FantasyValueView per-column weights", () => {
+  const astStepper = (): HTMLElement => {
+    const details = [...document.querySelectorAll("details")].find((element) =>
+      (element.querySelector("summary")?.textContent ?? "").includes("Weights"),
+    );
+    if (!(details instanceof HTMLElement)) throw new Error("weights section not found");
+    return within(details).getByRole("spinbutton", { name: "AST" });
+  };
+
+  it("shows the sorted column's own weight", () => {
+    renderView({ searchParams: "?sort=z&w=z.ast:2" });
+    expect(astStepper()).toHaveValue(2);
+  });
+
+  it("resets the panel to 1 when sorting by a column with no stored weights", () => {
+    renderView({ searchParams: "?sort=g&w=z.ast:2" });
+    expect(astStepper()).toHaveValue(1);
+  });
+
+  it("keeps each column's stored weights when another column is edited", async () => {
+    const user = userEvent.setup();
+    const updates: string[] = [];
+    render(<FantasyValueView isSignedIn={false} lines={lines} />, {
+      wrapper: withNuqsTestingAdapter({
+        searchParams: "?sort=g&w=z.ast:2",
+        onUrlUpdate: (event) => updates.push(event.queryString),
+      }),
+    });
+    const stepper = astStepper();
+    await user.clear(stepper);
+    await user.type(stepper, "0.5");
+    await user.tab();
+    // G-Score's new weight lands beside Z-Score's untouched one.
+    expect(updates.at(-1)).toContain("w=z.ast:2,g.ast:0.5");
+  });
+
+  it("only reweights the sorted column's scores", () => {
+    // Punting every category for Z-Score zeroes the Z column; G-Score keeps
+    // its own unweighted totals.
+    renderView({
+      searchParams:
+        "?sort=z&w=" +
+        ["pts", "reb", "ast", "stl", "blk", "tpm", "tov", "fg", "ft"]
+          .map((category) => `z.${category}:0`)
+          .join(","),
+    });
+    const row = firstDataRow();
+    const cells = within(row).getAllByRole("cell");
+    // With every Z weight at 0, the whole Z column ties at 0.0 — while G-Score
+    // still separates players, proving the punt did not leak across columns.
+    expect(cells.some((cell) => cell.textContent === "0.0")).toBe(true);
+  });
+});

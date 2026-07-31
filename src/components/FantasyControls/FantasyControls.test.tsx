@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "bun:test";
 
@@ -18,6 +18,7 @@ const renderControls = (overrides: Partial<FantasyControlsProps> = {}) => {
     mode: "average",
     excluded: [],
     weights: {},
+    sort: "z",
     scoring: DEFAULT_POINTS_SCORING,
     teams: 12,
     slots: 13,
@@ -103,7 +104,45 @@ describe("FantasyControls", () => {
 
   it("explains what weights and league settings apply to", () => {
     renderControls();
-    expect(screen.getByText(/PL Linear uses the scoring table below instead/)).toBeInTheDocument();
+    expect(screen.getByText(/Applies to the Z-Score column only/)).toBeInTheDocument();
     expect(screen.getByText(/VORP replacement rank/)).toBeInTheDocument();
+  });
+});
+
+// The Scoring panel reuses stat labels (PTS, AST…), so weight steppers must be
+// queried inside the Weights disclosure specifically.
+const weightsSection = (): HTMLElement => {
+  const details = [...document.querySelectorAll("details")].find((element) =>
+    (element.querySelector("summary")?.textContent ?? "").includes("Weights"),
+  );
+  if (!(details instanceof HTMLElement)) throw new Error("weights section not found");
+  return details;
+};
+
+describe("FantasyControls per-column weights", () => {
+  it("names the column the weights apply to", () => {
+    renderControls({ sort: "g" });
+    expect(screen.getByText("Weights — G-Score")).toBeInTheDocument();
+    expect(screen.getByText(/Applies to the G-Score column only/)).toBeInTheDocument();
+  });
+
+  it("disables the weight steppers on PL Linear, which never reads them", () => {
+    renderControls({ sort: "points" });
+    expect(screen.getByText(/PL Linear ignores weights/)).toBeInTheDocument();
+    within(weightsSection())
+      .getAllByRole("spinbutton")
+      .forEach((stepper) => expect(stepper).toBeDisabled());
+  });
+
+  it("disables the weight steppers on name sorts", () => {
+    renderControls({ sort: "lastName" });
+    expect(screen.getByText(/Sort by a method column to tune its weights/)).toBeInTheDocument();
+  });
+
+  it("keeps the steppers live on a weighted column", () => {
+    renderControls({ sort: "sgp", weights: { ast: 2 } });
+    const ast = within(weightsSection()).getByRole("spinbutton", { name: "AST" });
+    expect(ast).not.toBeDisabled();
+    expect(ast).toHaveValue(2);
   });
 });

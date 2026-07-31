@@ -88,6 +88,16 @@ export type PoolStats = {
 export type ScoringStatKey = "pts" | "reb" | "ast" | "stl" | "blk" | "fg3m" | "tov";
 export type ScoringSettings = Record<ScoringStatKey, number>;
 
+// The six weighted method columns, keyed by their sort keys. PL Linear is
+// absent on purpose: it prices the box score with the Scoring table and never
+// reads category weights.
+export type WeightedMethodKey = "z" | "g" | "vorp" | "pos" | "sgp" | "sim";
+
+// One independent weight set per method column. The Weights panel edits the
+// set belonging to whichever method column the table is sorted by, so a punt
+// tuned for Z-Score never leaks into G-Score's ranking.
+export type MethodWeights = Partial<Record<WeightedMethodKey, Partial<Record<Category, number>>>>;
+
 export type ValuationConfig = {
   categories: Category[]; // included categories; excluded ones are absent
   weights: Partial<Record<Category, number>>; // absent key = 1

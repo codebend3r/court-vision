@@ -11,7 +11,13 @@ import {
 } from "@/lib/players/searchParams";
 import { CATEGORY_KEYS, CATEGORY_META } from "@/lib/valuation/categories";
 import { DEFAULT_POINTS_SCORING, SCORED_KEYS } from "@/lib/valuation/methods/points";
-import { clampScore, snapWeight } from "@/lib/valuation/searchParams";
+import { METHOD_KEY_BY_WEIGHTED, methodMeta } from "@/lib/valuation/registry";
+import {
+  clampScore,
+  isWeightedMethodKey,
+  snapWeight,
+  type FantasySortKey,
+} from "@/lib/valuation/searchParams";
 import { type Category, type ScoringSettings, type ScoringStatKey } from "@/lib/valuation/types";
 
 import styles from "@/components/FantasyControls/FantasyControls.module.scss";
@@ -33,7 +39,8 @@ export type FantasyControlsProps = {
   range: PlayerGameRange;
   mode: PlayerStatMode;
   excluded: readonly Category[];
-  weights: Partial<Record<Category, number>>;
+  weights: Partial<Record<Category, number>>; // the sorted column's set only
+  sort: FantasySortKey;
   scoring: ScoringSettings;
   teams: number;
   slots: number;
@@ -79,11 +86,17 @@ export function FantasyControls({
   mode,
   excluded,
   weights,
+  sort,
   scoring,
   teams,
   slots,
   onChange,
 }: FantasyControlsProps) {
+  // Weights are per column: the panel edits the sorted method's set, and it is
+  // disabled entirely on columns that never read weights (PL Linear, names).
+  const weightTarget = isWeightedMethodKey(sort)
+    ? methodMeta(METHOD_KEY_BY_WEIGHTED[sort])
+    : undefined;
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestQ = useRef(q);
 
@@ -243,29 +256,40 @@ export function FantasyControls({
           <span className={styles.chevron} aria-hidden="true">
             ▸
           </span>
-          Weights
+          Weights{!!weightTarget && ` — ${weightTarget.label}`}
         </summary>
         <span className={styles.disclosureBody}>
           <span className={styles.hint}>
-            Applies to the category scores: Z-Score, G-Score, VORP, Pos VORP, SGP, and Sim Value. PL
-            Linear uses the scoring table below instead.
+            {weightTarget
+              ? `Applies to the ${weightTarget.label} column only. Every method column keeps its ` +
+                `own weight set — sorting by another column switches to (and edits) that ` +
+                `column's weights.`
+              : sort === "points"
+                ? "PL Linear ignores weights — it prices the box score with the Scoring table below."
+                : "Name sorts rank alphabetically. Sort by a method column to tune its weights."}
           </span>
           {includedMeta.map((meta) => (
             <label key={meta.key} className={styles.stepperLabel}>
               {meta.label}
               <input
-                key={`${meta.key}:${weights[meta.key] ?? 1}`}
+                key={`${sort}:${meta.key}:${weights[meta.key] ?? 1}`}
                 type="number"
                 min={0}
                 max={2}
                 step={0.25}
                 defaultValue={weights[meta.key] ?? 1}
                 onBlur={onWeightBlur({ category: meta.key })}
+                disabled={!weightTarget}
                 className={styles.stepper}
               />
             </label>
           ))}
-          <button type="button" onClick={() => onChange({ w: {}, x: [] })} className={styles.reset}>
+          <button
+            type="button"
+            onClick={() => onChange({ w: {}, x: [] })}
+            disabled={!weightTarget}
+            className={styles.reset}
+          >
             Reset
           </button>
         </span>

@@ -2,6 +2,8 @@
 // and legend so shipping a method is a registry entry plus its math module.
 // `available: false` entries render as placeholder columns with the reason.
 
+import { type WeightedMethodKey } from "@/lib/valuation/types";
+
 export type FantasyMethodKey =
   | "zscore"
   | "gscore"
@@ -111,3 +113,14 @@ export const ENABLED_METHODS: readonly FantasyMethodMeta[] = FANTASY_METHODS.fil
 
 export const methodMeta = (key: FantasyMethodKey): FantasyMethodMeta | undefined =>
   FANTASY_METHODS.find((method) => method.key === key);
+
+// Weighted-column sort keys → registry keys, so the Weights panel can name the
+// column it is editing with the same label the table header uses.
+export const METHOD_KEY_BY_WEIGHTED: Record<WeightedMethodKey, FantasyMethodKey> = {
+  z: "zscore",
+  g: "gscore",
+  vorp: "vorp",
+  pos: "positional",
+  sgp: "sgp",
+  sim: "simvalue",
+};
