@@ -29,6 +29,9 @@ export function FantasyValueLegend({ poolSize, windowLabel, basis }: FantasyValu
               <span>
                 <strong>{method.fullName}.</strong> {method.description}
               </span>
+              <span className={styles.why}>
+                <strong className={styles.whyLabel}>Why it matters:</strong> {method.whyItMatters}
+              </span>
               {method.available ? (
                 <code className={styles.formula}>{method.formula}</code>
               ) : (

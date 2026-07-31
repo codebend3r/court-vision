@@ -82,3 +82,12 @@
   font-size: var(--font-size-xs);
   color: var(--color-highlight);
 }
+
+// Plain-language counterpart to the technical description.
+.why {
+  color: var(--color-text-muted);
+}
+
+.whyLabel {
+  color: var(--color-accent);
+}
