@@ -3,6 +3,7 @@ import { DEFAULT_POINTS_SCORING, SCORED_KEYS } from "@/lib/valuation/methods/poi
 import {
   type H2hCategoriesConfig,
   type H2hPointsConfig,
+  type LeagueMutationResult,
   type LeagueScoringConfig,
   type LeagueScoringType,
   type RotoConfig,
@@ -71,4 +72,16 @@ export const parseScoringConfig = ({
   if (scoringType === "h2h_points" && isH2hPointsConfig(value)) return value;
   if (scoringType === "roto" && isRotoConfig(value)) return value;
   return defaultScoringConfig({ scoringType });
+};
+
+export const isLeagueMutationResult = (value: unknown): value is LeagueMutationResult => {
+  if (typeof value !== "object" || value === null) return false;
+  const record: Record<string, unknown> = { ...value };
+  if (record.status === "ok") return typeof record.league === "object" && record.league !== null;
+  return (
+    record.status === "limit" ||
+    record.status === "invalid" ||
+    record.status === "unauthenticated" ||
+    record.status === "error"
+  );
 };
