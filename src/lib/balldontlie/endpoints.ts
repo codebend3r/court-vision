@@ -6,6 +6,7 @@ import {
   BdlAdvancedStat,
   BdlGame,
   BdlPlayer,
+  BdlStanding,
   BdlStat,
   BdlTeam,
   bdlAdvancedStatSchema,
@@ -13,6 +14,7 @@ import {
   bdlPage,
   bdlPaginatedPage,
   bdlPlayerSchema,
+  bdlStandingSchema,
   bdlStatSchema,
   bdlTeamSchema,
 } from "./schemas";
@@ -45,6 +47,22 @@ export const fetchTeams = async (deps: BdlClientDeps = {}): Promise<BdlTeam[]> =
     sleep: deps.sleep,
   });
   return bdlPage(bdlTeamSchema).parse(raw).data;
+};
+
+// `/v1/standings` (GOAT tier) returns every team's regular-season standing in
+// one unpaginated page, so the tolerant `bdlPage` envelope fits.
+export const fetchStandings = async (
+  args: { deps?: BdlClientDeps; season?: string } = {},
+): Promise<BdlStanding[]> => {
+  const { deps = {}, season = SEASON_YEAR } = args;
+  const raw = await bdlFetch({
+    endpoint: "standings",
+    params: { season },
+    apiKey: deps.apiKey,
+    fetchImpl: deps.fetchImpl,
+    sleep: deps.sleep,
+  });
+  return bdlPage(bdlStandingSchema).parse(raw).data;
 };
 
 export const fetchAllStats = async (

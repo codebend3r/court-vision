@@ -2,7 +2,12 @@ import { describe, expect, it, vi } from "bun:test";
 
 import type { FetchImpl } from "@/lib/fetchImpl";
 
-import { fetchAllAdvancedStats, fetchAllStats, fetchTeams } from "@/lib/balldontlie/endpoints";
+import {
+  fetchAllAdvancedStats,
+  fetchAllStats,
+  fetchStandings,
+  fetchTeams,
+} from "@/lib/balldontlie/endpoints";
 
 const jsonResponse = (body: unknown): Response =>
   new Response(JSON.stringify(body), {
@@ -63,6 +68,46 @@ describe("fetchTeams", () => {
     );
     const teams = await fetchTeams({ apiKey: "k", fetchImpl });
     expect(teams).toEqual([{ id: 1, abbreviation: "ATL", full_name: "Atlanta Hawks" }]);
+  });
+});
+
+describe("fetchStandings", () => {
+  const standingRow = {
+    team: {
+      id: 21,
+      conference: "East",
+      division: "Atlantic",
+      city: "Boston",
+      name: "Celtics",
+      full_name: "Boston Celtics",
+      abbreviation: "BOS",
+    },
+    conference_record: "30-10",
+    conference_rank: 1,
+    division_record: "10-2",
+    division_rank: 1,
+    wins: 50,
+    losses: 15,
+    home_record: "28-5",
+    road_record: "22-10",
+    season: 2025,
+  };
+
+  it("requests the season and keeps only the fields the app reads", async () => {
+    const fetchImpl = vi.fn<FetchImpl>().mockResolvedValue(jsonResponse({ data: [standingRow] }));
+    const standings = await fetchStandings({ deps: { apiKey: "k", fetchImpl } });
+    expect(standings).toEqual([
+      {
+        team: { id: 21, conference: "East", abbreviation: "BOS", full_name: "Boston Celtics" },
+        conference_rank: 1,
+        wins: 50,
+        losses: 15,
+        season: 2025,
+      },
+    ]);
+    const url = fetchImpl.mock.calls[0]?.[0]?.toString() ?? "";
+    expect(url).toContain("/standings");
+    expect(url).toContain("season=2025");
   });
 });
 
