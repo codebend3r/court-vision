@@ -1,3 +1,4 @@
+import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 import { type Category, type ScoringSettings } from "@/lib/valuation/types";
 
 export type LeagueScoringType = "h2h_categories" | "h2h_points" | "roto";
@@ -40,5 +41,14 @@ export type LeagueDeleteResult =
 
 export type SetActiveLeagueResult =
   | { status: "ok" }
+  | { status: "unauthenticated" }
+  | { status: "error" };
+
+// Mirrors LeagueMutationResult: server actions cross the RSC boundary, so
+// errors are a result union, not throws.
+export type LeagueTeamActionResult =
+  | { status: "ok"; team: FantasyTeam }
+  | { status: "ok-deleted" }
+  | { status: "invalid" }
   | { status: "unauthenticated" }
   | { status: "error" };
