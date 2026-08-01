@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
+import { LeagueSwitcher } from "@/components/LeagueSwitcher/LeagueSwitcher";
 import styles from "@/components/SideNav/SideNav.module.scss";
 import { useSideNavStore } from "@/components/SideNav/sideNavStore";
 
@@ -12,6 +13,7 @@ const NAV_ENTRIES = [
   { href: "/players", label: "Players", shortLabel: "P" },
   { href: "/teams", label: "Teams", shortLabel: "T" },
   { href: "/my-teams", label: "My Teams", shortLabel: "M" },
+  { href: "/leagues", label: "Leagues", shortLabel: "L" },
   { href: "/watchlist", label: "Starred", shortLabel: "S" },
   { href: "/design", label: "Design", shortLabel: "D" },
 ];
@@ -33,7 +35,8 @@ export function SideNav() {
           const isActive =
             pathname === entry.href ||
             (entry.href === "/teams" && pathname === "/team") ||
-            (entry.href === "/my-teams" && pathname.startsWith("/my-teams/"));
+            (entry.href === "/my-teams" && pathname.startsWith("/my-teams/")) ||
+            (entry.href === "/leagues" && pathname.startsWith("/leagues/"));
           return (
             <li key={entry.href} className={styles.item}>
               <Link
@@ -54,6 +57,7 @@ export function SideNav() {
           );
         })}
       </ul>
+      <LeagueSwitcher />
       <button
         type="button"
         className={styles.collapseButton}
