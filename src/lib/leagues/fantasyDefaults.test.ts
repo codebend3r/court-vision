@@ -12,6 +12,7 @@ const base: LeagueSummary = {
   rosterSlots: 15,
   scoringConfig: { categories: ["pts", "reb", "ast", "stl", "blk", "tpm", "tov", "fg"] },
   createdAt: "2026-07-31T00:00:00.000Z",
+  updatedAt: "2026-07-31T00:00:00.000Z",
 };
 
 describe("buildLeagueSeed", () => {

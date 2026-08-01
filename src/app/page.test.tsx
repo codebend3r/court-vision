@@ -137,7 +137,13 @@ describe("Home", () => {
     getProfile.mockResolvedValue({ username: "steve" });
     getActiveLeague.mockResolvedValue({ id: "league-1", name: "Bench Mob League" });
     getLeagueTeams.mockResolvedValue([
-      { id: "a", name: "Bench Mob", createdAt: "2026-07-23T00:00:00.000Z", slots: [] },
+      {
+        id: "a",
+        name: "Bench Mob",
+        slug: "bench-mob",
+        createdAt: "2026-07-23T00:00:00.000Z",
+        slots: [],
+      },
     ]);
 
     await renderHome();

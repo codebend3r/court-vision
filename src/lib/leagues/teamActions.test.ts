@@ -56,6 +56,7 @@ const slots: RosterSlot[] = [
 const teamRow = {
   id: "team-1",
   name: "Bench Mob",
+  slug: "bench-mob",
   createdAt: new Date("2026-07-31"),
   slots: [
     {
@@ -240,9 +241,12 @@ describe("deleteLeagueTeam", () => {
 });
 
 describe("importLegacyTeams", () => {
+  // Legacy/localStorage-sourced teams predate the DB and carry no real slug —
+  // importLegacyTeams computes a fresh collision-proof one server-side, so
+  // the input slug is always "" here.
   const legacyTeams: FantasyTeam[] = [
-    { id: "legacy-1", name: "Bench Mob", createdAt: "2026-07-23T00:00:00.000Z", slots },
-    { id: "legacy-2", name: "Bench Mob", createdAt: "2026-07-24T00:00:00.000Z", slots },
+    { id: "legacy-1", name: "Bench Mob", slug: "", createdAt: "2026-07-23T00:00:00.000Z", slots },
+    { id: "legacy-2", name: "Bench Mob", slug: "", createdAt: "2026-07-24T00:00:00.000Z", slots },
   ];
 
   it("returns unauthenticated when no profile", async () => {
@@ -289,6 +293,7 @@ describe("importLegacyTeams", () => {
     const tooMany: FantasyTeam[] = Array.from({ length: 51 }, (_, index) => ({
       id: `legacy-${index}`,
       name: `Team ${index}`,
+      slug: "",
       createdAt: "2026-07-23T00:00:00.000Z",
       slots,
     }));
@@ -299,7 +304,9 @@ describe("importLegacyTeams", () => {
 
   it("rejects a team with a blank name without touching the session", async () => {
     const result = await importLegacyTeams({
-      teams: [{ id: "legacy-1", name: "   ", createdAt: "2026-07-23T00:00:00.000Z", slots }],
+      teams: [
+        { id: "legacy-1", name: "   ", slug: "", createdAt: "2026-07-23T00:00:00.000Z", slots },
+      ],
     });
     expect(result).toEqual({ status: "error" });
     expect(getProfile).not.toHaveBeenCalled();
@@ -316,6 +323,7 @@ describe("importLegacyTeams", () => {
         {
           id: "legacy-1",
           name: "Bench Mob",
+          slug: "",
           createdAt: "2026-07-23T00:00:00.000Z",
           slots: tooManySlots,
         },

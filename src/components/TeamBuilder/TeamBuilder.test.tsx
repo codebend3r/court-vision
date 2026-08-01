@@ -32,6 +32,7 @@ beforeEach(() => {
     team: {
       id: "server-team-1",
       name: "Bench Mob",
+      slug: "bench-mob",
       slots: [],
       createdAt: "2026-07-23T00:00:00.000Z",
     },
@@ -167,6 +168,7 @@ describe("TeamBuilder", () => {
     const existing = {
       id: "team-1",
       name: "Bench Mob",
+      slug: "bench-mob",
       createdAt: "2026-07-23T00:00:00.000Z",
       slots: buildSlots({ counts: DEFAULT_SLOT_COUNTS }).map((slot) =>
         slot.id === "PG-1" ? { ...slot, player: players[0] ?? null } : slot,

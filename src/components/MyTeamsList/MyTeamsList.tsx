@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { slotMeta, type SlotKind } from "@/lib/fantasyTeams/slots";
-import { teamNameToSlug } from "@/lib/fantasyTeams/slug";
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 import { deleteLeagueTeam } from "@/lib/leagues/teamActions";
 
@@ -26,7 +25,7 @@ type TeamAccordionProps = {
 function TeamAccordion({ team, onDelete }: TeamAccordionProps) {
   const router = useRouter();
   const filled = team.slots.filter((slot) => slot.player !== null).length;
-  const editHref = `/my-teams/${teamNameToSlug(team.name)}`;
+  const editHref = `/my-teams/${team.slug}`;
 
   return (
     <details className={styles.team}>

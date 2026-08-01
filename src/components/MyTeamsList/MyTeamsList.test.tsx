@@ -16,6 +16,7 @@ vi.mock("next/navigation", () => ({
 
 import { MyTeamsList } from "@/components/MyTeamsList/MyTeamsList";
 import { buildSlots, DEFAULT_SLOT_COUNTS } from "@/lib/fantasyTeams/slots";
+import { teamNameToSlug } from "@/lib/fantasyTeams/slug";
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 
 beforeEach(() => {
@@ -26,9 +27,10 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-const team = ({ id, name }: { id: string; name: string }): FantasyTeam => ({
+const team = ({ id, name, slug }: { id: string; name: string; slug?: string }): FantasyTeam => ({
   id,
   name,
+  slug: slug ?? teamNameToSlug(name),
   createdAt: "2026-07-23T00:00:00.000Z",
   slots: buildSlots({ counts: DEFAULT_SLOT_COUNTS }).map((slot) =>
     slot.id === "PG-1"
@@ -102,6 +104,13 @@ describe("MyTeamsList", () => {
     );
     expect(screen.getByRole("link", { name: "Bench Mob" })).toBeInTheDocument();
     expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("links a renamed team to its stable DB slug, not one recomputed from the new name", () => {
+    render(
+      <MyTeamsList teams={[team({ id: "a", name: "Beta", slug: "alpha" })]} leagueName="League" />,
+    );
+    expect(screen.getByRole("link", { name: "Beta" })).toHaveAttribute("href", "/my-teams/alpha");
   });
 
   it("re-syncs local state when the teams prop changes", () => {

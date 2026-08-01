@@ -61,7 +61,9 @@ const parseLegacyTeam = (value: unknown): FantasyTeam | null => {
   const parsedSlots = slots.map(parseLegacySlot);
   const validSlots = parsedSlots.filter((slot): slot is RosterSlot => slot !== null);
   if (validSlots.length !== parsedSlots.length) return null;
-  return { id, name, createdAt, slots: validSlots };
+  // No DB row exists yet for a legacy team, so there's no real slug to carry
+  // over; importLegacyTeams computes a fresh collision-proof one server-side.
+  return { id, name, slug: "", createdAt, slots: validSlots };
 };
 
 // Narrows the persisted zustand payload `{ state: { teams: [...] }, version }`

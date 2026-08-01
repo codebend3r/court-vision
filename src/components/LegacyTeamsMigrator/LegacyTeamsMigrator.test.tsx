@@ -42,6 +42,9 @@ const parsedTeams = [
   {
     id: "team-1",
     name: "Bench Mob",
+    // parseLegacyTeamsPayload always assigns "" — no DB row exists yet to
+    // carry a real slug from.
+    slug: "",
     createdAt: "2026-07-23T00:00:00.000Z",
     slots: [
       { id: "PG-1", type: "PG", player },

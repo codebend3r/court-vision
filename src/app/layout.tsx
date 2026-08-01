@@ -11,7 +11,7 @@ import { SiteHeader } from "@/components/SiteHeader/SiteHeader";
 import { WatchlistAlert } from "@/components/WatchlistAlert/WatchlistAlert";
 import { WatchlistHydrator } from "@/components/WatchlistHydrator/WatchlistHydrator";
 import { getProfile } from "@/lib/auth/session";
-import { getLeagues } from "@/lib/leagues/queries";
+import { fallbackActiveLeagueId, getLeagues } from "@/lib/leagues/queries";
 import { fontScaleOf } from "@/lib/settings/guards";
 import { getWatchlistPlayerIds } from "@/lib/watchlist/queries";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
@@ -82,9 +82,12 @@ export default async function RootLayout({
   // One watchlist read per navigation seeds every StarButton on the page.
   const watchlistPlayerIds = await getWatchlistPlayerIds();
   const leagues = profile === null ? [] : await getLeagues();
-  const activeLeagueId = leagues.some((league) => league.id === profile?.activeLeagueId)
-    ? (profile?.activeLeagueId ?? null)
-    : (leagues[0]?.id ?? null);
+  // Matches resolveActiveLeague's DB-side fallback (updatedAt desc), not
+  // getLeagues' display order (createdAt asc) — see fallbackActiveLeagueId.
+  const activeLeagueId = fallbackActiveLeagueId({
+    leagues,
+    activeLeagueId: profile?.activeLeagueId ?? null,
+  });
   return (
     <html
       lang="en"

@@ -24,6 +24,7 @@ export const TEAM_INCLUDE = {
 type TeamWithSlots = {
   id: string;
   name: string;
+  slug: string;
   createdAt: Date;
   slots: Array<{
     slotType: string;
@@ -44,6 +45,7 @@ type TeamWithSlots = {
 export const toFantasyTeam = ({ team }: { team: TeamWithSlots }): FantasyTeam => ({
   id: team.id,
   name: team.name,
+  slug: team.slug,
   createdAt: team.createdAt.toISOString(),
   slots: rowsToSlots({
     rows: team.slots.map((slot) => ({

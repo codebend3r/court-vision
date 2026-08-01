@@ -230,3 +230,13 @@ verification pass:
   schema exists there). `bun run db:migrate` will hit Prisma error P3006
   until a `SHADOW_DATABASE_URL` pointing at a database with a stub `auth`
   schema is provisioned, or this workflow is adopted as the standard path.
+- Roster size is bounded by slot-type maxima (1–60 slots, enforced in
+  `isValidSlots`), not by the league's `rosterSlots` field — that field only
+  seeds fantasy-team defaults at creation time and is never re-checked as a
+  cap once a team's slots are built.
+- `preferredFormula` currently drives only the Fantasy Value tab's default
+  sort; team-insights surfaces do not yet read it. Wiring it into team
+  insights is a follow-up, not part of this feature.
+- The settings font-size preview responds to the selected option (which
+  saves immediately and reverts the selection on a failed save), not to
+  hover — there is no separate hover-preview state.

@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { slotMeta } from "@/lib/fantasyTeams/slots";
-import { teamNameToSlug } from "@/lib/fantasyTeams/slug";
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 
 import styles from "@/components/HomeTeamPanel/HomeTeamPanel.module.scss";
@@ -43,7 +42,7 @@ export function HomeTeamPanel({ teams, className }: HomeTeamPanelProps) {
       <h2 id="home-team-title" className={styles.title}>
         Your Team
       </h2>
-      <Link href={`/my-teams/${teamNameToSlug(latest.name)}`} className={styles.teamName}>
+      <Link href={`/my-teams/${latest.slug}`} className={styles.teamName}>
         {latest.name}
       </Link>
       <p className={styles.meta}>

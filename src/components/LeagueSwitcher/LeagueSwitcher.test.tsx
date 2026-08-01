@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
@@ -7,13 +7,14 @@ import { useLeaguesStore } from "@/lib/leagues/store";
 import { type LeagueSummary } from "@/lib/leagues/types";
 
 const setActiveLeagueMock = vi.fn(async (_args: { leagueId: string }) => ({ status: "ok" }));
+const refreshMock = vi.fn();
 
 vi.mock("@/lib/leagues/actions", () => ({
   setActiveLeague: (args: { leagueId: string }) => setActiveLeagueMock(args),
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: () => {} }),
+  useRouter: () => ({ refresh: refreshMock }),
 }));
 
 const league = ({ id, name }: { id: string; name: string }): LeagueSummary => ({
@@ -25,10 +26,12 @@ const league = ({ id, name }: { id: string; name: string }): LeagueSummary => ({
   rosterSlots: 13,
   scoringConfig: { categories: ["pts"] },
   createdAt: "2026-07-31T00:00:00.000Z",
+  updatedAt: "2026-07-31T00:00:00.000Z",
 });
 
 beforeEach(() => {
-  setActiveLeagueMock.mockClear();
+  setActiveLeagueMock.mockReset().mockResolvedValue({ status: "ok" });
+  refreshMock.mockClear();
   useLeaguesStore.setState({
     leagues: [league({ id: "a", name: "Alpha" }), league({ id: "b", name: "Beta" })],
     activeLeagueId: "a",
@@ -49,12 +52,40 @@ describe("LeagueSwitcher", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("switches league optimistically and calls the action", () => {
+  it("switches league optimistically and calls the action", async () => {
     render(<LeagueSwitcher />);
     fireEvent.click(screen.getByRole("button", { name: /Alpha/ }));
     fireEvent.click(screen.getByRole("menuitemradio", { name: /Beta/ }));
     expect(useLeaguesStore.getState().activeLeagueId).toBe("b");
     expect(setActiveLeagueMock).toHaveBeenCalledWith({ leagueId: "b" });
+    await waitFor(() => expect(refreshMock).toHaveBeenCalled());
+  });
+
+  it("reverts the store and shows an alert (no refresh) when the switch fails", async () => {
+    setActiveLeagueMock.mockReset().mockResolvedValue({ status: "error" });
+    render(<LeagueSwitcher />);
+    fireEvent.click(screen.getByRole("button", { name: /Alpha/ }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: /Beta/ }));
+    // Optimistic flip happens immediately...
+    expect(useLeaguesStore.getState().activeLeagueId).toBe("b");
+    // ...then reverts once the server call reports failure.
+    await waitFor(() => expect(useLeaguesStore.getState().activeLeagueId).toBe("a"));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not switch leagues — try again.",
+    );
+    expect(refreshMock).not.toHaveBeenCalled();
+  });
+
+  it("reverts the store and shows an alert when the switch rejects", async () => {
+    setActiveLeagueMock.mockReset().mockRejectedValue(new Error("network error"));
+    render(<LeagueSwitcher />);
+    fireEvent.click(screen.getByRole("button", { name: /Alpha/ }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: /Beta/ }));
+    await waitFor(() => expect(useLeaguesStore.getState().activeLeagueId).toBe("a"));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not switch leagues — try again.",
+    );
+    expect(refreshMock).not.toHaveBeenCalled();
   });
 
   it("closes on Escape and restores focus to the trigger", () => {

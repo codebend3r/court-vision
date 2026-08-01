@@ -23,6 +23,7 @@ export type LeagueSummary = {
   rosterSlots: number;
   scoringConfig: LeagueScoringConfig;
   createdAt: string;
+  updatedAt: string;
 };
 
 // Mirrors WatchlistActionResult (lib/watchlist/types.ts): server actions cross

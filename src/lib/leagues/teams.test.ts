@@ -105,6 +105,9 @@ describe("parseLegacyTeamsPayload", () => {
       {
         id: "team-1",
         name: "Bench Mob",
+        // No DB row exists for a legacy team yet, so there's no real slug to
+        // carry over — importLegacyTeams resolves one server-side.
+        slug: "",
         createdAt: "2026-07-23T00:00:00.000Z",
         slots: [
           { id: "PG-1", type: "PG", player },

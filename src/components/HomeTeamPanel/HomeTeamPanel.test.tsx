@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 
 import { HomeTeamPanel } from "@/components/HomeTeamPanel/HomeTeamPanel";
 import { buildSlots, DEFAULT_SLOT_COUNTS } from "@/lib/fantasyTeams/slots";
+import { teamNameToSlug } from "@/lib/fantasyTeams/slug";
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 
 afterEach(cleanup);
@@ -11,13 +12,16 @@ const team = ({
   id,
   name,
   createdAt,
+  slug,
 }: {
   id: string;
   name: string;
   createdAt: string;
+  slug?: string;
 }): FantasyTeam => ({
   id,
   name,
+  slug: slug ?? teamNameToSlug(name),
   createdAt,
   slots: buildSlots({ counts: DEFAULT_SLOT_COUNTS }).map((slot) =>
     slot.id === "PG-1"
@@ -65,6 +69,17 @@ describe("HomeTeamPanel", () => {
       "href",
       "/players/1",
     );
+  });
+
+  it("links a renamed team to its stable DB slug, not one recomputed from the new name", () => {
+    render(
+      <HomeTeamPanel
+        teams={[
+          team({ id: "a", name: "Beta", createdAt: "2026-07-20T00:00:00.000Z", slug: "alpha" }),
+        ]}
+      />,
+    );
+    expect(screen.getByRole("link", { name: "Beta" })).toHaveAttribute("href", "/my-teams/alpha");
   });
 
   it("applies the layout className to the panel", () => {

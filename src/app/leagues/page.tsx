@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { LeagueList } from "@/components/LeagueList/LeagueList";
 import { getProfile } from "@/lib/auth/session";
-import { getLeagues } from "@/lib/leagues/queries";
+import { fallbackActiveLeagueId, getLeagues } from "@/lib/leagues/queries";
 
 import styles from "@/app/leagues/page.module.scss";
 
@@ -12,8 +12,12 @@ export default async function LeaguesPage() {
   const profile = await getProfile();
   if (profile === null) redirect("/login?next=/leagues");
   const leagues = await getLeagues();
-  const activeLeagueId =
-    leagues.find((league) => league.id === profile.activeLeagueId)?.id ?? leagues[0]?.id ?? null;
+  // Matches resolveActiveLeague's DB-side fallback (updatedAt desc), not
+  // getLeagues' display order (createdAt asc) — see fallbackActiveLeagueId.
+  const activeLeagueId = fallbackActiveLeagueId({
+    leagues,
+    activeLeagueId: profile.activeLeagueId,
+  });
   return (
     <main className={styles.page}>
       <h1>Leagues</h1>

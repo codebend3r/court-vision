@@ -24,6 +24,7 @@ afterEach(cleanup);
 const team: FantasyTeam = {
   id: "team-1",
   name: "Bench Mob",
+  slug: "bench-mob",
   createdAt: "2026-07-23T00:00:00.000Z",
   slots: buildSlots({ counts: DEFAULT_SLOT_COUNTS }),
 };

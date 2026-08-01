@@ -74,6 +74,12 @@ describe("starPlayer", () => {
     create.mockRejectedValue(new Error("connection reset"));
     expect(await starPlayer({ playerId: 7 })).toEqual({ status: "error" });
   });
+
+  it("reports error (not an unhandled rejection) when ensureDefaultLeague throws", async () => {
+    ensureDefaultLeague.mockRejectedValue(new Error("create race lost, no winner found"));
+    expect(await starPlayer({ playerId: 7 })).toEqual({ status: "error" });
+    expect(create).not.toHaveBeenCalled();
+  });
 });
 
 describe("unstarPlayer", () => {
@@ -88,6 +94,12 @@ describe("unstarPlayer", () => {
   it("is unauthenticated when signed out", async () => {
     ensureDefaultLeague.mockResolvedValue(null);
     expect(await unstarPlayer({ playerId: 7 })).toEqual({ status: "unauthenticated" });
+    expect(deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("reports error (not an unhandled rejection) when ensureDefaultLeague throws", async () => {
+    ensureDefaultLeague.mockRejectedValue(new Error("create race lost, no winner found"));
+    expect(await unstarPlayer({ playerId: 7 })).toEqual({ status: "error" });
     expect(deleteMany).not.toHaveBeenCalled();
   });
 });

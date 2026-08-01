@@ -16,6 +16,7 @@ export function LeagueSwitcher() {
   const leagues = useLeagues();
   const active = useActiveLeague();
   const [open, setOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const switcherRef = useRef<HTMLElement>(null);
   const itemRefs = useRef<Array<HTMLButtonElement | HTMLAnchorElement | null>>([]);
@@ -44,10 +45,27 @@ export function LeagueSwitcher() {
   if (leagues.length === 0) return null;
 
   const pick = ({ leagueId }: { leagueId: string }) => {
+    const previousActiveId = useLeaguesStore.getState().activeLeagueId;
     useLeaguesStore.getState().setActive({ leagueId });
     setOpen(false);
     triggerRef.current?.focus();
-    void setActiveLeague({ leagueId }).then(() => router.refresh());
+    void setActiveLeague({ leagueId })
+      .then((result) => {
+        if (result.status !== "ok") {
+          // Revert the optimistic flip; re-read fresh rather than reuse a
+          // pre-flip store snapshot, in case something else changed it
+          // meanwhile (mirrors LeagueList.setActive).
+          useLeaguesStore.setState({ activeLeagueId: previousActiveId });
+          setErrorMessage("Could not switch leagues — try again.");
+          return;
+        }
+        setErrorMessage(null);
+        router.refresh();
+      })
+      .catch(() => {
+        useLeaguesStore.setState({ activeLeagueId: previousActiveId });
+        setErrorMessage("Could not switch leagues — try again.");
+      });
   };
 
   const itemCount = leagues.length + 1;
@@ -105,6 +123,11 @@ export function LeagueSwitcher() {
       >
         <span className={styles.label}>{active?.name ?? "Pick a league"}</span>
       </button>
+      {!!errorMessage && (
+        <p role="alert" className={styles.error}>
+          {errorMessage}
+        </p>
+      )}
       {open && (
         <ul className={styles.list} role="menu" onKeyDown={handleMenuKeyDown}>
           {leagues.map((league, index) => (

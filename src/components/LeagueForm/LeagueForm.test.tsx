@@ -32,6 +32,7 @@ const league: LeagueSummary = {
   rosterSlots: 12,
   scoringConfig: { categories: ["pts", "reb", "ast"], weights: { pts: 1.5 } },
   createdAt: "2026-07-31T00:00:00.000Z",
+  updatedAt: "2026-07-31T00:00:00.000Z",
 };
 
 beforeEach(() => {
