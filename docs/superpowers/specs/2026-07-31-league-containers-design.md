@@ -195,3 +195,38 @@ only).
 - Roto standings and H2H matchup/projection engines per scoring type.
 - Theme customization beyond the placeholder section.
 - SGP availability and auction values (tracked separately in the valuation PRD).
+
+## Implementation notes (2026-08-01)
+
+Deviations from this design as actually built, found during the Task 15
+verification pass:
+
+- `deleteLeague` only reassigns `activeLeagueId` when the deleted league
+  _was_ the active one; forged/foreign ids return `{ status: "error" }`
+  instead of the unconditional fallback promotion this doc's "Error handling"
+  section implies.
+- Team saves navigate to `/my-teams` on success, not back to the team's own
+  edit page as prior UX did.
+- No dedicated zustand store for league teams — server components pass team
+  props down and re-fetch on navigation; only leagues and the watchlist have
+  stores (already called out as a judgment call in Task 15's self-review
+  notes, formalized here).
+- `ensureDefaultLeague` accepts an optional `{ profile }` param so callers
+  that already resolved the session can skip a second lookup.
+- `importLegacyTeams` hardening: validation now matches `saveLeagueTeam`
+  exactly (trimmed names, 1–60 roster slots per team, ≤50 teams), the count
+  check runs inside the transaction, and `ensureDefaultLeague` failures map
+  to `{ status: "error" }` instead of throwing.
+- `LeagueSwitcher`'s menu implements the full ARIA menu keyboard pattern
+  (roving `tabindex`, Arrow/Home/End navigation, Escape restores focus to the
+  trigger, blur/outside-click closes) — more than the spec's rough sketch
+  called for.
+- List surfaces (`/leagues`, `/my-teams`) wait for server confirmation before
+  removing a row optimistically, and announce failures via `role="alert"`
+  rather than failing silently.
+- Migrations were applied via `prisma migrate diff` + `db execute` +
+  `migrate resolve` rather than `prisma migrate dev`, because the shadow
+  database can't replay migrations that reference `auth.uid()` (no `auth`
+  schema exists there). `bun run db:migrate` will hit Prisma error P3006
+  until a `SHADOW_DATABASE_URL` pointing at a database with a stub `auth`
+  schema is provisioned, or this workflow is adopted as the standard path.
