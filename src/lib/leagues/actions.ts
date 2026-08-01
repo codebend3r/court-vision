@@ -126,9 +126,14 @@ export const deleteLeague = async ({
   const profile = await getProfile();
   if (profile === null) return { status: "unauthenticated" };
   try {
-    await prisma.league.deleteMany({ where: { id: leagueId, profileId: profile.id } });
-    // FK onDelete: SetNull already cleared activeLeagueId if it pointed here;
-    // promote the most recently updated survivor so the app never dangles.
+    const deleted = await prisma.league.deleteMany({
+      where: { id: leagueId, profileId: profile.id },
+    });
+    if (deleted.count === 0) return { status: "error" };
+    // Deleting a non-active league must not touch the active pointer.
+    if (profile.activeLeagueId !== leagueId) {
+      return { status: "ok", activeLeagueId: profile.activeLeagueId };
+    }
     const fallback = await prisma.league.findFirst({
       where: { profileId: profile.id },
       orderBy: { updatedAt: "desc" },
