@@ -43,3 +43,17 @@
     background: var(--color-bg);
   }
 }
+
+.settingsLink {
+  display: block;
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+
+  &:hover {
+    background: var(--color-bg);
+  }
+}
