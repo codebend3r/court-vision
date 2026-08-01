@@ -12,6 +12,7 @@ import { WatchlistAlert } from "@/components/WatchlistAlert/WatchlistAlert";
 import { WatchlistHydrator } from "@/components/WatchlistHydrator/WatchlistHydrator";
 import { getProfile } from "@/lib/auth/session";
 import { getLeagues } from "@/lib/leagues/queries";
+import { fontScaleOf } from "@/lib/settings/guards";
 import { getWatchlistPlayerIds } from "@/lib/watchlist/queries";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
@@ -88,7 +89,7 @@ export default async function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      data-font-scale={profile?.fontScale ?? "default"}
+      data-font-scale={fontScaleOf({ profile })}
       className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}
     >
       <head>
