@@ -1,13 +1,16 @@
 import Link from "next/link";
 
 import { ComingSoonPanel } from "@/components/ComingSoonPanel/ComingSoonPanel";
+import { HomeStandingsPanel } from "@/components/HomeStandingsPanel/HomeStandingsPanel";
 import { HomeStarredPanel } from "@/components/HomeStarredPanel/HomeStarredPanel";
 import { HomeTeamPanel } from "@/components/HomeTeamPanel/HomeTeamPanel";
-import { WatchlistZChart } from "@/components/WatchlistZChart/WatchlistZChart";
+import { WatchlistTrendChart } from "@/components/WatchlistTrendChart/WatchlistTrendChart";
 import { getProfile } from "@/lib/auth/session";
+import { getConferenceStandings } from "@/lib/standings/loader";
 import { HOMEPAGE_WATCHLIST_LIMIT } from "@/lib/watchlist/constants";
 import { getWatchlistCount, getWatchlistPlayers } from "@/lib/watchlist/queries";
-import { getZTrendSeries } from "@/lib/watchlist/zTrendLoader";
+import { ROLLING_WINDOW_GAMES } from "@/lib/watchlist/trend";
+import { getGTrendSeries, getZTrendSeries } from "@/lib/watchlist/trendLoader";
 
 import styles from "@/app/page.module.scss";
 
@@ -47,25 +50,48 @@ export default async function Home() {
     );
   }
 
-  const [players, count] = await Promise.all([
+  const [players, count, standings] = await Promise.all([
     getWatchlistPlayers({ limit: HOMEPAGE_WATCHLIST_LIMIT }),
     getWatchlistCount(),
+    getConferenceStandings(),
   ]);
-  // The chart tracks exactly the players the panel above lists.
-  const series = await getZTrendSeries({ players });
+  // Both charts track exactly the players the panel above lists.
+  const [zSeries, gSeries] = await Promise.all([
+    getZTrendSeries({ players }),
+    getGTrendSeries({ players }),
+  ]);
 
   return (
     <main className={styles.page}>
       <h1 className={styles.title}>Court Vision</h1>
       <p className={styles.subtitle}>Your fantasy command center.</p>
-      <div className={styles.grid}>
-        <HomeStarredPanel players={players} count={count} />
-        <HomeTeamPanel />
-        <section className={styles.chartCard} aria-labelledby="home-trend-title">
-          <h2 id="home-trend-title" className={styles.cardTitle}>
+      <div className={styles.dashboardGrid}>
+        <HomeStarredPanel players={players} count={count} className={styles.panelCardLeft} />
+        <HomeTeamPanel className={styles.panelCardRight} />
+        <HomeStandingsPanel standings={standings} className={styles.panelCardFar} />
+        <section
+          className={`${styles.chartCard} ${styles.chartCardLeft}`}
+          aria-labelledby="home-z-trend-title"
+        >
+          <h2 id="home-z-trend-title" className={styles.cardTitle}>
             Z-Score Trend
           </h2>
-          <WatchlistZChart series={series} />
+          <WatchlistTrendChart
+            series={zSeries}
+            caption={`Rolling ${ROLLING_WINDOW_GAMES}-game z-score against this season's player pool. Zero is league-average value.`}
+          />
+        </section>
+        <section
+          className={`${styles.chartCard} ${styles.chartCardRight}`}
+          aria-labelledby="home-g-trend-title"
+        >
+          <h2 id="home-g-trend-title" className={styles.cardTitle}>
+            G-Score Trend
+          </h2>
+          <WatchlistTrendChart
+            series={gSeries}
+            caption={`Rolling ${ROLLING_WINDOW_GAMES}-game G-score: the z-score damped by each category's game-to-game volatility. Zero is league-average value.`}
+          />
         </section>
       </div>
     </main>

@@ -4,7 +4,7 @@ import { TEAM_BUILDER_VALUATION_CONFIG } from "@/lib/fantasyTeams/insights";
 import { prisma } from "@/lib/prisma";
 import { getFantasyPool } from "@/lib/valuation/loader";
 import { computePoolStats } from "@/lib/valuation/pool";
-import { buildRollingZSeries, type ZTrendSeries } from "@/lib/watchlist/zTrend";
+import { buildRollingGSeries, buildRollingZSeries, type TrendSeries } from "@/lib/watchlist/trend";
 
 // Mirrors POOL_FLOOR in lib/valuation/index.ts and lib/fantasyTeams/insights.ts:
 // small leagues still standardize against a broad pool so values stay stable
@@ -27,6 +27,13 @@ const logSelect = {
   fta: true,
 };
 
+const buildersByMethod = {
+  z: buildRollingZSeries,
+  g: buildRollingGSeries,
+} as const;
+
+type TrendMethod = keyof typeof buildersByMethod;
+
 const latestSeason = async (): Promise<string | null> => {
   const row = await prisma.playerSeasonStats.findFirst({
     where: { seasonType: "Regular Season" },
@@ -39,10 +46,12 @@ const latestSeason = async (): Promise<string | null> => {
 const fetchSeries = async ({
   playerId,
   fullName,
+  method,
 }: {
   playerId: number;
   fullName: string;
-}): Promise<ZTrendSeries> => {
+  method: TrendMethod;
+}): Promise<TrendSeries> => {
   const season = await latestSeason();
   if (season === null) {
     return { playerId, fullName, points: [] };
@@ -63,7 +72,7 @@ const fetchSeries = async ({
     orderBy: { gameDate: "asc" },
     select: logSelect,
   });
-  return buildRollingZSeries({
+  return buildersByMethod[method]({
     playerId,
     fullName,
     logs,
@@ -75,9 +84,15 @@ const fetchSeries = async ({
 // Cached per player rather than per watchlist: two users watching the same star
 // share one entry. Same tag and revalidate window as the other players caches,
 // so one sync invalidation busts every surface.
-const cachedSeries = unstable_cache(
-  (playerId: number, fullName: string) => fetchSeries({ playerId, fullName }),
+const cachedZSeries = unstable_cache(
+  (playerId: number, fullName: string) => fetchSeries({ playerId, fullName, method: "z" }),
   ["watchlist:z-trend"],
+  { revalidate: 300, tags: ["players"] },
+);
+
+const cachedGSeries = unstable_cache(
+  (playerId: number, fullName: string) => fetchSeries({ playerId, fullName, method: "g" }),
+  ["watchlist:g-trend"],
   { revalidate: 300, tags: ["players"] },
 );
 
@@ -85,5 +100,12 @@ export const getZTrendSeries = ({
   players,
 }: {
   players: readonly { playerId: number; fullName: string }[];
-}): Promise<ZTrendSeries[]> =>
-  Promise.all(players.map((player) => cachedSeries(player.playerId, player.fullName)));
+}): Promise<TrendSeries[]> =>
+  Promise.all(players.map((player) => cachedZSeries(player.playerId, player.fullName)));
+
+export const getGTrendSeries = ({
+  players,
+}: {
+  players: readonly { playerId: number; fullName: string }[];
+}): Promise<TrendSeries[]> =>
+  Promise.all(players.map((player) => cachedGSeries(player.playerId, player.fullName)));

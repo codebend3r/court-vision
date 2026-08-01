@@ -5,10 +5,13 @@ const getProfile = vi.fn();
 const getWatchlistPlayers = vi.fn();
 const getWatchlistCount = vi.fn();
 const getZTrendSeries = vi.fn();
+const getGTrendSeries = vi.fn();
+const getConferenceStandings = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({ getProfile: () => getProfile() }));
 vi.mock("@/lib/watchlist/queries", () => ({ getWatchlistPlayers, getWatchlistCount }));
-vi.mock("@/lib/watchlist/zTrendLoader", () => ({ getZTrendSeries }));
+vi.mock("@/lib/watchlist/trendLoader", () => ({ getZTrendSeries, getGTrendSeries }));
+vi.mock("@/lib/standings/loader", () => ({ getConferenceStandings }));
 
 import Home from "@/app/page";
 import { useFantasyTeamsStore } from "@/lib/fantasyTeams/store";
@@ -25,9 +28,13 @@ beforeEach(() => {
   getWatchlistPlayers.mockReset();
   getWatchlistCount.mockReset();
   getZTrendSeries.mockReset();
+  getGTrendSeries.mockReset();
+  getConferenceStandings.mockReset();
   getWatchlistPlayers.mockResolvedValue([]);
   getWatchlistCount.mockResolvedValue(0);
   getZTrendSeries.mockResolvedValue([]);
+  getGTrendSeries.mockResolvedValue([]);
+  getConferenceStandings.mockResolvedValue(null);
   useFantasyTeamsStore.setState({ teams: [] });
 });
 
@@ -115,15 +122,58 @@ describe("Home", () => {
     );
   });
 
+  it("shows the conference standings ladders for a signed-in user", async () => {
+    getProfile.mockResolvedValue({ username: "steve" });
+    getConferenceStandings.mockResolvedValue({
+      east: [
+        {
+          teamId: 21,
+          abbreviation: "BOS",
+          fullName: "Boston Celtics",
+          rank: 1,
+          wins: 50,
+          losses: 15,
+        },
+      ],
+      west: [
+        {
+          teamId: 14,
+          abbreviation: "OKC",
+          fullName: "Oklahoma City Thunder",
+          rank: 1,
+          wins: 55,
+          losses: 10,
+        },
+      ],
+    });
+
+    await renderHome();
+
+    expect(screen.getByRole("heading", { name: "Conference Standings" })).toBeInTheDocument();
+    expect(screen.getByText("BOS")).toBeInTheDocument();
+    expect(screen.getByText("OKC")).toBeInTheDocument();
+  });
+
+  it("still renders the standings panel when the API is unavailable", async () => {
+    getProfile.mockResolvedValue({ username: "steve" });
+
+    await renderHome();
+
+    expect(screen.getByText(/Standings are unavailable/)).toBeInTheDocument();
+  });
+
   it("charts the same players it lists", async () => {
     getProfile.mockResolvedValue({ username: "steve" });
     const players = [summary({ playerId: 1, fullName: "Jalen Brunson" })];
     getWatchlistPlayers.mockResolvedValue(players);
     getZTrendSeries.mockResolvedValue([{ playerId: 1, fullName: "Jalen Brunson", points: [] }]);
+    getGTrendSeries.mockResolvedValue([{ playerId: 1, fullName: "Jalen Brunson", points: [] }]);
 
     await renderHome();
 
     expect(getZTrendSeries).toHaveBeenCalledWith({ players });
+    expect(getGTrendSeries).toHaveBeenCalledWith({ players });
     expect(screen.getByRole("heading", { name: "Z-Score Trend" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "G-Score Trend" })).toBeInTheDocument();
   });
 });

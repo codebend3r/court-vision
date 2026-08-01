@@ -16,12 +16,15 @@ import {
 
 import { getChartChrome } from "@/components/PlayerStatChart/statMeta";
 import { useTheme, type Theme } from "@/lib/theme/ThemeProvider";
-import { ROLLING_WINDOW_GAMES, type ZTrendSeries } from "@/lib/watchlist/zTrend";
+import { ROLLING_WINDOW_GAMES, type TrendSeries } from "@/lib/watchlist/trend";
 
-import styles from "@/components/WatchlistZChart/WatchlistZChart.module.scss";
+import styles from "@/components/WatchlistTrendChart/WatchlistTrendChart.module.scss";
 
-export type WatchlistZChartProps = {
-  series: readonly ZTrendSeries[];
+export type WatchlistTrendChartProps = {
+  series: readonly TrendSeries[];
+  // What the plotted number means — rendered as the figure's caption. The
+  // chart itself is method-agnostic; z- and g-score instances differ only here.
+  caption: string;
 };
 
 // Five solid hues, one per player, in fixed order. Validated with the dataviz
@@ -44,7 +47,8 @@ const lastNameOf = ({ fullName }: { fullName: string }): string =>
 const formatDate = (value: number): string =>
   new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
-const formatZ = (value: number): string => (value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1));
+const formatValue = (value: number): string =>
+  value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
 
 export type ChartRow = Record<string, number | undefined>;
 
@@ -52,14 +56,14 @@ export type ChartRow = Record<string, number | undefined>;
 // scale: dates then sit at even intervals however many days apart they are. A
 // time scale spaces them by real duration instead, which stretches the all-star
 // break into dead space and squeezes busy weeks together.
-export const buildRows = ({ series }: { series: readonly ZTrendSeries[] }): ChartRow[] => {
+export const buildRows = ({ series }: { series: readonly TrendSeries[] }): ChartRow[] => {
   const dates = [
     ...new Set(series.flatMap((entry) => entry.points.map((point) => point.date))),
   ].sort((a, b) => a - b);
   const byPlayer = new Map(
     series.map((entry) => [
       entry.playerId,
-      new Map(entry.points.map((point) => [point.date, point.z])),
+      new Map(entry.points.map((point) => [point.date, point.value])),
     ]),
   );
   return dates.map((date) =>
@@ -106,7 +110,7 @@ function ChartTooltip({ active, label, payload }: ChartTooltipProps) {
             />
             <span>{entry.name}</span>
             <span className={styles.tooltipValue}>
-              {typeof entry.value === "number" ? formatZ(entry.value) : "—"}
+              {typeof entry.value === "number" ? formatValue(entry.value) : "—"}
             </span>
           </li>
         ))}
@@ -144,7 +148,7 @@ const endLabelRenderer = ({
   return EndLabel;
 };
 
-export function WatchlistZChart({ series }: WatchlistZChartProps) {
+export function WatchlistTrendChart({ series, caption }: WatchlistTrendChartProps) {
   const { theme } = useTheme();
   const chrome = getChartChrome({ theme });
   const palette = SERIES_BY_THEME[theme];
@@ -208,7 +212,7 @@ export function WatchlistZChart({ series }: WatchlistZChartProps) {
               <YAxis
                 stroke={chrome.axis}
                 tick={{ fill: chrome.axis, fontSize: 12 }}
-                tickFormatter={formatZ}
+                tickFormatter={formatValue}
                 width={48}
               />
               {/* Zero is league-average value: above it a player helps you. */}
@@ -252,10 +256,7 @@ export function WatchlistZChart({ series }: WatchlistZChartProps) {
           </ResponsiveContainer>
         </div>
       )}
-      <figcaption className={styles.caption}>
-        Rolling {ROLLING_WINDOW_GAMES}-game z-score against this season&apos;s player pool. Zero is
-        league-average value.
-      </figcaption>
+      <figcaption className={styles.caption}>{caption}</figcaption>
     </figure>
   );
 }

@@ -13,16 +13,23 @@ import styles from "@/components/HomeTeamPanel/HomeTeamPanel.module.scss";
 // Fantasy teams live in localStorage (lib/fantasyTeams/store.ts), so this panel
 // is a client component reading the same store /my-teams uses. Bench and IL are
 // left to that page; the homepage shows the starters only.
-export function HomeTeamPanel() {
+export type HomeTeamPanelProps = {
+  // Lets the page's grid place the panel; the panel itself stays
+  // container-agnostic.
+  className?: string;
+};
+
+export function HomeTeamPanel({ className }: HomeTeamPanelProps = {}) {
   useEffect(() => {
     void useFantasyTeamsStore.persist.rehydrate();
   }, []);
   const teams = useFantasyTeamsStore((state) => state.teams);
   const latest = [...teams].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+  const panelClass = [styles.panel, className].filter(Boolean).join(" ");
 
   if (latest === undefined) {
     return (
-      <section className={styles.panel} aria-labelledby="home-team-title">
+      <section className={panelClass} aria-labelledby="home-team-title">
         <h2 id="home-team-title" className={styles.title}>
           Your Team
         </h2>
@@ -37,7 +44,7 @@ export function HomeTeamPanel() {
   const starters = latest.slots.filter((slot) => slotMeta(slot.type).kind === "starter");
 
   return (
-    <section className={styles.panel} aria-labelledby="home-team-title">
+    <section className={panelClass} aria-labelledby="home-team-title">
       <h2 id="home-team-title" className={styles.title}>
         Your Team
       </h2>

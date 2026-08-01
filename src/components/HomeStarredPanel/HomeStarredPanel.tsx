@@ -10,14 +10,20 @@ import styles from "@/components/HomeStarredPanel/HomeStarredPanel.module.scss";
 export type HomeStarredPanelProps = {
   players: readonly WatchlistPlayerSummary[];
   count: number;
+  // Lets the page's grid place the panel; the panel itself stays
+  // container-agnostic.
+  className?: string;
 };
 
 // The homepage's loudest panel: the players this user actually follows, most
 // recently starred first. Rendered only for signed-in users, so every star here
 // is actionable.
-export function HomeStarredPanel({ players, count }: HomeStarredPanelProps) {
+export function HomeStarredPanel({ players, count, className }: HomeStarredPanelProps) {
   return (
-    <section className={styles.panel} aria-labelledby="home-watchlist-title">
+    <section
+      className={[styles.panel, className].filter(Boolean).join(" ")}
+      aria-labelledby="home-watchlist-title"
+    >
       <h2 id="home-watchlist-title" className={styles.title}>
         Starred Players
       </h2>

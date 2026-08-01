@@ -21,6 +21,45 @@
   gap: var(--space-4);
 }
 
+// Signed-in dashboard: a fixed six-track grid so panels and charts can claim
+// exact column ranges — each panel spans two tracks, each chart takes half
+// the row below.
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-4);
+
+  @media (max-width: 72rem) {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+}
+
+// Starred Players in tracks 1–2, Your Team in 3–4, Conference Standings in
+// 5–6. In the auto-fit fallback the panels flow like any other card.
+.panelCardLeft {
+  grid-column: 1 / span 2;
+
+  @media (max-width: 72rem) {
+    grid-column: auto;
+  }
+}
+
+.panelCardRight {
+  grid-column: 3 / span 2;
+
+  @media (max-width: 72rem) {
+    grid-column: auto;
+  }
+}
+
+.panelCardFar {
+  grid-column: 5 / span 2;
+
+  @media (max-width: 72rem) {
+    grid-column: auto;
+  }
+}
+
 .signInCard {
   display: grid;
   justify-items: start;
@@ -42,14 +81,30 @@
   font-size: var(--font-size-sm);
 }
 
-// The trend chart spans the full grid: a time series squeezed into a
-// 240px-minimum column would be unreadable.
 .chartCard {
-  grid-column: 1 / -1;
   display: grid;
   gap: var(--space-3);
   padding: var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
+}
+
+// The charts split the row under the panels: z-score in tracks 1–3, g-score
+// in 4–6. Once the grid falls back to auto-fit each chart takes the full
+// width instead — a time series squeezed into a 240px column is unreadable.
+.chartCardLeft {
+  grid-column: 1 / span 3;
+
+  @media (max-width: 72rem) {
+    grid-column: 1 / -1;
+  }
+}
+
+.chartCardRight {
+  grid-column: 4 / span 3;
+
+  @media (max-width: 72rem) {
+    grid-column: 1 / -1;
+  }
 }

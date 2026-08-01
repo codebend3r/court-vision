@@ -1,9 +1,12 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
-import { buildRows, WatchlistZChart } from "@/components/WatchlistZChart/WatchlistZChart";
+import {
+  buildRows,
+  WatchlistTrendChart,
+} from "@/components/WatchlistTrendChart/WatchlistTrendChart";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
-import { type ZTrendSeries } from "@/lib/watchlist/zTrend";
+import { type TrendSeries } from "@/lib/watchlist/trend";
 
 afterEach(cleanup);
 
@@ -15,23 +18,29 @@ const series = ({
   playerId: number;
   fullName: string;
   pointCount: number;
-}): ZTrendSeries => ({
+}): TrendSeries => ({
   playerId,
   fullName,
   points: Array.from({ length: pointCount }, (_, index) => ({
     date: Date.UTC(2026, 0, index + 1),
-    z: index * 0.1,
+    value: index * 0.1,
   })),
 });
 
-const renderChart = ({ entries }: { entries: ZTrendSeries[] }) =>
+const renderChart = ({
+  entries,
+  caption = "Zero is league-average value.",
+}: {
+  entries: TrendSeries[];
+  caption?: string;
+}) =>
   render(
     <ThemeProvider>
-      <WatchlistZChart series={entries} />
+      <WatchlistTrendChart series={entries} caption={caption} />
     </ThemeProvider>,
   );
 
-describe("WatchlistZChart", () => {
+describe("WatchlistTrendChart", () => {
   it("invites starring when there is nothing to plot", () => {
     renderChart({ entries: [] });
     expect(screen.getByText(/Star players to track/)).toBeInTheDocument();
@@ -63,9 +72,14 @@ describe("WatchlistZChart", () => {
     expect(screen.getByText(/No starred player has 10 games yet/)).toBeInTheDocument();
   });
 
-  it("captions what the number means", () => {
-    renderChart({ entries: [series({ playerId: 1, fullName: "Jalen Brunson", pointCount: 12 })] });
-    expect(screen.getByText(/Zero is league-average value/)).toBeInTheDocument();
+  it("renders the caption it is handed", () => {
+    renderChart({
+      entries: [series({ playerId: 1, fullName: "Jalen Brunson", pointCount: 12 })],
+      caption: "Rolling g-score; volatile categories count for less.",
+    });
+    expect(
+      screen.getByText("Rolling g-score; volatile categories count for less."),
+    ).toBeInTheDocument();
   });
 });
 
@@ -79,11 +93,11 @@ describe("buildRows", () => {
           playerId: 1,
           fullName: "A A",
           points: [
-            { date: day(3), z: 1 },
-            { date: day(1), z: 2 },
+            { date: day(3), value: 1 },
+            { date: day(1), value: 2 },
           ],
         },
-        { playerId: 2, fullName: "B B", points: [{ date: day(2), z: 3 }] },
+        { playerId: 2, fullName: "B B", points: [{ date: day(2), value: 3 }] },
       ],
     });
     expect(rows.map((row) => row.date)).toEqual([day(1), day(2), day(3)]);
@@ -92,8 +106,8 @@ describe("buildRows", () => {
   it("leaves a player undefined on dates they did not play", () => {
     const rows = buildRows({
       series: [
-        { playerId: 1, fullName: "A A", points: [{ date: day(1), z: 1 }] },
-        { playerId: 2, fullName: "B B", points: [{ date: day(2), z: 3 }] },
+        { playerId: 1, fullName: "A A", points: [{ date: day(1), value: 1 }] },
+        { playerId: 2, fullName: "B B", points: [{ date: day(2), value: 3 }] },
       ],
     });
     expect(rows[0]?.p1).toBe(1);
@@ -104,8 +118,8 @@ describe("buildRows", () => {
   it("collapses a shared date into a single row", () => {
     const rows = buildRows({
       series: [
-        { playerId: 1, fullName: "A A", points: [{ date: day(1), z: 1 }] },
-        { playerId: 2, fullName: "B B", points: [{ date: day(1), z: 2 }] },
+        { playerId: 1, fullName: "A A", points: [{ date: day(1), value: 1 }] },
+        { playerId: 2, fullName: "B B", points: [{ date: day(1), value: 2 }] },
       ],
     });
     // One row per date is what lets the x-axis be a category scale, which is
