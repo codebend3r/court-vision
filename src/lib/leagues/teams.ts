@@ -1,5 +1,6 @@
 import { SLOT_TYPES } from "@/lib/fantasyTeams/slots";
 import {
+  type FantasyTeam,
   type FantasyTeamPlayer,
   type RosterSlot,
   type RosterSlotType,
@@ -25,6 +26,58 @@ export const isFantasyTeamPlayer = (value: unknown): value is FantasyTeamPlayer 
 export type LeagueTeamSlotRow = {
   slotType: string;
   player: FantasyTeamPlayer | null;
+};
+
+// Rebuilds a fresh player object from narrowed fields rather than trusting
+// the guard-checked input reference.
+const rebuildPlayer = (player: FantasyTeamPlayer): FantasyTeamPlayer => ({
+  playerId: player.playerId,
+  firstName: player.firstName,
+  lastName: player.lastName,
+  fullName: player.fullName,
+  teamAbbr: player.teamAbbr,
+  position: player.position,
+  nbaPersonId: player.nbaPersonId,
+});
+
+const parseLegacySlot = (value: unknown): RosterSlot | null => {
+  if (typeof value !== "object" || value === null) return null;
+  const record: Record<string, unknown> = { ...value };
+  const { id, type, player } = record;
+  if (typeof id !== "string") return null;
+  if (typeof type !== "string" || !isRosterSlotType(type)) return null;
+  if (player !== null && !isFantasyTeamPlayer(player)) return null;
+  return { id, type, player: player === null ? null : rebuildPlayer(player) };
+};
+
+const parseLegacyTeam = (value: unknown): FantasyTeam | null => {
+  if (typeof value !== "object" || value === null) return null;
+  const record: Record<string, unknown> = { ...value };
+  const { id, name, createdAt, slots } = record;
+  if (typeof id !== "string" || typeof name !== "string" || typeof createdAt !== "string") {
+    return null;
+  }
+  if (!Array.isArray(slots)) return null;
+  const parsedSlots = slots.map(parseLegacySlot);
+  const validSlots = parsedSlots.filter((slot): slot is RosterSlot => slot !== null);
+  if (validSlots.length !== parsedSlots.length) return null;
+  return { id, name, createdAt, slots: validSlots };
+};
+
+// Narrows the persisted zustand payload `{ state: { teams: [...] }, version }`
+// into a fresh FantasyTeam[], never the input object. Any malformed team
+// invalidates the whole payload rather than silently dropping it.
+export const parseLegacyTeamsPayload = (value: unknown): FantasyTeam[] | null => {
+  if (typeof value !== "object" || value === null) return null;
+  const record: Record<string, unknown> = { ...value };
+  const { state } = record;
+  if (typeof state !== "object" || state === null) return null;
+  const stateRecord: Record<string, unknown> = { ...state };
+  const { teams } = stateRecord;
+  if (!Array.isArray(teams)) return null;
+  const parsedTeams = teams.map(parseLegacyTeam);
+  const validTeams = parsedTeams.filter((team): team is FantasyTeam => team !== null);
+  return validTeams.length === parsedTeams.length ? validTeams : null;
 };
 
 export const slotsToRows = ({

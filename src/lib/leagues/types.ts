@@ -52,3 +52,11 @@ export type LeagueTeamActionResult =
   | { status: "invalid" }
   | { status: "unauthenticated" }
   | { status: "error" };
+
+// "skipped" means the default league already has teams — the legacy payload
+// is stale and should be discarded without overwriting anything.
+export type LegacyTeamsImportResult =
+  | { status: "ok" }
+  | { status: "skipped" }
+  | { status: "unauthenticated" }
+  | { status: "error" };

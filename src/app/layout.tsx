@@ -4,6 +4,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { ReactNode } from "react";
 
 import { LeaguesHydrator } from "@/components/LeaguesHydrator/LeaguesHydrator";
+import { LegacyTeamsMigrator } from "@/components/LegacyTeamsMigrator/LegacyTeamsMigrator";
 import { SideNav } from "@/components/SideNav/SideNav";
 import { SiteFooter } from "@/components/SiteFooter/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader/SiteHeader";
@@ -99,6 +100,7 @@ export default async function RootLayout({
             <SiteHeader />
             <WatchlistHydrator playerIds={watchlistPlayerIds} />
             <LeaguesHydrator leagues={leagues} activeLeagueId={activeLeagueId} />
+            {!!profile && <LegacyTeamsMigrator />}
             <WatchlistAlert />
             <div className={styles.shell}>
               {!!profile && <SideNav />}

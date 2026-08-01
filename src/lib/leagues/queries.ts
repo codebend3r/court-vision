@@ -65,9 +65,14 @@ export const getActiveLeague = async (): Promise<LeagueSummary | null> => {
 
 // Server-action entry point: guarantees a league exists and is active. Spread
 // the config into a fresh literal — Prisma's InputJsonValue needs an index
-// signature, which a fresh object literal satisfies without a cast.
-export const ensureDefaultLeague = async (): Promise<LeagueSummary | null> => {
-  const profile = await getProfile();
+// signature, which a fresh object literal satisfies without a cast. Accepts
+// an already-resolved profile so a caller that resolved it for another
+// reason (e.g. to stamp profileId on rows it's about to write) doesn't pay
+// for a second session lookup.
+export const ensureDefaultLeague = async ({
+  profile: providedProfile,
+}: { profile?: Profile } = {}): Promise<LeagueSummary | null> => {
+  const profile = providedProfile ?? (await getProfile());
   if (profile === null) return null;
   const existing = await resolveActiveLeague({ profile });
   if (existing !== null) {

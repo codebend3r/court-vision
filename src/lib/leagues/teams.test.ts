@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test";
 import {
   isFantasyTeamPlayer,
   isRosterSlotType,
+  parseLegacyTeamsPayload,
   rowsToSlots,
   slotsToRows,
 } from "@/lib/leagues/teams";
@@ -81,5 +82,81 @@ describe("slot row mapping", () => {
 
   it("rowsToSlots drops rows with unknown slot types", () => {
     expect(rowsToSlots({ rows: [{ slotType: "COACH", player: null }] })).toEqual([]);
+  });
+});
+
+describe("parseLegacyTeamsPayload", () => {
+  const legacyTeam = ({ id, name }: { id: string; name: string }) => ({
+    id,
+    name,
+    createdAt: "2026-07-23T00:00:00.000Z",
+    slots: [
+      { id: "PG-1", type: "PG", player },
+      { id: "UTIL-1", type: "UTIL", player: null },
+    ],
+  });
+
+  it("round-trips a real persisted zustand payload", () => {
+    const payload = {
+      state: { teams: [legacyTeam({ id: "team-1", name: "Bench Mob" })] },
+      version: 0,
+    };
+    expect(parseLegacyTeamsPayload(payload)).toEqual([
+      {
+        id: "team-1",
+        name: "Bench Mob",
+        createdAt: "2026-07-23T00:00:00.000Z",
+        slots: [
+          { id: "PG-1", type: "PG", player },
+          { id: "UTIL-1", type: "UTIL", player: null },
+        ],
+      },
+    ]);
+  });
+
+  it("rebuilds a fresh array rather than returning the input object as-is", () => {
+    const payload = {
+      state: { teams: [legacyTeam({ id: "team-1", name: "Bench Mob" })] },
+      version: 0,
+    };
+    const parsed = parseLegacyTeamsPayload(payload);
+    expect(parsed).not.toBe(payload.state.teams);
+    expect(parsed?.[0]).not.toBe(payload.state.teams[0]);
+  });
+
+  it("returns null for null, an empty object, and a non-array teams field", () => {
+    expect(parseLegacyTeamsPayload(null)).toBeNull();
+    expect(parseLegacyTeamsPayload({})).toBeNull();
+    expect(parseLegacyTeamsPayload({ state: { teams: "no" } })).toBeNull();
+  });
+
+  it("returns null when a team's slot has an unknown type", () => {
+    const payload = {
+      state: {
+        teams: [
+          {
+            id: "team-1",
+            name: "Bench Mob",
+            createdAt: "2026-07-23T00:00:00.000Z",
+            slots: [{ id: "COACH-1", type: "COACH", player: null }],
+          },
+        ],
+      },
+      version: 0,
+    };
+    expect(parseLegacyTeamsPayload(payload)).toBeNull();
+  });
+
+  it("returns null (not a partial list) when any team in the list is malformed", () => {
+    const payload = {
+      state: {
+        teams: [
+          legacyTeam({ id: "team-1", name: "Bench Mob" }),
+          { id: "team-2", name: "Second Unit" /* missing createdAt/slots */ },
+        ],
+      },
+      version: 0,
+    };
+    expect(parseLegacyTeamsPayload(payload)).toBeNull();
   });
 });
