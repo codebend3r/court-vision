@@ -107,7 +107,15 @@ body {
   font-family: var(--font-sans);
   font-size: var(--font-size-md);
   line-height: 1.5;
+}
+
+// Light-on-dark text blooms under the default subpixel rendering, so thinning
+// the strokes reads cleaner. Dark-on-light does not have that problem — there
+// antialiased only makes text lighter than the browser default — so this is
+// scoped to the dark theme rather than applied globally.
+:root[data-theme="dark"] body {
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {

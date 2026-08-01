@@ -10,8 +10,15 @@ import {
   type PlayerStatMode,
 } from "@/lib/players/searchParams";
 import { CATEGORY_KEYS, CATEGORY_META } from "@/lib/valuation/categories";
-import { snapWeight } from "@/lib/valuation/searchParams";
-import { type Category } from "@/lib/valuation/types";
+import { DEFAULT_POINTS_SCORING, SCORED_KEYS } from "@/lib/valuation/methods/points";
+import { METHOD_KEY_BY_WEIGHTED, methodMeta } from "@/lib/valuation/registry";
+import {
+  clampScore,
+  isWeightedMethodKey,
+  snapWeight,
+  type FantasySortKey,
+} from "@/lib/valuation/searchParams";
+import { type Category, type ScoringSettings, type ScoringStatKey } from "@/lib/valuation/types";
 
 import styles from "@/components/FantasyControls/FantasyControls.module.scss";
 
@@ -22,6 +29,7 @@ export type FantasyControlsChange = Partial<{
   mode: PlayerStatMode;
   x: Category[];
   w: Partial<Record<Category, number>>;
+  s: ScoringSettings;
   teams: number;
   slots: number;
 }>;
@@ -31,10 +39,24 @@ export type FantasyControlsProps = {
   range: PlayerGameRange;
   mode: PlayerStatMode;
   excluded: readonly Category[];
-  weights: Partial<Record<Category, number>>;
+  weights: Partial<Record<Category, number>>; // the sorted column's set only
+  sort: FantasySortKey;
+  scoring: ScoringSettings;
   teams: number;
   slots: number;
   onChange: (change: FantasyControlsChange) => void;
+};
+
+// The scoring table is keyed by raw stat, so it needs its own labels — the
+// category meta covers 3PM as "tpm" and has no entry for a points-league line.
+const SCORING_LABELS: Record<ScoringStatKey, string> = {
+  pts: "PTS",
+  reb: "REB",
+  ast: "AST",
+  stl: "STL",
+  blk: "BLK",
+  fg3m: "3PM",
+  tov: "TOV",
 };
 
 const DEBOUNCE_MS = 300;
@@ -64,10 +86,17 @@ export function FantasyControls({
   mode,
   excluded,
   weights,
+  sort,
+  scoring,
   teams,
   slots,
   onChange,
 }: FantasyControlsProps) {
+  // Weights are per column: the panel edits the sorted method's set, and it is
+  // disabled entirely on columns that never read weights (PL Linear, names).
+  const weightTarget = isWeightedMethodKey(sort)
+    ? methodMeta(METHOD_KEY_BY_WEIGHTED[sort])
+    : undefined;
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestQ = useRef(q);
 
@@ -115,6 +144,14 @@ export function FantasyControls({
       const snapped = snapWeight(Number.parseFloat(event.target.value));
       const cleared = withoutWeight({ weights, category });
       onChange({ w: snapped === 1 ? cleared : { ...cleared, [category]: snapped } });
+    };
+
+  const onScoringBlur =
+    ({ stat }: { stat: ScoringStatKey }) =>
+    (event: FocusEvent<HTMLInputElement>) => {
+      const parsed = Number.parseFloat(event.target.value);
+      const score = Number.isFinite(parsed) ? clampScore(parsed) : DEFAULT_POINTS_SCORING[stat];
+      onChange({ s: { ...scoring, [stat]: score } });
     };
 
   const onLeagueBlur =
@@ -219,29 +256,77 @@ export function FantasyControls({
           <span className={styles.chevron} aria-hidden="true">
             ▸
           </span>
-          Weights
+          Weights{!!weightTarget && ` — ${weightTarget.label}`}
         </summary>
         <span className={styles.disclosureBody}>
           <span className={styles.hint}>
-            Applies to the category scores: Z-Score, G-Score, VORP, Pos VORP. Points uses
-            points-league scoring instead.
+            {weightTarget
+              ? `Applies to the ${weightTarget.label} column only. Every method column keeps its ` +
+                `own weight set — sorting by another column switches to (and edits) that ` +
+                `column's weights.`
+              : sort === "points"
+                ? "PL Linear ignores weights — it prices the box score with the Scoring table below."
+                : "Name sorts rank alphabetically. Sort by a method column to tune its weights."}
           </span>
           {includedMeta.map((meta) => (
             <label key={meta.key} className={styles.stepperLabel}>
               {meta.label}
               <input
-                key={`${meta.key}:${weights[meta.key] ?? 1}`}
+                key={`${sort}:${meta.key}:${weights[meta.key] ?? 1}`}
                 type="number"
                 min={0}
                 max={2}
                 step={0.25}
                 defaultValue={weights[meta.key] ?? 1}
                 onBlur={onWeightBlur({ category: meta.key })}
+                disabled={!weightTarget}
                 className={styles.stepper}
               />
             </label>
           ))}
-          <button type="button" onClick={() => onChange({ w: {}, x: [] })} className={styles.reset}>
+          <button
+            type="button"
+            onClick={() => onChange({ w: {}, x: [] })}
+            disabled={!weightTarget}
+            className={styles.reset}
+          >
+            Reset
+          </button>
+        </span>
+      </details>
+
+      <details className={styles.disclosure}>
+        <summary className={styles.summary}>
+          <span className={styles.chevron} aria-hidden="true">
+            ▸
+          </span>
+          Scoring
+        </summary>
+        <span className={styles.disclosureBody}>
+          <span className={styles.hint}>
+            Fantasy points per stat in a points league. Drives the PL Linear column only; the
+            category scores ignore it.
+          </span>
+          {SCORED_KEYS.map((stat) => (
+            <label key={stat} className={styles.stepperLabel}>
+              {SCORING_LABELS[stat]}
+              <input
+                key={`${stat}:${scoring[stat]}`}
+                type="number"
+                min={-10}
+                max={10}
+                step={0.5}
+                defaultValue={scoring[stat]}
+                onBlur={onScoringBlur({ stat })}
+                className={styles.stepper}
+              />
+            </label>
+          ))}
+          <button
+            type="button"
+            onClick={() => onChange({ s: DEFAULT_POINTS_SCORING })}
+            className={styles.reset}
+          >
             Reset
           </button>
         </span>

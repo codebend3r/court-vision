@@ -7,6 +7,7 @@ import {
   DEFAULT_ADVANCED_SORT_KEY,
   DEFAULT_SORT_DIR,
   DEFAULT_SORT_KEY,
+  DEFAULT_STARRED_SORT_KEY,
   type PlayerGameRange,
   type PlayersTab,
 } from "@/lib/players/searchParams";
@@ -17,6 +18,7 @@ const TAB_ENTRIES: ReadonlyArray<{ tab: PlayersTab; label: string }> = [
   { tab: "regular", label: "Regular Stats" },
   { tab: "advanced", label: "Advanced Stats" },
   { tab: "fantasy", label: "Fantasy Value" },
+  { tab: "starred", label: "Starred" },
 ];
 
 export type PlayersTabsProps = {
@@ -48,7 +50,12 @@ export function PlayersTabs({ active, q, size, range }: PlayersTabsProps) {
             q,
             page: 1,
             size,
-            sort: entry.tab === "advanced" ? DEFAULT_ADVANCED_SORT_KEY : DEFAULT_SORT_KEY,
+            sort:
+              entry.tab === "advanced"
+                ? DEFAULT_ADVANCED_SORT_KEY
+                : entry.tab === "starred"
+                  ? DEFAULT_STARRED_SORT_KEY
+                  : DEFAULT_SORT_KEY,
             dir: DEFAULT_SORT_DIR,
             range,
             mode: "average",

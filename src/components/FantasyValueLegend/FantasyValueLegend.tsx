@@ -29,6 +29,9 @@ export function FantasyValueLegend({ poolSize, windowLabel, basis }: FantasyValu
               <span>
                 <strong>{method.fullName}.</strong> {method.description}
               </span>
+              <span className={styles.why}>
+                <strong className={styles.whyLabel}>Why it matters:</strong> {method.whyItMatters}
+              </span>
               {method.available ? (
                 <code className={styles.formula}>{method.formula}</code>
               ) : (
@@ -52,10 +55,12 @@ export function FantasyValueLegend({ poolSize, windowLabel, basis }: FantasyValu
           <dt className={styles.term}>Weights</dt>
           <dd className={styles.desc}>
             <span>
-              Category chips and weights shape the category-based scores (Z-Score, G-Score, and
-              their VORP columns). A weight of 0 punts the category; excluding removes it. Points
-              ignores weights — it uses points-league scoring. Teams × roster slots sets the pool
-              size and the VORP replacement rank.
+              Every method column keeps its own weight set: the Weights panel edits whichever column
+              the table is sorted by, and a weight tuned for one column never reshapes another. A
+              weight of 0 punts the category; excluding a chip removes it from every column. PL
+              Linear ignores weights — it uses the Scoring table instead. Teams × roster slots sets
+              the pool size, the VORP replacement rank, and the synthetic league that SGP and Sim
+              Value measure against.
             </span>
           </dd>
         </div>

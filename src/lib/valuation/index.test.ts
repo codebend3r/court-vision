@@ -1,3 +1,4 @@
+import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
 import { describe, expect, it } from "bun:test";
 
 import { CATEGORY_KEYS } from "@/lib/valuation/categories";
@@ -13,6 +14,7 @@ const config = (overrides: Partial<ValuationConfig> = {}): ValuationConfig => ({
   basis: "total",
   teams: 12,
   rosterSlots: 13,
+  scoring: DEFAULT_POINTS_SCORING,
   ...overrides,
 });
 
@@ -73,5 +75,41 @@ describe("valuePlayers", () => {
     const lines = [1, 2, 3, 4].map((playerId) => line({ playerId, pts: playerId * 100 }));
     const { values } = valuePlayers({ lines, config: config(), range: "all" });
     values.forEach((value) => expect(value.g).toBeCloseTo(value.z, 10));
+  });
+
+  it("keeps each column's weight set to itself", () => {
+    const lines = [1, 2, 3, 4].map((playerId) => line({ playerId, pts: playerId * 100 }));
+    const neutral = valuePlayers({ lines, config: config(), range: "all" }).values;
+    // Punt every category for the Z column only.
+    const punted = valuePlayers({
+      lines,
+      config: config(),
+      methodWeights: {
+        z: CATEGORY_KEYS.reduce((acc, key) => ({ ...acc, [key]: 0 }), {}),
+      },
+      range: "all",
+    }).values;
+    punted.forEach((value, index) => {
+      expect(value.z).toBe(0); // fully punted
+      expect(value.g).toBeCloseTo(neutral[index]?.g ?? Number.NaN, 10); // untouched
+      expect(value.vorp).toBeCloseTo(neutral[index]?.vorp ?? Number.NaN, 10); // untouched
+    });
+  });
+
+  it("weights VORP's replacement shift with VORP's own set", () => {
+    const lines = [1, 2, 3, 4, 5, 6].map((playerId) =>
+      line({ playerId, pts: 1000 - playerId * 100 }),
+    );
+    const puntAll = CATEGORY_KEYS.reduce((acc, key) => ({ ...acc, [key]: 0 }), {});
+    const { values } = valuePlayers({
+      lines,
+      config: config({ teams: 2, rosterSlots: 2 }),
+      methodWeights: { vorp: puntAll },
+      range: "all",
+    });
+    // With every VORP weight punted, every player's weighted z is 0, so every
+    // VORP is 0 — while plain z stays live.
+    values.forEach((value) => expect(value.vorp).toBeCloseTo(0, 10));
+    expect(values[0]?.z ?? 0).toBeGreaterThan(0);
   });
 });

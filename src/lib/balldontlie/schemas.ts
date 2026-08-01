@@ -144,6 +144,25 @@ export const bdlAdvancedStatSchema = z.object({
 
 export type BdlAdvancedStat = z.infer<typeof bdlAdvancedStatSchema>;
 
+// `/v1/standings` rows embed a richer team object than `/v1/teams` (city,
+// division, conference); only the fields the app reads are kept. Records like
+// `conference_record` and per-venue splits are dropped until a surface needs
+// them.
+export const bdlStandingSchema = z.object({
+  team: z.object({
+    id: z.number(),
+    conference: z.string(),
+    abbreviation: z.string(),
+    full_name: z.string(),
+  }),
+  conference_rank: z.number(),
+  wins: z.number(),
+  losses: z.number(),
+  season: z.number(),
+});
+
+export type BdlStanding = z.infer<typeof bdlStandingSchema>;
+
 // `/v1/teams` is a single-page endpoint whose live response omits `meta`
 // entirely, so this envelope keeps `meta` optional. Do NOT reuse it for
 // cursor-paginated endpoints — see `bdlPaginatedPage` below.

@@ -568,3 +568,24 @@ describe("searchPlayers", () => {
     expect(result.rows.map((row) => row.id)).toEqual([2, 1]);
   });
 });
+
+describe("searchPlayers watchlist filter", () => {
+  it("restricts the query to the given player ids", async () => {
+    // findMany is shared across this file's tests, so drop earlier calls
+    // before asserting on the first one.
+    findMany.mockClear();
+    findMany.mockResolvedValue([]);
+    count.mockResolvedValue(0);
+    await searchPlayers({ ...defaultParams, playerIds: [7, 3] });
+    expect(findMany.mock.calls[0]?.[0]).toMatchObject({
+      where: { gameLogs: { some: {} }, id: { in: [7, 3] } },
+    });
+  });
+
+  it("short-circuits an empty id list without querying", async () => {
+    findMany.mockClear();
+    const result = await searchPlayers({ ...defaultParams, playerIds: [] });
+    expect(result).toEqual({ rows: [], total: 0, page: 1 });
+    expect(findMany).not.toHaveBeenCalled();
+  });
+});

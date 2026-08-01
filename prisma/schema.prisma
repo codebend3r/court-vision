@@ -34,6 +34,7 @@ model Player {
   seasonStats  PlayerSeasonStats[]
   gameLogs     PlayerGameLog[]
   advancedGameLogs PlayerAdvancedGameLog[]
+  watchlist    WatchlistPlayer[]
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
 }
@@ -44,8 +45,24 @@ model Profile {
   username    String   @unique
   tier        String   @default("free")
   displayName String?
+  watchlist   WatchlistPlayer[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// A user's starred players. The composite primary key is the natural key, so
+// double-starring is impossible by construction; the index serves the only
+// ordered read there is — newest-starred first. The 50-row cap is enforced in
+// lib/watchlist/actions.ts, inside a transaction.
+model WatchlistPlayer {
+  profileId String   @db.Uuid
+  playerId  Int
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([profileId, playerId])
+  @@index([profileId, createdAt(sort: Desc)])
 }
 
 model PlayerSeasonStats {

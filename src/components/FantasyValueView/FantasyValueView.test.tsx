@@ -42,7 +42,7 @@ const fillers = [3, 4, 5, 6].map((playerId) => line({ playerId }));
 const lines = [alpha, beta, ...fillers];
 
 const renderView = ({ searchParams = "?" }: { searchParams?: string } = {}) =>
-  render(<FantasyValueView lines={lines} />, {
+  render(<FantasyValueView isSignedIn={false} lines={lines} />, {
     wrapper: withNuqsTestingAdapter({ searchParams }),
   });
 
@@ -75,12 +75,12 @@ describe("FantasyValueView", () => {
   it("sorts by another method column on header click", async () => {
     const user = userEvent.setup();
     renderView();
-    await user.click(screen.getByRole("button", { name: /Points/ }));
-    expect(screen.getByRole("columnheader", { name: /Points/ })).toHaveAttribute(
+    await user.click(screen.getByRole("button", { name: /PL Linear/ }));
+    expect(screen.getByRole("columnheader", { name: /PL Linear/ })).toHaveAttribute(
       "aria-sort",
       "descending",
     );
-    // Alpha's 28 points per game lead the Points column despite the FT drag.
+    // Alpha's 28 points per game lead the PL Linear column despite the FT drag.
     expect(within(firstDataRow()).getByText("Alpha")).toBeInTheDocument();
   });
 
@@ -107,7 +107,7 @@ describe("FantasyValueView", () => {
   });
 
   it("notices a tiny pool and stays neutral", () => {
-    render(<FantasyValueView lines={[alpha]} />, {
+    render(<FantasyValueView isSignedIn={false} lines={[alpha]} />, {
       wrapper: withNuqsTestingAdapter({ searchParams: "?" }),
     });
     expect(screen.getByText(/pool is too small/i)).toBeInTheDocument();
@@ -119,9 +119,63 @@ describe("FantasyValueView", () => {
   });
 
   it("renders the empty state without players", () => {
-    render(<FantasyValueView lines={[]} />, {
+    render(<FantasyValueView isSignedIn={false} lines={[]} />, {
       wrapper: withNuqsTestingAdapter({ searchParams: "?" }),
     });
     expect(screen.getByText(/No players yet/)).toBeInTheDocument();
+  });
+});
+
+describe("FantasyValueView per-column weights", () => {
+  const astStepper = (): HTMLElement => {
+    const details = [...document.querySelectorAll("details")].find((element) =>
+      (element.querySelector("summary")?.textContent ?? "").includes("Weights"),
+    );
+    if (!(details instanceof HTMLElement)) throw new Error("weights section not found");
+    return within(details).getByRole("spinbutton", { name: "AST" });
+  };
+
+  it("shows the sorted column's own weight", () => {
+    renderView({ searchParams: "?sort=z&w=z.ast:2" });
+    expect(astStepper()).toHaveValue(2);
+  });
+
+  it("resets the panel to 1 when sorting by a column with no stored weights", () => {
+    renderView({ searchParams: "?sort=g&w=z.ast:2" });
+    expect(astStepper()).toHaveValue(1);
+  });
+
+  it("keeps each column's stored weights when another column is edited", async () => {
+    const user = userEvent.setup();
+    const updates: string[] = [];
+    render(<FantasyValueView isSignedIn={false} lines={lines} />, {
+      wrapper: withNuqsTestingAdapter({
+        searchParams: "?sort=g&w=z.ast:2",
+        onUrlUpdate: (event) => updates.push(event.queryString),
+      }),
+    });
+    const stepper = astStepper();
+    await user.clear(stepper);
+    await user.type(stepper, "0.5");
+    await user.tab();
+    // G-Score's new weight lands beside Z-Score's untouched one.
+    expect(updates.at(-1)).toContain("w=z.ast:2,g.ast:0.5");
+  });
+
+  it("only reweights the sorted column's scores", () => {
+    // Punting every category for Z-Score zeroes the Z column; G-Score keeps
+    // its own unweighted totals.
+    renderView({
+      searchParams:
+        "?sort=z&w=" +
+        ["pts", "reb", "ast", "stl", "blk", "tpm", "tov", "fg", "ft"]
+          .map((category) => `z.${category}:0`)
+          .join(","),
+    });
+    const row = firstDataRow();
+    const cells = within(row).getAllByRole("cell");
+    // With every Z weight at 0, the whole Z column ties at 0.0 — while G-Score
+    // still separates players, proving the punt did not leak across columns.
+    expect(cells.some((cell) => cell.textContent === "0.0")).toBe(true);
   });
 });

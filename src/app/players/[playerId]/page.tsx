@@ -7,7 +7,9 @@ import { PlayerStatChart } from "@/components/PlayerStatChart/PlayerStatChart";
 import { PlayerStatFilters } from "@/components/PlayerStatFilters/PlayerStatFilters";
 import { SeasonSelect } from "@/components/SeasonSelect/SeasonSelect";
 import { SeasonStatCard } from "@/components/SeasonStatCard/SeasonStatCard";
+import { StarButton } from "@/components/StarButton/StarButton";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
+import { getUser } from "@/lib/auth/session";
 import { SEASON_LABEL, SEASON_TYPE } from "@/lib/balldontlie/constants";
 import {
   formatBirthDate,
@@ -54,6 +56,7 @@ export default async function PlayerPage({
   if (!Number.isSafeInteger(numericId) || numericId < 1 || numericId > MAX_INT4) {
     notFound();
   }
+  const isSignedIn = !!(await getUser());
   const player = await prisma.player.findUnique({ where: { id: numericId } });
   if (player === null) {
     notFound();
@@ -147,7 +150,15 @@ export default async function PlayerPage({
           teamAbbr={player.teamAbbr}
         />
         <span className={styles.headerText}>
-          <h1>{player.fullName}</h1>
+          <span className={styles.nameRow}>
+            <h1>{player.fullName}</h1>
+            <StarButton
+              playerId={player.id}
+              fullName={player.fullName}
+              isSignedIn={isSignedIn}
+              size="md"
+            />
+          </span>
           <p className={styles.meta}>
             {!!player.teamAbbr && <TeamChip team={player.teamAbbr} size="sm" />}
             {!!player.position && <span>{player.position}</span>}

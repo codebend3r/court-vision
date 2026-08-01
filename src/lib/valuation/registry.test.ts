@@ -12,6 +12,14 @@ describe("FANTASY_METHODS", () => {
     expect(zscore?.formula).not.toBe("");
   });
 
+  it("gives every method a plain-language reason it matters", () => {
+    // The tooltips and the legend both render this; a blank one would leave a
+    // labelled empty section rather than degrade quietly.
+    FANTASY_METHODS.forEach((method) => {
+      expect(method.whyItMatters.length).toBeGreaterThan(40);
+    });
+  });
+
   it("only exposes available methods as enabled", () => {
     expect(ENABLED_METHODS.every((method) => method.available)).toBe(true);
     expect(ENABLED_METHODS.map((method) => method.key)).toContain("zscore");

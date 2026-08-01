@@ -226,12 +226,20 @@ const statSortValue = ({ row, args }: { row: PlayerRow; args: PlayersSearchParam
   return 0;
 };
 
-export const searchPlayers = async (args: PlayersSearchParams): Promise<PlayersSearchResult> => {
-  const { q, page, size, sort, dir, range } = args;
+export const searchPlayers = async (
+  args: PlayersSearchParams & { playerIds?: number[] },
+): Promise<PlayersSearchResult> => {
+  const { q, page, size, sort, dir, range, playerIds } = args;
+  // An empty watchlist has nothing to query — `id: { in: [] }` would scan for
+  // a result the caller already knows is empty.
+  if (playerIds?.length === 0) {
+    return { rows: [], total: 0, page: 1 };
+  }
   // Retired players (no game logs) are never shown.
   const where: Prisma.PlayerWhereInput = {
     gameLogs: { some: {} },
     ...(q === "" ? {} : { fullName: { contains: q, mode: "insensitive" } }),
+    ...(playerIds === undefined ? {} : { id: { in: playerIds } }),
   };
   const orderBy: Prisma.PlayerOrderByWithRelationInput[] =
     sort === "lastName"

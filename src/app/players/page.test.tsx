@@ -7,6 +7,12 @@ import { makeStatLine } from "@/lib/valuation/fixtures";
 
 import PlayersPage from "@/app/players/page";
 
+const getUser = vi.fn();
+
+// The page reads the session to decide whether to render star controls; without
+// this the real getUser() calls `cookies()` outside a request scope.
+vi.mock("@/lib/auth/session", () => ({ getUser }));
+
 const searchPlayers = vi.fn();
 const searchPlayersAdvanced = vi.fn();
 const getFantasyPool = vi.fn();
@@ -329,6 +335,84 @@ describe("PlayersPage", () => {
   });
 });
 
+describe("PlayersPage star column", () => {
+  it("renders a star control per row for a signed-in user", async () => {
+    getUser.mockResolvedValue({ id: "user-1" });
+    searchPlayers.mockResolvedValue({
+      rows: [
+        {
+          id: 1,
+          firstName: "First1",
+          lastName: "Last1",
+          fullName: "First1 Last1",
+          teamAbbr: "NYK",
+          position: "G",
+          nbaPersonId: null,
+          stats: {
+            gamesPlayed: 10,
+            fgm: 50,
+            fga: 100,
+            fg3m: 20,
+            fg3a: 50,
+            ftm: 30,
+            fta: 40,
+            reb: 40,
+            ast: 50,
+            stl: 10,
+            blk: 5,
+            tov: 20,
+            pts: 150,
+          },
+        },
+      ],
+      total: 1,
+      page: 1,
+    });
+    render(await PlayersPage({ searchParams: Promise.resolve({}) }), {
+      wrapper: withNuqsTestingAdapter(),
+    });
+    expect(screen.getByRole("button", { name: "Star First1 Last1" })).toBeInTheDocument();
+  });
+
+  it("omits the star column entirely when signed out", async () => {
+    getUser.mockResolvedValue(null);
+    searchPlayers.mockResolvedValue({
+      rows: [
+        {
+          id: 1,
+          firstName: "First1",
+          lastName: "Last1",
+          fullName: "First1 Last1",
+          teamAbbr: "NYK",
+          position: "G",
+          nbaPersonId: null,
+          stats: {
+            gamesPlayed: 10,
+            fgm: 50,
+            fga: 100,
+            fg3m: 20,
+            fg3a: 50,
+            ftm: 30,
+            fta: 40,
+            reb: 40,
+            ast: 50,
+            stl: 10,
+            blk: 5,
+            tov: 20,
+            pts: 150,
+          },
+        },
+      ],
+      total: 1,
+      page: 1,
+    });
+    render(await PlayersPage({ searchParams: Promise.resolve({}) }), {
+      wrapper: withNuqsTestingAdapter(),
+    });
+    expect(screen.queryByText("Watchlist")).toBeNull();
+  });
+});
+
 describe("PlayersPage tabs", () => {
   it("renders the tab navigation with Regular Stats active by default", async () => {
     searchPlayers.mockResolvedValue({ rows: [], total: 0, page: 1 });
@@ -452,7 +536,7 @@ describe("PlayersPage tabs", () => {
     expect(getFantasyPool).toHaveBeenCalledWith({ range: "all" });
     expect(screen.getByRole("columnheader", { name: /Z-Score/ })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: /G-Score/ })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: /Points/ })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /PL Linear/ })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "VORP" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: /SGP/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Punt PTS" })).toBeInTheDocument();

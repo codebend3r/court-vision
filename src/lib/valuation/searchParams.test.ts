@@ -4,6 +4,7 @@ import { describe, expect, it } from "bun:test";
 import {
   FANTASY_SORT_KEYS,
   fantasyParsers,
+  isWeightedMethodKey,
   parseWeights,
   serializeWeights,
   snapWeight,
@@ -27,27 +28,48 @@ describe("snapWeight", () => {
 });
 
 describe("weights codec", () => {
-  it("round-trips punt and fractional weights", () => {
-    const parsed = parseWeights("ft:0,tov:0.5");
-    expect(parsed).toEqual({ ft: 0, tov: 0.5 });
-    expect(serializeWeights(parsed ?? {})).toBe("tov:0.5,ft:0");
+  it("round-trips method-scoped punt and fractional weights", () => {
+    const parsed = parseWeights("z.ft:0,g.tov:0.5");
+    expect(parsed).toEqual({ z: { ft: 0 }, g: { tov: 0.5 } });
+    expect(serializeWeights(parsed ?? {})).toBe("z.ft:0,g.tov:0.5");
+  });
+
+  it("keeps each column's weights independent", () => {
+    expect(parseWeights("z.ast:2,g.ast:0.5")).toEqual({ z: { ast: 2 }, g: { ast: 0.5 } });
   });
 
   it("omits default weights of 1 from both directions", () => {
-    expect(parseWeights("pts:1,ft:0")).toEqual({ ft: 0 });
-    expect(serializeWeights({ pts: 1, ft: 0 })).toBe("ft:0");
+    expect(parseWeights("z.pts:1,z.ft:0")).toEqual({ z: { ft: 0 } });
+    expect(serializeWeights({ z: { pts: 1, ft: 0 } })).toBe("z.ft:0");
   });
 
   it("rejects malformed entries so nuqs falls back to the default", () => {
-    expect(parseWeights("ft:x")).toBeNull();
-    expect(parseWeights("nope:1")).toBeNull();
-    expect(parseWeights("ft")).toBeNull();
-    expect(parseWeights("ft:0:1")).toBeNull();
+    expect(parseWeights("z.ft:x")).toBeNull();
+    expect(parseWeights("z.nope:1")).toBeNull();
+    expect(parseWeights("nope.ft:1")).toBeNull();
+    expect(parseWeights("ft:0")).toBeNull(); // unscoped, the pre-per-column format
+    expect(parseWeights("z.ft")).toBeNull();
+    expect(parseWeights("z.ft:0:1")).toBeNull();
   });
 
   it("snaps out-of-range weights instead of erroring", () => {
-    expect(parseWeights("pts:9")).toEqual({ pts: 2 });
-    expect(parseWeights("pts:0.6")).toEqual({ pts: 0.5 });
+    expect(parseWeights("z.pts:9")).toEqual({ z: { pts: 2 } });
+    expect(parseWeights("z.pts:0.6")).toEqual({ z: { pts: 0.5 } });
+  });
+});
+
+describe("isWeightedMethodKey", () => {
+  it("accepts exactly the six weighted column keys", () => {
+    ["z", "g", "vorp", "pos", "sgp", "sim"].forEach((key) => {
+      expect(isWeightedMethodKey(key)).toBe(true);
+    });
+  });
+
+  it("rejects the unweighted sorts and unknowns", () => {
+    expect(isWeightedMethodKey("points")).toBe(false);
+    expect(isWeightedMethodKey("firstName")).toBe(false);
+    expect(isWeightedMethodKey("zscore")).toBe(false);
+    expect(isWeightedMethodKey(undefined)).toBe(false);
   });
 });
 
@@ -73,8 +95,8 @@ describe("fantasyParsers", () => {
   });
 
   it("serializes non-default state compactly", () => {
-    const query = serialize({ w: { ft: 0 }, teams: 10, range: "last10" });
-    expect(query).toContain("w=ft:0");
+    const query = serialize({ w: { z: { ft: 0 } }, teams: 10, range: "last10" });
+    expect(query).toContain("w=z.ft:0");
     expect(query).toContain("teams=10");
     expect(query).toContain("range=last10");
   });
@@ -87,10 +109,22 @@ describe("fantasyParsers", () => {
   });
 
   it("accepts one sort key per method column plus name sorts", () => {
-    expect(FANTASY_SORT_KEYS).toEqual(["z", "g", "points", "vorp", "pos", "firstName", "lastName"]);
+    expect(FANTASY_SORT_KEYS).toEqual([
+      "z",
+      "g",
+      "points",
+      "vorp",
+      "pos",
+      "sgp",
+      "sim",
+      "firstName",
+      "lastName",
+    ]);
     expect(fantasyParsers.sort.parse("g")).toBe("g");
     expect(fantasyParsers.sort.parse("value")).toBeNull();
-    expect(fantasyParsers.sort.parse("sgp")).toBeNull();
+    // SGP and Sim Value are sortable columns now, not blocked placeholders.
+    expect(fantasyParsers.sort.parse("sgp")).toBe("sgp");
+    expect(fantasyParsers.sort.parse("sim")).toBe("sim");
   });
 
   it("accepts only category keys for exclusions, dropping unknown entries", () => {

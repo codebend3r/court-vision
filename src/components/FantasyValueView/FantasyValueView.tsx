@@ -16,8 +16,18 @@ import {
 import { type PlayerGameRange } from "@/lib/players/searchParams";
 import { CATEGORY_KEYS } from "@/lib/valuation/categories";
 import { valuePlayers } from "@/lib/valuation/index";
-import { fantasyParsers, type FantasySortKey } from "@/lib/valuation/searchParams";
-import { type FantasyPlayerValues, type FantasyStatLine } from "@/lib/valuation/types";
+import {
+  fantasyParsers,
+  isWeightedMethodKey,
+  WEIGHTED_METHOD_KEYS,
+  type FantasySortKey,
+} from "@/lib/valuation/searchParams";
+import {
+  type FantasyPlayerValues,
+  type FantasyStatLine,
+  type MethodWeights,
+  type WeightedMethodKey,
+} from "@/lib/valuation/types";
 
 import styles from "@/components/FantasyValueView/FantasyValueView.module.scss";
 
@@ -37,6 +47,8 @@ const NEUTRAL_VALUES = (playerId: number): FantasyPlayerValues => ({
   points: 0,
   vorp: 0,
   positional: 0,
+  sgp: 0,
+  sim: 0,
 });
 
 const sortField: Record<
@@ -48,9 +60,12 @@ const sortField: Record<
   points: (values) => values.points,
   vorp: (values) => values.vorp,
   pos: (values) => values.positional,
+  sgp: (values) => values.sgp,
+  sim: (values) => values.sim,
 };
 
 export type FantasyValueViewProps = {
+  isSignedIn: boolean;
   lines: FantasyStatLine[];
 };
 
@@ -58,8 +73,15 @@ export type FantasyValueViewProps = {
 // stat lines once; every config change (weights, exclusions, league size,
 // sort, search, paging) recomputes every method's score in memory with no
 // round trip.
-export function FantasyValueView({ lines }: FantasyValueViewProps) {
+export function FantasyValueView({ lines, isSignedIn }: FantasyValueViewProps) {
   const [params, setParams] = useQueryStates(fantasyParsers);
+
+  // Weights belong to the sorted method column; PL Linear and the name sorts
+  // have no weight set to edit.
+  const activeWeightKey: WeightedMethodKey | null = isWeightedMethodKey(params.sort)
+    ? params.sort
+    : null;
+  const activeWeights = (activeWeightKey && params.w[activeWeightKey]) || {};
 
   const included = useMemo(
     () => CATEGORY_KEYS.filter((key) => !params.x.some((excluded) => excluded === key)),
@@ -73,14 +95,16 @@ export function FantasyValueView({ lines }: FantasyValueViewProps) {
         lines,
         config: {
           categories: [...included],
-          weights: params.w,
+          weights: {},
           basis,
           teams: params.teams,
           rosterSlots: params.slots,
+          scoring: params.s,
         },
+        methodWeights: params.w,
         range: params.range,
       }),
-    [lines, included, params.w, basis, params.teams, params.slots, params.range],
+    [lines, included, params.w, basis, params.teams, params.slots, params.s, params.range],
   );
 
   const scored = useMemo(() => {
@@ -129,8 +153,20 @@ export function FantasyValueView({ lines }: FantasyValueViewProps) {
       rank: (page - 1) * params.size + index + 1,
     }));
 
-  const onControlsChange = (change: FantasyControlsChange) => {
-    setParams(change);
+  const onControlsChange = ({ w, ...rest }: FantasyControlsChange) => {
+    // The controls edit a flat weight map; it lands under the sorted column's
+    // key so every other column's stored weights stay untouched.
+    if (w === undefined || activeWeightKey === null) {
+      setParams(rest);
+      return;
+    }
+    const next = WEIGHTED_METHOD_KEYS.reduce<MethodWeights>((acc, key) => {
+      const entry = key === activeWeightKey ? w : params.w[key];
+      return entry === undefined || Object.keys(entry).length === 0
+        ? acc
+        : { ...acc, [key]: entry };
+    }, {});
+    setParams({ ...rest, w: next });
   };
 
   const onSort = ({ sort }: { sort: FantasySortKey }) => {
@@ -155,7 +191,9 @@ export function FantasyValueView({ lines }: FantasyValueViewProps) {
         range={params.range}
         mode={params.mode}
         excluded={params.x}
-        weights={params.w}
+        weights={activeWeights}
+        sort={params.sort}
+        scoring={params.s}
         teams={params.teams}
         slots={params.slots}
         onChange={onControlsChange}
@@ -187,6 +225,7 @@ export function FantasyValueView({ lines }: FantasyValueViewProps) {
               onSizeChange={({ size }) => setParams({ size, page: 1 })}
             />
             <FantasyValueTable
+              isSignedIn={isSignedIn}
               rows={pageRows}
               sort={params.sort}
               dir={params.dir}

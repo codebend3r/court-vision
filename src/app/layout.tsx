@@ -6,7 +6,10 @@ import type { ReactNode } from "react";
 import { SideNav } from "@/components/SideNav/SideNav";
 import { SiteFooter } from "@/components/SiteFooter/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader/SiteHeader";
+import { WatchlistAlert } from "@/components/WatchlistAlert/WatchlistAlert";
+import { WatchlistHydrator } from "@/components/WatchlistHydrator/WatchlistHydrator";
 import { getUser } from "@/lib/auth/session";
+import { getWatchlistPlayerIds } from "@/lib/watchlist/queries";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
 import "@/styles/globals.scss";
@@ -72,6 +75,8 @@ export default async function RootLayout({
   children: ReactNode;
 }>) {
   const user = await getUser();
+  // One watchlist read per navigation seeds every StarButton on the page.
+  const watchlistPlayerIds = await getWatchlistPlayerIds();
   return (
     <html
       lang="en"
@@ -85,6 +90,8 @@ export default async function RootLayout({
         <NuqsAdapter>
           <ThemeProvider>
             <SiteHeader />
+            <WatchlistHydrator playerIds={watchlistPlayerIds} />
+            <WatchlistAlert />
             <div className={styles.shell}>
               {!!user && <SideNav />}
               <div className={styles.content}>{children}</div>

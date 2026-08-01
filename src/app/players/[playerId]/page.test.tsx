@@ -27,6 +27,12 @@ const findUniquePlayer = vi.fn();
 const findManyGameLogs = vi.fn();
 const findManySeasonStats = vi.fn();
 
+const getUser = vi.fn();
+
+// The page reads the session to decide whether the star is actionable; without
+// this the real getUser() calls `cookies()` outside a request scope.
+vi.mock("@/lib/auth/session", () => ({ getUser }));
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     player: { findUnique: findUniquePlayer },

@@ -1,0 +1,20 @@
+.view {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.counter {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-accent);
+}
+
+.summary,
+.empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}

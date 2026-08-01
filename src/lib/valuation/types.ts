@@ -56,7 +56,7 @@ export type PlayerValue = {
 };
 
 // One row of the Fantasy Value table: every method's score for one player
-// (PRD §9.3 — Z-Score, G-Score, Points, VORP, Positional; SGP is blocked).
+// (PRD §9.3 — Z-Score, G-Score, PL Linear, VORP, Positional, SGP, Sim Value).
 export type FantasyPlayerValues = {
   playerId: number;
   z: number;
@@ -64,6 +64,8 @@ export type FantasyPlayerValues = {
   points: number;
   vorp: number;
   positional: number;
+  sgp: number;
+  sim: number;
 };
 
 export type PoolStats = {
@@ -80,10 +82,27 @@ export type PoolStats = {
   >;
 };
 
+// Points-league scoring table: how many fantasy points each stat pays. Keyed
+// by the raw stat, not by category, because a points league scores the box
+// score rather than winning categories.
+export type ScoringStatKey = "pts" | "reb" | "ast" | "stl" | "blk" | "fg3m" | "tov";
+export type ScoringSettings = Record<ScoringStatKey, number>;
+
+// The six weighted method columns, keyed by their sort keys. PL Linear is
+// absent on purpose: it prices the box score with the Scoring table and never
+// reads category weights.
+export type WeightedMethodKey = "z" | "g" | "vorp" | "pos" | "sgp" | "sim";
+
+// One independent weight set per method column. The Weights panel edits the
+// set belonging to whichever method column the table is sorted by, so a punt
+// tuned for Z-Score never leaks into G-Score's ranking.
+export type MethodWeights = Partial<Record<WeightedMethodKey, Partial<Record<Category, number>>>>;
+
 export type ValuationConfig = {
   categories: Category[]; // included categories; excluded ones are absent
   weights: Partial<Record<Category, number>>; // absent key = 1
   basis: Basis;
   teams: number;
   rosterSlots: number;
+  scoring: ScoringSettings; // PL Linear only; the category methods ignore it
 };

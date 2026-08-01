@@ -145,3 +145,24 @@ describe("isAdvancedMetricKey", () => {
     expect(isAdvancedMetricKey("usagePercentage")).toBe(true);
   });
 });
+
+describe("starred tab", () => {
+  it("is accepted as a tab", () => {
+    expect(parsePlayersSearchParams({ tab: "starred" }).tab).toBe("starred");
+  });
+
+  it("defaults to starredAt, newest first", () => {
+    const params = parsePlayersSearchParams({ tab: "starred" });
+    expect(params.sort).toBe("starredAt");
+    expect(params.dir).toBe("desc");
+  });
+
+  it("keeps the default sort out of the href", () => {
+    const params = parsePlayersSearchParams({ tab: "starred" });
+    expect(buildPlayersHref(params)).toBe("/players?tab=starred");
+  });
+
+  it("still honours an explicit stat sort", () => {
+    expect(parsePlayersSearchParams({ tab: "starred", sort: "pts" }).sort).toBe("pts");
+  });
+});

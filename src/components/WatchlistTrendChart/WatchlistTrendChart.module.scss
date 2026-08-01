@@ -1,0 +1,92 @@
+.figure {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-sm);
+}
+
+.legendItem {
+  display: grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-2);
+  // Text keeps ink tokens; the mark beside it carries series identity.
+  color: var(--color-text);
+
+  &[data-muted="true"] {
+    color: var(--color-text-muted);
+  }
+}
+
+.legendMark {
+  width: 1.5rem;
+  height: 0.5rem;
+}
+
+.legendNote {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.plot {
+  width: 100%;
+}
+
+.caption,
+.empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.tooltip {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: var(--font-size-sm);
+}
+
+.tooltipDate {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.tooltipList {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tooltipRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text);
+}
+
+.swatch {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: var(--radius-full);
+}
+
+.tooltipValue {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}

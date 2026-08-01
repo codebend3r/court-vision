@@ -31,7 +31,16 @@ describe("FantasyValueLegend", () => {
     });
     expect(within(details).getByText(/156/)).toBeInTheDocument();
     expect(within(details).getByText(/Last 10 games/)).toBeInTheDocument();
-    expect(within(details).getByText(/standings-gain denominators/i)).toBeInTheDocument();
-    expect(within(details).getByText(/Points ignores weights/)).toBeInTheDocument();
+    expect(within(details).getByText(/adjacent places in the standings/i)).toBeInTheDocument();
+    expect(within(details).getByText(/PL Linear\s+ignores weights/)).toBeInTheDocument();
+  });
+
+  it("pairs every method with a plain-language reason it matters", () => {
+    const { container } = render(
+      <FantasyValueLegend poolSize={156} windowLabel="All games" basis="perGame" />,
+    );
+    const details = openLegend(container);
+    expect(within(details).getAllByText("Why it matters:")).toHaveLength(FANTASY_METHODS.length);
+    expect(within(details).getByText(/catch third place/)).toBeInTheDocument();
   });
 });
