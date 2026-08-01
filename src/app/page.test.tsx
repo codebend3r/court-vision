@@ -7,14 +7,19 @@ const getWatchlistCount = vi.fn();
 const getZTrendSeries = vi.fn();
 const getGTrendSeries = vi.fn();
 const getConferenceStandings = vi.fn();
+const getActiveLeague = vi.fn();
+const getLeagueTeams = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({ getProfile: () => getProfile() }));
 vi.mock("@/lib/watchlist/queries", () => ({ getWatchlistPlayers, getWatchlistCount }));
 vi.mock("@/lib/watchlist/trendLoader", () => ({ getZTrendSeries, getGTrendSeries }));
 vi.mock("@/lib/standings/loader", () => ({ getConferenceStandings }));
+vi.mock("@/lib/leagues/queries", () => ({ getActiveLeague: () => getActiveLeague() }));
+vi.mock("@/lib/leagues/teamQueries", () => ({
+  getLeagueTeams: (args: { leagueId: string }) => getLeagueTeams(args),
+}));
 
 import Home from "@/app/page";
-import { useFantasyTeamsStore } from "@/lib/fantasyTeams/store";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
 // The chart is a client component that reads the theme; in the app that comes
@@ -35,7 +40,8 @@ beforeEach(() => {
   getZTrendSeries.mockResolvedValue([]);
   getGTrendSeries.mockResolvedValue([]);
   getConferenceStandings.mockResolvedValue(null);
-  useFantasyTeamsStore.setState({ teams: [] });
+  getActiveLeague.mockReset().mockResolvedValue(null);
+  getLeagueTeams.mockReset().mockResolvedValue([]);
 });
 
 const summary = ({ playerId, fullName }: { playerId: number; fullName: string }) => ({
@@ -114,15 +120,32 @@ describe("Home", () => {
     expect(screen.getByText(/aren't watching any players yet/)).toBeInTheDocument();
   });
 
-  it("prompts a signed-in user with no fantasy team to create one", async () => {
+  it("prompts a signed-in user with no active league to create a team", async () => {
     getProfile.mockResolvedValue({ username: "steve" });
 
     await renderHome();
 
+    expect(getLeagueTeams).not.toHaveBeenCalled();
     expect(screen.getByText(/No fantasy teams yet/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "create your first team" })).toHaveAttribute(
       "href",
       "/my-teams/create",
+    );
+  });
+
+  it("shows the active league's most recent team", async () => {
+    getProfile.mockResolvedValue({ username: "steve" });
+    getActiveLeague.mockResolvedValue({ id: "league-1", name: "Bench Mob League" });
+    getLeagueTeams.mockResolvedValue([
+      { id: "a", name: "Bench Mob", createdAt: "2026-07-23T00:00:00.000Z", slots: [] },
+    ]);
+
+    await renderHome();
+
+    expect(getLeagueTeams).toHaveBeenCalledWith({ leagueId: "league-1" });
+    expect(screen.getByRole("link", { name: "Bench Mob" })).toHaveAttribute(
+      "href",
+      "/my-teams/bench-mob",
     );
   });
 

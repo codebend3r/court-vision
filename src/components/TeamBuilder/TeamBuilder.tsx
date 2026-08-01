@@ -23,8 +23,6 @@ import {
   slotMeta,
   type SlotKind,
 } from "@/lib/fantasyTeams/slots";
-import { teamNameToSlug } from "@/lib/fantasyTeams/slug";
-import { useFantasyTeamsStore } from "@/lib/fantasyTeams/store";
 import {
   type FantasyTeam,
   type FantasyTeamPlayer,
@@ -32,12 +30,15 @@ import {
   type RosterSlotType,
   type SlotCounts,
 } from "@/lib/fantasyTeams/types";
+import { saveLeagueTeam } from "@/lib/leagues/teamActions";
+import { type LeagueTeamActionResult } from "@/lib/leagues/types";
 
 import styles from "@/components/TeamBuilder/TeamBuilder.module.scss";
 
 export type TeamBuilderProps = {
+  leagueId: string;
   players: FantasyTeamPlayer[];
-  team?: FantasyTeam; // present = edit an existing team in place
+  team?: FantasyTeam | null; // present = edit an existing team in place
   insights?: PlayerInsight[]; // per-player quick stats + z ranks for the hover panel
 };
 
@@ -49,17 +50,22 @@ const KIND_TITLES: Record<SlotKind, string> = {
   injured: "Injured list",
 };
 
-export function TeamBuilder({ players, team, insights }: TeamBuilderProps) {
+const errorMessageFor = ({
+  status,
+}: {
+  status: Exclude<LeagueTeamActionResult["status"], "ok" | "ok-deleted">;
+}): string =>
+  status === "invalid" ? "Check the team name and roster." : "Something went wrong — try again.";
+
+export function TeamBuilder({ leagueId, players, team = null, insights }: TeamBuilderProps) {
   const router = useRouter();
-  const addTeam = useFantasyTeamsStore((state) => state.addTeam);
-  const updateTeam = useFantasyTeamsStore((state) => state.updateTeam);
 
   const [name, setName] = useState(team?.name ?? "");
   const [counts, setCounts] = useState<SlotCounts>(() =>
-    team === undefined ? DEFAULT_SLOT_COUNTS : countsFromSlots({ slots: team.slots }),
+    team === null ? DEFAULT_SLOT_COUNTS : countsFromSlots({ slots: team.slots }),
   );
   const [slots, setSlots] = useState<RosterSlot[]>(() =>
-    team === undefined ? buildSlots({ counts: DEFAULT_SLOT_COUNTS }) : team.slots,
+    team === null ? buildSlots({ counts: DEFAULT_SLOT_COUNTS }) : team.slots,
   );
   const [query, setQuery] = useState("");
   const [dragging, setDragging] = useState<FantasyTeamPlayer | null>(null);
@@ -68,6 +74,8 @@ export function TeamBuilder({ players, team, insights }: TeamBuilderProps) {
     slotId: string;
     player: FantasyTeamPlayer;
   } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const rostered = useMemo(() => rosteredIds({ slots }), [slots]);
 
@@ -147,26 +155,26 @@ export function TeamBuilder({ players, team, insights }: TeamBuilderProps) {
   const onSave = () => {
     const trimmed = name.trim();
     if (trimmed === "") return;
-    const nextSlug = teamNameToSlug(trimmed);
-    if (team === undefined) {
-      addTeam({
-        team: {
-          id: crypto.randomUUID(),
-          name: trimmed,
-          slots,
-          createdAt: new Date().toISOString(),
-        },
-      });
-      // Land on the new team's own page so further edits save in place.
-      router.push(`/my-teams/${nextSlug}`);
-      return;
-    }
-    updateTeam({ team: { ...team, name: trimmed, slots } });
-    // Stay on this page; only navigate when the rename changed the slug that
-    // locates this team, so the URL reflects the same team's new name.
-    if (nextSlug !== teamNameToSlug(team.name)) {
-      router.push(`/my-teams/${nextSlug}`);
-    }
+    setSaving(true);
+    setErrorMessage(null);
+    void saveLeagueTeam({ leagueId, teamId: team?.id ?? null, name: trimmed, slots }).then(
+      (result) => {
+        setSaving(false);
+        if (result.status === "ok") {
+          router.push("/my-teams");
+          router.refresh();
+          return;
+        }
+        if (result.status === "ok-deleted") {
+          // saveLeagueTeam never actually returns this status — it shares its
+          // result type with deleteLeagueTeam — but the branch keeps
+          // errorMessageFor's param type exhaustively narrowed without a cast.
+          setErrorMessage("Something went wrong — try again.");
+          return;
+        }
+        setErrorMessage(errorMessageFor({ status: result.status }));
+      },
+    );
   };
 
   const filled = slots.filter((slot) => slot.player !== null).length;
@@ -382,10 +390,15 @@ export function TeamBuilder({ players, team, insights }: TeamBuilderProps) {
       </section>
 
       <section className={styles.saveBar}>
+        {!!errorMessage && (
+          <p role="alert" className={styles.error}>
+            {errorMessage}
+          </p>
+        )}
         <button
           type="button"
           onClick={onSave}
-          disabled={name.trim() === ""}
+          disabled={name.trim() === "" || saving}
           className={styles.save}
         >
           <svg
