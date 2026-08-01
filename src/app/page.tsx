@@ -1,6 +1,5 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
 
-import { ComingSoonPanel } from "@/components/ComingSoonPanel/ComingSoonPanel";
 import { HomeStandingsPanel } from "@/components/HomeStandingsPanel/HomeStandingsPanel";
 import { HomeStarredPanel } from "@/components/HomeStarredPanel/HomeStarredPanel";
 import { HomeTeamPanel } from "@/components/HomeTeamPanel/HomeTeamPanel";
@@ -17,37 +16,11 @@ import styles from "@/app/page.module.scss";
 export default async function Home() {
   const profile = await getProfile();
 
+  // Signed out, the homepage is the login form: /login renders it inside the
+  // normal shell (header and footer included) and sends users back here once
+  // they sign in.
   if (profile === null) {
-    return (
-      <main className={styles.page}>
-        <h1 className={styles.title}>Court Vision</h1>
-        <p className={styles.subtitle}>
-          Your fantasy command center &mdash; here&apos;s what&apos;s coming.
-        </p>
-        <div className={styles.grid}>
-          <section className={styles.signInCard} aria-labelledby="home-team-title">
-            <h2 id="home-team-title" className={styles.cardTitle}>
-              Your Team
-            </h2>
-            <p className={styles.cardBody}>
-              <Link href="/login">Sign in</Link> to start building your team.
-            </p>
-          </section>
-          <section className={styles.signInCard} aria-labelledby="home-watchlist-title">
-            <h2 id="home-watchlist-title" className={styles.cardTitle}>
-              Starred Players
-            </h2>
-            <p className={styles.cardBody}>
-              <Link href="/login">Sign in</Link> to star players.
-            </p>
-          </section>
-          <ComingSoonPanel
-            title="Stat Trends to Watch"
-            description="Short on rebounds? We'll surface players trending up in the stats your team needs."
-          />
-        </div>
-      </main>
-    );
+    redirect("/login");
   }
 
   const [players, count, standings] = await Promise.all([

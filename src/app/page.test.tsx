@@ -47,31 +47,35 @@ const summary = ({ playerId, fullName }: { playerId: number; fullName: string })
   starredAt: "2026-07-30T12:00:00.000Z",
 });
 
+// Next's redirect() throws an error whose digest encodes the destination
+// ("NEXT_REDIRECT;push;/login;307;"); reading it is how a test observes where
+// a server component sent the visitor.
+const redirectTarget = (error: unknown): string =>
+  typeof error === "object" &&
+  error !== null &&
+  "digest" in error &&
+  typeof error.digest === "string"
+    ? error.digest
+    : "";
+
 describe("Home", () => {
-  it("shows sign-in prompts for Your Team and Starred Players when signed out", async () => {
+  it("sends a signed-out visitor to the login form", async () => {
     getProfile.mockResolvedValue(null);
 
-    await renderHome();
+    const thrown = await Home().then(
+      () => null,
+      (error: unknown) => error,
+    );
 
-    expect(screen.getByRole("heading", { name: "Your Team" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Starred Players" })).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Sign in" })).toHaveLength(2);
+    expect(redirectTarget(thrown)).toContain("/login");
   });
 
   it("does not read the watchlist for a signed-out visitor", async () => {
     getProfile.mockResolvedValue(null);
 
-    await renderHome();
+    await Home().catch(() => null);
 
     expect(getWatchlistPlayers).not.toHaveBeenCalled();
-  });
-
-  it("still shows the stat trends placeholder when signed out", async () => {
-    getProfile.mockResolvedValue(null);
-
-    await renderHome();
-
-    expect(screen.getByRole("heading", { name: "Stat Trends to Watch" })).toBeInTheDocument();
   });
 
   it("lists the most recently starred players with a link to the full list", async () => {
