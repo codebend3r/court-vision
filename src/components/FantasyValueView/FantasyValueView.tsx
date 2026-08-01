@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useQueryStates } from "nuqs";
 
 import {
@@ -13,6 +13,7 @@ import {
   FantasyValueTable,
   type FantasyTableRow,
 } from "@/components/FantasyValueTable/FantasyValueTable";
+import { type FantasySeed } from "@/lib/leagues/fantasyDefaults";
 import { type PlayerGameRange } from "@/lib/players/searchParams";
 import { CATEGORY_KEYS } from "@/lib/valuation/categories";
 import { valuePlayers } from "@/lib/valuation/index";
@@ -67,14 +68,22 @@ const sortField: Record<
 export type FantasyValueViewProps = {
   isSignedIn: boolean;
   lines: FantasyStatLine[];
+  leagueSeed?: FantasySeed;
 };
 
 // Client orchestrator: URL state in, table out. The server ships the window's
 // stat lines once; every config change (weights, exclusions, league size,
 // sort, search, paging) recomputes every method's score in memory with no
 // round trip.
-export function FantasyValueView({ lines, isSignedIn }: FantasyValueViewProps) {
+export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValueViewProps) {
   const [params, setParams] = useQueryStates(fantasyParsers);
+
+  useEffect(() => {
+    if (Object.keys(leagueSeed ?? {}).length === 0) return;
+    void setParams(leagueSeed ?? {}, { history: "replace" });
+    // Seed exactly once per mount: URL params the user changes afterwards win.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Weights belong to the sorted method column; PL Linear and the name sorts
   // have no weight set to edit.
