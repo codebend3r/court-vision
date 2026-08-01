@@ -3,12 +3,14 @@ import type { Metadata } from "next";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { ReactNode } from "react";
 
+import { LeaguesHydrator } from "@/components/LeaguesHydrator/LeaguesHydrator";
 import { SideNav } from "@/components/SideNav/SideNav";
 import { SiteFooter } from "@/components/SiteFooter/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader/SiteHeader";
 import { WatchlistAlert } from "@/components/WatchlistAlert/WatchlistAlert";
 import { WatchlistHydrator } from "@/components/WatchlistHydrator/WatchlistHydrator";
-import { getUser } from "@/lib/auth/session";
+import { getProfile } from "@/lib/auth/session";
+import { getLeagues } from "@/lib/leagues/queries";
 import { getWatchlistPlayerIds } from "@/lib/watchlist/queries";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
@@ -74,13 +76,18 @@ export default async function RootLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  const user = await getUser();
+  const profile = await getProfile();
   // One watchlist read per navigation seeds every StarButton on the page.
   const watchlistPlayerIds = await getWatchlistPlayerIds();
+  const leagues = profile === null ? [] : await getLeagues();
+  const activeLeagueId = leagues.some((league) => league.id === profile?.activeLeagueId)
+    ? (profile?.activeLeagueId ?? null)
+    : (leagues[0]?.id ?? null);
   return (
     <html
       lang="en"
       suppressHydrationWarning
+      data-font-scale={profile?.fontScale ?? "default"}
       className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}
     >
       <head>
@@ -91,9 +98,10 @@ export default async function RootLayout({
           <ThemeProvider>
             <SiteHeader />
             <WatchlistHydrator playerIds={watchlistPlayerIds} />
+            <LeaguesHydrator leagues={leagues} activeLeagueId={activeLeagueId} />
             <WatchlistAlert />
             <div className={styles.shell}>
-              {!!user && <SideNav />}
+              {!!profile && <SideNav />}
               <div className={styles.content}>{children}</div>
             </div>
             <SiteFooter />
