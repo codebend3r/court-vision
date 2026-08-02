@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { slotMeta, type SlotKind } from "@/lib/fantasyTeams/slots";
-import { teamNameToSlug } from "@/lib/fantasyTeams/slug";
-import { useFantasyTeamsStore } from "@/lib/fantasyTeams/store";
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
+import { deleteLeagueTeam } from "@/lib/leagues/teamActions";
 
 import styles from "@/components/MyTeamsList/MyTeamsList.module.scss";
 
@@ -18,11 +17,15 @@ const KIND_TITLES: Record<SlotKind, string> = {
   injured: "Injured list",
 };
 
-function TeamAccordion({ team }: { team: FantasyTeam }) {
+type TeamAccordionProps = {
+  team: FantasyTeam;
+  onDelete: ({ teamId }: { teamId: string }) => void;
+};
+
+function TeamAccordion({ team, onDelete }: TeamAccordionProps) {
   const router = useRouter();
-  const removeTeam = useFantasyTeamsStore((state) => state.removeTeam);
   const filled = team.slots.filter((slot) => slot.player !== null).length;
-  const editHref = `/my-teams/${teamNameToSlug(team.name)}`;
+  const editHref = `/my-teams/${team.slug}`;
 
   return (
     <details className={styles.team}>
@@ -82,7 +85,7 @@ function TeamAccordion({ team }: { team: FantasyTeam }) {
         })}
         <button
           type="button"
-          onClick={() => removeTeam({ teamId: team.id })}
+          onClick={() => onDelete({ teamId: team.id })}
           className={styles.delete}
         >
           Delete team
@@ -92,25 +95,49 @@ function TeamAccordion({ team }: { team: FantasyTeam }) {
   );
 }
 
-export function MyTeamsList() {
-  useEffect(() => {
-    void useFantasyTeamsStore.persist.rehydrate();
-  }, []);
-  const teams = useFantasyTeamsStore((state) => state.teams);
+export type MyTeamsListProps = {
+  teams: FantasyTeam[];
+  leagueName: string;
+};
 
-  if (teams.length === 0) {
-    return (
-      <p className={styles.emptyState}>
-        No fantasy teams yet — <Link href="/my-teams/create">create your first team</Link>.
-      </p>
-    );
-  }
+export function MyTeamsList({ teams, leagueName }: MyTeamsListProps) {
+  const router = useRouter();
+  // Seeded from props (the server's fetch), then diverges optimistically on
+  // delete; router.refresh() re-runs the server page, which flows a fresh
+  // `teams` prop back in through this effect.
+  const [localTeams, setLocalTeams] = useState(teams);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => setLocalTeams(teams), [teams]);
+
+  const onDelete = ({ teamId }: { teamId: string }) => {
+    void deleteLeagueTeam({ teamId }).then((result) => {
+      if (result.status !== "ok-deleted") {
+        // Nothing was deleted server-side: leave the team in place and say so.
+        setErrorMessage("Could not delete the team — try again.");
+        return;
+      }
+      setErrorMessage(null);
+      setLocalTeams((current) => current.filter((team) => team.id !== teamId));
+      router.refresh();
+    });
+  };
 
   return (
     <section className={styles.list}>
-      {teams.map((team) => (
-        <TeamAccordion key={team.id} team={team} />
-      ))}
+      <p className={styles.scope}>League: {leagueName}</p>
+      {!!errorMessage && (
+        <p role="alert" className={styles.error}>
+          {errorMessage}
+        </p>
+      )}
+      {localTeams.length === 0 ? (
+        <p className={styles.emptyState}>
+          No fantasy teams yet — <Link href="/my-teams/create">create your first team</Link>.
+        </p>
+      ) : (
+        localTeams.map((team) => <TeamAccordion key={team.id} team={team} onDelete={onDelete} />)
+      )}
     </section>
   );
 }

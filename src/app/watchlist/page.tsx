@@ -1,4 +1,5 @@
 import { StarredPlayersView } from "@/components/StarredPlayersView/StarredPlayersView";
+import { getActiveLeague } from "@/lib/leagues/queries";
 import { parsePlayersSearchParams } from "@/lib/players/searchParams";
 
 import styles from "@/app/watchlist/page.module.scss";
@@ -28,10 +29,14 @@ export default async function WatchlistPage({
     minimums: firstValue(raw.minimums),
     tab: "starred",
   });
+  // null for a signed-out visitor or a signed-in one with no league yet —
+  // either way the scope line is simply omitted below.
+  const league = await getActiveLeague();
 
   return (
     <main className={styles.page}>
       <h1>Starred Players</h1>
+      {league !== null && <p className={styles.scope}>League: {league.name}</p>}
       <StarredPlayersView params={params} showCounter />
     </main>
   );

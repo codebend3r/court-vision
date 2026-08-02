@@ -82,6 +82,33 @@
   color-scheme: dark;
 }
 
+// User font-size preference (settings → appearance). Stamped on <html> by the
+// root layout from Profile.fontScale, and on the settings preview pane for a
+// scoped live preview. "default" has no block — it is the :root values above.
+[data-font-scale="sm"] {
+  --font-size-xs: 0.6875rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-md: 0.9375rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.5rem;
+}
+
+[data-font-scale="lg"] {
+  --font-size-xs: 0.8125rem;
+  --font-size-sm: 0.9375rem;
+  --font-size-md: 1.125rem;
+  --font-size-lg: 1.375rem;
+  --font-size-xl: 2rem;
+}
+
+[data-font-scale="xl"] {
+  --font-size-xs: 0.875rem;
+  --font-size-sm: 1rem;
+  --font-size-md: 1.25rem;
+  --font-size-lg: 1.5rem;
+  --font-size-xl: 2.25rem;
+}
+
 *,
 *::before,
 *::after {

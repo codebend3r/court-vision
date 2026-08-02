@@ -1,4 +1,5 @@
 import { getProfile } from "@/lib/auth/session";
+import { resolveActiveLeague } from "@/lib/leagues/queries";
 import { prisma } from "@/lib/prisma";
 import { type WatchlistPlayerSummary } from "@/lib/watchlist/types";
 
@@ -9,8 +10,10 @@ import { type WatchlistPlayerSummary } from "@/lib/watchlist/types";
 export const getWatchlistPlayerIds = async (): Promise<number[]> => {
   const profile = await getProfile();
   if (profile === null) return [];
-  const rows = await prisma.watchlistPlayer.findMany({
-    where: { profileId: profile.id },
+  const league = await resolveActiveLeague({ profile });
+  if (league === null) return [];
+  const rows = await prisma.leagueWatchlistPlayer.findMany({
+    where: { leagueId: league.id },
     orderBy: { createdAt: "desc" },
     select: { playerId: true },
   });
@@ -24,8 +27,10 @@ export const getWatchlistPlayers = async ({
 }): Promise<WatchlistPlayerSummary[]> => {
   const profile = await getProfile();
   if (profile === null) return [];
-  const rows = await prisma.watchlistPlayer.findMany({
-    where: { profileId: profile.id },
+  const league = await resolveActiveLeague({ profile });
+  if (league === null) return [];
+  const rows = await prisma.leagueWatchlistPlayer.findMany({
+    where: { leagueId: league.id },
     orderBy: { createdAt: "desc" },
     take: limit,
     select: {
@@ -54,5 +59,7 @@ export const getWatchlistPlayers = async ({
 export const getWatchlistCount = async (): Promise<number> => {
   const profile = await getProfile();
   if (profile === null) return 0;
-  return prisma.watchlistPlayer.count({ where: { profileId: profile.id } });
+  const league = await resolveActiveLeague({ profile });
+  if (league === null) return 0;
+  return prisma.leagueWatchlistPlayer.count({ where: { leagueId: league.id } });
 };

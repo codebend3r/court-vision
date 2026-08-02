@@ -3,9 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "bun:test";
 const findMany = vi.fn();
 const count = vi.fn();
 const getProfile = vi.fn();
+const resolveActiveLeague = vi.fn();
 
-vi.mock("@/lib/prisma", () => ({ prisma: { watchlistPlayer: { findMany, count } } }));
+vi.mock("@/lib/prisma", () => ({ prisma: { leagueWatchlistPlayer: { findMany, count } } }));
 vi.mock("@/lib/auth/session", () => ({ getProfile }));
+vi.mock("@/lib/leagues/queries", () => ({ resolveActiveLeague }));
 
 import {
   getWatchlistCount,
@@ -14,12 +16,15 @@ import {
 } from "@/lib/watchlist/queries";
 
 const profile = { id: "11111111-1111-1111-1111-111111111111" };
+const league = { id: "league-1" };
 
 beforeEach(() => {
   findMany.mockReset();
   count.mockReset();
   getProfile.mockReset();
+  resolveActiveLeague.mockReset();
   getProfile.mockResolvedValue(profile);
+  resolveActiveLeague.mockResolvedValue(league);
 });
 
 describe("getWatchlistPlayerIds", () => {
@@ -27,7 +32,7 @@ describe("getWatchlistPlayerIds", () => {
     findMany.mockResolvedValue([{ playerId: 7 }, { playerId: 3 }]);
     expect(await getWatchlistPlayerIds()).toEqual([7, 3]);
     expect(findMany).toHaveBeenCalledWith({
-      where: { profileId: profile.id },
+      where: { leagueId: league.id },
       orderBy: { createdAt: "desc" },
       select: { playerId: true },
     });
@@ -35,6 +40,12 @@ describe("getWatchlistPlayerIds", () => {
 
   it("returns an empty list when signed out, without querying", async () => {
     getProfile.mockResolvedValue(null);
+    expect(await getWatchlistPlayerIds()).toEqual([]);
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
+  it("returns an empty list when there is no active league, without querying", async () => {
+    resolveActiveLeague.mockResolvedValue(null);
     expect(await getWatchlistPlayerIds()).toEqual([]);
     expect(findMany).not.toHaveBeenCalled();
   });
@@ -73,16 +84,27 @@ describe("getWatchlistPlayers", () => {
     getProfile.mockResolvedValue(null);
     expect(await getWatchlistPlayers({ limit: 5 })).toEqual([]);
   });
+
+  it("returns an empty list when there is no active league", async () => {
+    resolveActiveLeague.mockResolvedValue(null);
+    expect(await getWatchlistPlayers({ limit: 5 })).toEqual([]);
+  });
 });
 
 describe("getWatchlistCount", () => {
-  it("counts the signed-in profile's rows", async () => {
+  it("counts the active league's rows", async () => {
     count.mockResolvedValue(42);
     expect(await getWatchlistCount()).toBe(42);
+    expect(count).toHaveBeenCalledWith({ where: { leagueId: league.id } });
   });
 
   it("is zero when signed out", async () => {
     getProfile.mockResolvedValue(null);
+    expect(await getWatchlistCount()).toBe(0);
+  });
+
+  it("is zero when there is no active league", async () => {
+    resolveActiveLeague.mockResolvedValue(null);
     expect(await getWatchlistCount()).toBe(0);
   });
 });

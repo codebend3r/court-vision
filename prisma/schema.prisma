@@ -34,35 +34,97 @@ model Player {
   seasonStats  PlayerSeasonStats[]
   gameLogs     PlayerGameLog[]
   advancedGameLogs PlayerAdvancedGameLog[]
-  watchlist    WatchlistPlayer[]
+  leagueWatchlist  LeagueWatchlistPlayer[]
+  leagueTeamSlots  LeagueTeamSlot[]
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
 }
 
 model Profile {
-  id          String   @id @db.Uuid
-  email       String
-  username    String   @unique
-  tier        String   @default("free")
-  displayName String?
-  watchlist   WatchlistPlayer[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String   @id @db.Uuid
+  email            String
+  username         String   @unique
+  tier             String   @default("free")
+  displayName      String?
+  // User preferences (spec: settings page). preferredFormula is a
+  // FantasyMethodKey; fontScale is "sm" | "default" | "lg" | "xl" — both
+  // validated by guards at the edges, stored as plain strings.
+  preferredFormula String?
+  fontScale        String   @default("default")
+  activeLeagueId   String?
+  activeLeague     League?  @relation("ActiveLeague", fields: [activeLeagueId], references: [id], onDelete: SetNull)
+  leagues          League[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
-// A user's starred players. The composite primary key is the natural key, so
-// double-starring is impossible by construction; the index serves the only
-// ordered read there is — newest-starred first. The 50-row cap is enforced in
-// lib/watchlist/actions.ts, inside a transaction.
-model WatchlistPlayer {
-  profileId String   @db.Uuid
+// A League Container: one user's fantasy league with its own teams, starred
+// players, and scoring setup. scoringConfig's shape depends on scoringType and
+// is validated by lib/leagues/guards.ts. The 10-league cap is enforced in
+// lib/leagues/actions.ts, inside a transaction.
+model League {
+  id            String                  @id @default(cuid())
+  profileId     String                  @db.Uuid
+  profile       Profile                 @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name          String
+  slug          String
+  scoringType   String                  @default("h2h_categories")
+  teamCount     Int                     @default(12)
+  rosterSlots   Int                     @default(13)
+  scoringConfig Json
+  teams         LeagueTeam[]
+  watchlist     LeagueWatchlistPlayer[]
+  activeFor     Profile[]               @relation("ActiveLeague")
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  @@unique([profileId, slug])
+}
+
+model LeagueTeam {
+  id        String           @id @default(cuid())
+  leagueId  String
+  league    League           @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  // Denormalized owner so RLS is a direct auth.uid() check, not a join.
+  profileId String           @db.Uuid
+  name      String
+  slug      String
+  slots     LeagueTeamSlot[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([leagueId, slug])
+  @@index([profileId])
+}
+
+model LeagueTeamSlot {
+  id        String     @id @default(cuid())
+  teamId    String
+  team      LeagueTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  profileId String     @db.Uuid
+  slotType  String
+  position  Int
+  playerId  Int?
+  player    Player?    @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@unique([teamId, position])
+  @@index([profileId])
+}
+
+// Per-league starred players; replaces the global WatchlistPlayer. Same
+// composite-natural-key design; the 50-row cap (per league now) stays in
+// lib/watchlist/actions.ts.
+model LeagueWatchlistPlayer {
+  leagueId  String
+  league    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   playerId  Int
-  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
   player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  profileId String   @db.Uuid
   createdAt DateTime @default(now())
 
-  @@id([profileId, playerId])
-  @@index([profileId, createdAt(sort: Desc)])
+  @@id([leagueId, playerId])
+  @@index([leagueId, createdAt(sort: Desc)])
+  @@index([profileId])
 }
 
 model PlayerSeasonStats {

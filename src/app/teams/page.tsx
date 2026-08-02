@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { StandingsTrendChart } from "@/components/StandingsTrendChart/StandingsTrendChart";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import {
   CONFERENCE_BY_DIVISION,
@@ -11,6 +12,7 @@ import {
 import { getTeamStats } from "@/lib/teams/loader";
 import { loadTeamsSearchParams, TEAMS_VIEWS, type TeamsView } from "@/lib/teams/searchParams";
 import { type TeamSeasonStats } from "@/lib/teams/stats";
+import { buildCumulativeWins } from "@/lib/teams/trend";
 
 import styles from "@/app/teams/page.module.scss";
 
@@ -44,7 +46,7 @@ export default async function TeamsPage({
   searchParams: Promise<RawSearchParams>;
 }) {
   const { view } = await loadTeamsSearchParams(searchParams);
-  const { season, stats } = await getTeamStats();
+  const { season, stats, results } = await getTeamStats();
   const statsByAbbr = new Map(stats.map((team) => [team.abbr, team]));
   const rows: TeamRow[] = TEAM_META.map((team) => ({
     ...team,
@@ -100,6 +102,14 @@ export default async function TeamsPage({
                 </li>
               ))}
             </ol>
+            <StandingsTrendChart
+              title={group.title}
+              teams={group.teams.map((team) => ({ abbr: team.abbr, name: team.name }))}
+              rows={buildCumulativeWins({
+                results,
+                abbrs: group.teams.map((team) => team.abbr),
+              })}
+            />
           </section>
         ))}
       </section>

@@ -8,6 +8,7 @@ const pathnameMock = { current: "/" };
 
 vi.mock("next/navigation", () => ({
   usePathname: () => pathnameMock.current,
+  useRouter: () => ({ refresh: () => {} }),
 }));
 
 beforeEach(() => {
@@ -66,6 +67,20 @@ describe("SideNav", () => {
     pathnameMock.current = "/design";
     render(<SideNav />);
     expect(screen.getByRole("link", { name: "Design" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("renders the Leagues link", () => {
+    pathnameMock.current = "/";
+    render(<SideNav />);
+    const link = screen.getByRole("link", { name: "Leagues" });
+    expect(link).toHaveAttribute("href", "/leagues");
+    expect(link).not.toHaveAttribute("aria-current");
+  });
+
+  it("marks Leagues active on /leagues and nested routes", () => {
+    pathnameMock.current = "/leagues/create";
+    render(<SideNav />);
+    expect(screen.getByRole("link", { name: "Leagues" })).toHaveAttribute("aria-current", "page");
   });
 
   it("collapses the side menu and persists the state", () => {

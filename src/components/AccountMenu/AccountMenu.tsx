@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import styles from "./AccountMenu.module.scss";
@@ -20,6 +21,14 @@ export function AccountMenu({ username }: { username: string }) {
       </button>
       {open && (
         <div className={styles.dropdown} role="menu">
+          <Link
+            href="/settings"
+            role="menuitem"
+            className={styles.settingsLink}
+            onClick={() => setOpen(false)}
+          >
+            Settings
+          </Link>
           <form action="/auth/signout" method="post">
             <button type="submit" className={styles.signout}>
               Sign out

@@ -5,6 +5,8 @@ import { HomeStarredPanel } from "@/components/HomeStarredPanel/HomeStarredPanel
 import { HomeTeamPanel } from "@/components/HomeTeamPanel/HomeTeamPanel";
 import { WatchlistTrendChart } from "@/components/WatchlistTrendChart/WatchlistTrendChart";
 import { getProfile } from "@/lib/auth/session";
+import { getActiveLeague } from "@/lib/leagues/queries";
+import { getLeagueTeams } from "@/lib/leagues/teamQueries";
 import { getConferenceStandings } from "@/lib/standings/loader";
 import { HOMEPAGE_WATCHLIST_LIMIT } from "@/lib/watchlist/constants";
 import { getWatchlistCount, getWatchlistPlayers } from "@/lib/watchlist/queries";
@@ -23,11 +25,13 @@ export default async function Home() {
     redirect("/login");
   }
 
-  const [players, count, standings] = await Promise.all([
+  const [players, count, standings, league] = await Promise.all([
     getWatchlistPlayers({ limit: HOMEPAGE_WATCHLIST_LIMIT }),
     getWatchlistCount(),
     getConferenceStandings(),
+    getActiveLeague(),
   ]);
+  const teams = league === null ? [] : await getLeagueTeams({ leagueId: league.id });
   // Both charts track exactly the players the panel above lists.
   const [zSeries, gSeries] = await Promise.all([
     getZTrendSeries({ players }),
@@ -40,7 +44,7 @@ export default async function Home() {
       <p className={styles.subtitle}>Your fantasy command center.</p>
       <div className={styles.dashboardGrid}>
         <HomeStarredPanel players={players} count={count} className={styles.panelCardLeft} />
-        <HomeTeamPanel className={styles.panelCardRight} />
+        <HomeTeamPanel teams={teams} className={styles.panelCardRight} />
         <HomeStandingsPanel standings={standings} className={styles.panelCardFar} />
         <section
           className={`${styles.chartCard} ${styles.chartCardLeft}`}

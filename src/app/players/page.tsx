@@ -5,10 +5,13 @@ import { PlayersSearchControls } from "@/components/PlayersSearchControls/Player
 import { PlayersTable } from "@/components/PlayersTable/PlayersTable";
 import { PlayersTabs } from "@/components/PlayersTabs/PlayersTabs";
 import { StarredPlayersView } from "@/components/StarredPlayersView/StarredPlayersView";
-import { getUser } from "@/lib/auth/session";
+import { getProfile, getUser } from "@/lib/auth/session";
+import { buildLeagueSeed } from "@/lib/leagues/fantasyDefaults";
+import { getActiveLeague } from "@/lib/leagues/queries";
 import { searchPlayers, searchPlayersAdvanced } from "@/lib/players/searchCached";
 import { parsePlayersSearchParams } from "@/lib/players/searchParams";
 import { getFantasyPool } from "@/lib/valuation/loader";
+import { ENABLED_METHODS } from "@/lib/valuation/registry";
 import { loadFantasySearchParams } from "@/lib/valuation/searchParams";
 
 import styles from "@/app/players/page.module.scss";
@@ -84,12 +87,20 @@ export default async function PlayersPage({
     // Everything else (weights, exclusions, sort, paging) computes client-side
     // in FantasyValueView from this one cached pool payload.
     const { range } = await loadFantasySearchParams(raw);
-    const lines = await getFantasyPool({ range });
+    const [lines, league, profile] = await Promise.all([
+      getFantasyPool({ range }),
+      getActiveLeague(),
+      getProfile(),
+    ]);
+    const presentKeys = new Set(Object.keys(raw));
+    const formula =
+      ENABLED_METHODS.find((method) => method.key === profile?.preferredFormula)?.key ?? null;
+    const leagueSeed = buildLeagueSeed({ league, preferredFormula: formula, presentKeys });
     return (
       <main className={styles.page}>
         <h1>Players</h1>
         {tabsNav}
-        <FantasyValueView lines={lines} isSignedIn={isSignedIn} />
+        <FantasyValueView lines={lines} isSignedIn={isSignedIn} leagueSeed={leagueSeed} />
       </main>
     );
   }

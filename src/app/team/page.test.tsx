@@ -39,10 +39,25 @@ beforeEach(() => {
   ]);
   getTeamStats.mockResolvedValue({
     season: "2024-25",
+    results: [],
     stats: buildTeamStats({
       results: [
-        { teamAbbr: "TOR", gameId: "g1", teamScore: 120, opponentScore: 100, winLoss: "W" },
-        { teamAbbr: "BOS", gameId: "g1", teamScore: 100, opponentScore: 120, winLoss: "L" },
+        {
+          teamAbbr: "TOR",
+          gameId: "g1",
+          teamScore: 120,
+          opponentScore: 100,
+          winLoss: "W",
+          gameDate: new Date("2024-11-01"),
+        },
+        {
+          teamAbbr: "BOS",
+          gameId: "g1",
+          teamScore: 100,
+          opponentScore: 120,
+          winLoss: "L",
+          gameDate: new Date("2024-11-01"),
+        },
       ],
       totals: [
         {
@@ -131,7 +146,7 @@ describe("TeamPage", () => {
   });
 
   it("notices missing data for a known team without stats", async () => {
-    getTeamStats.mockResolvedValue({ season: null, stats: [] });
+    getTeamStats.mockResolvedValue({ season: null, stats: [], results: [] });
 
     render(await TeamPage({ searchParams: Promise.resolve({ is: "raptors" }) }));
 

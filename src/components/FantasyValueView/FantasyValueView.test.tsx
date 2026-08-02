@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it } from "bun:test";
@@ -123,6 +123,32 @@ describe("FantasyValueView", () => {
       wrapper: withNuqsTestingAdapter({ searchParams: "?" }),
     });
     expect(screen.getByText(/No players yet/)).toBeInTheDocument();
+  });
+});
+
+describe("FantasyValueView league seed", () => {
+  it("seeds the URL from leagueSeed once on mount", async () => {
+    const updates: string[] = [];
+    render(<FantasyValueView isSignedIn={false} lines={lines} leagueSeed={{ teams: 10 }} />, {
+      wrapper: withNuqsTestingAdapter({
+        searchParams: "?",
+        onUrlUpdate: (event) => updates.push(event.queryString),
+      }),
+    });
+    await waitFor(() => expect(updates).toHaveLength(1));
+    expect(updates[0]).toContain("teams=10");
+  });
+
+  it("does not write to the URL when leagueSeed is empty", async () => {
+    const updates: string[] = [];
+    render(<FantasyValueView isSignedIn={false} lines={lines} leagueSeed={{}} />, {
+      wrapper: withNuqsTestingAdapter({
+        searchParams: "?",
+        onUrlUpdate: (event) => updates.push(event.queryString),
+      }),
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(updates).toHaveLength(0);
   });
 });
 

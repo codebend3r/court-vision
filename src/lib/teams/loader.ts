@@ -7,6 +7,7 @@ import { buildTeamStats, type TeamGameResult, type TeamSeasonStats } from "@/lib
 export type TeamsData = {
   season: string | null;
   stats: TeamSeasonStats[];
+  results: TeamGameResult[];
 };
 
 const latestSeason = async (): Promise<string | null> => {
@@ -20,7 +21,7 @@ const latestSeason = async (): Promise<string | null> => {
 
 const fetchTeams = async (): Promise<TeamsData> => {
   const season = await latestSeason();
-  if (season === null) return { season: null, stats: [] };
+  if (season === null) return { season: null, stats: [], results: [] };
   const where = { season, seasonType: "Regular Season" };
   // One row per (team, game) carries the final score and result; the groupBy
   // sums every player's box score into team totals.
@@ -34,6 +35,7 @@ const fetchTeams = async (): Promise<TeamsData> => {
         teamScore: true,
         opponentScore: true,
         winLoss: true,
+        gameDate: true,
       },
     }),
     prisma.playerGameLog.groupBy({
@@ -54,7 +56,9 @@ const fetchTeams = async (): Promise<TeamsData> => {
       },
     }),
   ]);
-  const results: TeamGameResult[] = gameRows;
+  const results: TeamGameResult[] = [...gameRows].sort(
+    (a, b) => a.gameDate.getTime() - b.gameDate.getTime(),
+  );
   const totals = boxRows.map((row) => ({
     teamAbbr: row.teamAbbr,
     pts: row._sum.pts ?? 0,
@@ -69,7 +73,7 @@ const fetchTeams = async (): Promise<TeamsData> => {
     ftm: row._sum.ftm ?? 0,
     fta: row._sum.fta ?? 0,
   }));
-  return { season, stats: buildTeamStats({ results, totals }) };
+  return { season, stats: buildTeamStats({ results, totals }), results };
 };
 
 // Same cache regime as the players loaders: tag-shared invalidation, 300s.

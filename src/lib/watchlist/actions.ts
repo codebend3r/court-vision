@@ -1,6 +1,7 @@
 "use server";
 
 import { getProfile } from "@/lib/auth/session";
+import { ensureDefaultLeague } from "@/lib/leagues/queries";
 import { prisma } from "@/lib/prisma";
 import { MAX_WATCHLIST } from "@/lib/watchlist/constants";
 import { type WatchlistActionResult } from "@/lib/watchlist/types";
@@ -20,17 +21,24 @@ export const starPlayer = async ({
   const profile = await getProfile();
   if (profile === null) return { status: "unauthenticated" };
   try {
+    // Inside the try: ensureDefaultLeague can itself throw (e.g. it re-reads
+    // after losing a create race and finds nothing), and that must surface
+    // as { status: "error" } rather than an unhandled rejection.
+    const league = await ensureDefaultLeague();
+    if (league === null) return { status: "unauthenticated" };
     // The cap is checked and the row written in one transaction, so a stale
     // client — or a second tab — can never push the list past MAX_WATCHLIST.
     return await prisma.$transaction(async (tx) => {
-      const current = await tx.watchlistPlayer.count({ where: { profileId: profile.id } });
+      const current = await tx.leagueWatchlistPlayer.count({ where: { leagueId: league.id } });
       if (current >= MAX_WATCHLIST) return { status: "limit", count: current };
       try {
-        await tx.watchlistPlayer.create({ data: { profileId: profile.id, playerId } });
+        await tx.leagueWatchlistPlayer.create({
+          data: { leagueId: league.id, playerId, profileId: profile.id },
+        });
       } catch (error) {
         if (!isUniqueViolation({ error })) throw error;
       }
-      const count = await tx.watchlistPlayer.count({ where: { profileId: profile.id } });
+      const count = await tx.leagueWatchlistPlayer.count({ where: { leagueId: league.id } });
       return { status: "ok", count };
     });
   } catch {
@@ -43,11 +51,11 @@ export const unstarPlayer = async ({
 }: {
   playerId: number;
 }): Promise<WatchlistActionResult> => {
-  const profile = await getProfile();
-  if (profile === null) return { status: "unauthenticated" };
   try {
-    await prisma.watchlistPlayer.deleteMany({ where: { profileId: profile.id, playerId } });
-    const count = await prisma.watchlistPlayer.count({ where: { profileId: profile.id } });
+    const league = await ensureDefaultLeague();
+    if (league === null) return { status: "unauthenticated" };
+    await prisma.leagueWatchlistPlayer.deleteMany({ where: { leagueId: league.id, playerId } });
+    const count = await prisma.leagueWatchlistPlayer.count({ where: { leagueId: league.id } });
     return { status: "ok", count };
   } catch {
     return { status: "error" };

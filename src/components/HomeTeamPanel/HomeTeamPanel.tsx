@@ -1,29 +1,23 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect } from "react";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { slotMeta } from "@/lib/fantasyTeams/slots";
-import { teamNameToSlug } from "@/lib/fantasyTeams/slug";
-import { useFantasyTeamsStore } from "@/lib/fantasyTeams/store";
+import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 
 import styles from "@/components/HomeTeamPanel/HomeTeamPanel.module.scss";
 
-// Fantasy teams live in localStorage (lib/fantasyTeams/store.ts), so this panel
-// is a client component reading the same store /my-teams uses. Bench and IL are
-// left to that page; the homepage shows the starters only.
+// Fantasy teams now live in the database (lib/leagues/teamQueries.ts); the
+// home page fetches the active league's teams server-side and hands them
+// down here. Bench and IL are left to /my-teams; the homepage shows starters
+// only, for the most recently created team.
 export type HomeTeamPanelProps = {
+  teams: FantasyTeam[];
   // Lets the page's grid place the panel; the panel itself stays
   // container-agnostic.
   className?: string;
 };
 
-export function HomeTeamPanel({ className }: HomeTeamPanelProps = {}) {
-  useEffect(() => {
-    void useFantasyTeamsStore.persist.rehydrate();
-  }, []);
-  const teams = useFantasyTeamsStore((state) => state.teams);
+export function HomeTeamPanel({ teams, className }: HomeTeamPanelProps) {
   const latest = [...teams].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
   const panelClass = [styles.panel, className].filter(Boolean).join(" ");
 
@@ -48,7 +42,7 @@ export function HomeTeamPanel({ className }: HomeTeamPanelProps = {}) {
       <h2 id="home-team-title" className={styles.title}>
         Your Team
       </h2>
-      <Link href={`/my-teams/${teamNameToSlug(latest.name)}`} className={styles.teamName}>
+      <Link href={`/my-teams/${latest.slug}`} className={styles.teamName}>
         {latest.name}
       </Link>
       <p className={styles.meta}>

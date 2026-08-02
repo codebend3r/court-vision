@@ -1,20 +1,42 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { TeamBuilder } from "@/components/TeamBuilder/TeamBuilder";
 import { buildSlots, DEFAULT_SLOT_COUNTS } from "@/lib/fantasyTeams/slots";
-import { useFantasyTeamsStore } from "@/lib/fantasyTeams/store";
-import { type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
+import { type FantasyTeamPlayer, type RosterSlot } from "@/lib/fantasyTeams/types";
+
+const saveLeagueTeamMock = vi.fn();
+
+vi.mock("@/lib/leagues/teamActions", () => ({
+  saveLeagueTeam: (args: {
+    leagueId: string;
+    teamId: string | null;
+    name: string;
+    slots: readonly RosterSlot[];
+  }) => saveLeagueTeamMock(args),
+}));
 
 const push = vi.fn();
+const refresh = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push }),
+  useRouter: () => ({ push, refresh }),
 }));
+
+const LEAGUE_ID = "league-1";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  useFantasyTeamsStore.setState({ teams: [] });
+  saveLeagueTeamMock.mockResolvedValue({
+    status: "ok",
+    team: {
+      id: "server-team-1",
+      name: "Bench Mob",
+      slug: "bench-mob",
+      slots: [],
+      createdAt: "2026-07-23T00:00:00.000Z",
+    },
+  });
 });
 
 afterEach(cleanup);
@@ -51,7 +73,7 @@ const searchFor = async (text: string) => {
 
 describe("TeamBuilder", () => {
   it("renders the default 15-slot roster and settings", () => {
-    render(<TeamBuilder players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
     expect(screen.getByLabelText("Team name")).toBeInTheDocument();
     expect(screen.getByText("0 of 15 slots filled")).toBeInTheDocument();
     expect(screen.getAllByText("Empty")).toHaveLength(15);
@@ -59,14 +81,14 @@ describe("TeamBuilder", () => {
   });
 
   it("searches by first or last name", async () => {
-    render(<TeamBuilder players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
     await searchFor("brun");
     expect(screen.getByText("Jalen Brunson")).toBeInTheDocument();
     expect(screen.queryByText("Karl-Anthony Towns")).not.toBeInTheDocument();
   });
 
   it("adds a player to the first eligible slot with the + button", async () => {
-    render(<TeamBuilder players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
     const user = await searchFor("towns");
     await user.click(screen.getByRole("button", { name: "Add Karl-Anthony Towns" }));
     expect(screen.getByText("1 of 15 slots filled")).toBeInTheDocument();
@@ -77,7 +99,7 @@ describe("TeamBuilder", () => {
   });
 
   it("changes roster shape from the settings steppers", async () => {
-    render(<TeamBuilder players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
     const user = userEvent.setup();
     const bench = screen.getByLabelText("Bench slots");
     await user.clear(bench);
@@ -87,7 +109,7 @@ describe("TeamBuilder", () => {
   });
 
   it("highlights eligible slots green and ineligible red during a drag", async () => {
-    render(<TeamBuilder players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
     await searchFor("brunson");
     const card = screen.getByText("Jalen Brunson").closest("li");
     if (card === null) throw new Error("card not rendered");
@@ -105,7 +127,7 @@ describe("TeamBuilder", () => {
   });
 
   it("assigns a player on drop into an eligible slot", async () => {
-    render(<TeamBuilder players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
     await searchFor("brunson");
     const card = screen.getByText("Jalen Brunson").closest("li");
     const slot = document.querySelector('[data-slot-id="G-1"]');
@@ -116,7 +138,7 @@ describe("TeamBuilder", () => {
   });
 
   it("ignores drops into ineligible slots", async () => {
-    render(<TeamBuilder players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
     await searchFor("brunson");
     const card = screen.getByText("Jalen Brunson").closest("li");
     const center = document.querySelector('[data-slot-id="C-1"]');
@@ -127,7 +149,7 @@ describe("TeamBuilder", () => {
   });
 
   it("asks for confirmation before removing a player and honors cancel", async () => {
-    render(<TeamBuilder players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
     const user = await searchFor("brunson");
     await user.click(screen.getByRole("button", { name: "Add Jalen Brunson" }));
     await user.click(screen.getByRole("button", { name: "Remove Jalen Brunson" }));
@@ -141,60 +163,62 @@ describe("TeamBuilder", () => {
     expect(screen.getByText("0 of 15 slots filled")).toBeInTheDocument();
   });
 
-  it("edits an existing team in place", async () => {
+  it("saves edits to an existing team and returns to My Teams", async () => {
     const user = userEvent.setup();
     const existing = {
       id: "team-1",
       name: "Bench Mob",
+      slug: "bench-mob",
       createdAt: "2026-07-23T00:00:00.000Z",
       slots: buildSlots({ counts: DEFAULT_SLOT_COUNTS }).map((slot) =>
         slot.id === "PG-1" ? { ...slot, player: players[0] ?? null } : slot,
       ),
     };
-    useFantasyTeamsStore.setState({ teams: [existing] });
-    render(<TeamBuilder players={players} team={existing} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={existing} />);
     expect(screen.getByLabelText("Team name")).toHaveValue("Bench Mob");
     expect(screen.getByText("1 of 15 slots filled")).toBeInTheDocument();
     await user.type(screen.getByLabelText("Search players"), "hart");
     await user.click(screen.getByRole("button", { name: "Add Josh Hart" }));
     await user.click(screen.getByRole("button", { name: "Save team" }));
-    const teams = useFantasyTeamsStore.getState().teams;
-    expect(teams).toHaveLength(1);
-    expect(teams[0]?.id).toBe("team-1");
-    expect(teams[0]?.slots.filter((slot) => slot.player !== null)).toHaveLength(2);
-    // Same name → same slug → stay on the page, no navigation.
-    expect(push).not.toHaveBeenCalled();
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/my-teams"));
+    expect(saveLeagueTeamMock).toHaveBeenCalledWith(
+      expect.objectContaining({ leagueId: LEAGUE_ID, teamId: "team-1", name: "Bench Mob" }),
+    );
+    expect(refresh).toHaveBeenCalled();
   });
 
-  it("navigates to the new slug when an edit renames the team", async () => {
-    const user = userEvent.setup();
-    const existing = {
-      id: "team-1",
-      name: "Bench Mob",
-      createdAt: "2026-07-23T00:00:00.000Z",
-      slots: buildSlots({ counts: DEFAULT_SLOT_COUNTS }),
-    };
-    useFantasyTeamsStore.setState({ teams: [existing] });
-    render(<TeamBuilder players={players} team={existing} />);
-    await user.clear(screen.getByLabelText("Team name"));
-    await user.type(screen.getByLabelText("Team name"), "Dynasty");
-    await user.click(screen.getByRole("button", { name: "Save team" }));
-    expect(useFantasyTeamsStore.getState().teams[0]?.name).toBe("Dynasty");
-    expect(push).toHaveBeenCalledWith("/my-teams/dynasty");
-  });
-
-  it("saves a new named team and lands on its own page", async () => {
-    render(<TeamBuilder players={players} />);
+  it("saves a new named team and lands on My Teams", async () => {
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
     const user = userEvent.setup();
     expect(screen.getByRole("button", { name: "Save team" })).toBeDisabled();
     await user.type(screen.getByLabelText("Team name"), "Bench Mob");
     await user.type(screen.getByLabelText("Search players"), "hart");
     await user.click(screen.getByRole("button", { name: "Add Josh Hart" }));
     await user.click(screen.getByRole("button", { name: "Save team" }));
-    const teams = useFantasyTeamsStore.getState().teams;
-    expect(teams).toHaveLength(1);
-    expect(teams[0]?.name).toBe("Bench Mob");
-    expect(teams[0]?.slots.filter((slot) => slot.player !== null)).toHaveLength(1);
-    expect(push).toHaveBeenCalledWith("/my-teams/bench-mob");
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/my-teams"));
+    expect(saveLeagueTeamMock).toHaveBeenCalledWith(
+      expect.objectContaining({ leagueId: LEAGUE_ID, teamId: null, name: "Bench Mob" }),
+    );
+    expect(refresh).toHaveBeenCalled();
+  });
+
+  it("shows an inline alert when the save is invalid", async () => {
+    saveLeagueTeamMock.mockResolvedValue({ status: "invalid" });
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Team name"), "Bench Mob");
+    await user.click(screen.getByRole("button", { name: "Save team" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Check the team name and roster.");
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("shows a generic inline alert on any other failure", async () => {
+    saveLeagueTeamMock.mockResolvedValue({ status: "error" });
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Team name"), "Bench Mob");
+    await user.click(screen.getByRole("button", { name: "Save team" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Something went wrong — try again.");
+    expect(push).not.toHaveBeenCalled();
   });
 });
