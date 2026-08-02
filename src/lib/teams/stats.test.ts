@@ -29,6 +29,7 @@ const game = (
   teamScore: 110,
   opponentScore: 100,
   winLoss: "W",
+  gameDate: new Date("2024-11-01"),
   ...overrides,
 });
 

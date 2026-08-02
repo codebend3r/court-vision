@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   CartesianGrid,
   LabelList,
@@ -15,6 +14,7 @@ import {
 } from "recharts";
 
 import { getChartChrome } from "@/components/PlayerStatChart/statMeta";
+import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
 import { useTheme, type Theme } from "@/lib/theme/ThemeProvider";
 import { ROLLING_WINDOW_GAMES, type TrendSeries } from "@/lib/watchlist/trend";
 
@@ -75,18 +75,6 @@ export const buildRows = ({ series }: { series: readonly TrendSeries[] }): Chart
       { date },
     ),
   );
-};
-
-const usePrefersReducedMotion = (): boolean => {
-  const [prefersReduced, setPrefersReduced] = useState(false);
-  useEffect(() => {
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setPrefersReduced(query.matches);
-    const onChange = (event: MediaQueryListEvent) => setPrefersReduced(event.matches);
-    query.addEventListener("change", onChange);
-    return () => query.removeEventListener("change", onChange);
-  }, []);
-  return prefersReduced;
 };
 
 type ChartTooltipProps = {

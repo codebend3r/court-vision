@@ -8,6 +8,7 @@ export type TeamGameResult = {
   teamScore: number | null;
   opponentScore: number | null;
   winLoss: string | null;
+  gameDate: Date;
 };
 
 export type TeamBoxTotals = {
