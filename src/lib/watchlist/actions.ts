@@ -1,5 +1,6 @@
 "use server";
 
+import { isActionInt } from "@/lib/actions/argGuards";
 import { getProfile } from "@/lib/auth/session";
 import { ensureDefaultLeague } from "@/lib/leagues/queries";
 import { prisma } from "@/lib/prisma";
@@ -18,6 +19,7 @@ export const starPlayer = async ({
 }: {
   playerId: number;
 }): Promise<WatchlistActionResult> => {
+  if (!isActionInt(playerId)) return { status: "error" };
   const profile = await getProfile();
   if (profile === null) return { status: "unauthenticated" };
   try {
@@ -51,6 +53,8 @@ export const unstarPlayer = async ({
 }: {
   playerId: number;
 }): Promise<WatchlistActionResult> => {
+  // `{ gte: 0 }` here would clear the caller's entire watchlist in one call.
+  if (!isActionInt(playerId)) return { status: "error" };
   try {
     const league = await ensureDefaultLeague();
     if (league === null) return { status: "unauthenticated" };

@@ -139,7 +139,11 @@ describe("saveLeagueTeam", () => {
       where: { id: "team-1", leagueId: "league-1", profileId: profile.id },
       data: { name: "Renamed" },
     });
-    expect(leagueTeamSlotDeleteMany).toHaveBeenCalledWith({ where: { teamId: "team-1" } });
+    // Scoped by owner as well as team, so the delete can never widen past the
+    // caller's own rows.
+    expect(leagueTeamSlotDeleteMany).toHaveBeenCalledWith({
+      where: { teamId: "team-1", profileId: profile.id },
+    });
     expect(leagueTeamCreate).not.toHaveBeenCalled();
   });
 

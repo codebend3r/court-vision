@@ -1,5 +1,6 @@
 "use server";
 
+import { isActionId, isActionText } from "@/lib/actions/argGuards";
 import { getProfile } from "@/lib/auth/session";
 import { teamNameToSlug } from "@/lib/fantasyTeams/slug";
 import { MAX_LEAGUES } from "@/lib/leagues/constants";
@@ -39,6 +40,7 @@ export const createLeague = async ({
   rosterSlots: number;
   scoringConfig: LeagueScoringConfig;
 }): Promise<LeagueMutationResult> => {
+  if (!isActionText(name)) return { status: "invalid" };
   const profile = await getProfile();
   if (profile === null) return { status: "unauthenticated" };
   const trimmed = name.trim();
@@ -92,6 +94,9 @@ export const updateLeague = async ({
   rosterSlots: number;
   scoringConfig: LeagueScoringConfig;
 }): Promise<LeagueMutationResult> => {
+  // An object here would reach the `where` below as a Prisma filter, matching
+  // every league the caller owns instead of one.
+  if (!isActionId(leagueId) || !isActionText(name)) return { status: "invalid" };
   const profile = await getProfile();
   if (profile === null) return { status: "unauthenticated" };
   const trimmed = name.trim();
@@ -123,6 +128,9 @@ export const deleteLeague = async ({
 }: {
   leagueId: string;
 }): Promise<LeagueDeleteResult> => {
+  // Without this, `{ not: "" }` deletes every league the caller owns and
+  // cascades to their teams, slots, and watchlists, then reports success.
+  if (!isActionId(leagueId)) return { status: "error" };
   const profile = await getProfile();
   if (profile === null) return { status: "unauthenticated" };
   try {
@@ -153,6 +161,7 @@ export const setActiveLeague = async ({
 }: {
   leagueId: string;
 }): Promise<SetActiveLeagueResult> => {
+  if (!isActionId(leagueId)) return { status: "error" };
   const profile = await getProfile();
   if (profile === null) return { status: "unauthenticated" };
   try {
