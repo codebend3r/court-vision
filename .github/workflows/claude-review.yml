@@ -1,0 +1,74 @@
+name: Claude Review
+
+# Runs the repo-local review agents in .claude/agents/ against a PR. The action
+# checks the repo out first, so those agent definitions are discovered
+# automatically; no agent config is duplicated here.
+#
+# Requires an ANTHROPIC_API_KEY repository secret. Without it the job is skipped
+# rather than failed, so the rest of CI stays green until the secret is added.
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    # Forked PRs cannot read secrets, and this repo is public. Skip rather than
+    # fail, and never switch to pull_request_target, which would run untrusted
+    # PR code with secrets in scope.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Check for API key
+        id: key
+        run: echo "present=${{ secrets.ANTHROPIC_API_KEY != '' }}" >> "$GITHUB_OUTPUT"
+
+      - name: cv-security review
+        if: steps.key.outputs.present == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: >-
+            @agent-cv-security review the changes in this pull request.
+            Scope yourself to the diff against the base branch.
+            Post findings as inline review comments. If there are no findings,
+            say so in a single comment and do not invent any.
+          claude_args: --max-turns 15
+
+  house-rules:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Check for API key
+        id: key
+        run: echo "present=${{ secrets.ANTHROPIC_API_KEY != '' }}" >> "$GITHUB_OUTPUT"
+
+      # cv-house-rules pins model: haiku in its own frontmatter, so this job is
+      # the cheap one. It stays separate from the security job so a failure in
+      # one does not mask the other.
+      - name: cv-house-rules review
+        if: steps.key.outputs.present == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: >-
+            @agent-cv-house-rules review the changes in this pull request
+            against the conventions in CLAUDE.md. Skip anything oxlint, gale,
+            or tsgo already catches. Post findings as inline review comments.
+          claude_args: --max-turns 15

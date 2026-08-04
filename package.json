@@ -12,6 +12,7 @@
     "lint:scss": "gale \"src/**/*.scss\"",
     "typecheck": "next typegen && tsgo --noEmit",
     "test": "bun test --parallel --dots",
+    "security:scan": "bun run scripts/security-scan.ts",
     "test:watch": "bun test --isolate --watch",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

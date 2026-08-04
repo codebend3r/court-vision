@@ -1,0 +1,20 @@
+{
+  "_comment": "Violations that predate the security-scan gate. Each is a reviewed decision with a tracked follow-up, not a snooze. Anything not listed here fails CI. Removing an entry once fixed is required: the scan prints a 'stale' warning when a baselined entry no longer matches.",
+  "known": [
+    {
+      "rule": "secret-module-unguarded",
+      "file": "src/lib/prisma.ts",
+      "reason": "Reads DATABASE_URL with no server-only guard. Not reachable from any client component today; the guard is hardening, and adding the server-only package is a separate change."
+    },
+    {
+      "rule": "secret-reaches-client",
+      "file": "src/lib/balldontlie/constants.ts",
+      "reason": "getApiKey() sits beside client-safe season constants, so PlayerStatFilters/SeasonSelect pull the module in via lib/stats/searchParams. Next.js only inlines NEXT_PUBLIC_ vars, and the built bundle was checked: neither the key nor the name appears in .next/static, so nothing leaks today. Fix is to move getApiKey into client.ts, which relocates its tests too and belongs in its own PR."
+    },
+    {
+      "rule": "server-action-unauthenticated",
+      "file": "src/lib/auth/signup.ts",
+      "reason": "isUsernameTaken backs the signup form and must work signed out, so the missing session check is correct. It does need rate limiting, tracked separately as a username-enumeration finding."
+    }
+  ]
+}
