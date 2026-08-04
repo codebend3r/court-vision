@@ -1,5 +1,6 @@
--- APPLIED VIA MIGRATION. See prisma/migrations/*_stats_rls/migration.sql.
--- Kept for reference; edit the migration, not this file.
+-- Promoted verbatim from prisma/sql/stats_rls.sql, which no migration, script,
+-- or CI step ever applied. Every statement is idempotent, so this is safe
+-- to run against an environment where it was applied by hand.
 
 -- Public NBA stat tables: anon-read RLS.
 --
