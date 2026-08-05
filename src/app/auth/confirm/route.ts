@@ -24,31 +24,53 @@ function isOtpType(value: string | null): value is EmailOtpType {
 //   - A template customized to `{{ .TokenHash }}` links straight here with
 //     `token_hash` + `type`, which we verify ourselves.
 //
-// Accept both, so confirmation keeps working whichever template the project is
-// configured with.
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  const { searchParams, origin } = request.nextUrl;
-  const tokenHash = searchParams.get("token_hash");
-  const type = searchParams.get("type");
-  const code = searchParams.get("code");
-  const next = safeNextPath(searchParams.get("next"));
-  const home = NextResponse.redirect(new URL(next, origin));
+// A parsed attempt, so that reading the query string and acting on it stay
+// separate concerns. Nothing here decides whether the user is allowed in — that
+// is Supabase's answer alone, below.
+type ConfirmAttempt =
+  | { readonly kind: "code"; readonly code: string }
+  | { readonly kind: "otp"; readonly type: EmailOtpType; readonly tokenHash: string }
+  | { readonly kind: "none" };
 
+function readAttempt(searchParams: URLSearchParams): ConfirmAttempt {
+  const code = searchParams.get("code");
   if (!!code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      return home;
-    }
-  } else if (!!tokenHash && isOtpType(type)) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
-    if (!error) {
-      return home;
-    }
+    return { kind: "code", code };
   }
 
-  // Covers a missing/!unusable token and Supabase's own `?error=` bounce
-  // (expired or already-used links land here).
-  return NextResponse.redirect(new URL("/login?error=confirm", origin));
+  const tokenHash = searchParams.get("token_hash");
+  const type = searchParams.get("type");
+  if (!!tokenHash && isOtpType(type)) {
+    return { kind: "otp", type, tokenHash };
+  }
+
+  // No usable credential: a bare request, or Supabase's own `?error=` bounce
+  // when a link is expired or already used.
+  return { kind: "none" };
+}
+
+// The single authority on whether this request confirmed an account. Dispatches
+// on the tag `readAttempt` produced rather than on raw request parameters, so no
+// request-controlled value gates the auth calls; a forged or absent credential
+// can only ever produce `false`.
+async function isConfirmed(attempt: ConfirmAttempt): Promise<boolean> {
+  if (attempt.kind === "none") {
+    return false;
+  }
+
+  const supabase = await createClient();
+  const { error } =
+    attempt.kind === "code"
+      ? await supabase.auth.exchangeCodeForSession(attempt.code)
+      : await supabase.auth.verifyOtp({ type: attempt.type, token_hash: attempt.tokenHash });
+
+  return !error;
+}
+
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  const { searchParams, origin } = request.nextUrl;
+  const next = safeNextPath(searchParams.get("next"));
+  const confirmed = await isConfirmed(readAttempt(searchParams));
+
+  return NextResponse.redirect(new URL(confirmed ? next : "/login?error=confirm", origin));
 }
