@@ -24,4 +24,21 @@ describe("safeNextPath", () => {
   it("rejects a path without a leading slash", () => {
     expect(safeNextPath("players")).toBe("/");
   });
+
+  // The URL parser strips these before parsing, so "/\t/evil.com" clears a
+  // naive prefix check and then resolves to https://evil.com/.
+  it("rejects a protocol-relative target smuggled past the prefix check with a tab or newline", () => {
+    expect(safeNextPath("/\t/evil.com")).toBe("/");
+    expect(safeNextPath("/\n/evil.com")).toBe("/");
+    expect(safeNextPath("/\r/evil.com")).toBe("/");
+    expect(safeNextPath("/\r\n/evil.com")).toBe("/");
+  });
+
+  it("rejects a backslash smuggled past the prefix check", () => {
+    expect(safeNextPath("/\t\\evil.com")).toBe("/");
+  });
+
+  it("strips control characters from an otherwise same-origin path", () => {
+    expect(safeNextPath("/play\ters")).toBe("/players");
+  });
 });
