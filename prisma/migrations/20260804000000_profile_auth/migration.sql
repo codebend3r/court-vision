@@ -1,5 +1,6 @@
--- APPLIED VIA MIGRATION. See prisma/migrations/*_profile_auth/migration.sql.
--- Kept for reference; edit the migration, not this file.
+-- Promoted verbatim from prisma/sql/profile_auth.sql, which no migration, script,
+-- or CI step ever applied. Every statement is idempotent, so this is safe
+-- to run against an environment where it was applied by hand.
 
 -- Case-insensitive uniqueness (source of truth; wins races).
 CREATE UNIQUE INDEX IF NOT EXISTS "Profile_username_lower_key"
