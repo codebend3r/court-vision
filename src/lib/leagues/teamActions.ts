@@ -2,6 +2,7 @@
 
 import { type Prisma } from "@generated/prisma/client";
 
+import { isActionId, isActionText, isOptionalActionId } from "@/lib/actions/argGuards";
 import { getProfile } from "@/lib/auth/session";
 import { teamNameToSlug } from "@/lib/fantasyTeams/slug";
 import { type FantasyTeam, type RosterSlot } from "@/lib/fantasyTeams/types";
@@ -72,6 +73,14 @@ export const saveLeagueTeam = async ({
   name: string;
   slots: readonly RosterSlot[];
 }): Promise<LeagueTeamActionResult> => {
+  // Runtime-check every argument that reaches a `where` clause before Prisma
+  // sees it: the annotations above are erased, and an object here becomes a
+  // Prisma filter rather than a value. `name.trim()` below also throws on a
+  // non-string, which would escape as a 500 instead of a result union.
+  if (!isActionId(leagueId) || !isOptionalActionId(teamId) || !isActionText(name)) {
+    return { status: "invalid" };
+  }
+
   const profile = await getProfile();
   if (profile === null) return { status: "unauthenticated" };
 
@@ -96,7 +105,12 @@ export const saveLeagueTeam = async ({
       });
       if (teamRow.status === "invalid") return { status: "invalid" };
 
-      await tx.leagueTeamSlot.deleteMany({ where: { teamId: teamRow.teamId } });
+      // Scoped by owner as well as team. Independent of the guard above: this
+      // delete must never be able to widen past the caller's own rows, whatever
+      // teamRow.teamId turns out to hold.
+      await tx.leagueTeamSlot.deleteMany({
+        where: { teamId: teamRow.teamId, profileId: profile.id },
+      });
       const rows = slotsToRows({ slots });
       if (rows.length > 0) {
         await tx.leagueTeamSlot.createMany({
