@@ -45,6 +45,37 @@
   font-size: var(--font-size-sm);
 }
 
+// Explains why the user was bounced back here. Carries a border as well as a
+// tint so the meaning does not rest on colour alone.
+.notice {
+  padding: var(--space-3);
+  border-left: 3px solid var(--color-highlight);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.resend {
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.sent {
+  color: var(--color-win);
+  font-size: var(--font-size-sm);
+}
+
 .alt {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);

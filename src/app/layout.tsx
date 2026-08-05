@@ -13,6 +13,7 @@ import { WatchlistHydrator } from "@/components/WatchlistHydrator/WatchlistHydra
 import { getProfile } from "@/lib/auth/session";
 import { fallbackActiveLeagueId, getLeagues } from "@/lib/leagues/queries";
 import { fontScaleOf } from "@/lib/settings/guards";
+import { resolveSiteOrigin } from "@/lib/siteUrl";
 import { getWatchlistPlayerIds } from "@/lib/watchlist/queries";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
@@ -43,13 +44,10 @@ const monoFont = IBM_Plex_Mono({
 
 const description = "Find fantasy basketball players trending in the categories you care about.";
 
-// Absolute URLs for the share card. Netlify sets DEPLOY_PRIME_URL/URL at build
-// time; NEXT_PUBLIC_SITE_URL overrides both once a custom domain is wired up.
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  process.env.DEPLOY_PRIME_URL ??
-  process.env.URL ??
-  "http://localhost:3000";
+// Absolute URLs for the share card. Shares its resolution with the auth
+// confirmation link (see @/lib/siteUrl) so the two can't drift apart. No request
+// is available at module scope, so this is the env-only answer.
+const siteUrl = resolveSiteOrigin();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
