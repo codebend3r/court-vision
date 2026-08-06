@@ -1,9 +1,16 @@
 import { describe, expect, it } from "bun:test";
 
 import {
+  ADVANCED_SORT_KEYS,
   buildPlayersHref,
   isAdvancedMetricKey,
+  isAdvancedSortKey,
+  isPlayerGameRange,
+  isPlayersTab,
+  isPlayerStatMode,
   parsePlayersSearchParams,
+  PLAYER_GAME_RANGES,
+  PLAYERS_TABS,
 } from "@/lib/players/searchParams";
 
 describe("parsePlayersSearchParams", () => {
@@ -164,5 +171,63 @@ describe("starred tab", () => {
 
   it("still honours an explicit stat sort", () => {
     expect(parsePlayersSearchParams({ tab: "starred", sort: "pts" }).sort).toBe("pts");
+  });
+});
+
+// Every one of these narrows a raw query-string value, so an over-permissive
+// guard is what lets an unchecked string reach a sort key or a Prisma filter.
+describe("isPlayersTab", () => {
+  it("accepts each of the four real tabs", () => {
+    PLAYERS_TABS.forEach((tab) => {
+      expect(isPlayersTab(tab)).toBe(true);
+    });
+  });
+
+  it("rejects an unknown tab, undefined, and an empty string", () => {
+    expect(isPlayersTab("fantasyland")).toBe(false);
+    expect(isPlayersTab(undefined)).toBe(false);
+    expect(isPlayersTab("")).toBe(false);
+  });
+});
+
+describe("isAdvancedSortKey", () => {
+  it("accepts every advertised advanced sort key", () => {
+    ADVANCED_SORT_KEYS.forEach((key) => {
+      expect(isAdvancedSortKey(key)).toBe(true);
+    });
+  });
+
+  it("rejects a regular-tab-only key, undefined, and an empty string", () => {
+    expect(isAdvancedSortKey("starredAt")).toBe(false);
+    expect(isAdvancedSortKey(undefined)).toBe(false);
+    expect(isAdvancedSortKey("")).toBe(false);
+  });
+});
+
+describe("isPlayerGameRange", () => {
+  it("accepts every advertised range", () => {
+    PLAYER_GAME_RANGES.forEach((range) => {
+      expect(isPlayerGameRange(range)).toBe(true);
+    });
+  });
+
+  it("rejects an arbitrary window, undefined, and an empty string", () => {
+    expect(isPlayerGameRange("last7")).toBe(false);
+    expect(isPlayerGameRange(undefined)).toBe(false);
+    expect(isPlayerGameRange("")).toBe(false);
+  });
+});
+
+describe("isPlayerStatMode", () => {
+  it("accepts average and total", () => {
+    expect(isPlayerStatMode("average")).toBe(true);
+    expect(isPlayerStatMode("total")).toBe(true);
+  });
+
+  it("rejects the chart's mode vocabulary, undefined, and an empty string", () => {
+    expect(isPlayerStatMode("per36")).toBe(false);
+    expect(isPlayerStatMode("avg")).toBe(false);
+    expect(isPlayerStatMode(undefined)).toBe(false);
+    expect(isPlayerStatMode("")).toBe(false);
   });
 });

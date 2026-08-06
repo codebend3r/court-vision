@@ -44,6 +44,12 @@ jobs:
       - name: 🧪 Test
         run: bun run test
 
+      # Typecheck does not see RSC boundary violations, bad route config, or a
+      # server-only import pulled into a client component — those only surface
+      # at build. Every data page is dynamic, so this needs no database.
+      - name: Build
+        run: bun run build
+
   security:
     name: 🔒 Security
     runs-on: ubuntu-latest
