@@ -124,10 +124,13 @@ const COLUMNS: readonly Column[] = [
   },
 ];
 
-const SORT_KEYS = new Set<SortKey>(COLUMNS.map((column) => column.key));
+// Typed as a set of plain strings so an arbitrary query-param value can be
+// probed directly; `Set<SortKey>.has` would only accept an already-narrowed
+// key, which is the thing this guard exists to establish.
+const SORT_KEYS: ReadonlySet<string> = new Set<string>(COLUMNS.map((column) => column.key));
 
 const isSortKey = (value: string | null): value is SortKey =>
-  value !== null && SORT_KEYS.has(value as SortKey);
+  value !== null && SORT_KEYS.has(value);
 
 const compare = (
   left: PlayerGameLogTableRow,

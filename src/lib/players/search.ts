@@ -232,7 +232,7 @@ export const searchPlayers = async (
   const { q, page, size, sort, dir, range, playerIds } = args;
   // An empty watchlist has nothing to query — `id: { in: [] }` would scan for
   // a result the caller already knows is empty.
-  if (playerIds?.length === 0) {
+  if (playerIds !== undefined && playerIds.length === 0) {
     return { rows: [], total: 0, page: 1 };
   }
   // Retired players (no game logs) are never shown.
