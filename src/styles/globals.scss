@@ -24,6 +24,9 @@
   --color-retro-shadow: color-mix(in srgb, var(--color-accent) 55%, var(--color-bg));
   // Purple variation for retro-shadow buttons (see retro-button in mixins).
   --color-accent-purple: #9b7dff;
+  // Games a player missed, on the stat chart and the game log.
+  --color-chart-dnp: #f4d35e;
+  --color-chart-dnp-muted: rgb(244 211 94 / 65%);
   --color-retro-shadow-purple: color-mix(in srgb, var(--color-accent-purple) 55%, var(--color-bg));
 
   // Spacing scale
@@ -187,6 +190,16 @@ h5 {
   --color-control-placeholder: #7c86a6;
   --color-focus-ring: rgba(14, 127, 168, 0.28);
 
+  // The dark-theme purple is 3.10:1 on white, below AA for the retro-button
+  // pressed text and TeamBuilder's card view. This is the same violet the
+  // light palette already uses for the center position, at 6.6:1.
+  --color-accent-purple: #7b3fb0;
+
+  // The dark DNP yellow is 1.47:1 on a light surface, under the 3:1 floor for
+  // a non-text indicator.
+  --color-chart-dnp: #8a6d00;
+  --color-chart-dnp-muted: rgb(138 109 0 / 65%);
+
   color-scheme: light;
 }
 
@@ -203,13 +216,19 @@ h5 {
 
 // Respect users who ask the OS to minimize motion: collapse every animation
 // and transition to an instant, non-animated swap.
+//
+// `!important` is load-bearing. The universal selector scores (0,0,0), so
+// without it every class-scoped `animation`/`transition` in the app — which is
+// all of them — outranks this block and the guard never actually applies.
+/* gale-disable declaration-no-important */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.001ms;
-    animation-iteration-count: 1;
-    transition-duration: 0.001ms;
-    scroll-behavior: auto;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }
+/* gale-enable declaration-no-important */

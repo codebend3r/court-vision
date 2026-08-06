@@ -34,8 +34,8 @@
 }
 
 .dnpMarker {
-  fill: #f4d35e;
-  filter: drop-shadow(0 0 3px rgb(244 211 94 / 65%));
+  fill: var(--color-chart-dnp);
+  filter: drop-shadow(0 0 3px var(--color-chart-dnp-muted));
 }
 
 .panels {
@@ -59,7 +59,7 @@
 .panelTitle {
   @include micro-label;
   margin: 0;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   font-family: var(--font-sans);
 }
 

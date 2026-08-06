@@ -119,6 +119,17 @@
   box-shadow: 0 0 0 var(--focus-ring-width) var(--color-focus-ring);
 }
 
+// The failure callout every form and list reports errors in. Was byte-identical
+// across seven modules; change the treatment here, not in each one.
+@mixin error-callout {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-loss);
+  border-radius: var(--radius-sm);
+  color: var(--color-loss);
+  font-size: var(--font-size-sm);
+}
+
 // Accent border shared by every selected control state (active filters, stat
 // chips, sorted columns). Flat by design: no glow effects.
 @mixin selected-accent {
