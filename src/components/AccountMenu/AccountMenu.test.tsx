@@ -12,7 +12,35 @@ describe("AccountMenu", () => {
     const trigger = screen.getByRole("button", { name: /@steve/i });
     expect(trigger).toBeInTheDocument();
     await userEvent.click(trigger);
-    expect(screen.getByRole("button", { name: /sign out/i })).toBeInTheDocument();
+    // A menuitem, not a button: inside role="menu" a plain button is skipped
+    // entirely by assistive tech in menu mode.
+    expect(screen.getByRole("menuitem", { name: /sign out/i })).toBeInTheDocument();
+  });
+
+  it("moves focus into the menu on open", async () => {
+    render(<AccountMenu username="steve" />);
+    await userEvent.click(screen.getByRole("button", { name: /@steve/i }));
+    expect(screen.getByRole("menuitem", { name: "Settings" })).toHaveFocus();
+  });
+
+  it("closes on Escape and returns focus to the trigger", async () => {
+    render(<AccountMenu username="steve" />);
+    const trigger = screen.getByRole("button", { name: /@steve/i });
+    await userEvent.click(trigger);
+
+    await userEvent.keyboard("{Escape}");
+
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it("points the trigger at the menu it controls", async () => {
+    render(<AccountMenu username="steve" />);
+    const trigger = screen.getByRole("button", { name: /@steve/i });
+    await userEvent.click(trigger);
+
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("menu")).toHaveAttribute("id", trigger.getAttribute("aria-controls"));
   });
 
   it("shows a Settings menu item that links to /settings and closes the menu on click", async () => {

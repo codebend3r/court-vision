@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { isUnconfirmedEmailError } from "@/lib/auth/loginNotice";
 import { resendConfirmation } from "@/lib/auth/signup";
@@ -21,6 +21,7 @@ export function LoginForm({ next, notice }: { next: string; notice?: string | nu
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [resend, setResend] = useState<ResendState>("idle");
+  const errorId = useId();
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -64,6 +65,9 @@ export function LoginForm({ next, notice }: { next: string; notice?: string | nu
         <input
           type="email"
           required
+          autoComplete="email"
+          aria-invalid={!!error}
+          aria-describedby={error === null ? undefined : errorId}
           value={email}
           onChange={(event) => setEmail(event.target.value)}
         />
@@ -73,12 +77,17 @@ export function LoginForm({ next, notice }: { next: string; notice?: string | nu
         <input
           type="password"
           required
+          autoComplete="current-password"
+          aria-invalid={!!error}
+          aria-describedby={error === null ? undefined : errorId}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
       </label>
+      {/* role="alert" so a failed sign-in is spoken; the id ties it to both
+          fields so it is also read when focus returns to them. */}
       {!!error && (
-        <p className={styles.error} role="alert">
+        <p className={styles.error} id={errorId} role="alert">
           {error}
         </p>
       )}
