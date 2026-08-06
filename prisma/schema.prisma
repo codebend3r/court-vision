@@ -152,6 +152,9 @@ model PlayerSeasonStats {
   updatedAt   DateTime @updatedAt
 
   @@unique([playerId, season, seasonType])
+  // The unique index leads with playerId, so season-wide leaderboard reads
+  // (which filter on season/seasonType alone) could not use it.
+  @@index([season, seasonType])
 }
 
 model PlayerGameLog {
@@ -190,6 +193,9 @@ model PlayerGameLog {
   @@unique([playerId, gameId])
   @@index([gameDate])
   @@index([playerId, gameDate])
+  // Season-scoped scans of the largest table (teams and valuation loaders)
+  // had no usable index.
+  @@index([season, seasonType])
 }
 
 // Per-game advanced metrics from Balldontlie's /v1/stats/advanced. Kept in
