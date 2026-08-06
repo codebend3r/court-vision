@@ -22,3 +22,8 @@ export const isActionInt = (value: unknown): value is number =>
   typeof value === "number" && Number.isInteger(value);
 
 export const isActionText = (value: unknown): value is string => typeof value === "string";
+
+// Array arguments get dereferenced (`.length`, `.every`) before the action's
+// try block in several places, where a non-array escapes as an unhandled 500
+// rather than a result union. Check the shape before touching it.
+export const isActionArray = (value: unknown): value is readonly unknown[] => Array.isArray(value);
