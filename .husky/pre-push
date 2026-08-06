@@ -7,4 +7,4 @@ git fetch -p
 
 git --no-pager log --decorate --oneline -n 10
 
-echo "pushed successfully"
+echo "Pre-push checks passed"

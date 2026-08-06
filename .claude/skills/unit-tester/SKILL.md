@@ -1,9 +1,9 @@
 ---
-name: cv-writing-tests
+name: unit-tester
 description: Use when adding or changing a test in court-vision, when a new lib module or component needs its co-located test, or when a bun:test run fails in a way that looks like an environment problem rather than a real assertion failure.
 ---
 
-# Writing tests in court-vision
+# Unit testing in court-vision
 
 Runner is `bun:test` with a vitest-compatible `vi` shim. There is no vitest,
 no jest, and no `mock.module` anywhere in this repo. 134 test files pass
