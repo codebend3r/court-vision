@@ -4,7 +4,36 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 
-import PlayerPage from "@/app/players/[playerId]/page";
+const findUniquePlayer = vi.fn();
+const findManyGameLogs = vi.fn();
+const findManySeasonStats = vi.fn();
+
+const getUser = vi.fn();
+const getProfile = vi.fn();
+
+// The page reads the session to decide whether the star is actionable; without
+// this the real getUser() calls `cookies()` outside a request scope. `getProfile`
+// is stubbed too because the mock replaces the whole module namespace, and the
+// page's graph imports both.
+vi.mock("@/lib/auth/session", () => ({ getUser, getProfile }));
+
+// The season pool is read through `unstable_cache`, which needs a Next
+// incremental cache that bun:test does not have. A pass-through keeps the
+// prisma double below wired to the page.
+vi.mock("next/cache", () => ({ unstable_cache: (fn: unknown) => fn }));
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    player: { findUnique: findUniquePlayer },
+    playerGameLog: { findMany: findManyGameLogs },
+    playerSeasonStats: { findMany: findManySeasonStats },
+  },
+}));
+
+// Imported after the mocks are installed, not at the top of the file: the page
+// pulls in `lib/players/seasonPool`, which calls `unstable_cache` at module
+// scope — a static import would run the real one before the mock lands.
+const { default: PlayerPage } = await import("@/app/players/[playerId]/page");
 
 const renderPage = async ({
   playerId,
@@ -22,24 +51,6 @@ const renderPage = async ({
     </ThemeProvider>,
     { wrapper: withNuqsTestingAdapter({ searchParams: query }) },
   );
-
-const findUniquePlayer = vi.fn();
-const findManyGameLogs = vi.fn();
-const findManySeasonStats = vi.fn();
-
-const getUser = vi.fn();
-
-// The page reads the session to decide whether the star is actionable; without
-// this the real getUser() calls `cookies()` outside a request scope.
-vi.mock("@/lib/auth/session", () => ({ getUser }));
-
-vi.mock("@/lib/prisma", () => ({
-  prisma: {
-    player: { findUnique: findUniquePlayer },
-    playerGameLog: { findMany: findManyGameLogs },
-    playerSeasonStats: { findMany: findManySeasonStats },
-  },
-}));
 
 beforeEach(() => {
   vi.clearAllMocks();

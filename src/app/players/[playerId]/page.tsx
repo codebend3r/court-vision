@@ -24,6 +24,7 @@ import {
   buildSeasonAverageLine,
   type SeasonAverageStat,
 } from "@/lib/players/seasonAverages";
+import { getSeasonStatsPool } from "@/lib/players/seasonPool";
 import { prisma } from "@/lib/prisma";
 import { buildStatSeries } from "@/lib/stats/cumulative";
 import {
@@ -94,8 +95,9 @@ export default async function PlayerPage({
   } else {
     // The whole qualified pool is needed to place this player's averages on the
     // league leaderboards, not just their own row.
-    const seasonRows = await prisma.playerSeasonStats.findMany({
-      where: { season: selection, seasonType: SEASON_TYPE },
+    const seasonRows = await getSeasonStatsPool({
+      season: selection,
+      seasonType: SEASON_TYPE,
     });
     statLine = buildSeasonAverageLine({ rows: seasonRows, playerId: numericId }) ?? [];
   }
