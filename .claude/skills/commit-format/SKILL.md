@@ -35,7 +35,9 @@ gh pr create --title "CV: players section transitions and stat caching" ...
 gh pr edit 12 --title "CV: make Supabase auth optional"
 ```
 
-Before creating or editing a PR, check the title against `^CV: `. The repo also has a CI gate (`.github/workflows/pr-title.yml`) that fails any PR whose title lacks the prefix; do not rely on it catching you, get it right at creation time.
+Before creating or editing a PR, check the title against `^CV: `.
+
+**Nothing else will catch this.** The `.github/workflows/pr-title.yml` CI gate that used to fail an unprefixed title was removed on purpose, in favour of this skill. There is no red X waiting downstream and no branch protection behind it — a title that ships wrong stays wrong until a human notices. Verify the title yourself at creation time, and re-verify after any `gh pr edit` that touches it.
 
 ### 3. NEVER mention agent authorship anywhere in the commit message or PR body
 

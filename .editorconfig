@@ -1,0 +1,30 @@
+# Editor defaults for court-vision.
+#
+# oxfmt is the formatter of record; these values mirror `.oxfmtrc.json`
+# (tabWidth 2, printWidth 100) so an editor and the pre-commit hook agree
+# instead of fighting. Change one, change the other.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+max_line_length = 100
+
+# Two trailing spaces are a hard line break in Markdown; trimming them
+# silently reflows the rendered output.
+[*.md]
+trim_trailing_whitespace = false
+
+# Generated or vendored — oxfmt ignores these, so leave them untouched.
+[{bun.lock,next-env.d.ts}]
+insert_final_newline = false
+trim_trailing_whitespace = false
+
+[{generated,prisma/migrations}/**]
+insert_final_newline = false
+trim_trailing_whitespace = false

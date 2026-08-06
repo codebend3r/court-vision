@@ -1,74 +1,134 @@
-name: Claude Review
+name: 🤖 Weekly Review
 
-# Runs the repo-local review agents in .claude/agents/ against a PR. The action
-# checks the repo out first, so those agent definitions are discovered
-# automatically; no agent config is duplicated here.
+# 🗓️ Runs the repo-local review agents in .claude/agents/ against everything
+# merged to main in the last 7 days, then files the findings as an issue.
+# The action checks the repo out first, so those agent definitions are
+# discovered automatically; no agent config is duplicated here. 📦
 #
-# Requires an ANTHROPIC_API_KEY repository secret. Without it the job is skipped
-# rather than failed, so the rest of CI stays green until the secret is added.
+# 🔑 Requires an ANTHROPIC_API_KEY repository secret. Without it the review
+# steps skip rather than fail, so the workflow stays green until it is added.
+#
+# ⚠️ There is NO pull request in scope on a scheduled run. Findings cannot be
+# posted as inline review comments — there is nothing to attach them to — so
+# each job writes a markdown file and opens an issue from it instead. 📝
+#
+# 💸 This is the only workflow here that spends API tokens. It runs once a
+# week, and skips entirely when no commits landed in the window.
 
 on:
-  pull_request:
-    types: [opened, synchronize]
+  schedule:
+    # ⏰ Mondays, 09:00 UTC
+    - cron: "0 9 * * 1"
+  # 🖐️ ...and on demand, so you never have to wait for Monday
+  workflow_dispatch:
 
 permissions:
   contents: read
-  pull-requests: write
+  issues: write
 
 jobs:
   security:
+    name: 🔐 Security audit
     runs-on: ubuntu-latest
-    # Forked PRs cannot read secrets, and this repo is public. Skip rather than
-    # fail, and never switch to pull_request_target, which would run untrusted
-    # PR code with secrets in scope.
-    if: >-
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # 🌳 Full history — the review window is computed from git log
           fetch-depth: 0
 
-      - name: Check for API key
+      - name: 🔑 Check for API key
         id: key
         run: echo "present=${{ secrets.ANTHROPIC_API_KEY != '' }}" >> "$GITHUB_OUTPUT"
 
-      - name: cv-security review
-        if: steps.key.outputs.present == 'true'
+      - name: 📆 Measure the review window
+        id: window
+        run: |
+          COUNT=$(git log --since='7 days ago' --oneline main | wc -l | tr -d ' ')
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "🧮 $COUNT commit(s) merged to main in the last 7 days"
+          if [ "$COUNT" = "0" ]; then
+            echo "😴 Nothing landed this week — the review will be skipped."
+          fi
+
+      # 🔎 cv-security has no model pin of its own, so it is set explicitly
+      # here. Without this it inherits whatever the action defaults to, which
+      # makes the weekly cost move whenever that default changes. 📌
+      - name: 🕵️ cv-security audit
+        if: steps.key.outputs.present == 'true' && steps.window.outputs.count != '0'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: >-
-            @agent-cv-security review the changes in this pull request.
-            Scope yourself to the diff against the base branch.
-            Post findings as inline review comments. If there are no findings,
-            say so in a single comment and do not invent any.
-          claude_args: --max-turns 15
+            @agent-cv-security audit every change merged to `main` in the last
+            7 days. Scope yourself to that window:
+            `git log --since='7 days ago' --patch main`.
+            There is no pull request in this run, so do NOT try to post review
+            comments and do NOT reference a PR number.
+            Write your findings to `security-findings.md` as GitHub-flavoured
+            markdown, newest and most severe first, each with the offending
+            `file:line` and a one-line fix.
+            If there are no findings, write nothing and create no file — do not
+            invent findings to fill the report. 🚫
+          claude_args: --max-turns 15 --model claude-sonnet-5 --allowed-tools "Read,Grep,Glob,Bash,Write"
+
+      - name: 🐛 File the security findings
+        # 🧷 hashFiles() is empty when the agent wrote nothing, so a clean week
+        # opens no issue at all
+        if: steps.key.outputs.present == 'true' && hashFiles('security-findings.md') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "🔐 Weekly security audit — $(date -u +%Y-%m-%d)" \
+            --body-file security-findings.md
+          echo "✅ Security findings filed"
 
   house-rules:
+    name: 📏 House rules audit
     runs-on: ubuntu-latest
-    if: >-
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
-      - name: Check for API key
+      - name: 🔑 Check for API key
         id: key
         run: echo "present=${{ secrets.ANTHROPIC_API_KEY != '' }}" >> "$GITHUB_OUTPUT"
 
-      # cv-house-rules pins model: haiku in its own frontmatter, so this job is
-      # the cheap one. It stays separate from the security job so a failure in
-      # one does not mask the other.
-      - name: cv-house-rules review
-        if: steps.key.outputs.present == 'true'
+      - name: 📆 Measure the review window
+        id: window
+        run: |
+          COUNT=$(git log --since='7 days ago' --oneline main | wc -l | tr -d ' ')
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "🧮 $COUNT commit(s) merged to main in the last 7 days"
+
+      # 🪙 cv-house-rules pins `model: haiku` in its own frontmatter, so this
+      # job is the cheap one. It stays a separate job so a failure in one does
+      # not mask the other. 🧯
+      - name: 🧹 cv-house-rules audit
+        if: steps.key.outputs.present == 'true' && steps.window.outputs.count != '0'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: >-
-            @agent-cv-house-rules review the changes in this pull request
-            against the conventions in CLAUDE.md. Skip anything oxlint, gale,
-            or tsgo already catches. Post findings as inline review comments.
-          claude_args: --max-turns 15
+            @agent-cv-house-rules review every change merged to `main` in the
+            last 7 days (`git log --since='7 days ago' --patch main`) against
+            the conventions in CLAUDE.md.
+            Skip anything oxlint, gale, or tsgo already catches. 🙅
+            There is no pull request in this run, so do NOT try to post review
+            comments and do NOT reference a PR number.
+            Write your findings to `house-rules-findings.md` as
+            GitHub-flavoured markdown, each with the offending `file:line` and
+            the rule it breaks.
+            If there are no findings, write nothing and create no file. 🚫
+          claude_args: --max-turns 15 --allowed-tools "Read,Grep,Glob,Bash,Write"
+
+      - name: 🐛 File the house-rules findings
+        if: steps.key.outputs.present == 'true' && hashFiles('house-rules-findings.md') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "📏 Weekly house-rules audit — $(date -u +%Y-%m-%d)" \
+            --body-file house-rules-findings.md
+          echo "✅ House-rules findings filed"
