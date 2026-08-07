@@ -12,6 +12,7 @@
     "lint:scss": "gale \"src/**/*.scss\"",
     "typecheck": "next typegen && tsgo --noEmit",
     "test": "bun test --parallel --dots",
+    "test:a11y": "playwright test",
     "security:scan": "bun run scripts/security-scan.ts",
     "test:watch": "bun test --isolate --watch",
     "db:generate": "prisma generate",
@@ -42,8 +43,10 @@
     "zustand": "5.0.14"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.12.1",
     "@happy-dom/global-registrator": "20.11.1",
     "@lyricalstring/gale": "0.1.5",
+    "@playwright/test": "1.62.1",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",

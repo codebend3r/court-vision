@@ -80,4 +80,8 @@
 .alt {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
+
+  a {
+    text-decoration: underline;
+  }
 }
