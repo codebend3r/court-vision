@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { withNuqsTestingAdapter, type UrlUpdateEvent } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it } from "bun:test";
@@ -73,14 +73,20 @@ describe("PlayerStatChart", () => {
 
     await user.click(screen.getByRole("button", { name: "TOV" }));
 
-    expect(container.querySelectorAll(".recharts-line")).toHaveLength(9);
+    // recharts re-renders its line set a tick after the toggle commits, so the
+    // count is polled rather than read once.
+    await waitFor(() => {
+      expect(container.querySelectorAll(".recharts-line")).toHaveLength(9);
+    });
 
     await user.click(screen.getByRole("button", { name: "FG%" }));
     await user.click(screen.getByRole("button", { name: "3P%" }));
     await user.click(screen.getByRole("button", { name: "FT%" }));
 
-    expect(screen.queryByText("Shooting percentages")).not.toBeInTheDocument();
-    expect(container.querySelectorAll(".recharts-line")).toHaveLength(6);
+    await waitFor(() => {
+      expect(screen.queryByText("Shooting percentages")).not.toBeInTheDocument();
+      expect(container.querySelectorAll(".recharts-line")).toHaveLength(6);
+    });
   });
 
   it("shows a muted hint instead of a chart when every counting stat is toggled off", async () => {
@@ -95,7 +101,9 @@ describe("PlayerStatChart", () => {
     await user.click(screen.getByRole("button", { name: "MIN" }));
     await user.click(screen.getByRole("button", { name: "TOV" }));
 
-    expect(screen.getByText("Select a stat to plot")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Select a stat to plot")).toBeInTheDocument();
+    });
   });
 
   it("titles the counting panel per mode", () => {
