@@ -56,7 +56,21 @@ bun dev                     # http://localhost:46644
 
 Then open [http://localhost:46644](http://localhost:46644) in your browser.
 
-Useful scripts: `bun run test`, `bun run lint`, `bun run typecheck`,
-`bun run build`, and the sync jobs (`bun run sync:bdl`, `bun run sync:players`)
-for refreshing stats. Conventions live in `CLAUDE.md`; design specs and plans
-under `docs/superpowers/`.
+Useful scripts: `bun run test`, `bun run test:a11y`, `bun run lint`,
+`bun run typecheck`, `bun run build`, and the sync jobs (`bun run sync:bdl`,
+`bun run sync:players`) for refreshing stats. Install Chromium once with
+`bunx playwright install chromium` before running the accessibility suite locally.
+Conventions live in `CLAUDE.md`; design specs and plans under `docs/superpowers/`.
+
+## Accessibility checks
+
+CI runs axe WCAG 2.2 A/AA scans in Chromium against the login, signup, and design
+pages in light and dark modes. Playwright also checks keyboard order, visible
+focus, and switch operation.
+
+Before a release, manually verify:
+
+- Complete key flows using only the keyboard.
+- Check focus order and visibility at 200% zoom.
+- Test landmark, heading, label, and status announcements with a screen reader.
+- Check light, dark, high-contrast, and reduced-motion settings.

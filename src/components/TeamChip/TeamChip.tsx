@@ -45,6 +45,17 @@ const TEAM_BY_ABBREVIATION: Map<string, NbaTeam> = new Map(
 
 export type TeamColors = { name: string; primary: string; secondary: string };
 
+const channelLuminance = (channel: number): number =>
+  channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+
+const contrastTextFor = (background: string): string => {
+  const [red, green, blue] = [1, 3, 5]
+    .map((offset) => Number.parseInt(background.slice(offset, offset + 2), 16) / 255)
+    .map(channelLuminance);
+  const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+  return (luminance + 0.05) / 0.05 >= 4.5 ? "#000000" : "#FFFFFF";
+};
+
 // Single source of truth for team colors so other components (e.g. the player
 // avatar border) always match the chip.
 export const teamColorsFor = ({ team }: { team: string | null }): TeamColors | null =>
@@ -63,7 +74,7 @@ export function TeamChip({ team, size = "md" }: { team: string; size?: TeamChipS
       className={className}
       title={details.name}
       aria-label={details.name}
-      style={{ backgroundColor: details.primary, color: details.secondary }}
+      style={{ backgroundColor: details.primary, color: contrastTextFor(details.primary) }}
     >
       {details.abbreviation}
     </span>

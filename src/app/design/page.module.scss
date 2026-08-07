@@ -153,6 +153,10 @@
     font-family: var(--font-mono);
     font-size: var(--font-size-sm);
   }
+
+  a {
+    text-decoration: underline;
+  }
 }
 
 .emphasisGrid {

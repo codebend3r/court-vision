@@ -6,13 +6,19 @@ import { NBA_TEAMS, TeamChip } from "@/components/TeamChip/TeamChip";
 afterEach(cleanup);
 
 describe("TeamChip", () => {
-  it("renders only the abbreviation with team colors for background, border, and text", () => {
-    render(<TeamChip team="TOR" />);
+  it("renders only the abbreviation with team colors and contrasting text", () => {
+    render(
+      <>
+        <TeamChip team="TOR" />
+        <TeamChip team="SAS" />
+      </>,
+    );
 
-    const chip = screen.getByText("TOR");
-    expect(chip).toHaveStyle({ backgroundColor: "#CE1141", color: "#000000" });
-    expect(chip).toHaveAttribute("title", "Toronto Raptors");
-    expect(chip).toHaveAccessibleName("Toronto Raptors");
+    const raptors = screen.getByText("TOR");
+    expect(raptors).toHaveStyle({ backgroundColor: "#CE1141", color: "#FFFFFF" });
+    expect(raptors).toHaveAttribute("title", "Toronto Raptors");
+    expect(raptors).toHaveAccessibleName("Toronto Raptors");
+    expect(screen.getByText("SAS")).toHaveStyle({ backgroundColor: "#C4CED4", color: "#000000" });
     expect(screen.queryByText("Toronto Raptors")).not.toBeInTheDocument();
   });
 
