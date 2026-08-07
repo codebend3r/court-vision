@@ -34,6 +34,8 @@ test("auth forms preserve keyboard order and visible focus", async ({ page }) =>
   await page.goto("/login");
 
   await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(page.getByRole("banner").getByRole("link", { name: "Court Vision" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("banner").getByRole("button")).toBeFocused();
@@ -53,6 +55,8 @@ test("auth forms preserve keyboard order and visible focus", async ({ page }) =>
   );
 
   await page.goto("/signup");
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("banner").getByRole("link", { name: "Court Vision" })).toBeFocused();
   await page.keyboard.press("Tab");

@@ -1,3 +1,27 @@
+@use "@/styles/mixins" as *;
+
+// First tab stop on every route: without it keyboard and switch users cross
+// roughly a dozen header and nav stops before reaching page content.
+.skipLink {
+  @include visually-hidden;
+
+  &:focus-visible {
+    @include control-focus-ring;
+
+    position: fixed;
+    z-index: 10;
+    top: var(--space-2);
+    left: var(--space-2);
+    width: auto;
+    height: auto;
+    padding: var(--space-2) var(--space-3);
+    clip-path: none;
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+}
+
 // The body is a full-height flex column (see globals.scss); the shell flexes to
 // fill whatever the header leaves — no hardcoded header-height math.
 .shell {

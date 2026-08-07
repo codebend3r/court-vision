@@ -1,6 +1,12 @@
 import { describe, expect, it } from "bun:test";
 
-import { isActionId, isActionInt, isActionText, isOptionalActionId } from "./argGuards";
+import {
+  isActionArray,
+  isActionId,
+  isActionInt,
+  isActionText,
+  isOptionalActionId,
+} from "./argGuards";
 
 // The Prisma filter shapes a caller can smuggle through a server action
 // boundary in place of a scalar.
@@ -82,5 +88,22 @@ describe("isActionText", () => {
     expect(isActionText({ contains: "" })).toBe(false);
     expect(isActionText(42)).toBe(false);
     expect(isActionText(null)).toBe(false);
+  });
+});
+
+describe("isActionArray", () => {
+  it("accepts an empty array and a populated one", () => {
+    expect(isActionArray([])).toBe(true);
+    expect(isActionArray([{ slotType: "PG", position: 0, playerId: null }])).toBe(true);
+  });
+
+  it("rejects every filter object, a string, and a nullish value", () => {
+    FILTERS.forEach((filter) => {
+      expect(isActionArray(filter)).toBe(false);
+    });
+    expect(isActionArray("not-an-array")).toBe(false);
+    expect(isActionArray({ length: 2 })).toBe(false);
+    expect(isActionArray(null)).toBe(false);
+    expect(isActionArray(undefined)).toBe(false);
   });
 });

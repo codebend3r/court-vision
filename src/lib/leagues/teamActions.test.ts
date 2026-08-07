@@ -191,6 +191,18 @@ describe("saveLeagueTeam", () => {
     expect(result).toEqual({ status: "invalid" });
   });
 
+  it("rejects malformed slots before reading the session", async () => {
+    const result = await saveLeagueTeam({
+      leagueId: "league-1",
+      teamId: null,
+      name: "Test",
+      // @ts-expect-error Simulate untrusted serialized server-action input.
+      slots: [null],
+    });
+    expect(result).toEqual({ status: "invalid" });
+    expect(getProfile).not.toHaveBeenCalled();
+  });
+
   it("returns unauthenticated when no profile", async () => {
     getProfile.mockResolvedValue(null);
     const result = await saveLeagueTeam({
@@ -241,6 +253,19 @@ describe("deleteLeagueTeam", () => {
     leagueTeamDeleteMany.mockRejectedValueOnce(new Error("db error"));
     const result = await deleteLeagueTeam({ teamId: "team-1" });
     expect(result).toEqual({ status: "error" });
+  });
+
+  // A caller that reaches the deleteMany with a non-id gets `where: { id:
+  // <filter> }`, which matches every team the profile owns. The guard has to
+  // run before the query is built, not inside it.
+  it("rejects invalid team ids before reading the session or the database", async () => {
+    const emptyResult = await deleteLeagueTeam({ teamId: "" });
+    // @ts-expect-error Simulate an object becoming a Prisma filter at runtime.
+    const filterResult = await deleteLeagueTeam({ teamId: { not: "" } });
+    expect(emptyResult).toEqual({ status: "error" });
+    expect(filterResult).toEqual({ status: "error" });
+    expect(getProfile).not.toHaveBeenCalled();
+    expect(leagueTeamDeleteMany).not.toHaveBeenCalled();
   });
 });
 
@@ -312,6 +337,13 @@ describe("importLegacyTeams", () => {
         { id: "legacy-1", name: "   ", slug: "", createdAt: "2026-07-23T00:00:00.000Z", slots },
       ],
     });
+    expect(result).toEqual({ status: "error" });
+    expect(getProfile).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed teams without touching the session", async () => {
+    // @ts-expect-error Simulate untrusted serialized server-action input.
+    const result = await importLegacyTeams({ teams: [null] });
     expect(result).toEqual({ status: "error" });
     expect(getProfile).not.toHaveBeenCalled();
   });

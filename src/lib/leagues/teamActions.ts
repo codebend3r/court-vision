@@ -2,7 +2,12 @@
 
 import { type Prisma } from "@generated/prisma/client";
 
-import { isActionId, isActionText, isOptionalActionId } from "@/lib/actions/argGuards";
+import {
+  isActionArray,
+  isActionId,
+  isActionText,
+  isOptionalActionId,
+} from "@/lib/actions/argGuards";
 import { getProfile } from "@/lib/auth/session";
 import { teamNameToSlug } from "@/lib/fantasyTeams/slug";
 import { type FantasyTeam, type RosterSlot } from "@/lib/fantasyTeams/types";
@@ -13,13 +18,19 @@ import { isFantasyTeamPlayer, isRosterSlotType, slotsToRows } from "@/lib/league
 import { type LeagueTeamActionResult, type LegacyTeamsImportResult } from "@/lib/leagues/types";
 import { prisma } from "@/lib/prisma";
 
-const isValidSlots = ({ slots }: { slots: readonly RosterSlot[] }): boolean =>
-  slots.length >= 1 &&
-  slots.length <= 60 &&
-  slots.every(
-    (slot) =>
-      isRosterSlotType(slot.type) && (slot.player === null || isFantasyTeamPlayer(slot.player)),
+const isValidSlot = (value: unknown): value is RosterSlot => {
+  if (typeof value !== "object" || value === null) return false;
+  const slot: Record<string, unknown> = { ...value };
+  return (
+    typeof slot.id === "string" &&
+    typeof slot.type === "string" &&
+    isRosterSlotType(slot.type) &&
+    (slot.player === null || isFantasyTeamPlayer(slot.player))
   );
+};
+
+const isValidSlots = ({ slots }: { slots: readonly unknown[] }): boolean =>
+  slots.length >= 1 && slots.length <= 60 && slots.every(isValidSlot);
 
 // Resolves the LeagueTeam row to write slots against: creates a fresh row
 // with a collision-proof slug when teamId is null, otherwise renames the
@@ -77,15 +88,20 @@ export const saveLeagueTeam = async ({
   // sees it: the annotations above are erased, and an object here becomes a
   // Prisma filter rather than a value. `name.trim()` below also throws on a
   // non-string, which would escape as a 500 instead of a result union.
-  if (!isActionId(leagueId) || !isOptionalActionId(teamId) || !isActionText(name)) {
+  if (
+    !isActionId(leagueId) ||
+    !isOptionalActionId(teamId) ||
+    !isActionText(name) ||
+    !isActionArray(slots)
+  ) {
     return { status: "invalid" };
   }
 
-  const profile = await getProfile();
-  if (profile === null) return { status: "unauthenticated" };
-
   const trimmed = name.trim();
   if (trimmed === "" || !isValidSlots({ slots })) return { status: "invalid" };
+
+  const profile = await getProfile();
+  if (profile === null) return { status: "unauthenticated" };
 
   // RLS-safe ownership check up front: a forged leagueId never sees a row.
   const league = await prisma.league.findFirst({
@@ -171,8 +187,16 @@ const createLegacyTeam = async ({
 // bounded by what a person could plausibly have built by hand in the old UI.
 const MAX_LEGACY_IMPORT_TEAMS = 50;
 
-const isValidLegacyTeam = ({ team }: { team: FantasyTeam }): boolean =>
-  team.name.trim() !== "" && isValidSlots({ slots: team.slots });
+const isValidLegacyTeam = ({ team }: { team: unknown }): boolean => {
+  if (typeof team !== "object" || team === null) return false;
+  const record: Record<string, unknown> = { ...team };
+  return (
+    typeof record.name === "string" &&
+    record.name.trim() !== "" &&
+    isActionArray(record.slots) &&
+    isValidSlots({ slots: record.slots })
+  );
+};
 
 // One-time import of the pre-league localStorage teams into the caller's
 // default league. Only runs against an empty league — if teams already exist
@@ -182,6 +206,9 @@ export const importLegacyTeams = async ({
 }: {
   teams: readonly FantasyTeam[];
 }): Promise<LegacyTeamsImportResult> => {
+  // Checked before `.length`/`.every` below: those run outside the try block,
+  // so a non-array argument would escape as a 500 rather than a result union.
+  if (!isActionArray(teams)) return { status: "error" };
   if (teams.length > MAX_LEGACY_IMPORT_TEAMS) return { status: "error" };
   if (!teams.every((team) => isValidLegacyTeam({ team }))) return { status: "error" };
 
@@ -233,6 +260,11 @@ export const deleteLeagueTeam = async ({
 }: {
   teamId: string;
 }): Promise<LeagueTeamActionResult> => {
+  // Without this the annotation above is the only thing standing between a
+  // caller and `where: { id: { not: "" } }`, which turns this single-row
+  // delete into "every team I own", cascading their slots with it.
+  if (!isActionId(teamId)) return { status: "error" };
+
   const profile = await getProfile();
   if (profile === null) return { status: "unauthenticated" };
   try {

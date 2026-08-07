@@ -100,6 +100,9 @@ export default async function RootLayout({
       <body>
         <NuqsAdapter>
           <ThemeProvider>
+            <a href="#main-content" className={styles.skipLink}>
+              Skip to main content
+            </a>
             <SiteHeader />
             <WatchlistHydrator playerIds={watchlistPlayerIds} />
             <LeaguesHydrator leagues={leagues} activeLeagueId={activeLeagueId} />
@@ -107,7 +110,12 @@ export default async function RootLayout({
             <WatchlistAlert />
             <div className={styles.shell}>
               {!!profile && <SideNav />}
-              <div className={styles.content}>{children}</div>
+              {/* Skip-link target. Sits on the wrapper rather than each page's
+                  <main> so every route gets it from one place. tabIndex -1
+                  makes it programmatically focusable without adding a tab stop. */}
+              <div id="main-content" tabIndex={-1} className={styles.content}>
+                {children}
+              </div>
             </div>
             <SiteFooter />
           </ThemeProvider>

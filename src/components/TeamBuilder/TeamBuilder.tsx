@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChangeEvent, DragEvent, useMemo, useState } from "react";
+import { ChangeEvent, DragEvent, useMemo, useRef, useState } from "react";
+
+import { useFocusTrap } from "@/lib/a11y/focusTrap";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayerInsightPanel } from "@/components/PlayerInsightPanel/PlayerInsightPanel";
@@ -76,6 +78,15 @@ export function TeamBuilder({ leagueId, players, team = null, insights }: TeamBu
   } | null>(null);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const modalRef = useRef<HTMLElement>(null);
+
+  // The removal confirm claims aria-modal but had none of the behaviour: focus
+  // stayed behind it, Tab walked the page underneath, and Escape did nothing.
+  useFocusTrap({
+    containerRef: modalRef,
+    active: pendingRemoval !== null,
+    onEscape: () => setPendingRemoval(null),
+  });
 
   const rostered = useMemo(() => rosteredIds({ slots }), [slots]);
 
@@ -435,6 +446,7 @@ export function TeamBuilder({ leagueId, players, team = null, insights }: TeamBu
           onClick={() => setPendingRemoval(null)}
         >
           <section
+            ref={modalRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="remove-player-title"
