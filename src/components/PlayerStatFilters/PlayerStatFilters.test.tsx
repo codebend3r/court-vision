@@ -1,5 +1,4 @@
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import { withNuqsTestingAdapter, type UrlUpdateEvent } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
@@ -28,6 +27,18 @@ const renderFilters = ({ searchParams = "" }: { searchParams?: string } = {}) =>
     wrapper: withNuqsTestingAdapter({ searchParams, onUrlUpdate }),
   });
   return { onUrlUpdate };
+};
+
+const clickAndFlush = ({ name }: { name: string }) => {
+  vi.useFakeTimers();
+  try {
+    act(() => {
+      screen.getByRole("button", { name }).click();
+      vi.runAllTimers();
+    });
+  } finally {
+    vi.useRealTimers();
+  }
 };
 
 describe("PlayerStatFilters", () => {
@@ -64,11 +75,10 @@ describe("PlayerStatFilters", () => {
     expect(screen.getByRole("button", { name: "Game" })).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("writes the selected mode to the URL", async () => {
-    const user = userEvent.setup();
+  it("writes the selected mode to the URL", () => {
     const { onUrlUpdate } = renderFilters();
 
-    await user.click(screen.getByRole("button", { name: "Totals" }));
+    clickAndFlush({ name: "Totals" });
 
     // The testing adapter has no memory, so the URL never catches up to the
     // write and the re-apply effect can land a redundant second write that is
@@ -78,11 +88,10 @@ describe("PlayerStatFilters", () => {
     onUrlUpdate.mock.calls.map(([event]) => expect(event.searchParams.get("mode")).toBe("totals"));
   });
 
-  it("writes the selected span to the URL and keeps the current mode", async () => {
-    const user = userEvent.setup();
+  it("writes the selected span to the URL and keeps the current mode", () => {
     const { onUrlUpdate } = renderFilters({ searchParams: "?mode=per36" });
 
-    await user.click(screen.getByRole("button", { name: "L10" }));
+    clickAndFlush({ name: "L10" });
 
     expect(onUrlUpdate).toHaveBeenCalledTimes(1);
     const updated = onUrlUpdate.mock.calls[0][0].searchParams;
@@ -90,37 +99,25 @@ describe("PlayerStatFilters", () => {
     expect(updated.get("mode")).toBe("per36");
   });
 
-  it("clears the param when selecting the default again", async () => {
-    const user = userEvent.setup();
+  it("clears the param when selecting the default again", () => {
     const { onUrlUpdate } = renderFilters({ searchParams: "?mode=totals" });
 
-    await user.click(screen.getByRole("button", { name: "Game" }));
+    clickAndFlush({ name: "Game" });
 
     expect(onUrlUpdate.mock.calls[0][0].searchParams.get("mode")).toBeNull();
   });
 
-  it("re-applies the remembered mode when a bare URL renders after a pick", async () => {
-    const user = userEvent.setup();
+  it("re-applies the remembered mode when a bare URL renders after a pick", () => {
     renderFilters();
-    await user.click(screen.getByRole("button", { name: "Per 36" }));
+    clickAndFlush({ name: "Per 36" });
     cleanup();
-    // nuqs throttles URL writes through a module-level queue. Let the pick's
-    // write drain before mounting again, or the second render's write is
-    // coalesced into a queue entry belonging to the unmounted adapter and its
-    // onUrlUpdate never fires.
-    await new Promise((resolve) => setTimeout(resolve, 100));
 
+    vi.useFakeTimers();
     const { onUrlUpdate } = renderFilters();
+    act(() => vi.runAllTimers());
+    vi.useRealTimers();
 
-    // The re-apply lands through a transition. Flush it rather than polling
-    // with waitFor: React does not always schedule the transition inside the
-    // poll window, which made this assertion intermittently time out.
-    await waitFor(
-      () => {
-        expect(onUrlUpdate).toHaveBeenCalledTimes(1);
-      },
-      { timeout: 5_000 },
-    );
+    expect(onUrlUpdate).toHaveBeenCalledTimes(1);
     expect(onUrlUpdate.mock.calls[0][0].searchParams.get("mode")).toBe("per36");
   });
 
