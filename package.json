@@ -2,6 +2,7 @@
   "name": "court-vision",
   "version": "0.1.4",
   "private": true,
+  "packageManager": "bun@1.3.14",
   "scripts": {
     "dev": "next dev --port 46644",
     "build": "next build",
