@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { PageAction, PageHeader } from "@/components/PageHeader/PageHeader";
 import { TeamBuilder } from "@/components/TeamBuilder/TeamBuilder";
 import { getProfile } from "@/lib/auth/session";
 import { buildPlayerInsights } from "@/lib/fantasyTeams/insights";
@@ -21,12 +22,11 @@ export default async function CreateTeamPage() {
   if (league === null) {
     return (
       <main className={styles.page}>
-        <header className={styles.header}>
-          <h1>Create team</h1>
-          <Link href="/my-teams" className={styles.back}>
-            ← My Teams
-          </Link>
-        </header>
+        <PageHeader
+          eyebrow="My league"
+          title="Create team"
+          actions={<PageAction href="/my-teams">My teams</PageAction>}
+        />
         <p className={styles.scope}>
           No league yet — <Link href="/leagues/create">create a league</Link> to start building
           teams.
@@ -43,12 +43,12 @@ export default async function CreateTeamPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <h1>Create team</h1>
-        <Link href="/my-teams" className={styles.back}>
-          ← My Teams
-        </Link>
-      </header>
+      <PageHeader
+        eyebrow="My league"
+        title="Create team"
+        description="Fill every slot the league defines — eligibility rules apply as you pick."
+        actions={<PageAction href="/my-teams">My teams</PageAction>}
+      />
       <TeamBuilder leagueId={league.id} players={players} insights={insights} />
     </main>
   );

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { SearchParams } from "nuqs/server";
 
+import { PageHeader } from "@/components/PageHeader/PageHeader";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayerGameLogTable } from "@/components/PlayerGameLogTable/PlayerGameLogTable";
 import { PlayerStatChart } from "@/components/PlayerStatChart/PlayerStatChart";
@@ -144,6 +145,19 @@ export default async function PlayerPage({
 
   return (
     <main className={styles.page}>
+      <PageHeader
+        eyebrow="Research · Player"
+        title={player.fullName}
+        description="Season averages against the qualified pool, the rolling shape of form, and every game behind it."
+        actions={
+          <StarButton
+            playerId={player.id}
+            fullName={player.fullName}
+            isSignedIn={isSignedIn}
+            size="md"
+          />
+        }
+      />
       <header className={styles.header}>
         <PlayerAvatar
           fullName={player.fullName}
@@ -152,15 +166,6 @@ export default async function PlayerPage({
           teamAbbr={player.teamAbbr}
         />
         <span className={styles.headerText}>
-          <span className={styles.nameRow}>
-            <h1>{player.fullName}</h1>
-            <StarButton
-              playerId={player.id}
-              fullName={player.fullName}
-              isSignedIn={isSignedIn}
-              size="md"
-            />
-          </span>
           <p className={styles.meta}>
             {!!player.teamAbbr && <TeamChip team={player.teamAbbr} size="sm" />}
             {!!player.position && <span>{player.position}</span>}

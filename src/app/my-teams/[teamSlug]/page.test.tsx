@@ -92,7 +92,7 @@ describe("EditTeamPage", () => {
     expect(screen.getByRole("heading", { name: "Bench Mob" })).toBeInTheDocument();
     expect(screen.getByLabelText("Team name")).toHaveValue("Bench Mob");
     expect(screen.getByLabelText("Search players")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "← My Teams" })).toHaveAttribute("href", "/my-teams");
+    expect(screen.getByRole("link", { name: "My teams" })).toHaveAttribute("href", "/my-teams");
   });
 
   it("404s on unknown slugs", async () => {

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { LeagueList } from "@/components/LeagueList/LeagueList";
+import { PageHeader } from "@/components/PageHeader/PageHeader";
 import { getProfile } from "@/lib/auth/session";
 import { fallbackActiveLeagueId, getLeagues } from "@/lib/leagues/queries";
 
@@ -20,7 +21,11 @@ export default async function LeaguesPage() {
   });
   return (
     <main className={styles.page}>
-      <h1>Leagues</h1>
+      <PageHeader
+        eyebrow="My league"
+        title="Leagues"
+        description="League settings drive the valuation engine — team count and roster size set the replacement level."
+      />
       <LeagueList leagues={leagues} activeLeagueId={activeLeagueId} />
     </main>
   );

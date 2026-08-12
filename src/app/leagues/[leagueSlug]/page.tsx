@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { LeagueForm } from "@/components/LeagueForm/LeagueForm";
+import { PageAction, PageHeader } from "@/components/PageHeader/PageHeader";
 import { getProfile } from "@/lib/auth/session";
 import { getLeagues } from "@/lib/leagues/queries";
 
@@ -24,12 +24,11 @@ export default async function EditLeaguePage({
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <h1>{league.name}</h1>
-        <Link href="/leagues" className={styles.back}>
-          ← Leagues
-        </Link>
-      </header>
+      <PageHeader
+        eyebrow="My league"
+        title={league.name}
+        actions={<PageAction href="/leagues">Leagues</PageAction>}
+      />
       <LeagueForm league={league} />
     </main>
   );

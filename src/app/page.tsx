@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { HomeStandingsPanel } from "@/components/HomeStandingsPanel/HomeStandingsPanel";
+import { PageAction, PageHeader } from "@/components/PageHeader/PageHeader";
 import { HomeStarredPanel } from "@/components/HomeStarredPanel/HomeStarredPanel";
 import { HomeTeamPanel } from "@/components/HomeTeamPanel/HomeTeamPanel";
 import { WatchlistTrendChart } from "@/components/WatchlistTrendChart/WatchlistTrendChart";
@@ -40,8 +41,12 @@ export default async function Home() {
 
   return (
     <main className={styles.page}>
-      <h1 className={styles.title}>Court Vision</h1>
-      <p className={styles.subtitle}>Your fantasy command center.</p>
+      <PageHeader
+        eyebrow="Dashboard"
+        title="Command centre"
+        description="Everything you follow, in one read: watchlist form, your roster, and where the league actually stands."
+        actions={<PageAction href="/players">Open players</PageAction>}
+      />
       <div className={styles.dashboardGrid}>
         <HomeStarredPanel players={players} count={count} className={styles.panelCardLeft} />
         <HomeTeamPanel teams={teams} className={styles.panelCardRight} />

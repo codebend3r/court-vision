@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { PageAction, PageHeader } from "@/components/PageHeader/PageHeader";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { getTeamRoster, getTeamStats } from "@/lib/teams/loader";
@@ -24,7 +25,11 @@ export default async function TeamPage({
   if (team === undefined) {
     return (
       <main className={styles.page}>
-        <h1>Team</h1>
+        <PageHeader
+          eyebrow="Research · Team"
+          title="Team"
+          actions={<PageAction href="/teams">All teams</PageAction>}
+        />
         <p className={styles.notice}>
           No team matches “{is}”. <Link href="/teams">Browse all teams</Link>.
         </p>
@@ -42,14 +47,17 @@ export default async function TeamPage({
 
   return (
     <main className={styles.page}>
+      <PageHeader
+        eyebrow="Research · Team"
+        title={team.name}
+        description="Where every team stat ranks across the league, and who is on the floor producing it."
+        actions={<PageAction href="/teams">All teams</PageAction>}
+      />
       <header className={styles.header}>
         <TeamChip team={team.abbr} />
-        <span className={styles.identity}>
-          <h1 className={styles.name}>{team.name}</h1>
-          <span className={styles.context}>
-            {team.division} Division · {team.conference}ern Conference
-            {!!season && <> · {season} regular season</>}
-          </span>
+        <span className={styles.context}>
+          {team.division} Division · {team.conference}ern Conference
+          {!!season && <> · {season} regular season</>}
         </span>
         {!!teamStats && (
           <span className={styles.record}>

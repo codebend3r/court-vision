@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { PageHeader } from "@/components/PageHeader/PageHeader";
 import { StandingsTrendChart } from "@/components/StandingsTrendChart/StandingsTrendChart";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import {
@@ -68,7 +69,11 @@ export default async function TeamsPage({
 
   return (
     <main className={styles.page}>
-      <h1>Teams</h1>
+      <PageHeader
+        eyebrow="Research"
+        title="NBA teams"
+        description="All 30 teams by division, conference, or one league ladder — records and pace of play at a glance."
+      />
       <nav className={styles.views} aria-label="Team grouping">
         <ul className={styles.viewList}>
           {TEAMS_VIEWS.map((entry) => (
