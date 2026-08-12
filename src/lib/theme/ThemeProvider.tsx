@@ -2,18 +2,20 @@
 
 import { ReactNode, createContext, useContext, useEffect, useRef, useState } from "react";
 
-export type Theme = "dark" | "light";
+import { type Theme, isTheme } from "@/lib/theme/themes";
+
+export type { Theme } from "@/lib/theme/themes";
 
 export type ThemeContextValue = {
   theme: Theme;
   mounted: boolean;
-  toggleTheme: () => void;
+  setTheme: (args: { theme: Theme }) => void;
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setThemeState] = useState<Theme>("dark");
   const [mounted, setMounted] = useState(false);
   const hasSyncedStampedTheme = useRef(false);
 
@@ -22,22 +24,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       return;
     }
     hasSyncedStampedTheme.current = true;
-    const stamped = document.documentElement.dataset.theme === "light" ? "light" : "dark";
-    setTheme(stamped);
+    const stamped = document.documentElement.dataset.theme;
+    setThemeState(isTheme(stamped) ? stamped : "dark");
     setMounted(true);
   }, []);
 
-  const toggleTheme = () => {
-    const next: Theme = theme === "dark" ? "light" : "dark";
+  const setTheme = ({ theme: next }: { theme: Theme }) => {
     document.documentElement.dataset.theme = next;
     window.localStorage.setItem("theme", next);
-    setTheme(next);
+    setThemeState(next);
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, mounted, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={{ theme, mounted, setTheme }}>{children}</ThemeContext.Provider>
   );
 }
 

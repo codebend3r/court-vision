@@ -30,6 +30,13 @@
   flex: 1 1 auto;
 }
 
+// The rail's relative parent: fixed at the collapsed width so the hover
+// expansion (SideNav is absolute inside it) overlays the content column.
+.railSlot {
+  position: relative;
+  width: 60px;
+}
+
 .content {
   display: grid;
   align-content: start;

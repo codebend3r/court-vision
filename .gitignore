@@ -61,3 +61,6 @@ types/
 # Design handoff prototypes ship with a generated copy of the component
 # bundle; the .dc.html references are useful, the 1.4MB bundle is not.
 docs/design/prototypes/_ds/
+
+# local screenshot helper (session tooling, not part of the app)
+.cv-shot.mjs

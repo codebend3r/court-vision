@@ -1,0 +1,44 @@
+.mark {
+  display: block;
+  filter: var(--extrude-svg);
+}
+
+.wordmark {
+  display: grid;
+  gap: 1px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.wordCourt {
+  color: var(--color-text);
+  text-shadow: var(--extrude);
+}
+
+.wordVision {
+  color: var(--color-accent);
+  text-shadow: var(--extrude);
+}
+
+.lockup {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.lockupVertical {
+  display: inline-grid;
+  justify-items: center;
+  gap: var(--space-3);
+
+  .wordmark {
+    font-size: 20px;
+    letter-spacing: 0.18em;
+    text-align: center;
+  }
+}

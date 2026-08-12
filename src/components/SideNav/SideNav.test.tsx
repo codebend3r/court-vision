@@ -1,8 +1,7 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "bun:test";
 
 import { SideNav } from "@/components/SideNav/SideNav";
-import { useSideNavStore } from "@/components/SideNav/sideNavStore";
 
 const pathnameMock = { current: "/" };
 
@@ -11,107 +10,54 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: () => {} }),
 }));
 
-beforeEach(() => {
-  localStorage.clear();
-  useSideNavStore.setState({ isCollapsed: false });
-});
-
 afterEach(cleanup);
 
 describe("SideNav", () => {
-  it("renders the Players link", () => {
+  it("groups research and league entries with settings pinned", () => {
     pathnameMock.current = "/";
     render(<SideNav />);
-    const link = screen.getByRole("link", { name: "Players" });
-    expect(link).toHaveAttribute("href", "/players");
-    expect(link).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("region", { name: "Research" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "My league" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute("href", "/settings");
   });
 
-  it("marks Players active on /players", () => {
+  it("renders every destination", () => {
+    pathnameMock.current = "/";
+    render(<SideNav />);
+    const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
+    expect(hrefs).toEqual([
+      "/",
+      "/players",
+      "/teams",
+      "/my-teams",
+      "/leagues",
+      "/watchlist",
+      "/settings",
+    ]);
+  });
+
+  it("marks the current section active", () => {
     pathnameMock.current = "/players";
+    render(<SideNav />);
+    expect(screen.getByRole("link", { name: "Players" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("keeps Teams active on the team detail page", () => {
+    pathnameMock.current = "/team";
+    render(<SideNav />);
+    expect(screen.getByRole("link", { name: "Teams" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("keeps Players active on a player detail page", () => {
+    pathnameMock.current = "/players/1234";
     render(<SideNav />);
     expect(screen.getByRole("link", { name: "Players" })).toHaveAttribute("aria-current", "page");
   });
 
-  it("renders the Home link and marks it active on /", () => {
-    pathnameMock.current = "/";
+  it("keeps My Teams active on nested my-team routes", () => {
+    pathnameMock.current = "/my-teams/rim-protectors";
     render(<SideNav />);
-    const link = screen.getByRole("link", { name: "Home" });
-    expect(link).toHaveAttribute("href", "/");
-    expect(link).toHaveAttribute("aria-current", "page");
-  });
-
-  it("renders the Starred link", () => {
-    pathnameMock.current = "/";
-    render(<SideNav />);
-    const link = screen.getByRole("link", { name: "Starred" });
-    expect(link).toHaveAttribute("href", "/watchlist");
-    expect(link).not.toHaveAttribute("aria-current");
-  });
-
-  it("marks Starred active on /watchlist", () => {
-    pathnameMock.current = "/watchlist";
-    render(<SideNav />);
-    expect(screen.getByRole("link", { name: "Starred" })).toHaveAttribute("aria-current", "page");
-  });
-
-  it("renders the Design link", () => {
-    pathnameMock.current = "/";
-    render(<SideNav />);
-    const link = screen.getByRole("link", { name: "Design" });
-    expect(link).toHaveAttribute("href", "/design");
-    expect(link).not.toHaveAttribute("aria-current");
-  });
-
-  it("marks Design active on /design", () => {
-    pathnameMock.current = "/design";
-    render(<SideNav />);
-    expect(screen.getByRole("link", { name: "Design" })).toHaveAttribute("aria-current", "page");
-  });
-
-  it("renders the Leagues link", () => {
-    pathnameMock.current = "/";
-    render(<SideNav />);
-    const link = screen.getByRole("link", { name: "Leagues" });
-    expect(link).toHaveAttribute("href", "/leagues");
-    expect(link).not.toHaveAttribute("aria-current");
-  });
-
-  it("marks Leagues active on /leagues and nested routes", () => {
-    pathnameMock.current = "/leagues/create";
-    render(<SideNav />);
-    expect(screen.getByRole("link", { name: "Leagues" })).toHaveAttribute("aria-current", "page");
-  });
-
-  it("collapses the side menu and persists the state", () => {
-    render(<SideNav />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Collapse side menu" }));
-
-    expect(screen.getByRole("navigation", { name: "Site" })).toHaveAttribute(
-      "data-collapsed",
-      "true",
-    );
-    expect(screen.getByRole("button", { name: "Expand side menu" })).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
-    expect(localStorage.getItem("court-vision-side-nav")).toContain('"isCollapsed":true');
-  });
-
-  it("rehydrates a saved collapsed state", async () => {
-    localStorage.setItem(
-      "court-vision-side-nav",
-      JSON.stringify({ state: { isCollapsed: true }, version: 0 }),
-    );
-
-    render(<SideNav />);
-
-    await waitFor(() =>
-      expect(screen.getByRole("navigation", { name: "Site" })).toHaveAttribute(
-        "data-collapsed",
-        "true",
-      ),
-    );
+    expect(screen.getByRole("link", { name: "My Teams" })).toHaveAttribute("aria-current", "page");
   });
 });

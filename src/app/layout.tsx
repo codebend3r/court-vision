@@ -69,7 +69,9 @@ export const metadata: Metadata = {
   },
 };
 
-const themeInitScript = `(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark"){t=window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";}document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="dark";}})();`;
+// Kept in sync with THEMES in lib/theme/themes.ts — inline so the first paint
+// is already themed. Unknown/absent values fall back to prefers-color-scheme.
+const themeInitScript = `(function(){try{var t=localStorage.getItem("theme");var ok=["dark","light","high-contrast","colorblind-safe","amber-crt","team-accent"];if(ok.indexOf(t)===-1){t=window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";}document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="dark";}})();`;
 
 export default async function RootLayout({
   children,
@@ -109,7 +111,13 @@ export default async function RootLayout({
             {!!profile && <LegacyTeamsMigrator />}
             <WatchlistAlert />
             <div className={styles.shell}>
-              {!!profile && <SideNav />}
+              {/* 60px-wide relative slot; the rail overlays content when it
+                  expands rather than reflowing the page. */}
+              {!!profile && (
+                <div className={styles.railSlot}>
+                  <SideNav />
+                </div>
+              )}
               {/* Skip-link target. Sits on the wrapper rather than each page's
                   <main> so every route gets it from one place. tabIndex -1
                   makes it programmatically focusable without adding a tab stop. */}
