@@ -17,7 +17,6 @@ import {
 } from "@/lib/players/searchParams";
 
 import { InfoTip } from "@/components/InfoTip/InfoTip";
-import { Switch } from "@/components/Switch/Switch";
 
 import styles from "@/components/PlayersSearchControls/PlayersSearchControls.module.scss";
 
@@ -192,8 +191,24 @@ export function PlayersSearchControls({
         </label>
       )}
       {tab === "regular" && (
-        <span className={styles.minimums}>
-          <Switch label="Qualifying minimums" checked={minimums} onChange={onMinimumsChange} />
+        <span className={styles.minimums} role="group" aria-label="Qualifying minimums">
+          <span className={styles.minimumsLabel}>Qualifying minimums</span>
+          <button
+            type="button"
+            className={styles.minimumsOption}
+            aria-pressed={minimums}
+            onClick={() => onMinimumsChange({ checked: true })}
+          >
+            On
+          </button>
+          <button
+            type="button"
+            className={styles.minimumsOption}
+            aria-pressed={!minimums}
+            onClick={() => onMinimumsChange({ checked: false })}
+          >
+            Off
+          </button>
           <InfoTip label="About qualifying minimums">
             <span className={styles.infoIntro}>
               NBA leaders must qualify: percentage leaders by made shots, per-game leaders by games

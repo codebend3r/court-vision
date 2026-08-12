@@ -20,20 +20,18 @@
   list-style: none;
 }
 
+// Grouping keycaps (Division / Conference / League).
 .viewLink {
-  display: inline-grid;
-  padding: var(--space-2) var(--space-3);
-  border-bottom: 2px solid transparent;
+  @include keycap;
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
 
   &:hover {
     color: var(--color-text);
+    text-decoration: none;
   }
 
   &[data-active="true"] {
-    border-bottom-color: var(--color-accent);
-    color: var(--color-accent);
+    @include keycap-engaged;
   }
 }
 
@@ -72,9 +70,10 @@
   list-style: none;
 }
 
+// Chip · name · record · win% over its bar (spec §10 teams).
 .teamRow {
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto 4.5rem;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-1);
@@ -96,8 +95,25 @@
 }
 
 .winPct {
+  display: grid;
+  gap: var(--space-1);
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
+  text-align: right;
+}
+
+// 4px track filled to the team's win percentage (the inline width).
+.winBar {
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-text-muted) 18%, transparent);
+  overflow: hidden;
+}
+
+.winBarFill {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
 }

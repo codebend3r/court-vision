@@ -49,7 +49,9 @@
   @include micro-label;
 }
 
+// Large readout numbers carry the extrusion (one of the two sanctioned roles).
 .value {
+  @include retro-extrude;
   margin: 0;
   font-family: var(--font-display);
   font-size: var(--font-size-lg);
@@ -78,9 +80,9 @@
     color: var(--color-highlight);
   }
 
+  // Flat by design: rank 1 gets the strong accent, never a glow.
   &[data-tier="first"] {
     background: color-mix(in srgb, var(--color-accent-strong) 18%, transparent);
     color: var(--color-accent-strong);
-    box-shadow: 0 0 10px color-mix(in srgb, var(--color-accent-strong) 35%, transparent);
   }
 }

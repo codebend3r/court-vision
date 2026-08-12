@@ -37,6 +37,24 @@
   width: 60px;
 }
 
+// Screen enter (spec §11): every route's main fades and settles on mount.
+// The reduced-motion guard in globals.scss collapses it to an instant swap.
+.content > main {
+  animation: cv-enter var(--duration-base) var(--ease-out) both;
+}
+
+@keyframes cv-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .content {
   display: grid;
   align-content: start;

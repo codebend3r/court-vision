@@ -102,7 +102,15 @@ export default async function TeamsPage({
                     <TeamChip team={team.abbr} size="sm" />
                     <span className={styles.teamName}>{team.name}</span>
                     <span className={styles.record}>{formatRecord(team.stats)}</span>
-                    <span className={styles.winPct}>{formatWinPct(team.stats)}</span>
+                    <span className={styles.winPct}>
+                      {formatWinPct(team.stats)}
+                      <span className={styles.winBar} aria-hidden="true">
+                        <span
+                          className={styles.winBarFill}
+                          style={{ width: `${(team.stats?.winPct ?? 0) * 100}%` }}
+                        />
+                      </span>
+                    </span>
                   </Link>
                 </li>
               ))}

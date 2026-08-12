@@ -1,0 +1,48 @@
+@use "@/styles/mixins" as *;
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-4);
+}
+
+.card {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.label {
+  @include micro-label;
+  margin: 0;
+}
+
+// Large readout numbers are the second sanctioned extrusion role (spec §1).
+.value {
+  @include retro-extrude;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.note {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+
+  &[data-sentiment="up"] {
+    color: var(--color-win);
+  }
+
+  &[data-sentiment="down"] {
+    color: var(--color-loss);
+  }
+}

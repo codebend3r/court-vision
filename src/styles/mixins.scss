@@ -96,6 +96,29 @@
   box-shadow: var(--retro-2);
 }
 
+// Dashboard panel shell (spec §10): every home panel and chart card share it.
+@mixin panel-shell {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+// Panel header title: uppercase display-weight sm over the 1px separator.
+// Pair with a muted xs count/action in the same row (grid 1fr auto).
+@mixin panel-title {
+  margin: 0;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
 // The one table pattern (spec §7): players table, game log, and starred all
 // share it. Apply to the <table>; pair with `table-wrapper` on the box around
 // the scroller.

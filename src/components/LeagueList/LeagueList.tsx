@@ -129,9 +129,6 @@ export function LeagueList({ leagues, activeLeagueId }: LeagueListProps) {
                 </Link>
                 <span className={styles.badge}>{SCORING_TYPE_LABELS[league.scoringType]}</span>
               </div>
-              <p className={styles.meta}>
-                {league.teamCount} teams · {league.rosterSlots} slots
-              </p>
               <div className={styles.actions}>
                 <button
                   type="button"
@@ -156,6 +153,26 @@ export function LeagueList({ leagues, activeLeagueId }: LeagueListProps) {
                   {isPendingDelete ? "Confirm delete" : "Delete"}
                 </button>
               </div>
+              {/* Replacement rank matters here: it is what the valuation
+                  engine derives from league size (teams × slots). */}
+              <dl className={styles.facts}>
+                <div className={styles.fact}>
+                  <dt className={styles.factLabel}>Teams</dt>
+                  <dd className={styles.factValue}>{league.teamCount}</dd>
+                </div>
+                <div className={styles.fact}>
+                  <dt className={styles.factLabel}>Roster slots</dt>
+                  <dd className={styles.factValue}>{league.rosterSlots}</dd>
+                </div>
+                <div className={styles.fact}>
+                  <dt className={styles.factLabel}>Replacement rank</dt>
+                  <dd className={styles.factValue}>#{league.teamCount * league.rosterSlots}</dd>
+                </div>
+                <div className={styles.fact}>
+                  <dt className={styles.factLabel}>Scoring</dt>
+                  <dd className={styles.factValue}>{SCORING_TYPE_LABELS[league.scoringType]}</dd>
+                </div>
+              </dl>
             </li>
           );
         })}
