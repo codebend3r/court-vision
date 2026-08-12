@@ -12,6 +12,15 @@
   @return $shadow;
 }
 
+// The retro text extrusion, opt-in by role. Reserved for page titles, the
+// wordmark, and large readout numbers (the stat figures on dashboard and
+// detail cards) — never applied to a heading just for being a heading. Reads
+// the shared --extrude constant so every theme extrudes with identical
+// geometry and only the color changes.
+@mixin retro-extrude {
+  text-shadow: var(--extrude);
+}
+
 // Box-shadow counterpart to long-text-shadow: stacked solid offsets so a
 // button reads as a chunky retro extrusion, never a blurred glow.
 @function long-box-shadow($color, $length, $step: 1px) {
@@ -87,9 +96,9 @@
   font-size: var(--font-size-xs);
   letter-spacing: var(--tracking-wide);
   color: var(--color-text-muted);
-  // When used on an h1–h5 these eyebrows inherit the global retro long-shadow,
-  // which smears 12px uppercase glyphs below AA legibility. Cancel it here so
-  // every micro-label heading stays crisp; large display headings keep it.
+  // Eyebrow labels are never extruded — the shadow smears 12px uppercase
+  // glyphs below AA legibility. Only h1 still carries it by tag, so this is a
+  // guard for the case where an eyebrow is marked up as the page title.
   text-shadow: none;
 }
 
