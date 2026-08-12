@@ -22,12 +22,37 @@
   --color-position-c: #c58bf2; // center — violet
   // Extrusion color for retro long-shadow lettering (see long-text-shadow in mixins).
   --color-retro-shadow: color-mix(in srgb, var(--color-accent) 55%, var(--color-bg));
-  // Purple variation for retro-shadow buttons (see retro-button in mixins).
+  // Purple accent (animated gradient border, TeamBuilder card view).
   --color-accent-purple: #9b7dff;
   // Games a player missed, on the stat chart and the game log.
   --color-chart-dnp: #f4d35e;
   --color-chart-dnp-muted: rgb(244 211 94 / 65%);
-  --color-retro-shadow-purple: color-mix(in srgb, var(--color-accent-purple) 55%, var(--color-bg));
+
+  // Retro depth geometry. A theme may only redefine color tokens — shadow
+  // offsets, spacing, radii, and the type scale are hard constants shared by
+  // every theme, which is what keeps the look consistent across all six.
+  // --retro-N are box-shadows for pressable controls; --extrude is the text
+  // extrusion, em-based so it tracks font size.
+  --retro-1: 1px 1px 0 var(--color-retro-shadow);
+  --retro-2: 1px 1px 0 var(--color-retro-shadow), 2px 2px 0 var(--color-retro-shadow);
+  --retro-4:
+    1px 1px 0 var(--color-retro-shadow), 2px 2px 0 var(--color-retro-shadow),
+    3px 3px 0 var(--color-retro-shadow), 4px 4px 0 var(--color-retro-shadow);
+  --extrude:
+    0.03em 0.03em var(--color-retro-shadow), 0.06em 0.06em var(--color-retro-shadow),
+    0.09em 0.09em var(--color-retro-shadow), 0.12em 0.12em var(--color-retro-shadow),
+    0.15em 0.15em var(--color-retro-shadow), 0.18em 0.18em var(--color-retro-shadow);
+  // SVG counterpart: chained 1px drop-shadows compound into one solid
+  // extrusion that follows the path outline rather than its bounding box.
+  --extrude-svg: drop-shadow(1px 1px 0 var(--color-retro-shadow))
+    drop-shadow(1px 1px 0 var(--color-retro-shadow))
+    drop-shadow(1px 1px 0 var(--color-retro-shadow))
+    drop-shadow(1px 1px 0 var(--color-retro-shadow));
+
+  // Table row rhythm. Every table cell pads with these rather than hardcoded
+  // spacing, so density is a one-attribute change on the root.
+  --row-y: var(--space-3);
+  --row-x: var(--space-4);
 
   // Spacing scale
   --space-1: 0.25rem;
@@ -112,6 +137,23 @@
   --font-size-xl: 2.25rem;
 }
 
+// Table density. Internal for now — no settings UI stamps this yet, so every
+// page runs at the "comfortable" defaults declared in :root above.
+[data-density="compact"] {
+  --row-y: var(--space-2);
+  --row-x: var(--space-3);
+}
+
+[data-density="comfortable"] {
+  --row-y: var(--space-3);
+  --row-x: var(--space-4);
+}
+
+[data-density="roomy"] {
+  --row-y: var(--space-4);
+  --row-x: var(--space-6);
+}
+
 *,
 *::before,
 *::after {
@@ -142,8 +184,10 @@ body {
 // Light-on-dark text blooms under the default subpixel rendering, so thinning
 // the strokes reads cleaner. Dark-on-light does not have that problem — there
 // antialiased only makes text lighter than the browser default — so this is
-// scoped to the dark theme rather than applied globally.
-:root[data-theme="dark"] body {
+// scoped away from the light theme rather than applied globally. Written as a
+// negation so every dark theme (and the unstamped default) is covered without
+// having to list them.
+:root:not([data-theme="light"]) body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -167,8 +211,14 @@ h5 {
   line-height: 1.15;
   letter-spacing: var(--tracking-tight);
   margin: 0;
-  // Em-based steps: the extrusion scales with each heading level's font size.
-  text-shadow: long-text-shadow(var(--color-retro-shadow), 10, 0.025em);
+}
+
+// The extrusion is opt-in by role, not by tag. Firing it on every h1–h5 read
+// as intentional at 32px and smeared the glyphs at 12px; it is now reserved
+// for page titles and the wordmark (below) plus large readout numbers, which
+// take it through the `retro-extrude` mixin. Everything else carries none.
+h1 {
+  @include retro-extrude;
 }
 
 :root[data-theme="light"] {
@@ -190,8 +240,8 @@ h5 {
   --color-control-placeholder: #7c86a6;
   --color-focus-ring: rgba(14, 127, 168, 0.28);
 
-  // The dark-theme purple is 3.10:1 on white, below AA for the retro-button
-  // pressed text and TeamBuilder's card view. This is the same violet the
+  // The dark-theme purple is 3.10:1 on white, below AA for TeamBuilder's
+  // card view. This is the same violet the
   // light palette already uses for the center position, at 6.6:1.
   --color-accent-purple: #7b3fb0;
 
@@ -200,7 +250,126 @@ h5 {
   --color-chart-dnp: #8a6d00;
   --color-chart-dnp-muted: rgb(138 109 0 / 65%);
 
+  // Light needs a literal extrusion color: the :root color-mix against a dark
+  // --color-bg produces a shadow darker than the text it sits behind.
+  --color-retro-shadow: #bfe0ea;
+
   color-scheme: light;
+}
+
+// WCAG AAA body text on pure black.
+:root[data-theme="high-contrast"] {
+  --color-bg: #000;
+  --color-surface: #0b0e1a;
+  --color-border: #7d86b4;
+  --color-text: #fff;
+  --color-text-muted: #cfd4ec;
+  --color-accent: #6fe3ff;
+  --color-accent-strong: #ff74ae;
+  --color-highlight: #ffc978;
+  --color-win: #68f5b0;
+  --color-loss: #ff939c;
+  --color-position-g: #6fe3ff;
+  --color-position-f: #ffc978;
+  --color-position-c: #cbb2ff;
+
+  --color-control-bg: #000;
+  --color-focus-ring: rgba(111, 227, 255, 0.55);
+  // Not specified by the redesign, which leaves it inheriting the dark #6a7194
+  // — 4.0:1 on this theme's black control fill, under AA and well under the
+  // AAA this theme exists to hit. Placeholders are text; use the muted token.
+  --color-control-placeholder: #cfd4ec;
+
+  --color-accent-purple: #c3aeff;
+  --color-retro-shadow: #1d5b6d;
+
+  color-scheme: dark;
+}
+
+// Blue/amber encoding — no red-green pairing anywhere.
+:root[data-theme="colorblind-safe"] {
+  --color-bg: #0f1220;
+  --color-surface: #191d2e;
+  --color-border: #2e3650;
+  --color-text: #eef1f8;
+  --color-text-muted: #98a1bd;
+  --color-accent: #5aa9ff;
+  --color-accent-strong: #ffb02e;
+  --color-highlight: #e4e8f4;
+  // Deliberately blue/amber rather than green/red. Anywhere the app encodes
+  // win/loss or good/bad, the color must be paired with a sign, arrow, or
+  // label — under this theme the hue alone no longer carries the meaning.
+  --color-win: #5aa9ff;
+  --color-loss: #ff9d2e;
+  --color-position-g: #5aa9ff;
+  --color-position-f: #ffb02e;
+  --color-position-c: #c9cede;
+
+  --color-control-bg: #0b0e1a;
+  --color-focus-ring: rgba(90, 169, 255, 0.34);
+  --color-control-placeholder: #98a1bd;
+
+  --color-accent-purple: #8f9bff;
+  --color-retro-shadow: #26507f;
+
+  color-scheme: dark;
+}
+
+// Low-light drafting.
+:root[data-theme="amber-crt"] {
+  --color-bg: #120d05;
+  --color-surface: #1d1409;
+  --color-border: #402f14;
+  --color-text: #ffd694;
+  --color-text-muted: #b58c50;
+  --color-accent: #ffa726;
+  --color-accent-strong: #ff7043;
+  --color-highlight: #ffd95e;
+  --color-win: #bcd63f;
+  --color-loss: #ff7043;
+  --color-position-g: #ffd95e;
+  --color-position-f: #ff9040;
+  --color-position-c: #d7b06a;
+
+  --color-control-bg: #0b0703;
+  --color-focus-ring: rgba(255, 167, 38, 0.34);
+  // Inheriting the dark theme's blue-grey placeholder would be the only cool
+  // hue in an all-amber theme.
+  --color-control-placeholder: #b58c50;
+
+  --color-accent-purple: #e0a94a;
+  --color-retro-shadow: #6a4413;
+
+  color-scheme: dark;
+}
+
+// Accent follows the user's club. The values here are the default red; the
+// team picker overrides --color-accent and --color-retro-shadow (a darkened,
+// desaturated form of the accent, ~40% lightness) from the selected team's
+// primary color. Everything else stays fixed.
+:root[data-theme="team-accent"] {
+  --color-bg: #14161c;
+  --color-surface: #1e222b;
+  --color-border: #333844;
+  --color-text: #f1f2f6;
+  --color-text-muted: #9aa0b2;
+  --color-accent: #ff3b5c;
+  --color-accent-strong: #ffd166;
+  --color-highlight: #ffd166;
+  --color-win: #4cc98a;
+  --color-loss: #ff6b6b;
+  --color-position-g: #7fb8ff;
+  --color-position-f: #ffd166;
+  --color-position-c: #c9a4ff;
+
+  --color-control-bg: #0e1015;
+  --color-focus-ring: rgba(255, 59, 92, 0.32);
+  --color-control-placeholder: #9aa0b2;
+
+  --color-accent-purple: #a08cff;
+  --color-retro-shadow: #6b1c2c;
+
+  color-scheme: dark;
 }
 
 // Registered angle so the animated-gradient-border mixin (mixins.scss) can

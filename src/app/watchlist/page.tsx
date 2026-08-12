@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/PageHeader/PageHeader";
 import { StarredPlayersView } from "@/components/StarredPlayersView/StarredPlayersView";
 import { getActiveLeague } from "@/lib/leagues/queries";
 import { parsePlayersSearchParams } from "@/lib/players/searchParams";
@@ -35,7 +36,11 @@ export default async function WatchlistPage({
 
   return (
     <main className={styles.page}>
-      <h1>Starred Players</h1>
+      <PageHeader
+        eyebrow="My league"
+        title="Starred players"
+        description="The shortlist you are actually deciding between, ranked by your preferred formula."
+      />
       {league !== null && <p className={styles.scope}>League: {league.name}</p>}
       <StarredPlayersView params={params} showCounter />
     </main>

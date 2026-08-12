@@ -68,7 +68,7 @@ describe("MyTeamsPage", () => {
   it("prompts to create a league when there is no active league", async () => {
     getActiveLeague.mockResolvedValue(null);
     render(await MyTeamsPage());
-    expect(screen.getByRole("heading", { name: "My Teams" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "My teams" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "create a league" })).toHaveAttribute(
       "href",
       "/leagues/create",
@@ -85,8 +85,8 @@ describe("MyTeamsPage", () => {
 
     render(await MyTeamsPage());
 
-    expect(screen.getByRole("heading", { name: "My Teams" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Create team" })).toHaveAttribute(
+    expect(screen.getByRole("heading", { name: "My teams" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "New team" })).toHaveAttribute(
       "href",
       "/my-teams/create",
     );

@@ -67,8 +67,9 @@ describe("LeagueList", () => {
     );
     expect(screen.getByRole("link", { name: "Alpha" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Beta" })).toBeInTheDocument();
-    expect(screen.getByText("H2H Categories")).toBeInTheDocument();
-    expect(screen.getByText("H2H Points")).toBeInTheDocument();
+    // The scoring label appears on the badge and again in the fact grid.
+    expect(screen.getAllByText("H2H Categories").length).toBe(2);
+    expect(screen.getAllByText("H2H Points").length).toBe(2);
   });
 
   it("marks the active league card's Active button as pressed", () => {

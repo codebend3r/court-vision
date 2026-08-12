@@ -84,25 +84,27 @@ export function PlayersPager({
           ))}
         </select>
       </label>
-      <button
-        type="button"
-        onClick={() => goTo({ nextPage: page - 1 })}
-        disabled={page <= 1}
-        className={styles.pagerButton}
-      >
-        Previous
-      </button>
-      <span>
+      <span className={styles.pageCount}>
         Page {page} of {totalPages}
       </span>
-      <button
-        type="button"
-        onClick={() => goTo({ nextPage: page + 1 })}
-        disabled={page >= totalPages}
-        className={styles.pagerButton}
-      >
-        Next
-      </button>
+      <span className={styles.buttons}>
+        <button
+          type="button"
+          onClick={() => goTo({ nextPage: page - 1 })}
+          disabled={page <= 1}
+          className={styles.pagerButton}
+        >
+          Prev
+        </button>
+        <button
+          type="button"
+          onClick={() => goTo({ nextPage: page + 1 })}
+          disabled={page >= totalPages}
+          className={styles.pagerButton}
+        >
+          Next
+        </button>
+      </span>
     </nav>
   );
 }

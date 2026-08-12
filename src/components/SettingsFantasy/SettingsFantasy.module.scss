@@ -18,12 +18,14 @@
   @include error-callout;
 }
 
+// Formula cards (spec §10 settings): selectable cards, radio dot + display
+// name + explanation.
 .fieldset {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
   gap: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
+  border: 0;
+  padding: 0;
   margin: 0;
 }
 
@@ -34,7 +36,22 @@
 
 .option {
   display: grid;
+  align-content: start;
   gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  box-shadow: var(--retro-1);
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+
+  &:has(input:checked) {
+    border-color: var(--color-accent);
+    transform: translate(-1px, -1px);
+    box-shadow: var(--retro-4);
+  }
 }
 
 .radioLabel {
@@ -52,7 +69,8 @@
 }
 
 .radioTitle {
-  font-weight: var(--font-weight-medium);
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-bold);
 }
 
 .radioDescription {

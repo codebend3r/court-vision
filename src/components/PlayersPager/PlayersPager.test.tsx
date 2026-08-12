@@ -40,7 +40,7 @@ describe("PlayersPager", () => {
   it("navigates to the previous page", () => {
     render(<PlayersPager {...defaultProps} page={2} totalPages={3} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Previous" }));
+    fireEvent.click(screen.getByRole("button", { name: "Prev" }));
 
     expect(replace).toHaveBeenCalledTimes(1);
     expect(replace).toHaveBeenCalledWith("/players");
@@ -58,7 +58,7 @@ describe("PlayersPager", () => {
   it("disables the Previous button on the first page", () => {
     render(<PlayersPager {...defaultProps} page={1} totalPages={3} />);
 
-    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Prev" })).toBeDisabled();
   });
 
   it("disables the Next button on the last page", () => {

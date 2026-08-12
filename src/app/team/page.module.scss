@@ -1,10 +1,11 @@
 @use "@/styles/mixins" as *;
 
+// Children stretch: the page header's rule, the readout row, and the content
+// grid all want the full column.
 .page {
   display: grid;
   gap: var(--space-4);
   padding: var(--space-6);
-  justify-items: start;
 }
 
 .header {
@@ -13,15 +14,6 @@
   align-items: center;
   gap: var(--space-4);
   width: 100%;
-}
-
-.identity {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.name {
-  margin: 0;
 }
 
 .context {
@@ -81,11 +73,37 @@
   text-align: right;
   white-space: nowrap;
   font-family: var(--font-mono);
+}
 
-  // Flat accent for a top-five league rank; no glows.
-  &[data-top="true"] {
-    color: var(--color-win);
+// Ordinal beside a 6px bar filled to (31 − rank) / 30. Flat fills, no glows:
+// win-color in the top five, loss-color at 20th or worse, accent between.
+.rankCell {
+  display: grid;
+  grid-template-columns: 4.5rem auto;
+  align-items: center;
+  justify-content: end;
+  gap: var(--space-2);
+}
+
+.rankBar {
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-text-muted) 18%, transparent);
+  overflow: hidden;
+
+  &[data-tier="top"] .rankBarFill {
+    background: var(--color-win);
   }
+
+  &[data-tier="bottom"] .rankBarFill {
+    background: var(--color-loss);
+  }
+}
+
+.rankBarFill {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
 }
 
 .statLabel {

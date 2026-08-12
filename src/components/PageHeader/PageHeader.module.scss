@@ -1,0 +1,61 @@
+@use "@/styles/mixins" as *;
+
+.header {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.action {
+  @include keycap;
+
+  &:hover {
+    text-decoration: none;
+  }
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--space-4);
+}
+
+.titling {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.title {
+  font-size: var(--font-size-xl);
+  line-height: 1.1;
+}
+
+.description {
+  margin: 0;
+  max-width: 64ch;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-wrap: pretty;
+}
+
+.actions {
+  display: grid;
+  grid-auto-flow: column;
+  align-items: end;
+  gap: var(--space-2);
+}
+
+.rule {
+  height: 2px;
+  background: var(--color-accent);
+  box-shadow: 0 2px 0 var(--color-retro-shadow);
+}

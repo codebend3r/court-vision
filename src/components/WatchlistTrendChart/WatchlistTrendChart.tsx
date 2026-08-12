@@ -34,9 +34,18 @@ export type WatchlistTrendChartProps = {
 //           ΔE 6.6 sits in the 6–8 floor band, which is legal here because each
 //           line is also directly labelled at its right end and named in the
 //           legend, so identity never rests on colour alone.
+const DARK_SERIES = ["#3987e5", "#c98500", "#199e70", "#9085e9", "#d55181"] as const;
+
+// The four new themes share the dark series (all dark-surfaced); each line is
+// directly labelled and named in the legend, so identity never rests on
+// colour alone.
 const SERIES_BY_THEME: Record<Theme, readonly string[]> = {
-  dark: ["#3987e5", "#c98500", "#199e70", "#9085e9", "#d55181"],
+  dark: DARK_SERIES,
   light: ["#2a78d6", "#a86a00", "#0f7d55", "#4a3aa7", "#c2185b"],
+  "high-contrast": DARK_SERIES,
+  "colorblind-safe": DARK_SERIES,
+  "amber-crt": DARK_SERIES,
+  "team-accent": DARK_SERIES,
 };
 
 const seriesKey = ({ playerId }: { playerId: number }): string => `p${playerId}`;

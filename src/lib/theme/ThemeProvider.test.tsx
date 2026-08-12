@@ -4,12 +4,12 @@ import { afterEach, describe, expect, it, vi } from "bun:test";
 import { ThemeProvider, useTheme } from "@/lib/theme/ThemeProvider";
 
 function Probe() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   return (
     <div>
       <span>{theme}</span>
-      <button type="button" onClick={toggleTheme}>
-        toggle
+      <button type="button" onClick={() => setTheme({ theme: "amber-crt" })}>
+        pick amber
       </button>
     </div>
   );
@@ -44,18 +44,42 @@ describe("ThemeProvider", () => {
     expect(screen.getByText("light")).toBeInTheDocument();
   });
 
-  it("toggles theme state, the html attribute, and localStorage on click", () => {
+  it("reads a pre-stamped six-theme attribute as the initial theme", () => {
+    document.documentElement.dataset.theme = "colorblind-safe";
+
     render(
       <ThemeProvider>
         <Probe />
       </ThemeProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "toggle" }));
+    expect(screen.getByText("colorblind-safe")).toBeInTheDocument();
+  });
 
-    expect(screen.getByText("light")).toBeInTheDocument();
-    expect(document.documentElement.dataset.theme).toBe("light");
-    expect(window.localStorage.getItem("theme")).toBe("light");
+  it("falls back to dark when the stamped attribute is not a theme", () => {
+    document.documentElement.dataset.theme = "sepia";
+
+    render(
+      <ThemeProvider>
+        <Probe />
+      </ThemeProvider>,
+    );
+
+    expect(screen.getByText("dark")).toBeInTheDocument();
+  });
+
+  it("sets theme state, the html attribute, and localStorage on pick", () => {
+    render(
+      <ThemeProvider>
+        <Probe />
+      </ThemeProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "pick amber" }));
+
+    expect(screen.getByText("amber-crt")).toBeInTheDocument();
+    expect(document.documentElement.dataset.theme).toBe("amber-crt");
+    expect(window.localStorage.getItem("theme")).toBe("amber-crt");
   });
 
   it("throws when useTheme is called outside a ThemeProvider", () => {

@@ -1,0 +1,3797 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="./support.js"></script>
+  </head>
+  <body>
+    <x-dc>
+      <helmet>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+        />
+        <link
+          rel="stylesheet"
+          href="_ds/court-vision-9fa09c9e-0ef3-49b5-8342-277b4eede6a0/_ds_bundle.css"
+        />
+        <link
+          rel="stylesheet"
+          href="_ds/court-vision-9fa09c9e-0ef3-49b5-8342-277b4eede6a0/styles.css"
+        />
+        <script src="_ds/court-vision-9fa09c9e-0ef3-49b5-8342-277b4eede6a0/_ds_bundle.js"></script>
+        <style>
+          html,
+          body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+          }
+          *,
+          *::before,
+          *::after {
+            box-sizing: border-box;
+          }
+          body {
+            background: var(--color-bg);
+            color: var(--color-text);
+            font-family: var(--font-sans);
+            line-height: 1.5;
+          }
+          a {
+            color: var(--color-accent);
+            text-decoration: none;
+          }
+          a:hover {
+            text-decoration: underline;
+          }
+
+          /* Reset the inherited global heading extrusion. In this system the retro
+       shadow is applied deliberately (page title, readout numbers), never by
+       virtue of being a heading — that is what made it read as accidental. */
+          [data-cv] h1,
+          [data-cv] h2,
+          [data-cv] h3,
+          [data-cv] h4,
+          [data-cv] h5 {
+            text-shadow: none;
+          }
+
+          /* ── Depth is a system constant: identical in every theme. Only colour changes. ── */
+          [data-cv] {
+            --retro-1: 1px 1px 0 var(--color-retro-shadow);
+            --retro-2: 1px 1px 0 var(--color-retro-shadow), 2px 2px 0 var(--color-retro-shadow);
+            --retro-4:
+              1px 1px 0 var(--color-retro-shadow), 2px 2px 0 var(--color-retro-shadow),
+              3px 3px 0 var(--color-retro-shadow), 4px 4px 0 var(--color-retro-shadow);
+            --extrude:
+              0.03em 0.03em var(--color-retro-shadow), 0.06em 0.06em var(--color-retro-shadow),
+              0.09em 0.09em var(--color-retro-shadow), 0.12em 0.12em var(--color-retro-shadow),
+              0.15em 0.15em var(--color-retro-shadow), 0.18em 0.18em var(--color-retro-shadow);
+            --row-y: var(--space-3);
+            --row-x: var(--space-4);
+            /* Chained 1px drop-shadows compound into one solid extrusion that follows
+         the path outline — the SVG equivalent of the wordmark's text-shadow. */
+            --extrude-svg: drop-shadow(1px 1px 0 var(--color-retro-shadow))
+              drop-shadow(1px 1px 0 var(--color-retro-shadow))
+              drop-shadow(1px 1px 0 var(--color-retro-shadow))
+              drop-shadow(1px 1px 0 var(--color-retro-shadow));
+          }
+          [data-density="compact"] {
+            --row-y: var(--space-2);
+            --row-x: var(--space-3);
+          }
+          [data-density="roomy"] {
+            --row-y: var(--space-4);
+            --row-x: var(--space-6);
+          }
+
+          /* ── Themes: colour tokens only. Dark + Light are the shipped values. ── */
+          [data-cv-theme="light"] {
+            --color-bg: #f7f8fc;
+            --color-surface: #fff;
+            --color-border: #dfe3f0;
+            --color-text: #171b2e;
+            --color-text-muted: #5a6280;
+            --color-accent: #0b749a;
+            --color-accent-strong: #d6206a;
+            --color-highlight: #b35c00;
+            --color-win: #0f8a4f;
+            --color-loss: #c9283e;
+            --color-position-g: #0c7560;
+            --color-position-f: #9a5b00;
+            --color-position-c: #7b3fb0;
+            --color-control-bg: #fff;
+            --color-control-placeholder: #7c86a6;
+            --color-focus-ring: rgba(14, 127, 168, 0.28);
+            --color-accent-purple: #7b3fb0;
+            --color-retro-shadow: #bfe0ea;
+            color-scheme: light;
+          }
+          [data-cv-theme="contrast"] {
+            --color-bg: #000;
+            --color-surface: #0b0e1a;
+            --color-border: #7d86b4;
+            --color-text: #fff;
+            --color-text-muted: #cfd4ec;
+            --color-accent: #6fe3ff;
+            --color-accent-strong: #ff74ae;
+            --color-highlight: #ffc978;
+            --color-win: #68f5b0;
+            --color-loss: #ff939c;
+            --color-position-g: #6fe3ff;
+            --color-position-f: #ffc978;
+            --color-position-c: #cbb2ff;
+            --color-control-bg: #000;
+            --color-focus-ring: rgba(111, 227, 255, 0.55);
+            --color-accent-purple: #c3aeff;
+            --color-retro-shadow: #1d5b6d;
+            color-scheme: dark;
+          }
+          [data-cv-theme="cvd"] {
+            --color-bg: #0f1220;
+            --color-surface: #191d2e;
+            --color-border: #2e3650;
+            --color-text: #eef1f8;
+            --color-text-muted: #98a1bd;
+            --color-accent: #5aa9ff;
+            --color-accent-strong: #ffb02e;
+            --color-highlight: #e4e8f4;
+            --color-win: #5aa9ff;
+            --color-loss: #ff9d2e;
+            --color-position-g: #5aa9ff;
+            --color-position-f: #ffb02e;
+            --color-position-c: #c9cede;
+            --color-control-bg: #0b0e1a;
+            --color-focus-ring: rgba(90, 169, 255, 0.34);
+            --color-accent-purple: #8f9bff;
+            --color-retro-shadow: #26507f;
+            color-scheme: dark;
+          }
+          [data-cv-theme="crt"] {
+            --color-bg: #120d05;
+            --color-surface: #1d1409;
+            --color-border: #402f14;
+            --color-text: #ffd694;
+            --color-text-muted: #b58c50;
+            --color-accent: #ffa726;
+            --color-accent-strong: #ff7043;
+            --color-highlight: #ffd95e;
+            --color-win: #bcd63f;
+            --color-loss: #ff7043;
+            --color-position-g: #ffd95e;
+            --color-position-f: #ff9040;
+            --color-position-c: #d7b06a;
+            --color-control-bg: #0b0703;
+            --color-focus-ring: rgba(255, 167, 38, 0.34);
+            --color-accent-purple: #e0a94a;
+            --color-retro-shadow: #6a4413;
+            color-scheme: dark;
+          }
+          [data-cv-theme="team"] {
+            --color-bg: #14161c;
+            --color-surface: #1e222b;
+            --color-border: #333844;
+            --color-text: #f1f2f6;
+            --color-text-muted: #9aa0b2;
+            --color-accent: #ff3b5c;
+            --color-accent-strong: #ffd166;
+            --color-highlight: #ffd166;
+            --color-win: #4cc98a;
+            --color-loss: #ff6b6b;
+            --color-position-g: #7fb8ff;
+            --color-position-f: #ffd166;
+            --color-position-c: #c9a4ff;
+            --color-control-bg: #0e1015;
+            --color-focus-ring: rgba(255, 59, 92, 0.32);
+            --color-accent-purple: #a08cff;
+            --color-retro-shadow: #6b1c2c;
+            color-scheme: dark;
+          }
+
+          /* ── Text-size preference (Settings). Scales the whole UI, not just copy. ── */
+          [data-font-scale="sm"] {
+            --font-size-xs: 0.6875rem;
+            --font-size-sm: 0.8125rem;
+            --font-size-md: 0.9375rem;
+            --font-size-lg: 1.125rem;
+            --font-size-xl: 1.5rem;
+          }
+          [data-font-scale="lg"] {
+            --font-size-xs: 0.8125rem;
+            --font-size-sm: 0.9375rem;
+            --font-size-md: 1.125rem;
+            --font-size-lg: 1.375rem;
+            --font-size-xl: 2rem;
+          }
+          [data-font-scale="xl"] {
+            --font-size-xs: 0.875rem;
+            --font-size-sm: 1rem;
+            --font-size-md: 1.25rem;
+            --font-size-lg: 1.5rem;
+            --font-size-xl: 2.25rem;
+          }
+
+          @keyframes cv-enter {
+            from {
+              opacity: 0;
+              transform: translateY(6px);
+            }
+            to {
+              opacity: 1;
+              transform: none;
+            }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+              animation-duration: 0.001ms !important;
+              transition-duration: 0.001ms !important;
+            }
+          }
+        </style>
+      </helmet>
+      <div
+        data-cv
+        data-cv-theme="{{ theme }}"
+        data-font-scale="{{ fontScale }}"
+        data-density="{{ density }}"
+        style="
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+          background: var(--color-bg);
+          color: var(--color-text);
+          font-family: var(--font-sans);
+          font-size: var(--font-size-md);
+        "
+      >
+        <header
+          style="
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: var(--space-4);
+            padding: var(--space-3) var(--space-6);
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+          "
+        >
+          <a
+            href="#"
+            onClick="{{ goHome }}"
+            aria-label="Court Vision — home"
+            style="
+              display: grid;
+              grid-auto-flow: column;
+              align-items: center;
+              gap: var(--space-3);
+              color: var(--color-text);
+              text-decoration: none;
+            "
+          >
+            <svg
+              viewBox="0 0 48 48"
+              width="34"
+              height="34"
+              fill="none"
+              aria-hidden="true"
+              style="display: block; filter: var(--extrude-svg)"
+            >
+              <rect x="3" y="8" width="42" height="32" rx="3" fill="var(--color-accent)"></rect>
+              <line x1="24" y1="8" x2="24" y2="40" stroke="var(--color-bg)" stroke-width="4"></line>
+              <circle
+                cx="24"
+                cy="24"
+                r="8"
+                stroke="var(--color-bg)"
+                stroke-width="4"
+                fill="none"
+              ></circle>
+            </svg>
+            <span style="display: grid; gap: 1px; justify-items: start">
+              <span
+                style="
+                  font-family: var(--font-display);
+                  font-size: 14px;
+                  font-weight: var(--font-weight-bold);
+                  text-transform: uppercase;
+                  letter-spacing: 0.12em;
+                  line-height: 1;
+                  text-shadow: var(--extrude);
+                "
+                >Court</span
+              >
+              <span
+                style="
+                  font-family: var(--font-display);
+                  font-size: 14px;
+                  font-weight: var(--font-weight-bold);
+                  text-transform: uppercase;
+                  letter-spacing: 0.12em;
+                  line-height: 1;
+                  color: var(--color-accent);
+                  text-shadow: var(--extrude);
+                "
+                >Vision</span
+              >
+            </span>
+          </a>
+
+          <div
+            style="
+              display: grid;
+              grid-auto-flow: column;
+              justify-content: start;
+              align-items: center;
+              gap: var(--space-2);
+            "
+          >
+            <button
+              type="button"
+              style="
+                display: inline-grid;
+                grid-auto-flow: column;
+                align-items: center;
+                gap: var(--space-2);
+                padding: var(--space-1) var(--space-3);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-full);
+                background: var(--color-bg);
+                color: var(--color-text);
+                font-family: inherit;
+                font-size: var(--font-size-sm);
+                cursor: pointer;
+              "
+              style-hover="border-color:var(--color-accent)"
+            >
+              <span
+                style="
+                  width: 6px;
+                  height: 6px;
+                  border-radius: var(--radius-full);
+                  background: var(--color-accent);
+                "
+              ></span>
+              Dynasty Warriors
+              <span style="color: var(--color-text-muted); font-size: var(--font-size-xs)"
+                >12-team · 9-cat</span
+              >
+            </button>
+          </div>
+
+          <div
+            style="display: grid; grid-auto-flow: column; align-items: center; gap: var(--space-3)"
+          >
+            <div
+              role="group"
+              aria-label="Theme"
+              style="
+                display: grid;
+                grid-auto-flow: column;
+                align-items: center;
+                gap: var(--space-1);
+                padding: var(--space-1);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <sc-for list="{{ themeKeys }}" as="t" hint-placeholder-count="6">
+                <button
+                  type="button"
+                  onClick="{{ t.onClick }}"
+                  aria-pressed="{{ t.pressed }}"
+                  aria-label="{{ t.label }}"
+                  title="{{ t.label }}"
+                  style="{{ t.style }}"
+                ></button>
+              </sc-for>
+            </div>
+            <button
+              type="button"
+              onClick="{{ goSettings }}"
+              style="
+                display: inline-grid;
+                grid-auto-flow: column;
+                align-items: center;
+                gap: var(--space-2);
+                padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-full);
+                background: var(--color-bg);
+                color: var(--color-text);
+                font-family: inherit;
+                font-size: var(--font-size-sm);
+                cursor: pointer;
+              "
+              style-hover="border-color:var(--color-accent)"
+            >
+              cjrivas
+              <span
+                style="
+                  display: grid;
+                  place-items: center;
+                  width: 1.5rem;
+                  height: 1.5rem;
+                  border-radius: var(--radius-full);
+                  background: var(--color-accent);
+                  color: var(--color-bg);
+                  font-family: var(--font-display);
+                  font-size: var(--font-size-xs);
+                  font-weight: var(--font-weight-bold);
+                "
+                >CJ</span
+              >
+            </button>
+          </div>
+        </header>
+
+        <div
+          style="
+            display: grid;
+            grid-template-columns: 60px minmax(0, 1fr);
+            align-items: stretch;
+            flex: 1 1 auto;
+          "
+        >
+          <div style="position: relative; width: 60px">
+            <nav
+              aria-label="Site"
+              style="
+                position: absolute;
+                inset-block: 0;
+                left: 0;
+                z-index: 20;
+                display: grid;
+                grid-template-rows: 1fr auto;
+                align-content: start;
+                gap: var(--space-4);
+                width: 60px;
+                padding: var(--space-4) var(--space-3);
+                overflow: hidden;
+                background: var(--color-surface);
+                border-right: 1px solid var(--color-border);
+                transition: width 160ms var(--ease-out);
+              "
+              style-hover="width:236px;box-shadow:8px 0 24px rgb(0 0 0 / 0.28)"
+            >
+              <div style="display: grid; align-content: start; gap: var(--space-4); width: 212px">
+                <sc-for list="{{ navGroups }}" as="g" hint-placeholder-count="2">
+                  <div style="display: grid; gap: var(--space-1)">
+                    <span
+                      style="
+                        display: grid;
+                        grid-template-columns: 2.25rem 1fr;
+                        gap: var(--space-3);
+                        align-items: center;
+                        height: var(--space-4);
+                      "
+                      ><span></span
+                      ><span
+                        style="
+                          color: var(--color-text-muted);
+                          font-size: var(--font-size-xs);
+                          text-transform: uppercase;
+                          letter-spacing: var(--tracking-wide);
+                          white-space: nowrap;
+                        "
+                        >{{ g.title }}</span
+                      ></span
+                    >
+                    <sc-for list="{{ g.items }}" as="n" hint-placeholder-count="3">
+                      <a
+                        href="#"
+                        onClick="{{ n.onClick }}"
+                        title="{{ n.label }}"
+                        style="{{ n.style }}"
+                      >
+                        <span aria-hidden="true" style="{{ n.capStyle }}">
+                          <svg
+                            viewBox="0 0 48 48"
+                            width="20"
+                            height="20"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="4"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            style="display: block"
+                          >
+                            <path d="{{ n.d }}"></path>
+                          </svg>
+                        </span>
+                        <span
+                          style="
+                            white-space: nowrap;
+                            font-size: var(--font-size-sm);
+                            font-weight: var(--font-weight-medium);
+                          "
+                          >{{ n.label }}</span
+                        >
+                      </a>
+                    </sc-for>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display: grid; gap: var(--space-1); width: 212px; align-self: end">
+                <a
+                  href="#"
+                  onClick="{{ goSettings }}"
+                  title="Settings"
+                  style="{{ settingsNavStyle }}"
+                >
+                  <span aria-hidden="true" style="{{ settingsCapStyle }}">
+                    <svg
+                      viewBox="0 0 48 48"
+                      width="20"
+                      height="20"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="4"
+                      stroke-linecap="round"
+                      style="display: block"
+                    >
+                      <path
+                        d="M9 14 h30 M9 24 h30 M9 34 h30 M19 10 a4 4 0 1 1 0 8 a4 4 0 1 1 0-8 M30 20 a4 4 0 1 1 0 8 a4 4 0 1 1 0-8 M16 30 a4 4 0 1 1 0 8 a4 4 0 1 1 0-8"
+                      ></path>
+                    </svg>
+                  </span>
+                  <span
+                    style="
+                      white-space: nowrap;
+                      font-size: var(--font-size-sm);
+                      font-weight: var(--font-weight-medium);
+                    "
+                    >Settings</span
+                  >
+                </a>
+              </div>
+            </nav>
+          </div>
+
+          <div style="display: grid; align-content: start; min-width: 0">
+            <!-- ── Page header: identical block on every screen ── -->
+            <div
+              style="display: grid; gap: var(--space-4); padding: var(--space-6) var(--space-6) 0"
+            >
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: minmax(0, 1fr) auto;
+                  align-items: end;
+                  gap: var(--space-4);
+                "
+              >
+                <div style="display: grid; gap: var(--space-2); min-width: 0">
+                  <span
+                    style="
+                      color: var(--color-accent);
+                      font-size: var(--font-size-xs);
+                      text-transform: uppercase;
+                      letter-spacing: var(--tracking-wide);
+                      font-weight: var(--font-weight-semibold);
+                    "
+                    >{{ pageEyebrow }}</span
+                  >
+                  <h1
+                    style="
+                      margin: 0;
+                      font-family: var(--font-display);
+                      font-size: var(--font-size-xl);
+                      font-weight: var(--font-weight-bold);
+                      line-height: 1.1;
+                      letter-spacing: var(--tracking-tight);
+                      text-shadow: var(--extrude);
+                    "
+                  >
+                    {{ pageTitle }}
+                  </h1>
+                  <p
+                    style="
+                      margin: 0;
+                      max-width: 64ch;
+                      color: var(--color-text-muted);
+                      font-size: var(--font-size-sm);
+                      text-wrap: pretty;
+                    "
+                  >
+                    {{ pageDesc }}
+                  </p>
+                </div>
+                <div
+                  style="
+                    display: grid;
+                    grid-auto-flow: column;
+                    align-items: center;
+                    gap: var(--space-2);
+                  "
+                >
+                  <sc-for list="{{ pageActions }}" as="a" hint-placeholder-count="2">
+                    <button type="button" onClick="{{ a.onClick }}" style="{{ a.style }}">
+                      {{ a.label }}
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+              <div
+                style="
+                  height: 2px;
+                  background: var(--color-accent);
+                  box-shadow: 0 2px 0 var(--color-retro-shadow);
+                "
+              ></div>
+            </div>
+
+            <main
+              style="
+                display: grid;
+                gap: var(--space-6);
+                padding: var(--space-6);
+                animation: cv-enter var(--duration-base) var(--ease-out) both;
+              "
+            >
+              <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+                <div style="display: grid; gap: var(--space-6)">
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                      gap: var(--space-4);
+                    "
+                  >
+                    <sc-for list="{{ readouts }}" as="r" hint-placeholder-count="4">
+                      <div
+                        style="
+                          display: grid;
+                          gap: var(--space-2);
+                          padding: var(--space-4);
+                          border: 1px solid var(--color-border);
+                          border-radius: var(--radius-md);
+                          background: var(--color-surface);
+                        "
+                      >
+                        <span
+                          style="
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-xs);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                          >{{ r.label }}</span
+                        >
+                        <span
+                          style="
+                            font-family: var(--font-display);
+                            font-size: var(--font-size-xl);
+                            font-weight: var(--font-weight-bold);
+                            line-height: 1;
+                            letter-spacing: var(--tracking-tight);
+                            font-variant-numeric: tabular-nums;
+                            text-shadow: var(--extrude);
+                          "
+                          >{{ r.value }}</span
+                        >
+                        <span style="{{ r.noteStyle }}">{{ r.note }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(6, minmax(0, 1fr));
+                      gap: var(--space-4);
+                    "
+                  >
+                    <section
+                      style="
+                        grid-column: span 2;
+                        display: grid;
+                        align-content: start;
+                        gap: var(--space-3);
+                        padding: var(--space-4);
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-md);
+                        background: var(--color-surface);
+                      "
+                    >
+                      <div
+                        style="
+                          display: grid;
+                          grid-template-columns: 1fr auto;
+                          align-items: center;
+                          gap: var(--space-2);
+                          padding-bottom: var(--space-2);
+                          border-bottom: 1px solid var(--color-border);
+                        "
+                      >
+                        <h2
+                          style="
+                            margin: 0;
+                            font-family: var(--font-display);
+                            font-size: var(--font-size-sm);
+                            font-weight: var(--font-weight-bold);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                            text-shadow: none;
+                          "
+                        >
+                          Starred players
+                        </h2>
+                        <a
+                          href="#"
+                          onClick="{{ goWatchlist }}"
+                          style="
+                            font-size: var(--font-size-xs);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                          >All 18</a
+                        >
+                      </div>
+                      <ul style="display: grid; gap: 0; margin: 0; padding: 0; list-style: none">
+                        <sc-for list="{{ starredPanel }}" as="p" hint-placeholder-count="5">
+                          <li
+                            style="
+                              display: grid;
+                              grid-template-columns: auto minmax(0, 1fr) auto auto;
+                              align-items: center;
+                              gap: var(--space-3);
+                              padding-block: var(--space-2);
+                              border-top: 1px solid var(--color-border);
+                            "
+                          >
+                            <span role="img" style="{{ p.avatarStyle }}">{{ p.initials }}</span>
+                            <a
+                              href="#"
+                              onClick="{{ goPlayer }}"
+                              style="
+                                color: var(--color-text);
+                                font-size: var(--font-size-sm);
+                                font-weight: var(--font-weight-medium);
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                                white-space: nowrap;
+                              "
+                              >{{ p.fullName }}</a
+                            >
+                            <span style="{{ p.chipStyle }}">{{ p.teamAbbr }}</span>
+                            <span
+                              style="
+                                font-family: var(--font-mono);
+                                font-size: var(--font-size-sm);
+                                font-variant-numeric: tabular-nums;
+                                color: var(--color-win);
+                              "
+                              >{{ p.z }}</span
+                            >
+                          </li>
+                        </sc-for>
+                      </ul>
+                    </section>
+
+                    <section
+                      style="
+                        grid-column: span 2;
+                        display: grid;
+                        align-content: start;
+                        gap: var(--space-3);
+                        padding: var(--space-4);
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-md);
+                        background: var(--color-surface);
+                      "
+                    >
+                      <div
+                        style="
+                          display: grid;
+                          grid-template-columns: 1fr auto;
+                          align-items: center;
+                          gap: var(--space-2);
+                          padding-bottom: var(--space-2);
+                          border-bottom: 1px solid var(--color-border);
+                        "
+                      >
+                        <h2
+                          style="
+                            margin: 0;
+                            font-family: var(--font-display);
+                            font-size: var(--font-size-sm);
+                            font-weight: var(--font-weight-bold);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                        >
+                          Rim Protectors
+                        </h2>
+                        <a
+                          href="#"
+                          onClick="{{ goMyTeams }}"
+                          style="
+                            font-size: var(--font-size-xs);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                          >Edit</a
+                        >
+                      </div>
+                      <ul style="display: grid; gap: 0; margin: 0; padding: 0; list-style: none">
+                        <sc-for list="{{ teamSlots }}" as="s" hint-placeholder-count="8">
+                          <li
+                            style="
+                              display: grid;
+                              grid-template-columns: 2.25rem auto minmax(0, 1fr);
+                              align-items: center;
+                              gap: var(--space-2);
+                              padding-block: var(--space-2);
+                              border-top: 1px solid var(--color-border);
+                            "
+                          >
+                            <span
+                              style="
+                                font-family: var(--font-mono);
+                                font-size: var(--font-size-xs);
+                                font-weight: var(--font-weight-semibold);
+                                letter-spacing: var(--tracking-wide);
+                                color: var(--color-accent);
+                              "
+                              >{{ s.slot }}</span
+                            >
+                            <span role="img" style="{{ s.avatarStyle }}">{{ s.initials }}</span>
+                            <a
+                              href="#"
+                              onClick="{{ goPlayer }}"
+                              style="
+                                color: var(--color-text);
+                                font-size: var(--font-size-sm);
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                                white-space: nowrap;
+                              "
+                              >{{ s.name }}</a
+                            >
+                          </li>
+                        </sc-for>
+                      </ul>
+                    </section>
+
+                    <section
+                      style="
+                        grid-column: span 2;
+                        display: grid;
+                        align-content: start;
+                        gap: var(--space-3);
+                        padding: var(--space-4);
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-md);
+                        background: var(--color-surface);
+                      "
+                    >
+                      <div
+                        style="
+                          display: grid;
+                          grid-template-columns: 1fr auto;
+                          align-items: center;
+                          gap: var(--space-2);
+                          padding-bottom: var(--space-2);
+                          border-bottom: 1px solid var(--color-border);
+                        "
+                      >
+                        <h2
+                          style="
+                            margin: 0;
+                            font-family: var(--font-display);
+                            font-size: var(--font-size-sm);
+                            font-weight: var(--font-weight-bold);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                        >
+                          Conference standings
+                        </h2>
+                        <span
+                          style="
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-xs);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                          >Top 8</span
+                        >
+                      </div>
+                      <div
+                        style="
+                          display: grid;
+                          grid-template-columns: repeat(2, minmax(0, 1fr));
+                          gap: var(--space-4);
+                        "
+                      >
+                        <div style="display: grid; align-content: start; gap: var(--space-1)">
+                          <span
+                            style="
+                              color: var(--color-text-muted);
+                              font-size: var(--font-size-xs);
+                              text-transform: uppercase;
+                              letter-spacing: var(--tracking-wide);
+                            "
+                            >East</span
+                          >
+                          <sc-for list="{{ east }}" as="t" hint-placeholder-count="8">
+                            <div
+                              style="
+                                display: grid;
+                                grid-template-columns: 1.25rem 1fr auto;
+                                align-items: baseline;
+                                gap: var(--space-2);
+                                padding-block: var(--space-1);
+                                border-top: 1px solid var(--color-border);
+                                font-size: var(--font-size-sm);
+                              "
+                            >
+                              <span
+                                style="
+                                  font-family: var(--font-mono);
+                                  color: var(--color-text-muted);
+                                  font-variant-numeric: tabular-nums;
+                                "
+                                >{{ t.rank }}</span
+                              >
+                              <span style="font-weight: var(--font-weight-medium)"
+                                >{{ t.abbr }}</span
+                              >
+                              <span
+                                style="
+                                  font-family: var(--font-mono);
+                                  color: var(--color-text-muted);
+                                  font-variant-numeric: tabular-nums;
+                                "
+                                >{{ t.record }}</span
+                              >
+                            </div>
+                          </sc-for>
+                        </div>
+                        <div style="display: grid; align-content: start; gap: var(--space-1)">
+                          <span
+                            style="
+                              color: var(--color-text-muted);
+                              font-size: var(--font-size-xs);
+                              text-transform: uppercase;
+                              letter-spacing: var(--tracking-wide);
+                            "
+                            >West</span
+                          >
+                          <sc-for list="{{ west }}" as="t" hint-placeholder-count="8">
+                            <div
+                              style="
+                                display: grid;
+                                grid-template-columns: 1.25rem 1fr auto;
+                                align-items: baseline;
+                                gap: var(--space-2);
+                                padding-block: var(--space-1);
+                                border-top: 1px solid var(--color-border);
+                                font-size: var(--font-size-sm);
+                              "
+                            >
+                              <span
+                                style="
+                                  font-family: var(--font-mono);
+                                  color: var(--color-text-muted);
+                                  font-variant-numeric: tabular-nums;
+                                "
+                                >{{ t.rank }}</span
+                              >
+                              <span style="font-weight: var(--font-weight-medium)"
+                                >{{ t.abbr }}</span
+                              >
+                              <span
+                                style="
+                                  font-family: var(--font-mono);
+                                  color: var(--color-text-muted);
+                                  font-variant-numeric: tabular-nums;
+                                "
+                                >{{ t.record }}</span
+                              >
+                            </div>
+                          </sc-for>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section
+                      style="
+                        grid-column: span 3;
+                        display: grid;
+                        gap: var(--space-3);
+                        padding: var(--space-4);
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-md);
+                        background: var(--color-surface);
+                      "
+                    >
+                      <div
+                        style="
+                          display: grid;
+                          grid-template-columns: 1fr auto;
+                          align-items: center;
+                          gap: var(--space-2);
+                          padding-bottom: var(--space-2);
+                          border-bottom: 1px solid var(--color-border);
+                        "
+                      >
+                        <h2
+                          style="
+                            margin: 0;
+                            font-family: var(--font-display);
+                            font-size: var(--font-size-sm);
+                            font-weight: var(--font-weight-bold);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                        >
+                          Z-Score trend
+                        </h2>
+                        <span
+                          style="
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-xs);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                          >Rolling 10</span
+                        >
+                      </div>
+                      <svg
+                        viewBox="0 0 560 190"
+                        preserveAspectRatio="none"
+                        style="width: 100%; height: 190px; display: block"
+                      >
+                        <line x1="0" y1="95" x2="560" y2="95" stroke="var(--color-border)"></line>
+                        <line
+                          x1="0"
+                          y1="25"
+                          x2="560"
+                          y2="25"
+                          stroke="var(--color-border)"
+                          stroke-dasharray="2 6"
+                        ></line>
+                        <line
+                          x1="0"
+                          y1="165"
+                          x2="560"
+                          y2="165"
+                          stroke="var(--color-border)"
+                          stroke-dasharray="2 6"
+                        ></line>
+                        <sc-for list="{{ zSeries }}" as="s" hint-placeholder-count="3">
+                          <polyline
+                            points="{{ s.points }}"
+                            fill="none"
+                            stroke="{{ s.color }}"
+                            stroke-width="2"
+                            stroke-linejoin="round"
+                            stroke-dasharray="{{ s.dash }}"
+                          ></polyline>
+                        </sc-for>
+                      </svg>
+                      <div style="display: flex; flex-wrap: wrap; gap: var(--space-3)">
+                        <sc-for list="{{ zSeries }}" as="s" hint-placeholder-count="3">
+                          <span
+                            style="
+                              display: inline-grid;
+                              grid-auto-flow: column;
+                              align-items: center;
+                              gap: var(--space-2);
+                              color: var(--color-text-muted);
+                              font-size: var(--font-size-xs);
+                            "
+                          >
+                            <span style="{{ s.swatch }}"></span>{{ s.name }}
+                          </span>
+                        </sc-for>
+                      </div>
+                    </section>
+
+                    <section
+                      style="
+                        grid-column: span 3;
+                        display: grid;
+                        gap: var(--space-3);
+                        padding: var(--space-4);
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-md);
+                        background: var(--color-surface);
+                      "
+                    >
+                      <div
+                        style="
+                          display: grid;
+                          grid-template-columns: 1fr auto;
+                          align-items: center;
+                          gap: var(--space-2);
+                          padding-bottom: var(--space-2);
+                          border-bottom: 1px solid var(--color-border);
+                        "
+                      >
+                        <h2
+                          style="
+                            margin: 0;
+                            font-family: var(--font-display);
+                            font-size: var(--font-size-sm);
+                            font-weight: var(--font-weight-bold);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                        >
+                          G-Score trend
+                        </h2>
+                        <span
+                          style="
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-xs);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                          >Rolling 10</span
+                        >
+                      </div>
+                      <svg
+                        viewBox="0 0 560 190"
+                        preserveAspectRatio="none"
+                        style="width: 100%; height: 190px; display: block"
+                      >
+                        <line x1="0" y1="95" x2="560" y2="95" stroke="var(--color-border)"></line>
+                        <line
+                          x1="0"
+                          y1="25"
+                          x2="560"
+                          y2="25"
+                          stroke="var(--color-border)"
+                          stroke-dasharray="2 6"
+                        ></line>
+                        <line
+                          x1="0"
+                          y1="165"
+                          x2="560"
+                          y2="165"
+                          stroke="var(--color-border)"
+                          stroke-dasharray="2 6"
+                        ></line>
+                        <sc-for list="{{ gSeries }}" as="s" hint-placeholder-count="3">
+                          <polyline
+                            points="{{ s.points }}"
+                            fill="none"
+                            stroke="{{ s.color }}"
+                            stroke-width="2"
+                            stroke-linejoin="round"
+                            stroke-dasharray="{{ s.dash }}"
+                          ></polyline>
+                        </sc-for>
+                      </svg>
+                      <div style="display: flex; flex-wrap: wrap; gap: var(--space-3)">
+                        <sc-for list="{{ gSeries }}" as="s" hint-placeholder-count="3">
+                          <span
+                            style="
+                              display: inline-grid;
+                              grid-auto-flow: column;
+                              align-items: center;
+                              gap: var(--space-2);
+                              color: var(--color-text-muted);
+                              font-size: var(--font-size-xs);
+                            "
+                          >
+                            <span style="{{ s.swatch }}"></span>{{ s.name }}
+                          </span>
+                        </sc-for>
+                      </div>
+                    </section>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ isPlayers }}" hint-placeholder-val="{{ false }}">
+                <div style="display: grid; gap: var(--space-4)">
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: minmax(0, 1fr) auto;
+                      align-items: center;
+                      gap: var(--space-4);
+                    "
+                  >
+                    <div
+                      role="group"
+                      aria-label="Player stat views"
+                      style="display: flex; flex-wrap: wrap; gap: var(--space-2)"
+                    >
+                      <sc-for list="{{ playerTabs }}" as="t" hint-placeholder-count="4">
+                        <button
+                          type="button"
+                          aria-pressed="{{ t.pressed }}"
+                          onClick="{{ t.onClick }}"
+                          style="{{ t.style }}"
+                        >
+                          {{ t.label }}
+                        </button>
+                      </sc-for>
+                    </div>
+                    <span
+                      style="
+                        font-family: var(--font-mono);
+                        color: var(--color-text-muted);
+                        font-size: var(--font-size-sm);
+                        font-variant-numeric: tabular-nums;
+                      "
+                      >{{ resultSummary }}</span
+                    >
+                  </div>
+
+                  <section
+                    style="
+                      display: grid;
+                      gap: var(--space-3);
+                      padding: var(--space-4);
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-md);
+                      background: var(--color-surface);
+                    "
+                  >
+                    <div
+                      style="display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-4)"
+                    >
+                      <label
+                        style="
+                          display: grid;
+                          gap: var(--space-1);
+                          flex: 1 1 18rem;
+                          min-width: 14rem;
+                        "
+                      >
+                        <span
+                          style="
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-xs);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                          >Search</span
+                        >
+                        <input
+                          type="search"
+                          placeholder="Player name…"
+                          style="
+                            height: var(--control-height);
+                            padding: 0 var(--space-3);
+                            border: 1px solid var(--color-border);
+                            border-radius: var(--radius-sm);
+                            background: var(--color-control-bg);
+                            color: var(--color-text);
+                            font-family: inherit;
+                            font-size: var(--font-size-sm);
+                          "
+                        />
+                      </label>
+                      <label style="display: grid; gap: var(--space-1)">
+                        <span
+                          style="
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-xs);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                          >Games</span
+                        >
+                        <select
+                          style="
+                            height: var(--control-height);
+                            padding: 0 var(--space-2);
+                            border: 1px solid var(--color-border);
+                            border-radius: var(--radius-sm);
+                            background: var(--color-control-bg);
+                            color: var(--color-text);
+                            font-family: var(--font-mono);
+                            font-size: var(--font-size-sm);
+                          "
+                        >
+                          <option>All games</option>
+                          <option>Last 10</option>
+                          <option>Last 20</option>
+                        </select>
+                      </label>
+                      <label style="display: grid; gap: var(--space-1)">
+                        <span
+                          style="
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-xs);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                          >Basis</span
+                        >
+                        <select
+                          style="
+                            height: var(--control-height);
+                            padding: 0 var(--space-2);
+                            border: 1px solid var(--color-border);
+                            border-radius: var(--radius-sm);
+                            background: var(--color-control-bg);
+                            color: var(--color-text);
+                            font-family: var(--font-mono);
+                            font-size: var(--font-size-sm);
+                          "
+                        >
+                          <option>Per game</option>
+                          <option>Totals</option>
+                        </select>
+                      </label>
+                      <label style="display: grid; gap: var(--space-1)">
+                        <span
+                          style="
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-xs);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                          >Qualifying minimums</span
+                        >
+                        <div
+                          style="
+                            display: grid;
+                            grid-auto-flow: column;
+                            justify-content: start;
+                            gap: var(--space-2);
+                          "
+                        >
+                          <button type="button" aria-pressed="true" style="{{ onKey }}">On</button>
+                          <button type="button" aria-pressed="false" style="{{ offKey }}">
+                            Off
+                          </button>
+                        </div>
+                      </label>
+                    </div>
+                    <sc-if value="{{ isFantasy }}" hint-placeholder-val="{{ false }}">
+                      <div
+                        style="
+                          display: grid;
+                          gap: var(--space-2);
+                          padding-top: var(--space-3);
+                          border-top: 1px solid var(--color-border);
+                        "
+                      >
+                        <span
+                          style="
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-xs);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                          >Categories — click to punt, ✕ to exclude</span
+                        >
+                        <div style="display: flex; flex-wrap: wrap; gap: var(--space-2)">
+                          <sc-for list="{{ catChips }}" as="c" hint-placeholder-count="9">
+                            <span style="{{ c.style }}">
+                              <button type="button" style="{{ c.toggleStyle }}">
+                                {{ c.label }}
+                              </button>
+                              <button
+                                type="button"
+                                aria-label="Exclude"
+                                style="
+                                  padding: var(--space-1) var(--space-2) var(--space-1) 0;
+                                  border: none;
+                                  background: none;
+                                  color: var(--color-text-muted);
+                                  font-size: var(--font-size-xs);
+                                  cursor: pointer;
+                                "
+                              >
+                                ✕
+                              </button>
+                            </span>
+                          </sc-for>
+                        </div>
+                      </div>
+                    </sc-if>
+                  </section>
+
+                  <section
+                    style="
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-md);
+                      background: var(--color-surface);
+                      overflow: hidden;
+                    "
+                  >
+                    <div style="max-width: 100%; overflow-x: auto">
+                      <table
+                        style="
+                          width: 100%;
+                          min-width: 76rem;
+                          border-collapse: collapse;
+                          font-variant-numeric: tabular-nums;
+                        "
+                      >
+                        <thead>
+                          <tr>
+                            <th
+                              style="
+                                position: sticky;
+                                top: 0;
+                                z-index: 2;
+                                width: 1%;
+                                padding: var(--space-3) var(--space-3);
+                                background: var(--color-surface);
+                                border-bottom: 1px solid var(--color-border);
+                              "
+                            ></th>
+                            <th
+                              style="
+                                position: sticky;
+                                top: 0;
+                                z-index: 2;
+                                padding: var(--space-3) var(--row-x);
+                                background: var(--color-surface);
+                                border-bottom: 1px solid var(--color-border);
+                                color: var(--color-text-muted);
+                                font-family: var(--font-mono);
+                                font-size: var(--font-size-xs);
+                                font-weight: var(--font-weight-semibold);
+                                text-align: right;
+                                letter-spacing: var(--tracking-wide);
+                              "
+                            >
+                              RK
+                            </th>
+                            <sc-for list="{{ tableHeaders }}" as="h" hint-placeholder-count="18">
+                              <th style="{{ h.style }}">{{ h.label }}</th>
+                            </sc-for>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <sc-for list="{{ tableRows }}" as="row" hint-placeholder-count="10">
+                            <tr style="border-top: 1px solid var(--color-border)">
+                              <td style="width: 1%; padding: var(--row-y) var(--space-3)">
+                                <button type="button" aria-label="Star" style="{{ row.starStyle }}">
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    fill="{{ row.starFill }}"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    style="display: block; width: 1rem; height: 1rem"
+                                  >
+                                    <path
+                                      d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                                    ></path>
+                                  </svg>
+                                </button>
+                              </td>
+                              <td
+                                style="
+                                  padding: var(--row-y) var(--row-x);
+                                  text-align: right;
+                                  font-family: var(--font-mono);
+                                  font-size: var(--font-size-sm);
+                                  color: var(--color-text-muted);
+                                "
+                              >
+                                {{ row.rank }}
+                              </td>
+                              <td
+                                style="
+                                  padding: var(--row-y) var(--row-x);
+                                  min-width: 17rem;
+                                  overflow: hidden;
+                                "
+                              >
+                                <span
+                                  style="
+                                    display: grid;
+                                    grid-template-columns: auto minmax(0, 1fr);
+                                    align-items: center;
+                                    gap: var(--space-3);
+                                    min-width: 0;
+                                  "
+                                >
+                                  <span role="img" style="{{ row.avatarStyle }}"
+                                    >{{ row.initials }}</span
+                                  >
+                                  <span
+                                    style="
+                                      display: grid;
+                                      grid-template-columns: minmax(0, 1fr);
+                                      gap: 2px;
+                                      min-width: 0;
+                                    "
+                                  >
+                                    <a
+                                      href="#"
+                                      onClick="{{ goPlayer }}"
+                                      style="
+                                        color: var(--color-text);
+                                        font-size: var(--font-size-sm);
+                                        font-weight: var(--font-weight-semibold);
+                                        white-space: nowrap;
+                                        overflow: hidden;
+                                        text-overflow: ellipsis;
+                                      "
+                                      >{{ row.name }}</a
+                                    >
+                                    <span
+                                      style="
+                                        display: grid;
+                                        grid-auto-flow: column;
+                                        justify-content: start;
+                                        align-items: center;
+                                        gap: var(--space-2);
+                                      "
+                                    >
+                                      <span style="{{ row.chipStyle }}">{{ row.teamAbbr }}</span>
+                                      <span style="{{ row.posStyle }}">{{ row.pos }}</span>
+                                    </span>
+                                  </span>
+                                </span>
+                              </td>
+                              <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="14">
+                                <td style="{{ cell.style }}">{{ cell.v }}</td>
+                              </sc-for>
+                            </tr>
+                          </sc-for>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: auto 1fr auto;
+                        align-items: center;
+                        gap: var(--space-3);
+                        padding: var(--space-3) var(--row-x);
+                        border-top: 1px solid var(--color-border);
+                      "
+                    >
+                      <label
+                        style="
+                          display: grid;
+                          grid-auto-flow: column;
+                          align-items: center;
+                          gap: var(--space-2);
+                          color: var(--color-text-muted);
+                          font-size: var(--font-size-xs);
+                          text-transform: uppercase;
+                          letter-spacing: var(--tracking-wide);
+                        "
+                        >Rows
+                        <select
+                          style="
+                            height: var(--control-height);
+                            padding: 0 var(--space-2);
+                            border: 1px solid var(--color-border);
+                            border-radius: var(--radius-sm);
+                            background: var(--color-control-bg);
+                            color: var(--color-text);
+                            font-family: var(--font-mono);
+                            font-size: var(--font-size-sm);
+                          "
+                        >
+                          <option>25</option>
+                          <option>50</option>
+                          <option>100</option>
+                        </select>
+                      </label>
+                      <span
+                        style="
+                          justify-self: center;
+                          font-family: var(--font-mono);
+                          color: var(--color-text-muted);
+                          font-size: var(--font-size-sm);
+                        "
+                        >Page 1 of 23</span
+                      >
+                      <div style="display: grid; grid-auto-flow: column; gap: var(--space-2)">
+                        <button
+                          type="button"
+                          disabled
+                          style="
+                            padding: var(--space-1) var(--space-3);
+                            border: 1px solid var(--color-border);
+                            border-radius: var(--radius-sm);
+                            background: var(--color-bg);
+                            color: var(--color-text-muted);
+                            font-family: inherit;
+                            font-size: var(--font-size-sm);
+                            opacity: 0.5;
+                            cursor: not-allowed;
+                          "
+                        >
+                          Prev
+                        </button>
+                        <button type="button" style="{{ nextKey }}">Next</button>
+                      </div>
+                    </div>
+                  </section>
+
+                  <sc-if value="{{ isAdvanced }}" hint-placeholder-val="{{ false }}">
+                    <x-import
+                      component-from-global-scope="CourtVision.AdvancedStatsLegend"
+                      hint-size="100%,56px"
+                    ></x-import>
+                  </sc-if>
+                  <sc-if value="{{ isFantasy }}" hint-placeholder-val="{{ false }}">
+                    <x-import
+                      component-from-global-scope="CourtVision.FantasyValueLegend"
+                      pool-size="156"
+                      window-label="all games"
+                      basis="perGame"
+                      hint-size="100%,56px"
+                    ></x-import>
+                  </sc-if>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ isPlayer }}" hint-placeholder-val="{{ false }}">
+                <div style="display: grid; gap: var(--space-6)">
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                      gap: var(--space-3);
+                    "
+                  >
+                    <sc-for list="{{ seasonReadouts }}" as="r" hint-placeholder-count="6">
+                      <div
+                        style="
+                          display: grid;
+                          gap: var(--space-1);
+                          padding: var(--space-3) var(--space-4);
+                          border: 1px solid var(--color-border);
+                          border-radius: var(--radius-md);
+                          background: var(--color-surface);
+                        "
+                      >
+                        <span
+                          style="
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-xs);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                          >{{ r.label }}</span
+                        >
+                        <span
+                          style="
+                            font-family: var(--font-display);
+                            font-size: var(--font-size-lg);
+                            font-weight: var(--font-weight-bold);
+                            line-height: 1;
+                            font-variant-numeric: tabular-nums;
+                            text-shadow: var(--extrude);
+                          "
+                          >{{ r.value }}</span
+                        >
+                        <span style="{{ r.rankStyle }}">{{ r.rank }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+
+                  <section
+                    style="
+                      display: grid;
+                      gap: var(--space-4);
+                      padding: var(--space-4);
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-md);
+                      background: var(--color-surface);
+                    "
+                  >
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: auto minmax(0, 1fr) auto;
+                        align-items: center;
+                        gap: var(--space-4);
+                        padding-bottom: var(--space-3);
+                        border-bottom: 1px solid var(--color-border);
+                      "
+                    >
+                      <span
+                        role="img"
+                        aria-label="Nikola Jokić"
+                        style="
+                          display: grid;
+                          place-items: center;
+                          width: 72px;
+                          height: 72px;
+                          border: 2px solid var(--color-accent);
+                          border-radius: var(--radius-md);
+                          background: var(--color-bg);
+                          color: var(--color-text);
+                          font-family: var(--font-display);
+                          font-size: var(--font-size-lg);
+                          font-weight: var(--font-weight-bold);
+                          box-shadow: var(--retro-4);
+                        "
+                        >NJ</span
+                      >
+                      <div style="display: grid; gap: var(--space-2); min-width: 0">
+                        <span
+                          style="
+                            display: grid;
+                            grid-auto-flow: column;
+                            justify-content: start;
+                            align-items: center;
+                            gap: var(--space-3);
+                          "
+                        >
+                          <span
+                            style="
+                              font-family: var(--font-display);
+                              font-size: var(--font-size-lg);
+                              font-weight: var(--font-weight-bold);
+                              letter-spacing: var(--tracking-tight);
+                            "
+                            >Nikola Jokić</span
+                          >
+                          <span style="{{ denChip }}">DEN</span>
+                          <span
+                            style="
+                              font-family: var(--font-mono);
+                              font-size: var(--font-size-sm);
+                              color: var(--color-position-c);
+                            "
+                            >C</span
+                          >
+                          <span
+                            style="
+                              font-family: var(--font-mono);
+                              font-size: var(--font-size-sm);
+                              color: var(--color-text-muted);
+                            "
+                            >#15</span
+                          >
+                        </span>
+                        <dl style="display: flex; flex-wrap: wrap; gap: var(--space-4); margin: 0">
+                          <sc-for list="{{ playerFacts }}" as="f" hint-placeholder-count="6">
+                            <div style="display: grid; gap: 2px">
+                              <dt
+                                style="
+                                  color: var(--color-text-muted);
+                                  font-size: var(--font-size-xs);
+                                  text-transform: uppercase;
+                                  letter-spacing: var(--tracking-wide);
+                                "
+                              >
+                                {{ f.label }}
+                              </dt>
+                              <dd
+                                style="
+                                  margin: 0;
+                                  font-family: var(--font-mono);
+                                  font-size: var(--font-size-sm);
+                                "
+                              >
+                                {{ f.value }}
+                              </dd>
+                            </div>
+                          </sc-for>
+                        </dl>
+                      </div>
+                      <div style="display: grid; gap: var(--space-2); justify-items: end">
+                        <select
+                          style="
+                            height: var(--control-height);
+                            padding: 0 var(--space-2);
+                            border: 1px solid var(--color-border);
+                            border-radius: var(--radius-sm);
+                            background: var(--color-control-bg);
+                            color: var(--color-text);
+                            font-family: var(--font-mono);
+                            font-size: var(--font-size-sm);
+                          "
+                        >
+                          <option>2024-25</option>
+                          <option>2023-24</option>
+                          <option>Career</option>
+                        </select>
+                        <span
+                          style="
+                            font-family: var(--font-mono);
+                            font-size: var(--font-size-sm);
+                            color: var(--color-text-muted);
+                          "
+                          >70 games</span
+                        >
+                      </div>
+                    </div>
+
+                    <div style="display: flex; flex-wrap: wrap; gap: var(--space-4)">
+                      <div style="display: grid; gap: var(--space-1)">
+                        <span
+                          style="
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-xs);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                          >Mode</span
+                        >
+                        <div role="group" style="display: flex; gap: var(--space-2)">
+                          <sc-for list="{{ statModes }}" as="m" hint-placeholder-count="4">
+                            <button
+                              type="button"
+                              aria-pressed="{{ m.pressed }}"
+                              style="{{ m.style }}"
+                            >
+                              {{ m.label }}
+                            </button>
+                          </sc-for>
+                        </div>
+                      </div>
+                      <div style="display: grid; gap: var(--space-1)">
+                        <span
+                          style="
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-xs);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                          >Window</span
+                        >
+                        <div role="group" style="display: flex; gap: var(--space-2)">
+                          <sc-for list="{{ statSpans }}" as="m" hint-placeholder-count="6">
+                            <button
+                              type="button"
+                              aria-pressed="{{ m.pressed }}"
+                              style="{{ m.style }}"
+                            >
+                              {{ m.label }}
+                            </button>
+                          </sc-for>
+                        </div>
+                      </div>
+                    </div>
+
+                    <svg
+                      viewBox="0 0 900 220"
+                      preserveAspectRatio="none"
+                      style="width: 100%; height: 220px; display: block"
+                    >
+                      <line x1="0" y1="200" x2="900" y2="200" stroke="var(--color-border)"></line>
+                      <line
+                        x1="0"
+                        y1="110"
+                        x2="900"
+                        y2="110"
+                        stroke="var(--color-border)"
+                        stroke-dasharray="2 6"
+                      ></line>
+                      <line
+                        x1="0"
+                        y1="25"
+                        x2="900"
+                        y2="25"
+                        stroke="var(--color-border)"
+                        stroke-dasharray="2 6"
+                      ></line>
+                      <polyline
+                        points="{{ ptsPath }}"
+                        fill="none"
+                        stroke="var(--color-accent)"
+                        stroke-width="2"
+                      ></polyline>
+                      <polyline
+                        points="{{ rebPath }}"
+                        fill="none"
+                        stroke="var(--color-accent-purple)"
+                        stroke-width="2"
+                        stroke-dasharray="6 4"
+                      ></polyline>
+                      <polyline
+                        points="{{ astPath }}"
+                        fill="none"
+                        stroke="var(--color-highlight)"
+                        stroke-width="2"
+                        stroke-dasharray="2 4"
+                      ></polyline>
+                    </svg>
+                    <div style="display: flex; gap: var(--space-4)">
+                      <span
+                        style="
+                          display: inline-grid;
+                          grid-auto-flow: column;
+                          align-items: center;
+                          gap: var(--space-2);
+                          color: var(--color-text-muted);
+                          font-size: var(--font-size-xs);
+                        "
+                        ><span
+                          style="width: 16px; height: 2px; background: var(--color-accent)"
+                        ></span
+                        >PTS</span
+                      >
+                      <span
+                        style="
+                          display: inline-grid;
+                          grid-auto-flow: column;
+                          align-items: center;
+                          gap: var(--space-2);
+                          color: var(--color-text-muted);
+                          font-size: var(--font-size-xs);
+                        "
+                        ><span
+                          style="width: 16px; height: 2px; background: var(--color-accent-purple)"
+                        ></span
+                        >REB</span
+                      >
+                      <span
+                        style="
+                          display: inline-grid;
+                          grid-auto-flow: column;
+                          align-items: center;
+                          gap: var(--space-2);
+                          color: var(--color-text-muted);
+                          font-size: var(--font-size-xs);
+                        "
+                        ><span
+                          style="width: 16px; height: 2px; background: var(--color-highlight)"
+                        ></span
+                        >AST</span
+                      >
+                    </div>
+                  </section>
+
+                  <section
+                    style="
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-md);
+                      background: var(--color-surface);
+                      overflow: hidden;
+                    "
+                  >
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: 1fr auto;
+                        align-items: center;
+                        gap: var(--space-2);
+                        padding: var(--space-3) var(--row-x);
+                        border-bottom: 1px solid var(--color-border);
+                      "
+                    >
+                      <h2
+                        style="
+                          margin: 0;
+                          font-family: var(--font-display);
+                          font-size: var(--font-size-sm);
+                          font-weight: var(--font-weight-bold);
+                          text-transform: uppercase;
+                          letter-spacing: var(--tracking-wide);
+                        "
+                      >
+                        Game log
+                      </h2>
+                      <span
+                        style="
+                          color: var(--color-text-muted);
+                          font-size: var(--font-size-xs);
+                          text-transform: uppercase;
+                          letter-spacing: var(--tracking-wide);
+                        "
+                        >Last 8</span
+                      >
+                    </div>
+                    <div style="overflow-x: auto">
+                      <table
+                        style="
+                          width: 100%;
+                          min-width: 1120px;
+                          border-collapse: collapse;
+                          font-variant-numeric: tabular-nums;
+                        "
+                      >
+                        <thead>
+                          <tr>
+                            <sc-for list="{{ gameLogHeaders }}" as="h" hint-placeholder-count="20">
+                              <th style="{{ h.style }}">{{ h.label }}</th>
+                            </sc-for>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <sc-for list="{{ gameLogRows }}" as="row" hint-placeholder-count="8">
+                            <tr style="border-top: 1px solid var(--color-border)">
+                              <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="20">
+                                <td style="{{ cell.style }}">{{ cell.v }}</td>
+                              </sc-for>
+                            </tr>
+                          </sc-for>
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ isTeams }}" hint-placeholder-val="{{ false }}">
+                <div style="display: grid; gap: var(--space-4)">
+                  <div
+                    role="group"
+                    aria-label="Grouping"
+                    style="display: flex; gap: var(--space-2)"
+                  >
+                    <button type="button" aria-pressed="true" style="{{ onKey }}">Division</button>
+                    <button type="button" aria-pressed="false" style="{{ offKey }}">
+                      Conference
+                    </button>
+                    <button type="button" aria-pressed="false" style="{{ offKey }}">League</button>
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(auto-fit, minmax(23rem, 1fr));
+                      gap: var(--space-4);
+                    "
+                  >
+                    <sc-for list="{{ divisions }}" as="d" hint-placeholder-count="6">
+                      <section
+                        style="
+                          display: grid;
+                          align-content: start;
+                          gap: var(--space-3);
+                          padding: var(--space-4);
+                          border: 1px solid var(--color-border);
+                          border-radius: var(--radius-md);
+                          background: var(--color-surface);
+                        "
+                      >
+                        <div
+                          style="
+                            display: grid;
+                            grid-template-columns: 1fr auto;
+                            align-items: center;
+                            gap: var(--space-2);
+                            padding-bottom: var(--space-2);
+                            border-bottom: 1px solid var(--color-border);
+                          "
+                        >
+                          <h2
+                            style="
+                              margin: 0;
+                              font-family: var(--font-display);
+                              font-size: var(--font-size-sm);
+                              font-weight: var(--font-weight-bold);
+                              text-transform: uppercase;
+                              letter-spacing: var(--tracking-wide);
+                            "
+                          >
+                            {{ d.title }}
+                          </h2>
+                          <span
+                            style="
+                              color: var(--color-text-muted);
+                              font-size: var(--font-size-xs);
+                              text-transform: uppercase;
+                              letter-spacing: var(--tracking-wide);
+                            "
+                            >{{ d.conf }}</span
+                          >
+                        </div>
+                        <ol style="display: grid; margin: 0; padding: 0; list-style: none">
+                          <sc-for list="{{ d.teams }}" as="t" hint-placeholder-count="5">
+                            <li>
+                              <a
+                                href="#"
+                                onClick="{{ goTeam }}"
+                                style="
+                                  display: grid;
+                                  grid-template-columns: auto minmax(0, 1fr) auto 4.5rem;
+                                  align-items: center;
+                                  gap: var(--space-3);
+                                  padding: var(--space-2) 0;
+                                  border-top: 1px solid var(--color-border);
+                                  color: var(--color-text);
+                                  text-decoration: none;
+                                "
+                              >
+                                <span style="{{ t.chipStyle }}">{{ t.abbr }}</span>
+                                <span
+                                  style="
+                                    font-size: var(--font-size-sm);
+                                    font-weight: var(--font-weight-medium);
+                                    white-space: nowrap;
+                                    overflow: hidden;
+                                    text-overflow: ellipsis;
+                                  "
+                                  >{{ t.name }}</span
+                                >
+                                <span
+                                  style="
+                                    font-family: var(--font-mono);
+                                    font-size: var(--font-size-sm);
+                                    font-variant-numeric: tabular-nums;
+                                  "
+                                  >{{ t.record }}</span
+                                >
+                                <span style="display: grid; gap: 3px; justify-items: end">
+                                  <span
+                                    style="
+                                      font-family: var(--font-mono);
+                                      font-size: var(--font-size-xs);
+                                      color: var(--color-text-muted);
+                                      font-variant-numeric: tabular-nums;
+                                    "
+                                    >{{ t.pct }}</span
+                                  >
+                                  <span
+                                    style="
+                                      display: block;
+                                      width: 100%;
+                                      height: 4px;
+                                      background: var(--color-border);
+                                      border-radius: var(--radius-full);
+                                      overflow: hidden;
+                                    "
+                                    ><span style="{{ t.barStyle }}"></span
+                                  ></span>
+                                </span>
+                              </a>
+                            </li>
+                          </sc-for>
+                        </ol>
+                      </section>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ isTeam }}" hint-placeholder-val="{{ false }}">
+                <div style="display: grid; gap: var(--space-4)">
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                      gap: var(--space-3);
+                    "
+                  >
+                    <sc-for list="{{ teamReadouts }}" as="r" hint-placeholder-count="4">
+                      <div
+                        style="
+                          display: grid;
+                          gap: var(--space-1);
+                          padding: var(--space-3) var(--space-4);
+                          border: 1px solid var(--color-border);
+                          border-radius: var(--radius-md);
+                          background: var(--color-surface);
+                        "
+                      >
+                        <span
+                          style="
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-xs);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                          >{{ r.label }}</span
+                        >
+                        <span
+                          style="
+                            font-family: var(--font-display);
+                            font-size: var(--font-size-lg);
+                            font-weight: var(--font-weight-bold);
+                            line-height: 1;
+                            font-variant-numeric: tabular-nums;
+                            text-shadow: var(--extrude);
+                          "
+                          >{{ r.value }}</span
+                        >
+                        <span style="{{ r.rankStyle }}">{{ r.rank }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: minmax(20rem, 26rem) minmax(0, 1fr);
+                      align-items: start;
+                      gap: var(--space-4);
+                    "
+                  >
+                    <section
+                      style="
+                        display: grid;
+                        align-content: start;
+                        gap: var(--space-2);
+                        padding: var(--space-4);
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-md);
+                        background: var(--color-surface);
+                      "
+                    >
+                      <div
+                        style="
+                          display: grid;
+                          grid-template-columns: 1fr auto;
+                          align-items: center;
+                          gap: var(--space-2);
+                          padding-bottom: var(--space-2);
+                          border-bottom: 1px solid var(--color-border);
+                        "
+                      >
+                        <h2
+                          style="
+                            margin: 0;
+                            font-family: var(--font-display);
+                            font-size: var(--font-size-sm);
+                            font-weight: var(--font-weight-bold);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                        >
+                          Roster
+                        </h2>
+                        <span style="color: var(--color-text-muted); font-size: var(--font-size-xs)"
+                          >10</span
+                        >
+                      </div>
+                      <ul style="display: grid; gap: 0; margin: 0; padding: 0; list-style: none">
+                        <sc-for list="{{ roster }}" as="p" hint-placeholder-count="10">
+                          <li>
+                            <a
+                              href="#"
+                              onClick="{{ goPlayer }}"
+                              style="
+                                display: grid;
+                                grid-template-columns: auto minmax(0, 1fr) auto auto;
+                                align-items: center;
+                                gap: var(--space-3);
+                                padding: var(--space-2) 0;
+                                border-top: 1px solid var(--color-border);
+                                color: var(--color-text);
+                                text-decoration: none;
+                              "
+                            >
+                              <span role="img" style="{{ p.avatarStyle }}">{{ p.initials }}</span>
+                              <span
+                                style="
+                                  font-size: var(--font-size-sm);
+                                  white-space: nowrap;
+                                  overflow: hidden;
+                                  text-overflow: ellipsis;
+                                "
+                                >{{ p.name }}</span
+                              >
+                              <span style="{{ p.posStyle }}">{{ p.pos }}</span>
+                              <span
+                                style="
+                                  font-family: var(--font-mono);
+                                  font-size: var(--font-size-xs);
+                                  color: var(--color-text-muted);
+                                "
+                                >{{ p.jersey }}</span
+                              >
+                            </a>
+                          </li>
+                        </sc-for>
+                      </ul>
+                    </section>
+                    <section
+                      style="
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-md);
+                        background: var(--color-surface);
+                        overflow: hidden;
+                      "
+                    >
+                      <div
+                        style="
+                          padding: var(--space-3) var(--row-x);
+                          border-bottom: 1px solid var(--color-border);
+                        "
+                      >
+                        <h2
+                          style="
+                            margin: 0;
+                            font-family: var(--font-display);
+                            font-size: var(--font-size-sm);
+                            font-weight: var(--font-weight-bold);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                          "
+                        >
+                          Season stats &amp; league rank
+                        </h2>
+                      </div>
+                      <table
+                        style="
+                          width: 100%;
+                          border-collapse: collapse;
+                          font-variant-numeric: tabular-nums;
+                        "
+                      >
+                        <tbody>
+                          <sc-for list="{{ teamStats }}" as="s" hint-placeholder-count="12">
+                            <tr style="border-top: 1px solid var(--color-border)">
+                              <td style="padding: var(--row-y) var(--row-x); width: 40%">
+                                <span
+                                  style="
+                                    display: block;
+                                    font-size: var(--font-size-sm);
+                                    font-weight: var(--font-weight-semibold);
+                                  "
+                                  >{{ s.label }}</span
+                                >
+                                <span
+                                  style="
+                                    display: block;
+                                    color: var(--color-text-muted);
+                                    font-size: var(--font-size-xs);
+                                  "
+                                  >{{ s.description }}</span
+                                >
+                              </td>
+                              <td
+                                style="
+                                  padding: var(--row-y) var(--row-x);
+                                  text-align: right;
+                                  font-family: var(--font-mono);
+                                  font-size: var(--font-size-sm);
+                                  white-space: nowrap;
+                                "
+                              >
+                                {{ s.value }}
+                              </td>
+                              <td style="padding: var(--row-y) var(--row-x); width: 36%">
+                                <span
+                                  style="
+                                    display: grid;
+                                    grid-template-columns: 1fr auto;
+                                    align-items: center;
+                                    gap: var(--space-3);
+                                  "
+                                >
+                                  <span
+                                    style="
+                                      display: block;
+                                      height: 6px;
+                                      background: var(--color-border);
+                                      border-radius: var(--radius-full);
+                                      overflow: hidden;
+                                    "
+                                    ><span style="{{ s.barStyle }}"></span
+                                  ></span>
+                                  <span style="{{ s.rankStyle }}">{{ s.rank }}</span>
+                                </span>
+                              </td>
+                            </tr>
+                          </sc-for>
+                        </tbody>
+                      </table>
+                    </section>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ isMyTeams }}" hint-placeholder-val="{{ false }}">
+                <div style="display: grid; gap: var(--space-4)">
+                  <section
+                    style="
+                      display: grid;
+                      gap: var(--space-4);
+                      padding: var(--space-4);
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-md);
+                      background: var(--color-surface);
+                    "
+                  >
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: 1fr auto;
+                        align-items: center;
+                        gap: var(--space-2);
+                        padding-bottom: var(--space-3);
+                        border-bottom: 1px solid var(--color-border);
+                      "
+                    >
+                      <h2
+                        style="
+                          margin: 0;
+                          font-family: var(--font-display);
+                          font-size: var(--font-size-sm);
+                          font-weight: var(--font-weight-bold);
+                          text-transform: uppercase;
+                          letter-spacing: var(--tracking-wide);
+                        "
+                      >
+                        Rim Protectors
+                      </h2>
+                      <span
+                        style="
+                          font-family: var(--font-mono);
+                          font-size: var(--font-size-sm);
+                          color: var(--color-text-muted);
+                        "
+                        >9 / 13 filled</span
+                      >
+                    </div>
+                    <sc-for list="{{ rosterGroups }}" as="g" hint-placeholder-count="3">
+                      <div style="display: grid; gap: var(--space-2)">
+                        <span
+                          style="
+                            color: var(--color-accent);
+                            font-size: var(--font-size-xs);
+                            text-transform: uppercase;
+                            letter-spacing: var(--tracking-wide);
+                            font-weight: var(--font-weight-semibold);
+                          "
+                          >{{ g.title }}</span
+                        >
+                        <div
+                          style="
+                            display: grid;
+                            grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+                            gap: var(--space-2);
+                          "
+                        >
+                          <sc-for list="{{ g.slots }}" as="s" hint-placeholder-count="8">
+                            <div style="{{ s.cardStyle }}">
+                              <span
+                                style="
+                                  display: grid;
+                                  place-items: center;
+                                  width: 2rem;
+                                  height: 2rem;
+                                  border: 1px solid var(--color-border);
+                                  border-radius: var(--radius-sm);
+                                  background: var(--color-bg);
+                                  font-family: var(--font-mono);
+                                  font-size: var(--font-size-xs);
+                                  font-weight: var(--font-weight-semibold);
+                                  color: var(--color-accent);
+                                "
+                                >{{ s.slot }}</span
+                              >
+                              <span style="display: grid; gap: 2px; min-width: 0">
+                                <span
+                                  style="
+                                    font-size: var(--font-size-sm);
+                                    font-weight: var(--font-weight-medium);
+                                    white-space: nowrap;
+                                    overflow: hidden;
+                                    text-overflow: ellipsis;
+                                  "
+                                  >{{ s.name }}</span
+                                >
+                                <span style="{{ s.posStyle }}">{{ s.pos }}</span>
+                              </span>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </section>
+                  <section
+                    style="
+                      display: grid;
+                      grid-template-columns: 1fr auto;
+                      align-items: center;
+                      gap: var(--space-3);
+                      padding: var(--space-4);
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-md);
+                      background: var(--color-surface);
+                    "
+                  >
+                    <div style="display: grid; gap: 2px">
+                      <span
+                        style="
+                          font-family: var(--font-display);
+                          font-size: var(--font-size-sm);
+                          font-weight: var(--font-weight-bold);
+                          text-transform: uppercase;
+                          letter-spacing: var(--tracking-wide);
+                        "
+                        >Punt FT% Build</span
+                      >
+                      <span style="color: var(--color-text-muted); font-size: var(--font-size-sm)"
+                        >13 / 13 filled · built on G-Score, FT% punted</span
+                      >
+                    </div>
+                    <button type="button" style="{{ offKey }}">Open</button>
+                  </section>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ isLeagues }}" hint-placeholder-val="{{ false }}">
+                <div style="display: grid; gap: var(--space-4)">
+                  <sc-for list="{{ leagues }}" as="l" hint-placeholder-count="2">
+                    <section
+                      style="
+                        display: grid;
+                        gap: var(--space-3);
+                        padding: var(--space-4);
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-md);
+                        background: var(--color-surface);
+                      "
+                    >
+                      <div
+                        style="
+                          display: grid;
+                          grid-template-columns: minmax(0, 1fr) auto;
+                          align-items: center;
+                          gap: var(--space-3);
+                        "
+                      >
+                        <div style="display: grid; gap: 2px; min-width: 0">
+                          <span
+                            style="
+                              display: grid;
+                              grid-auto-flow: column;
+                              justify-content: start;
+                              align-items: center;
+                              gap: var(--space-3);
+                            "
+                          >
+                            <span
+                              style="
+                                font-family: var(--font-display);
+                                font-size: var(--font-size-lg);
+                                font-weight: var(--font-weight-bold);
+                                letter-spacing: var(--tracking-tight);
+                              "
+                              >{{ l.name }}</span
+                            >
+                            <span style="{{ l.badgeStyle }}">{{ l.badge }}</span>
+                          </span>
+                          <span
+                            style="
+                              font-family: var(--font-mono);
+                              color: var(--color-text-muted);
+                              font-size: var(--font-size-sm);
+                            "
+                            >{{ l.meta }}</span
+                          >
+                        </div>
+                        <div style="display: grid; grid-auto-flow: column; gap: var(--space-2)">
+                          <button type="button" style="{{ l.actionStyle }}">{{ l.action }}</button>
+                          <button type="button" style="{{ dangerKey }}">Delete</button>
+                        </div>
+                      </div>
+                      <div
+                        style="
+                          display: grid;
+                          grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+                          gap: var(--space-3);
+                          padding-top: var(--space-3);
+                          border-top: 1px solid var(--color-border);
+                        "
+                      >
+                        <sc-for list="{{ l.facts }}" as="f" hint-placeholder-count="4">
+                          <div style="display: grid; gap: 2px">
+                            <span
+                              style="
+                                color: var(--color-text-muted);
+                                font-size: var(--font-size-xs);
+                                text-transform: uppercase;
+                                letter-spacing: var(--tracking-wide);
+                              "
+                              >{{ f.label }}</span
+                            >
+                            <span
+                              style="font-family: var(--font-mono); font-size: var(--font-size-sm)"
+                              >{{ f.value }}</span
+                            >
+                          </div>
+                        </sc-for>
+                      </div>
+                    </section>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ isWatchlist }}" hint-placeholder-val="{{ false }}">
+                <section
+                  style="
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-md);
+                    background: var(--color-surface);
+                    overflow: hidden;
+                  "
+                >
+                  <div style="max-width: 100%; overflow-x: auto">
+                    <table
+                      style="
+                        width: 100%;
+                        min-width: 64rem;
+                        border-collapse: collapse;
+                        font-variant-numeric: tabular-nums;
+                      "
+                    >
+                      <thead>
+                        <tr>
+                          <th
+                            style="
+                              position: sticky;
+                              top: 0;
+                              width: 1%;
+                              padding: var(--space-3);
+                              background: var(--color-surface);
+                              border-bottom: 1px solid var(--color-border);
+                            "
+                          ></th>
+                          <th
+                            style="
+                              position: sticky;
+                              top: 0;
+                              padding: var(--space-3) var(--row-x);
+                              background: var(--color-surface);
+                              border-bottom: 1px solid var(--color-border);
+                              color: var(--color-text-muted);
+                              font-family: var(--font-mono);
+                              font-size: var(--font-size-xs);
+                              font-weight: var(--font-weight-semibold);
+                              text-align: right;
+                              letter-spacing: var(--tracking-wide);
+                            "
+                          >
+                            RK
+                          </th>
+                          <sc-for list="{{ starredHeaders }}" as="h" hint-placeholder-count="8">
+                            <th style="{{ h.style }}">{{ h.label }}</th>
+                          </sc-for>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <sc-for list="{{ starredRows }}" as="row" hint-placeholder-count="6">
+                          <tr style="border-top: 1px solid var(--color-border)">
+                            <td style="width: 1%; padding: var(--row-y) var(--space-3)">
+                              <button
+                                type="button"
+                                aria-label="Unstar"
+                                style="
+                                  display: grid;
+                                  place-items: center;
+                                  padding: var(--space-1);
+                                  border: 0;
+                                  border-radius: var(--radius-sm);
+                                  background: none;
+                                  color: var(--color-highlight);
+                                  cursor: pointer;
+                                "
+                              >
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                  stroke="currentColor"
+                                  stroke-width="2"
+                                  stroke-linejoin="round"
+                                  style="display: block; width: 1rem; height: 1rem"
+                                >
+                                  <path
+                                    d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                                  ></path>
+                                </svg>
+                              </button>
+                            </td>
+                            <td
+                              style="
+                                padding: var(--row-y) var(--row-x);
+                                text-align: right;
+                                font-family: var(--font-mono);
+                                font-size: var(--font-size-sm);
+                                color: var(--color-text-muted);
+                              "
+                            >
+                              {{ row.rank }}
+                            </td>
+                            <td
+                              style="
+                                padding: var(--row-y) var(--row-x);
+                                min-width: 17rem;
+                                overflow: hidden;
+                              "
+                            >
+                              <span
+                                style="
+                                  display: grid;
+                                  grid-template-columns: auto minmax(0, 1fr);
+                                  align-items: center;
+                                  gap: var(--space-3);
+                                  min-width: 0;
+                                "
+                              >
+                                <span role="img" style="{{ row.avatarStyle }}"
+                                  >{{ row.initials }}</span
+                                >
+                                <span
+                                  style="
+                                    display: grid;
+                                    grid-template-columns: minmax(0, 1fr);
+                                    gap: 2px;
+                                    min-width: 0;
+                                  "
+                                >
+                                  <a
+                                    href="#"
+                                    onClick="{{ goPlayer }}"
+                                    style="
+                                      color: var(--color-text);
+                                      font-size: var(--font-size-sm);
+                                      font-weight: var(--font-weight-semibold);
+                                      white-space: nowrap;
+                                      overflow: hidden;
+                                      text-overflow: ellipsis;
+                                    "
+                                    >{{ row.name }}</a
+                                  >
+                                  <span
+                                    style="
+                                      display: grid;
+                                      grid-auto-flow: column;
+                                      justify-content: start;
+                                      align-items: center;
+                                      gap: var(--space-2);
+                                    "
+                                  >
+                                    <span style="{{ row.chipStyle }}">{{ row.teamAbbr }}</span>
+                                    <span style="{{ row.posStyle }}">{{ row.pos }}</span>
+                                  </span>
+                                </span>
+                              </span>
+                            </td>
+                            <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="6">
+                              <td style="{{ cell.style }}">{{ cell.v }}</td>
+                            </sc-for>
+                          </tr>
+                        </sc-for>
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              </sc-if>
+
+              <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+                <div style="display: grid; gap: var(--space-4)">
+                  <section
+                    style="
+                      display: grid;
+                      gap: var(--space-4);
+                      padding: var(--space-4);
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-md);
+                      background: var(--color-surface);
+                    "
+                  >
+                    <div
+                      style="
+                        padding-bottom: var(--space-2);
+                        border-bottom: 1px solid var(--color-border);
+                      "
+                    >
+                      <h2
+                        style="
+                          margin: 0;
+                          font-family: var(--font-display);
+                          font-size: var(--font-size-sm);
+                          font-weight: var(--font-weight-bold);
+                          text-transform: uppercase;
+                          letter-spacing: var(--tracking-wide);
+                        "
+                      >
+                        Theme
+                      </h2>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+                        gap: var(--space-3);
+                      "
+                    >
+                      <sc-for list="{{ themeCards }}" as="t" hint-placeholder-count="6">
+                        <button
+                          type="button"
+                          onClick="{{ t.onClick }}"
+                          aria-pressed="{{ t.pressed }}"
+                          style="{{ t.style }}"
+                        >
+                          <span
+                            style="
+                              display: grid;
+                              grid-auto-flow: column;
+                              justify-content: start;
+                              gap: 4px;
+                            "
+                          >
+                            <sc-for list="{{ t.swatches }}" as="s" hint-placeholder-count="5">
+                              <span style="{{ s.style }}"></span>
+                            </sc-for>
+                          </span>
+                          <span
+                            style="
+                              font-family: var(--font-display);
+                              font-size: var(--font-size-sm);
+                              font-weight: var(--font-weight-bold);
+                              text-align: left;
+                            "
+                            >{{ t.label }}</span
+                          >
+                          <span
+                            style="
+                              color: var(--color-text-muted);
+                              font-size: var(--font-size-xs);
+                              text-align: left;
+                            "
+                            >{{ t.note }}</span
+                          >
+                        </button>
+                      </sc-for>
+                    </div>
+                  </section>
+
+                  <section
+                    style="
+                      display: grid;
+                      gap: var(--space-4);
+                      padding: var(--space-4);
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-md);
+                      background: var(--color-surface);
+                    "
+                  >
+                    <div
+                      style="
+                        padding-bottom: var(--space-2);
+                        border-bottom: 1px solid var(--color-border);
+                      "
+                    >
+                      <h2
+                        style="
+                          margin: 0;
+                          font-family: var(--font-display);
+                          font-size: var(--font-size-sm);
+                          font-weight: var(--font-weight-bold);
+                          text-transform: uppercase;
+                          letter-spacing: var(--tracking-wide);
+                        "
+                      >
+                        Text size
+                      </h2>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+                        gap: var(--space-4);
+                        align-items: start;
+                      "
+                    >
+                      <div style="display: grid; gap: var(--space-2)">
+                        <sc-for list="{{ fontScales }}" as="s" hint-placeholder-count="4">
+                          <button
+                            type="button"
+                            onClick="{{ s.onClick }}"
+                            aria-pressed="{{ s.pressed }}"
+                            style="{{ s.style }}"
+                          >
+                            <span>{{ s.label }}</span>
+                            <span
+                              style="
+                                font-family: var(--font-mono);
+                                font-size: var(--font-size-xs);
+                                color: var(--color-text-muted);
+                              "
+                              >{{ s.sample }}</span
+                            >
+                          </button>
+                        </sc-for>
+                        <p
+                          style="
+                            margin: 0;
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-xs);
+                          "
+                        >
+                          Applies to the whole interface, including tables and controls — not just
+                          body copy.
+                        </p>
+                      </div>
+                      <div
+                        style="
+                          display: grid;
+                          align-content: start;
+                          gap: var(--space-3);
+                          padding: var(--space-4);
+                          border: 1px solid var(--color-border);
+                          border-radius: var(--radius-md);
+                          background: var(--color-bg);
+                        "
+                      >
+                        <span
+                          style="
+                            font-family: var(--font-display);
+                            font-size: var(--font-size-lg);
+                            font-weight: var(--font-weight-bold);
+                            text-shadow: var(--extrude);
+                          "
+                          >Court Vision</span
+                        >
+                        <p style="margin: 0; font-size: var(--font-size-md)">
+                          Nikola Jokić is averaging a 26/12/9 line over his last 10 games.
+                        </p>
+                        <table
+                          style="
+                            width: 100%;
+                            border-collapse: collapse;
+                            font-variant-numeric: tabular-nums;
+                          "
+                        >
+                          <thead>
+                            <tr>
+                              <th
+                                style="
+                                  padding: var(--space-2);
+                                  border-bottom: 1px solid var(--color-border);
+                                  color: var(--color-text-muted);
+                                  font-size: var(--font-size-xs);
+                                  text-transform: uppercase;
+                                  letter-spacing: var(--tracking-wide);
+                                  text-align: left;
+                                "
+                              >
+                                Player
+                              </th>
+                              <th
+                                style="
+                                  padding: var(--space-2);
+                                  border-bottom: 1px solid var(--color-border);
+                                  color: var(--color-text-muted);
+                                  font-family: var(--font-mono);
+                                  font-size: var(--font-size-xs);
+                                  text-align: right;
+                                "
+                              >
+                                PTS
+                              </th>
+                              <th
+                                style="
+                                  padding: var(--space-2);
+                                  border-bottom: 1px solid var(--color-border);
+                                  color: var(--color-text-muted);
+                                  font-family: var(--font-mono);
+                                  font-size: var(--font-size-xs);
+                                  text-align: right;
+                                "
+                              >
+                                REB
+                              </th>
+                              <th
+                                style="
+                                  padding: var(--space-2);
+                                  border-bottom: 1px solid var(--color-border);
+                                  color: var(--color-text-muted);
+                                  font-family: var(--font-mono);
+                                  font-size: var(--font-size-xs);
+                                  text-align: right;
+                                "
+                              >
+                                AST
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td style="padding: var(--space-2); font-size: var(--font-size-sm)">
+                                N. Jokić
+                              </td>
+                              <td
+                                style="
+                                  padding: var(--space-2);
+                                  font-family: var(--font-mono);
+                                  font-size: var(--font-size-sm);
+                                  text-align: right;
+                                "
+                              >
+                                26.4
+                              </td>
+                              <td
+                                style="
+                                  padding: var(--space-2);
+                                  font-family: var(--font-mono);
+                                  font-size: var(--font-size-sm);
+                                  text-align: right;
+                                "
+                              >
+                                12.1
+                              </td>
+                              <td
+                                style="
+                                  padding: var(--space-2);
+                                  font-family: var(--font-mono);
+                                  font-size: var(--font-size-sm);
+                                  text-align: right;
+                                "
+                              >
+                                9.2
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section
+                    style="
+                      display: grid;
+                      gap: var(--space-3);
+                      padding: var(--space-4);
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-md);
+                      background: var(--color-surface);
+                    "
+                  >
+                    <div
+                      style="
+                        padding-bottom: var(--space-2);
+                        border-bottom: 1px solid var(--color-border);
+                      "
+                    >
+                      <h2
+                        style="
+                          margin: 0;
+                          font-family: var(--font-display);
+                          font-size: var(--font-size-sm);
+                          font-weight: var(--font-weight-bold);
+                          text-transform: uppercase;
+                          letter-spacing: var(--tracking-wide);
+                        "
+                      >
+                        Preferred value formula
+                      </h2>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+                        gap: var(--space-2);
+                      "
+                    >
+                      <sc-for list="{{ formulaOptions }}" as="o" hint-placeholder-count="8">
+                        <button type="button" aria-pressed="{{ o.checked }}" style="{{ o.style }}">
+                          <span
+                            style="
+                              display: grid;
+                              grid-auto-flow: column;
+                              justify-content: start;
+                              align-items: center;
+                              gap: var(--space-2);
+                            "
+                          >
+                            <span style="{{ o.dotStyle }}"></span>
+                            <span
+                              style="
+                                font-family: var(--font-display);
+                                font-size: var(--font-size-sm);
+                                font-weight: var(--font-weight-bold);
+                              "
+                              >{{ o.title }}</span
+                            >
+                          </span>
+                          <span
+                            style="
+                              color: var(--color-text-muted);
+                              font-size: var(--font-size-xs);
+                              text-align: left;
+                              text-wrap: pretty;
+                            "
+                            >{{ o.description }}</span
+                          >
+                        </button>
+                      </sc-for>
+                    </div>
+                  </section>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+                <div style="display: grid; justify-items: center; padding-block: var(--space-8)">
+                  <form
+                    style="
+                      display: grid;
+                      gap: var(--space-4);
+                      width: 100%;
+                      max-width: 24rem;
+                      padding: var(--space-6);
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-md);
+                      background: var(--color-surface);
+                      box-shadow: var(--retro-4);
+                    "
+                  >
+                    <span
+                      style="
+                        display: grid;
+                        justify-items: center;
+                        gap: var(--space-3);
+                        padding-bottom: var(--space-2);
+                      "
+                    >
+                      <svg
+                        viewBox="0 0 48 48"
+                        width="72"
+                        height="72"
+                        fill="none"
+                        aria-hidden="true"
+                        style="display: block; filter: var(--extrude-svg)"
+                      >
+                        <rect
+                          x="3"
+                          y="8"
+                          width="42"
+                          height="32"
+                          rx="3"
+                          fill="var(--color-accent)"
+                        ></rect>
+                        <line
+                          x1="24"
+                          y1="8"
+                          x2="24"
+                          y2="40"
+                          stroke="var(--color-bg)"
+                          stroke-width="3"
+                        ></line>
+                        <circle
+                          cx="24"
+                          cy="24"
+                          r="7"
+                          stroke="var(--color-bg)"
+                          stroke-width="3"
+                          fill="none"
+                        ></circle>
+                        <path
+                          d="M3 15 A 12 9 0 0 1 3 33"
+                          stroke="var(--color-bg)"
+                          stroke-width="3"
+                          fill="none"
+                        ></path>
+                        <path
+                          d="M45 15 A 12 9 0 0 0 45 33"
+                          stroke="var(--color-bg)"
+                          stroke-width="3"
+                          fill="none"
+                        ></path>
+                      </svg>
+                      <span style="display: grid; gap: 2px; justify-items: center">
+                        <span
+                          style="
+                            font-family: var(--font-display);
+                            font-size: 20px;
+                            font-weight: var(--font-weight-bold);
+                            text-transform: uppercase;
+                            letter-spacing: 0.18em;
+                            line-height: 1;
+                            text-shadow: var(--extrude);
+                          "
+                          >Court</span
+                        >
+                        <span
+                          style="
+                            font-family: var(--font-display);
+                            font-size: 20px;
+                            font-weight: var(--font-weight-bold);
+                            text-transform: uppercase;
+                            letter-spacing: 0.18em;
+                            line-height: 1;
+                            color: var(--color-accent);
+                            text-shadow: var(--extrude);
+                          "
+                          >Vision</span
+                        >
+                      </span>
+                    </span>
+                    <span
+                      style="
+                        font-family: var(--font-display);
+                        font-size: var(--font-size-sm);
+                        font-weight: var(--font-weight-bold);
+                        text-transform: uppercase;
+                        letter-spacing: var(--tracking-wide);
+                        color: var(--color-text-muted);
+                      "
+                      >Sign in</span
+                    >
+                    <label style="display: grid; gap: var(--space-1)">
+                      <span
+                        style="
+                          color: var(--color-text-muted);
+                          font-size: var(--font-size-xs);
+                          text-transform: uppercase;
+                          letter-spacing: var(--tracking-wide);
+                        "
+                        >Email</span
+                      >
+                      <input
+                        type="email"
+                        style="
+                          height: var(--control-height);
+                          padding: 0 var(--space-3);
+                          border: 1px solid var(--color-border);
+                          border-radius: var(--radius-sm);
+                          background: var(--color-control-bg);
+                          color: var(--color-text);
+                          font-family: inherit;
+                          font-size: var(--font-size-sm);
+                        "
+                      />
+                    </label>
+                    <label style="display: grid; gap: var(--space-1)">
+                      <span
+                        style="
+                          color: var(--color-text-muted);
+                          font-size: var(--font-size-xs);
+                          text-transform: uppercase;
+                          letter-spacing: var(--tracking-wide);
+                        "
+                        >Password</span
+                      >
+                      <input
+                        type="password"
+                        style="
+                          height: var(--control-height);
+                          padding: 0 var(--space-3);
+                          border: 1px solid var(--color-border);
+                          border-radius: var(--radius-sm);
+                          background: var(--color-control-bg);
+                          color: var(--color-text);
+                          font-family: inherit;
+                          font-size: var(--font-size-sm);
+                        "
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      style="
+                        padding: var(--space-2) var(--space-4);
+                        border: 1px solid var(--color-accent);
+                        border-radius: var(--radius-sm);
+                        background: var(--color-accent);
+                        color: var(--color-bg);
+                        font-family: var(--font-display);
+                        font-size: var(--font-size-sm);
+                        font-weight: var(--font-weight-bold);
+                        text-transform: uppercase;
+                        letter-spacing: var(--tracking-wide);
+                        cursor: pointer;
+                        box-shadow: var(--retro-4);
+                      "
+                      style-hover="transform:translate(-1px,-1px)"
+                      style-active="transform:translate(2px,2px);box-shadow:var(--retro-2)"
+                    >
+                      Sign in
+                    </button>
+                    <p
+                      style="
+                        margin: 0;
+                        color: var(--color-text-muted);
+                        font-size: var(--font-size-sm);
+                      "
+                    >
+                      No account? <a href="#" style="text-decoration: underline">Create one</a>
+                    </p>
+                  </form>
+                </div>
+              </sc-if>
+            </main>
+          </div>
+        </div>
+
+        <footer
+          style="
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            align-items: center;
+            gap: var(--space-4);
+            padding: var(--space-4) var(--space-6);
+            border-top: 1px solid var(--color-border);
+            color: var(--color-text-muted);
+            font-size: var(--font-size-xs);
+          "
+        >
+          <span>© 2026 CJ Rivas</span>
+          <a
+            href="https://github.com/codebend3r/court-vision"
+            target="_blank"
+            rel="noreferrer"
+            style="
+              display: grid;
+              grid-auto-flow: column;
+              align-items: center;
+              gap: var(--space-2);
+              color: inherit;
+            "
+          >
+            <svg
+              viewBox="0 0 16 16"
+              width="16"
+              height="16"
+              fill="currentColor"
+              aria-hidden="true"
+              style="display: block"
+            >
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+              ></path>
+            </svg>
+            codebend3r/court-vision
+          </a>
+          <a
+            href="#"
+            onClick="{{ goLogin }}"
+            style="color: inherit; font-variant-numeric: tabular-nums"
+            >Sign out</a
+          >
+        </footer>
+      </div>
+    </x-dc>
+    <script
+      type="text/x-dc"
+      data-dc-script
+      data-props='{"$preview":{"width":1440,"height":1024},"theme":{"editor":"enum","options":["dark","light","contrast","cvd","crt","team"],"default":"dark","tsType":"\"dark\" | \"light\" | \"contrast\" | \"cvd\" | \"crt\" | \"team\"","section":"Appearance"},"fontScale":{"editor":"enum","options":["sm","default","lg","xl"],"default":"default","tsType":"\"sm\" | \"default\" | \"lg\" | \"xl\"","section":"Appearance"},"density":{"editor":"enum","options":["compact","comfortable","roomy"],"default":"comfortable","tsType":"\"compact\" | \"comfortable\" | \"roomy\"","section":"Appearance"}}'
+    >
+      const TEAMS = {
+        ATL:["Atlanta Hawks","#E03A3E"],BOS:["Boston Celtics","#007A33"],BKN:["Brooklyn Nets","#000000"],
+        CHA:["Charlotte Hornets","#1D1160"],CHI:["Chicago Bulls","#CE1141"],CLE:["Cleveland Cavaliers","#860038"],
+        DAL:["Dallas Mavericks","#00538C"],DEN:["Denver Nuggets","#0E2240"],DET:["Detroit Pistons","#C8102E"],
+        GSW:["Golden State Warriors","#1D428A"],HOU:["Houston Rockets","#CE1141"],IND:["Indiana Pacers","#002D62"],
+        LAC:["LA Clippers","#C8102E"],LAL:["Los Angeles Lakers","#552583"],MEM:["Memphis Grizzlies","#5D76A9"],
+        MIA:["Miami Heat","#98002E"],MIL:["Milwaukee Bucks","#00471B"],MIN:["Minnesota Timberwolves","#0C2340"],
+        NOP:["New Orleans Pelicans","#0C2340"],NYK:["New York Knicks","#006BB6"],OKC:["Oklahoma City Thunder","#007AC1"],
+        ORL:["Orlando Magic","#0077C0"],PHI:["Philadelphia 76ers","#006BB6"],PHX:["Phoenix Suns","#1D1160"],
+        POR:["Portland Trail Blazers","#E03A3E"],SAC:["Sacramento Kings","#5A2D81"],SAS:["San Antonio Spurs","#C4CED4"],
+        TOR:["Toronto Raptors","#CE1141"],UTA:["Utah Jazz","#6A2C91"],WAS:["Washington Wizards","#002B5C"],
+      };
+
+      const chan = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+      const contrastText = (hex) => {
+        const [r, g, b] = [1, 3, 5].map((o) => parseInt(hex.slice(o, o + 2), 16) / 255).map(chan);
+        return (0.2126 * r + 0.7152 * g + 0.0722 * b + 0.05) / 0.05 >= 4.5 ? "#000000" : "#FFFFFF";
+      };
+
+      // Team identity reads as a solid mono plate — legible in every theme because it
+      // carries its own foreground, and it never borrows a theme token.
+      const chipStyle = (abbr) => {
+        const bg = TEAMS[abbr] ? TEAMS[abbr][1] : "transparent";
+        return "display:inline-grid;place-items:center;min-width:2.75rem;padding:2px var(--space-2);border-radius:var(--radius-sm);background:" + bg + ";color:" + contrastText(bg) + ";font-family:var(--font-mono);font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);letter-spacing:0.06em";
+      };
+      const posStyle = (pos) => {
+        const first = (pos || "")[0];
+        const c = first === "G" ? "var(--color-position-g)" : first === "F" ? "var(--color-position-f)" : first === "C" ? "var(--color-position-c)" : "var(--color-text-muted)";
+        return "font-family:var(--font-mono);font-size:var(--font-size-xs);letter-spacing:0.04em;color:" + c;
+      };
+      const avatarStyle = (abbr) =>
+        "display:grid;place-items:center;width:2.25rem;height:2.25rem;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-bg);color:var(--color-text-muted);font-family:var(--font-mono);font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);border-left:3px solid " + (TEAMS[abbr] ? TEAMS[abbr][1] : "var(--color-border)");
+      const initials = (name) => {
+        const w = name.split(" ").filter(Boolean);
+        return (((w[0] || "")[0]) || "") + (w.length > 1 ? w[w.length - 1][0] : "");
+      };
+
+      // ── The one interactive mechanic: a key that sits on its own extrusion and
+      // presses into it when engaged. Used for tabs, filters, pagers, choices.
+      const KEY_BASE = "display:inline-grid;grid-auto-flow:column;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);font-family:var(--font-display);font-size:var(--font-size-sm);font-weight:var(--font-weight-bold);text-transform:uppercase;letter-spacing:var(--tracking-wide);cursor:pointer;transition:transform var(--duration-fast) var(--ease-out),box-shadow var(--duration-fast) var(--ease-out);";
+      const keyOn = KEY_BASE + "border:1px solid var(--color-accent);background:var(--color-accent);color:var(--color-bg);transform:translate(-1px,-1px);box-shadow:var(--retro-4)";
+      const keyOff = KEY_BASE + "border:1px solid var(--color-border);background:var(--color-bg);color:var(--color-text);box-shadow:var(--retro-1)";
+      const keyDanger = KEY_BASE + "border:1px dashed var(--color-loss);background:transparent;color:var(--color-loss)";
+
+      const TH = "position:sticky;top:0;z-index:2;padding:var(--space-3) var(--row-x);background:var(--color-surface);border-bottom:1px solid var(--color-border);color:var(--color-text-muted);font-family:var(--font-mono);font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);letter-spacing:var(--tracking-wide);white-space:nowrap;";
+      // The player column is the only flexible track in the table; every numeric cell
+      // is nowrap. Without a floor it collapses under wider row padding and the name
+      // paints over the next column, so the floor is part of the column, not a guard.
+      const thLeft = TH + "text-align:left;min-width:17rem";
+      const thNum = TH + "text-align:right";
+      const thActive = TH + "text-align:right;color:var(--color-accent);box-shadow:inset 0 -3px 0 var(--color-accent)";
+      const TDN = "padding:var(--row-y) var(--row-x);text-align:right;white-space:nowrap;font-family:var(--font-mono);font-size:var(--font-size-sm)";
+      const tdActive = TDN + ";background:color-mix(in srgb, var(--color-accent) 10%, transparent);color:var(--color-text);font-weight:var(--font-weight-semibold)";
+
+      const PLAYERS = [
+        { first:"Nikola", last:"Jokić", team:"DEN", pos:"C",
+          reg:["70","29.6","12.7","10.2","1.8","0.6",".576",".417",".800","1.9","3.2"],
+          adv:[".222","98.4",".478","26.3","3.2","113.2",".259",".626","8.9","122.1",".663","8.2",".295"],
+          fan:["+14.2","+11.8","62.3","+9.6","+8.1","+11.4","+6.2"] },
+        { first:"Shai", last:"Gilgeous-Alexander", team:"OKC", pos:"G",
+          reg:["76","32.7","5.0","6.4","1.7","1.0",".519",".375",".898","1.7","2.4"],
+          adv:[".195","100.1",".303","19.8","2.7","110.4",".112",".558","12.6","123.0",".637","7.1",".343"],
+          fan:["+11.7","+10.4","52.1","+7.1","+6.8","+9.2","+5.4"] },
+        { first:"Giannis", last:"Antetokounmpo", team:"MIL", pos:"F",
+          reg:["67","30.4","11.9","6.5","0.9","1.2",".601",".222",".617","0.3","3.1"],
+          adv:[".213","100.9",".316","18.9","2.1","110.9",".238",".609","5.4","116.3",".639","9.6",".353"],
+          fan:["+9.8","+8.1","55.4","+5.2","+3.9","+7.6","+4.1"] },
+        { first:"Victor", last:"Wembanyama", team:"SAS", pos:"C-F",
+          reg:["46","24.3","11.0","3.7","1.1","3.8",".476",".354",".837","2.7","3.7"],
+          adv:[".188","101.2",".180","15.0","1.0","105.1",".246",".548","6.8","111.9",".589","14.6",".311"],
+          fan:["+9.1","+7.4","51.8","+4.5","+2.8","+7.1","+3.9"] },
+        { first:"Luka", last:"Dončić", team:"LAL", pos:"G-F",
+          reg:["50","28.2","8.2","7.7","1.8","0.5",".461",".352",".784","3.3","3.6"],
+          adv:[".180","99.3",".390","22.6","2.1","116.6",".217",".541","3.1","119.7",".590","10.4",".327"],
+          fan:["+8.4","+6.9","50.2","+3.8","+3.5","+6.4","+3.3"] },
+        { first:"Tyrese", last:"Haliburton", team:"IND", pos:"G",
+          reg:["73","18.6","3.5","9.2","1.4","0.7",".473",".388",".851","3.0","1.6"],
+          adv:[".140","103.3",".432","39.7","5.8","115.1",".098",".585","4.2","119.3",".620","6.8",".200"],
+          fan:["+6.9","+6.2","43.1","+2.3","+2.1","+5.3","+2.8"] },
+        { first:"Domantas", last:"Sabonis", team:"SAC", pos:"F-C",
+          reg:["70","19.1","13.9","6.0","0.8","0.5",".590",".417",".756","0.9","3.2"],
+          adv:[".181","99.6",".295","24.0","1.9","115.8",".309",".616","1.6","117.4",".639","12.7",".231"],
+          fan:["+6.5","+5.4","45.9","+1.9","+0.7","+4.9","+2.4"] },
+        { first:"Karl-Anthony", last:"Towns", team:"NYK", pos:"C-F",
+          reg:["72","24.4","12.8","3.1","1.0","0.7",".526",".420",".829","2.2","2.8"],
+          adv:[".167","98.8",".120","13.1","1.1","114.5",".239",".592","4.9","119.4",".636","11.8",".276"],
+          fan:["+5.8","+4.7","44.2","+1.2","-0.4","+4.2","+2.1"] },
+        { first:"Jayson", last:"Tatum", team:"BOS", pos:"F",
+          reg:["72","26.8","8.7","6.0","1.1","0.5",".453",".343",".823","3.5","2.9"],
+          adv:[".166","98.1",".254","18.7","2.1","111.3",".187",".537","6.9","118.2",".586","9.1",".308"],
+          fan:["+5.1","+4.3","46.8","+0.5","+0.2","+3.8","+1.9"] },
+        { first:"Anthony", last:"Edwards", team:"MIN", pos:"G",
+          reg:["79","27.6","5.7","4.5","1.2","0.6",".447",".399",".837","4.1","3.2"],
+          adv:[".152","99.2",".199","14.9","1.4","111.5",".126",".546","3.7","115.2",".603","10.1",".312"],
+          fan:["+4.3","+3.8","43.5","-0.3","-0.6","+3.1","+1.5"] },
+      ];
+
+      const REG_LABELS = ["GP","PTS","REB","AST","STL","BLK","FG%","3P%","FT%","3PM","TOV"];
+      const ADV_LABELS = ["PIE","PACE","AST%","ASTR","AST/TO","DRTG","DREB%","EFG%","NETRTG","ORTG","TS%","TOVR","USG%"];
+      const FAN_LABELS = ["Z","G","PL","VORP","POSV","SGP","SIM"];
+
+      const DIVISIONS = [
+        ["Atlantic","East",[["BOS",61,21],["NYK",51,31],["TOR",30,52],["BKN",26,56],["PHI",24,58]]],
+        ["Central","East",[["CLE",64,18],["IND",50,32],["MIL",48,34],["DET",44,38],["CHI",39,43]]],
+        ["Southeast","East",[["ORL",41,41],["ATL",40,42],["MIA",37,45],["CHA",19,63],["WAS",18,64]]],
+        ["Northwest","West",[["OKC",68,14],["DEN",50,32],["MIN",49,33],["POR",36,46],["UTA",17,65]]],
+        ["Pacific","West",[["LAL",50,32],["LAC",50,32],["GSW",48,34],["SAC",40,42],["PHX",36,46]]],
+        ["Southwest","West",[["HOU",52,30],["MEM",48,34],["DAL",39,43],["SAS",34,48],["NOP",21,61]]],
+      ];
+
+      // Single-path reductions of the icon family, sized for the 20px keycap slot.
+      const NAV_ICONS = {
+        home: "M7 21 L24 8 L41 21 V41 H7 Z",
+        players: "M19 9 a7 7 0 1 1 0 14 a7 7 0 1 1 0-14 M6 41 v-3 a13 13 0 0 1 26 0 v3",
+        teams: "M17 8 L24 12 L31 8 L41 14 L36 23 L32 21 V41 H16 V21 L12 23 L7 14 Z",
+        "my-teams": "M9 12 a3 3 0 0 1 3-3 h24 a3 3 0 0 1 3 3 v27 a3 3 0 0 1-3 3 H12 a3 3 0 0 1-3-3 Z M17 22 h14 M17 31 h9",
+        leagues: "M15 7 h18 v11 a9 9 0 0 1-18 0 Z M24 27 v7 M17 41 h14",
+        watchlist: "M24 6 L29.5 18 L42 19.5 L33 28 L35.5 41 L24 34.5 L12.5 41 L15 28 L6 19.5 L18.5 18 Z",
+      };
+
+      const wobble = (i) => { const s = Math.sin(i * 12.9898) * 43758.5453; return s - Math.floor(s); };
+      const ordinal = (v) => { const t = v % 100; if (t >= 11 && t <= 13) return v + "th"; const o = v % 10; return v + (o === 1 ? "st" : o === 2 ? "nd" : o === 3 ? "rd" : "th"); };
+
+      const PAGES = {
+        home:     ["Dashboard", "Command centre", "Everything you follow, in one read: watchlist form, your roster, and where the league actually stands."],
+        players:  ["Research", "Players", "Every player, every metric. Sort on the number your league scores, not the one the box score prints."],
+        player:   ["Research · Player", "Nikola Jokić", "Season averages against the qualified pool, the rolling shape of his form, and every game behind it."],
+        teams:    ["Research", "NBA teams", "All 30 teams by division, conference, or one league ladder — records and pace of play at a glance."],
+        team:     ["Research · Team", "Toronto Raptors", "Where every team stat ranks across the league, and who is on the floor producing it."],
+        "my-teams": ["My league", "My teams", "Your rosters in this league, slot by slot, with the eligibility rules already applied."],
+        leagues:  ["My league", "Leagues", "League settings drive the valuation engine — team count and roster size set the replacement level."],
+        watchlist:["My league", "Starred players", "The shortlist you are actually deciding between, ranked by your preferred formula."],
+        settings: ["Account", "Settings", "Theme, text size, and which valuation formula the app should trust by default."],
+        login:    ["Account", "Sign in", "Court Vision keeps your watchlist, leagues, and rosters against your account."],
+      };
+
+      class Component extends DCLogic {
+        state = { screen: "home", tab: "regular", theme: null, fontScale: null };
+
+        go = (screen) => (e) => { if (e) e.preventDefault(); this.setState({ screen }); window.scrollTo(0, 0); };
+        setTab = (tab) => (e) => { e.preventDefault(); this.setState({ tab }); };
+        setTheme = (theme) => () => this.setState({ theme });
+        setScale = (fontScale) => () => this.setState({ fontScale });
+
+        navLink(active) {
+          return "display:grid;grid-template-columns:2.25rem 1fr;align-items:center;gap:var(--space-3);padding:var(--space-1);border-radius:var(--radius-sm);text-decoration:none;color:" +
+            (active ? "var(--color-text)" : "var(--color-text-muted)") + (active ? ";background:var(--color-bg)" : "");
+        }
+        navCap(active) {
+          return "display:grid;place-items:center;width:2.25rem;height:2.25rem;border-radius:var(--radius-sm);transition:transform var(--duration-fast) var(--ease-out),box-shadow var(--duration-fast) var(--ease-out);" +
+            (active
+              ? "border:1px solid var(--color-accent);background:var(--color-accent);color:var(--color-bg);transform:translate(-1px,-1px);box-shadow:var(--retro-2)"
+              : "border:1px solid var(--color-border);background:var(--color-bg);color:var(--color-text-muted)");
+        }
+
+        series(name, base, spread, seed, color, dash) {
+          const points = Array.from({ length: 26 }, (_, i) => {
+            const x = (i * 560) / 25;
+            const y = 95 - (base + Math.sin(i / 3 + seed) * spread + (wobble(i + seed) - 0.5) * 10);
+            return x.toFixed(1) + "," + y.toFixed(1);
+          }).join(" ");
+          return { name, points, color, dash, swatch: "display:block;width:16px;height:2px;background:" + color };
+        }
+
+        rows(kind) {
+          const labels = kind === "advanced" ? ADV_LABELS : kind === "fantasy" ? FAN_LABELS : REG_LABELS;
+          const active = kind === "fantasy" ? 0 : 1;
+          const list = kind === "fantasy" ? PLAYERS : [...PLAYERS].sort((a, b) => Number(b.reg[1]) - Number(a.reg[1]));
+          return list.map((p, i) => ({
+            rank: i + 1,
+            name: p.first + " " + p.last,
+            pos: p.pos, teamAbbr: p.team,
+            chipStyle: chipStyle(p.team), posStyle: posStyle(p.pos), avatarStyle: avatarStyle(p.team),
+            initials: initials(p.first + " " + p.last),
+            starFill: i < 4 ? "currentColor" : "none",
+            starStyle: "display:grid;place-items:center;padding:var(--space-1);border:0;border-radius:var(--radius-sm);background:none;cursor:pointer;color:" + (i < 4 ? "var(--color-highlight)" : "var(--color-text-muted)"),
+            cells: (kind === "advanced" ? p.adv : kind === "fantasy" ? p.fan : p.reg).map((v, ci) => ({
+              v, style: (ci === active ? tdActive : TDN) + (v.startsWith("-") ? ";color:var(--color-loss)" : ""),
+            })),
+          }));
+        }
+
+        headers(kind) {
+          const labels = kind === "advanced" ? ADV_LABELS : kind === "fantasy" ? FAN_LABELS : REG_LABELS;
+          const active = kind === "fantasy" ? 0 : 1;
+          return [
+            { label: "Player", style: thLeft },
+            ...labels.map((l, i) => ({ label: i === active ? l + " ▼" : l, style: i === active ? thActive : thNum })),
+          ];
+        }
+
+        renderVals() {
+          const { screen, tab } = this.state;
+          const theme = this.state.theme ?? this.props.theme ?? "dark";
+          const fontScale = this.state.fontScale ?? this.props.fontScale ?? "default";
+          const density = this.props.density ?? "comfortable";
+          const kind = tab === "advanced" ? "advanced" : tab === "fantasy" ? "fantasy" : "regular";
+          const activeNav = screen === "player" ? "players" : screen === "team" ? "teams" : screen;
+          const page = PAGES[screen] || PAGES.home;
+
+          const navGroups = [
+            { title: "Research", items: [["home", "Home"], ["players", "Players"], ["teams", "Teams"]] },
+            { title: "My league", items: [["my-teams", "My Teams"], ["leagues", "Leagues"], ["watchlist", "Starred"]] },
+          ].map((g) => ({
+            title: g.title,
+            items: g.items.map(([key, label]) => ({
+              label, d: NAV_ICONS[key], onClick: this.go(key),
+              style: this.navLink(key === activeNav), capStyle: this.navCap(key === activeNav),
+            })),
+          }));
+
+          const starredNames = [["Nikola Jokić", "DEN", "+14.2"], ["Victor Wembanyama", "SAS", "+9.1"], ["Tyrese Haliburton", "IND", "+6.9"], ["Domantas Sabonis", "SAC", "+6.5"], ["Anthony Edwards", "MIN", "+4.3"]];
+          const slotDefs = [["PG", "Tyrese Haliburton", "IND", "G"], ["SG", "Anthony Edwards", "MIN", "G"], ["SF", "Jayson Tatum", "BOS", "F"],
+            ["PF", "Giannis Antetokounmpo", "MIL", "F"], ["C", "Nikola Jokić", "DEN", "C"], ["G", "Shai Gilgeous-Alexander", "OKC", "G"],
+            ["F", "Domantas Sabonis", "SAC", "F-C"], ["UTIL", "Victor Wembanyama", "SAS", "C-F"]];
+
+          const eastRaw = [["CLE", "64-18"], ["BOS", "61-21"], ["NYK", "51-31"], ["IND", "50-32"], ["MIL", "48-34"], ["DET", "44-38"], ["ORL", "41-41"], ["ATL", "40-42"]];
+          const westRaw = [["OKC", "68-14"], ["HOU", "52-30"], ["LAL", "50-32"], ["DEN", "50-32"], ["LAC", "50-32"], ["MIN", "49-33"], ["GSW", "48-34"], ["MEM", "48-34"]];
+
+          const teamStatDefs = [
+            ["Win %", "Share of games won.", "36.6%", 24], ["PPG", "Points scored per game.", "112.5", 18],
+            ["OPP PPG", "Points allowed per game. Lower is better.", "116.8", 22], ["DIFF", "Average scoring margin per game.", "-4.3", 23],
+            ["RPG", "Rebounds per game.", "44.8", 9], ["APG", "Assists per game.", "28.4", 5],
+            ["SPG", "Steals per game.", "8.9", 4], ["BPG", "Blocks per game.", "4.6", 21],
+            ["TOPG", "Turnovers per game. Lower is better.", "14.9", 17], ["3PM", "Threes made per game.", "11.9", 26],
+            ["FG%", "Field-goal percentage.", "46.7%", 12], ["FT%", "Free-throw percentage.", "78.4%", 11],
+          ];
+
+          const gameLogCols = [["GM", "r"], ["DATE", "l"], ["MATCHUP", "l"], ["RESULT", "l"], ["MIN", "r"], ["PTS", "r"], ["FGM", "r"], ["FGA", "r"], ["3PM", "r"], ["3PA", "r"], ["FTM", "r"], ["FTA", "r"], ["REB", "r"], ["AST", "r"], ["STL", "r"], ["BLK", "r"], ["TOV", "r"], ["+/-", "r"]];
+          const logData = [
+            ["70", "13 Apr", "vs SAC", "W 124-116", "37", "36", "13", "22", "2", "5", "8", "9", "16", "22", "2", "1", "3", "+14"],
+            ["69", "11 Apr", "@ MEM", "L 108-117", "35", "24", "9", "18", "1", "4", "5", "6", "13", "11", "3", "0", "4", "-6"],
+            ["68", "09 Apr", "vs IND", "W 125-120", "38", "31", "12", "20", "2", "4", "5", "5", "13", "14", "1", "1", "2", "+9"],
+            ["67", "07 Apr", "@ MIN", "L 112-140", "31", "22", "8", "16", "1", "3", "5", "6", "9", "9", "2", "0", "5", "-18"],
+            ["66", "05 Apr", "vs WAS", "W 132-117", "30", "28", "11", "17", "3", "5", "3", "4", "13", "12", "2", "1", "1", "+21"],
+            ["65", "03 Apr", "@ LAL", "W 121-119", "40", "34", "13", "24", "2", "6", "6", "7", "14", "10", "1", "2", "3", "+7"],
+            ["64", "01 Apr", "vs SAS", "W 122-111", "33", "26", "10", "18", "1", "3", "5", "6", "13", "13", "3", "1", "2", "+11"],
+            ["63", "30 Mar", "@ HOU", "L 105-114", "36", "19", "7", "19", "0", "4", "5", "5", "13", "9", "1", "0", "4", "-9"],
+          ];
+
+          const themeDefs = [
+            ["dark", "Dark", "Shipped default", ["#131629", "#1c2138", "#3fc3e8", "#ff2e7e", "#e8eaf6"]],
+            ["light", "Light", "Daytime / projector", ["#f7f8fc", "#ffffff", "#0b749a", "#d6206a", "#171b2e"]],
+            ["contrast", "High contrast", "WCAG AAA body text", ["#000000", "#0b0e1a", "#6fe3ff", "#ff74ae", "#ffffff"]],
+            ["cvd", "Colorblind-safe", "Blue / amber, no red-green", ["#0f1220", "#191d2e", "#5aa9ff", "#ffb02e", "#eef1f8"]],
+            ["crt", "Amber CRT", "Low-light drafting", ["#120d05", "#1d1409", "#ffa726", "#ff7043", "#ffd694"]],
+            ["team", "Team accent", "Accent follows your club", ["#14161c", "#1e222b", "#ff3b5c", "#ffd166", "#f1f2f6"]],
+          ];
+
+          const scaleDefs = [["sm", "Small", "13 px body"], ["default", "Default", "16 px body"], ["lg", "Large", "18 px body"], ["xl", "X-Large", "20 px body"]];
+
+          const formulaDefs = [
+            ["Z-Score", "Distance from the average pool player in each category, scaled by the category's spread, then summed with your weights.", true],
+            ["G-Score", "Z-Score damped by each category's game-to-game volatility — the steadier read for weekly head-to-head.", false],
+            ["PL Linear", "The stat line priced in points-league scoring. Ignores category weights entirely.", false],
+            ["VORP", "Surplus over the last rostered player in your league — the real alternative sitting on waivers.", false],
+            ["Pos VORP", "Surplus over the replacement at the scarcest slot this player can fill.", false],
+            ["SGP", "Each category divided by what separates two adjacent places in the standings, so the total reads in places gained.", false],
+            ["Sim Value", "400 simulated weeks: the extra category wins a player adds to a league-average team.", false],
+          ];
+
+          return {
+            theme, fontScale, density,
+            isHome: screen === "home", isPlayers: screen === "players", isPlayer: screen === "player",
+            isTeams: screen === "teams", isTeam: screen === "team", isMyTeams: screen === "my-teams",
+            isLeagues: screen === "leagues", isWatchlist: screen === "watchlist",
+            isSettings: screen === "settings", isLogin: screen === "login",
+            isAdvanced: tab === "advanced", isFantasy: tab === "fantasy",
+
+            goHome: this.go("home"), goSettings: this.go("settings"), goPlayer: this.go("player"),
+            goWatchlist: this.go("watchlist"), goMyTeams: this.go("my-teams"), goTeam: this.go("team"),
+            goLogin: this.go("login"),
+            themeKeys: themeDefs.map(([key, label, , sw]) => ({
+              label, pressed: key === theme, onClick: this.setTheme(key),
+              style: "width:1.25rem;height:1.25rem;padding:0;border-radius:2px;cursor:pointer;background:linear-gradient(135deg, " + sw[0] + " 0 50%, " + sw[2] + " 50% 100%);" +
+                (key === theme
+                  ? "border:1px solid var(--color-accent);outline:1px solid var(--color-accent);outline-offset:1px"
+                  : "border:1px solid var(--color-border)"),
+            })),
+
+            navGroups,
+            settingsNavStyle: this.navLink(screen === "settings"),
+            settingsCapStyle: this.navCap(screen === "settings"),
+
+            pageEyebrow: page[0], pageTitle: page[1], pageDesc: page[2],
+            pageActions:
+              screen === "players" ? [{ label: "Export CSV", style: keyOff }, { label: "Save view", style: keyOn }]
+              : screen === "my-teams" ? [{ label: "New team", style: keyOn }]
+              : screen === "leagues" ? [{ label: "New league", style: keyOn }]
+              : screen === "player" ? [{ label: "★ Starred", style: keyOn }]
+              : screen === "team" ? [{ label: "All teams", style: keyOff, onClick: this.go("teams") }]
+              : screen === "home" ? [{ label: "Open players", style: keyOn, onClick: this.go("players") }]
+              : [],
+
+            onKey: keyOn, offKey: keyOff, nextKey: keyOff, dangerKey: keyDanger,
+            denChip: chipStyle("DEN"),
+
+            readouts: [
+              { label: "Watchlist", value: "18", note: "3 trending up", noteStyle: "color:var(--color-win);font-family:var(--font-mono);font-size:var(--font-size-xs)" },
+              { label: "Roster", value: "9/13", note: "4 slots open", noteStyle: "color:var(--color-highlight);font-family:var(--font-mono);font-size:var(--font-size-xs)" },
+              { label: "League rank", value: "3rd", note: "of 12 teams", noteStyle: "color:var(--color-text-muted);font-family:var(--font-mono);font-size:var(--font-size-xs)" },
+              { label: "Team Z-Score", value: "+42.6", note: "+3.1 this week", noteStyle: "color:var(--color-win);font-family:var(--font-mono);font-size:var(--font-size-xs)" },
+            ],
+
+            starredPanel: starredNames.map(([n, t, z]) => ({
+              fullName: n, teamAbbr: t, z, chipStyle: chipStyle(t), avatarStyle: avatarStyle(t), initials: initials(n),
+            })),
+            teamSlots: slotDefs.map(([slot, name, team]) => ({ slot, name, initials: initials(name), avatarStyle: avatarStyle(team) })),
+            east: eastRaw.map(([abbr, record], i) => ({ rank: i + 1, abbr, record })),
+            west: westRaw.map(([abbr, record], i) => ({ rank: i + 1, abbr, record })),
+
+            zSeries: [
+              this.series("Jokić", 46, 14, 1, "var(--color-accent)", "0"),
+              this.series("Wembanyama", 14, 18, 4, "var(--color-accent-purple)", "7 4"),
+              this.series("Edwards", -22, 16, 9, "var(--color-highlight)", "2 5"),
+            ],
+            gSeries: [
+              this.series("Jokić", 38, 11, 2, "var(--color-accent)", "0"),
+              this.series("Wembanyama", 9, 13, 6, "var(--color-accent-purple)", "7 4"),
+              this.series("Edwards", -16, 12, 11, "var(--color-highlight)", "2 5"),
+            ],
+
+            playerTabs: [["regular", "Regular"], ["advanced", "Advanced"], ["fantasy", "Fantasy value"], ["starred", "Starred"]].map(([key, label]) => ({
+              label, pressed: key === tab, onClick: this.setTab(key), style: key === tab ? keyOn : keyOff,
+            })),
+            resultSummary: tab === "fantasy" ? "1–10 of 156 qualifying" : "1–10 of 569",
+            tableHeaders: this.headers(kind),
+            tableRows: this.rows(kind),
+
+            starredHeaders: [{ label: "Player", style: thLeft }, ...["Z", "G", "VORP", "GP", "PTS", "REB"].map((l, i) => ({ label: i === 0 ? l + " ▼" : l, style: i === 0 ? thActive : thNum }))],
+            starredRows: this.rows("fantasy").slice(0, 6).map((r, i) => ({
+              ...r,
+              cells: [
+                { v: PLAYERS[i].fan[0], style: tdActive },
+                { v: PLAYERS[i].fan[1], style: TDN },
+                { v: PLAYERS[i].fan[3], style: TDN + (PLAYERS[i].fan[3].startsWith("-") ? ";color:var(--color-loss)" : "") },
+                { v: PLAYERS[i].reg[0], style: TDN },
+                { v: PLAYERS[i].reg[1], style: TDN },
+                { v: PLAYERS[i].reg[2], style: TDN },
+              ],
+            })),
+
+            catChips: ["PTS", "REB", "AST", "STL", "BLK", "3PM", "FG%", "FT%", "TOV"].map((label, i) => ({
+              label,
+              style: "display:inline-grid;grid-auto-flow:column;align-items:center;border:1px " + (i === 8 ? "dashed" : "solid") + " " + (i === 7 ? "var(--color-border)" : "var(--color-accent)") + ";border-radius:var(--radius-sm);background:var(--color-bg)",
+              toggleStyle: "padding:var(--space-1) var(--space-2);border:none;background:none;font-family:var(--font-mono);font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);letter-spacing:var(--tracking-wide);cursor:pointer;color:" + (i >= 7 ? "var(--color-text-muted)" : "var(--color-text)") + (i === 7 ? ";text-decoration:line-through" : ""),
+            })),
+
+            seasonReadouts: [["PTS", "29.6", 3], ["REB", "12.7", 4], ["AST", "10.2", 1], ["FG%", ".576", 5], ["STL", "1.8", 8], ["TOV", "3.2", 6]].map(([label, value, rank]) => ({
+              label, value, rank: ordinal(rank) + " in NBA",
+              rankStyle: "font-family:var(--font-mono);font-size:var(--font-size-xs);color:" + (rank === 1 ? "var(--color-accent-strong)" : rank <= 5 ? "var(--color-highlight)" : "var(--color-text-muted)"),
+            })),
+            playerFacts: [
+              { label: "Height", value: "6' 11\"" }, { label: "Weight", value: "284 lb" },
+              { label: "Born", value: "19 Feb 1995" }, { label: "Country", value: "Serbia" },
+              { label: "Draft", value: "2014 · R2 P41" }, { label: "Exp", value: "10 yrs" },
+            ],
+            statModes: [["Avg", true], ["Game", false], ["Totals", false], ["Per 36", false]].map(([label, pressed]) => ({ label, pressed, style: pressed ? keyOn : keyOff })),
+            statSpans: [["L5", false], ["L10", true], ["L20", false], ["L40", false], ["All", false]].map(([label, pressed]) => ({ label, pressed, style: pressed ? keyOn : keyOff })),
+            ptsPath: Array.from({ length: 30 }, (_, i) => ((i * 900) / 29).toFixed(0) + "," + (200 - (22 + Math.sin(i / 2.4) * 9 + (wobble(i) - 0.5) * 14) * 4.2).toFixed(1)).join(" "),
+            rebPath: Array.from({ length: 30 }, (_, i) => ((i * 900) / 29).toFixed(0) + "," + (200 - (12 + Math.sin(i / 3.1 + 2) * 4 + (wobble(i + 40) - 0.5) * 7) * 4.2).toFixed(1)).join(" "),
+            astPath: Array.from({ length: 30 }, (_, i) => ((i * 900) / 29).toFixed(0) + "," + (200 - (10 + Math.sin(i / 2.8 + 4) * 3.5 + (wobble(i + 80) - 0.5) * 6) * 4.2).toFixed(1)).join(" "),
+            gameLogHeaders: gameLogCols.map(([label, align], i) => ({
+              label: i === 1 ? label + " ▼" : label,
+              style: (align === "r" ? thNum : thLeft) + (i === 1 ? ";color:var(--color-accent);box-shadow:inset 0 -3px 0 var(--color-accent)" : ""),
+            })),
+            gameLogRows: logData.map((cells) => ({
+              cells: cells.map((v, i) => ({
+                v,
+                style: gameLogCols[i][1] === "r"
+                  ? TDN
+                  : "padding:var(--row-y) var(--row-x);font-size:var(--font-size-sm);white-space:nowrap;font-family:var(--font-mono)" +
+                    (i === 3 ? ";color:" + (v.startsWith("W") ? "var(--color-win)" : "var(--color-loss)") + ";font-weight:var(--font-weight-semibold)" : "") +
+                    (i === 1 ? ";background:color-mix(in srgb, var(--color-accent) 10%, transparent)" : ""),
+              })),
+            })),
+
+            divisions: DIVISIONS.map(([title, conf, teams]) => ({
+              title, conf,
+              teams: teams.map(([abbr, w, l]) => ({
+                abbr, name: TEAMS[abbr][0], record: w + "–" + l, pct: ((w / (w + l)) * 100).toFixed(1) + "%",
+                chipStyle: chipStyle(abbr),
+                barStyle: "display:block;height:100%;width:" + ((w / (w + l)) * 100).toFixed(0) + "%;background:var(--color-accent)",
+              })),
+            })),
+
+            teamReadouts: [["Record", "30–52", 24], ["Point diff", "-4.3", 23], ["Assists / g", "28.4", 5], ["Steals / g", "8.9", 4]].map(([label, value, rank]) => ({
+              label, value, rank: ordinal(rank) + " of 30",
+              rankStyle: "font-family:var(--font-mono);font-size:var(--font-size-xs);color:" + (rank <= 5 ? "var(--color-win)" : "var(--color-text-muted)"),
+            })),
+            roster: [["Scottie Barnes", "F", "#4"], ["RJ Barrett", "G-F", "#9"], ["Immanuel Quickley", "G", "#5"],
+              ["Jakob Poeltl", "C", "#19"], ["Gradey Dick", "G", "#1"], ["Ochai Agbaji", "G-F", "#30"],
+              ["Jonathan Mogbo", "F", "#2"], ["Ja'Kobe Walter", "G", "#14"], ["Chris Boucher", "F-C", "#25"], ["Davion Mitchell", "G", "#45"]]
+              .map(([name, pos, jersey]) => ({ name, pos, jersey, initials: initials(name), avatarStyle: avatarStyle("TOR"), posStyle: posStyle(pos) })),
+            teamStats: teamStatDefs.map(([label, description, value, rank]) => ({
+              label, description, value, rank: ordinal(rank),
+              barStyle: "display:block;height:100%;width:" + (((31 - rank) / 30) * 100).toFixed(0) + "%;background:" + (rank <= 5 ? "var(--color-win)" : rank >= 20 ? "var(--color-loss)" : "var(--color-accent)"),
+              rankStyle: "min-width:2.5rem;text-align:right;font-family:var(--font-mono);font-size:var(--font-size-xs);color:" + (rank <= 5 ? "var(--color-win)" : rank >= 20 ? "var(--color-loss)" : "var(--color-text-muted)"),
+            })),
+
+            rosterGroups: [
+              { title: "Starters", slots: slotDefs.map(([slot, name, team, pos]) => ({
+                slot, name, pos, posStyle: posStyle(pos),
+                cardStyle: "display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:var(--space-3);padding:var(--space-2);border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-bg)",
+              })) },
+              { title: "Bench", slots: [["BE", "Karl-Anthony Towns", "NYK", "C-F"], ["BE", "Empty", "", ""], ["BE", "Empty", "", ""]].map(([slot, name, team, pos]) => ({
+                slot, name, pos: pos || "—", posStyle: posStyle(pos),
+                cardStyle: "display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:var(--space-3);padding:var(--space-2);border:1px " + (name === "Empty" ? "dashed" : "solid") + " var(--color-border);border-radius:var(--radius-sm);background:" + (name === "Empty" ? "transparent" : "var(--color-bg)") + (name === "Empty" ? ";color:var(--color-text-muted)" : ""),
+              })) },
+              { title: "Injured list", slots: [["IL", "Empty", "", ""], ["IL+", "Empty", "", ""]].map(([slot, name]) => ({
+                slot, name, pos: "—", posStyle: posStyle(""),
+                cardStyle: "display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:var(--space-3);padding:var(--space-2);border:1px dashed var(--color-border);border-radius:var(--radius-sm);color:var(--color-text-muted)",
+              })) },
+            ],
+
+            leagues: [
+              { name: "Dynasty Warriors", badge: "Active", meta: "9-cat head-to-head", action: "Active", actionStyle: keyOn,
+                badgeStyle: "padding:2px var(--space-2);border-radius:var(--radius-sm);background:var(--color-accent);color:var(--color-bg);font-family:var(--font-mono);font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);letter-spacing:var(--tracking-wide);text-transform:uppercase",
+                facts: [{ label: "Teams", value: "12" }, { label: "Roster slots", value: "13" }, { label: "Replacement rank", value: "156" }, { label: "Scoring", value: "9-cat H2H" }] },
+              { name: "Office Roto", badge: "", meta: "8-cat rotisserie", action: "Make active", actionStyle: keyOff,
+                badgeStyle: "display:none",
+                facts: [{ label: "Teams", value: "10" }, { label: "Roster slots", value: "13" }, { label: "Replacement rank", value: "130" }, { label: "Scoring", value: "8-cat roto" }] },
+            ],
+
+            themeCards: themeDefs.map(([key, label, note, sw]) => ({
+              label, note, pressed: key === theme, onClick: this.setTheme(key),
+              swatches: sw.map((c) => ({ style: "display:block;width:14px;height:14px;border-radius:2px;border:1px solid rgb(255 255 255 / 0.15);background:" + c })),
+              style: "display:grid;gap:var(--space-2);justify-items:start;padding:var(--space-3);border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;transition:transform var(--duration-fast) var(--ease-out),box-shadow var(--duration-fast) var(--ease-out);" +
+                (key === theme
+                  ? "border:1px solid var(--color-accent);background:var(--color-bg);color:var(--color-text);transform:translate(-1px,-1px);box-shadow:var(--retro-4)"
+                  : "border:1px solid var(--color-border);background:var(--color-bg);color:var(--color-text)"),
+            })),
+            fontScales: scaleDefs.map(([key, label, sample]) => ({
+              label, sample, pressed: key === fontScale, onClick: this.setScale(key),
+              style: "display:grid;grid-template-columns:1fr auto;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font-display);font-size:var(--font-size-sm);font-weight:var(--font-weight-bold);text-transform:uppercase;letter-spacing:var(--tracking-wide);transition:transform var(--duration-fast) var(--ease-out),box-shadow var(--duration-fast) var(--ease-out);" +
+                (key === fontScale
+                  ? "border:1px solid var(--color-accent);background:var(--color-accent);color:var(--color-bg);transform:translate(-1px,-1px);box-shadow:var(--retro-4)"
+                  : "border:1px solid var(--color-border);background:var(--color-bg);color:var(--color-text);box-shadow:var(--retro-1)"),
+            })),
+            formulaOptions: formulaDefs.map(([title, description, checked]) => ({
+              title, description, checked,
+              dotStyle: "display:block;width:10px;height:10px;border-radius:var(--radius-full);border:1px solid " + (checked ? "var(--color-accent)" : "var(--color-border)") + ";background:" + (checked ? "var(--color-accent)" : "transparent"),
+              style: "display:grid;gap:var(--space-2);justify-items:start;padding:var(--space-3);border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;text-align:left;" +
+                (checked ? "border:1px solid var(--color-accent);background:var(--color-bg);box-shadow:var(--retro-2)" : "border:1px solid var(--color-border);background:var(--color-bg)") + ";color:var(--color-text)",
+            })),
+          };
+        }
+      }
+    </script>
+  </body>
+</html>

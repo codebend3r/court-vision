@@ -1,5 +1,6 @@
 import { AdvancedStatsLegend } from "@/components/AdvancedStatsLegend/AdvancedStatsLegend";
 import { FantasyValueView } from "@/components/FantasyValueView/FantasyValueView";
+import { PageHeader } from "@/components/PageHeader/PageHeader";
 import { PlayersPager } from "@/components/PlayersPager/PlayersPager";
 import { PlayersSearchControls } from "@/components/PlayersSearchControls/PlayersSearchControls";
 import { PlayersTable } from "@/components/PlayersTable/PlayersTable";
@@ -66,6 +67,14 @@ export default async function PlayersPage({
     <PlayersTabs active={params.tab} q={params.q} size={params.size} range={params.range} />
   );
 
+  const pageHeader = (
+    <PageHeader
+      eyebrow="Research"
+      title="Players"
+      description="Every player, every metric. Sort on the number your league scores, not the one the box score prints."
+    />
+  );
+
   // Remounting the results on any reorder/repage (tab, sort, range, mode, page)
   // replays the enter animation, so a section swap reads as a deliberate
   // transition. `q` is intentionally excluded: typing already gets the pending
@@ -75,7 +84,7 @@ export default async function PlayersPage({
   if (params.tab === "starred") {
     return (
       <main className={styles.page}>
-        <h1>Players</h1>
+        {pageHeader}
         {tabsNav}
         <StarredPlayersView params={params} showCounter={false} />
       </main>
@@ -98,7 +107,7 @@ export default async function PlayersPage({
     const leagueSeed = buildLeagueSeed({ league, preferredFormula: formula, presentKeys });
     return (
       <main className={styles.page}>
-        <h1>Players</h1>
+        {pageHeader}
         {tabsNav}
         <FantasyValueView lines={lines} isSignedIn={isSignedIn} leagueSeed={leagueSeed} />
       </main>
@@ -113,7 +122,7 @@ export default async function PlayersPage({
 
     return (
       <main className={styles.page}>
-        <h1>Players</h1>
+        {pageHeader}
         {tabsNav}
         <PlayersSearchControls
           q={params.q}
@@ -131,38 +140,28 @@ export default async function PlayersPage({
           </p>
           {total > 0 && (
             <>
-              <PlayersPager
-                q={params.q}
-                page={page}
-                size={params.size}
-                totalPages={totalPages}
-                sort={params.sort}
-                dir={params.dir}
-                range={params.range}
-                mode={params.mode}
-                minimums={params.minimums}
-                tab={params.tab}
-              />
               <PlayersTable
                 variant="advanced"
                 rows={rows}
                 params={params}
                 page={page}
                 isSignedIn={isSignedIn}
+                footer={
+                  <PlayersPager
+                    q={params.q}
+                    page={page}
+                    size={params.size}
+                    totalPages={totalPages}
+                    sort={params.sort}
+                    dir={params.dir}
+                    range={params.range}
+                    mode={params.mode}
+                    minimums={params.minimums}
+                    tab={params.tab}
+                  />
+                }
               />
               <AdvancedStatsLegend />
-              <PlayersPager
-                q={params.q}
-                page={page}
-                size={params.size}
-                totalPages={totalPages}
-                sort={params.sort}
-                dir={params.dir}
-                range={params.range}
-                mode={params.mode}
-                minimums={params.minimums}
-                tab={params.tab}
-              />
             </>
           )}
         </section>
@@ -177,7 +176,7 @@ export default async function PlayersPage({
 
   return (
     <main className={styles.page}>
-      <h1>Players</h1>
+      {pageHeader}
       {tabsNav}
       <PlayersSearchControls
         q={params.q}
@@ -194,39 +193,27 @@ export default async function PlayersPage({
           {renderSummary({ total, q: params.q, rangeStart, rangeEnd })}
         </p>
         {total > 0 && (
-          <>
-            <PlayersPager
-              q={params.q}
-              page={page}
-              size={params.size}
-              totalPages={totalPages}
-              sort={params.sort}
-              dir={params.dir}
-              range={params.range}
-              mode={params.mode}
-              minimums={params.minimums}
-              tab={params.tab}
-            />
-            <PlayersTable
-              variant="regular"
-              rows={rows}
-              params={params}
-              page={page}
-              isSignedIn={isSignedIn}
-            />
-            <PlayersPager
-              q={params.q}
-              page={page}
-              size={params.size}
-              totalPages={totalPages}
-              sort={params.sort}
-              dir={params.dir}
-              range={params.range}
-              mode={params.mode}
-              minimums={params.minimums}
-              tab={params.tab}
-            />
-          </>
+          <PlayersTable
+            variant="regular"
+            rows={rows}
+            params={params}
+            page={page}
+            isSignedIn={isSignedIn}
+            footer={
+              <PlayersPager
+                q={params.q}
+                page={page}
+                size={params.size}
+                totalPages={totalPages}
+                sort={params.sort}
+                dir={params.dir}
+                range={params.range}
+                mode={params.mode}
+                minimums={params.minimums}
+                tab={params.tab}
+              />
+            }
+          />
         )}
       </section>
     </main>

@@ -61,6 +61,15 @@ There is no `bunfig.toml` key for this as of Bun 1.3.14 — it is CLI-only.
 - Avoid using plain divs; meaing divs with no class or id defined
 - Always use token values from `styles/globals.scss` when defining font sizes, colors, and other design tokens like padding, margin, gap, and border radius
 
+### Redesign conventions (2026-08, spec in `docs/superpowers/specs/redesign-2026-08.md`)
+
+- Every pressable control uses the keycap mixins (`keycap`, `keycap-engaged`, `keycap-danger`, `keycap-press` in `styles/mixins.scss`); never invent a new button treatment
+- The retro extrusion is opt-in by role: page titles (`h1`), the wordmark, and large readout numbers via `retro-extrude`. Never re-apply it to headings wholesale, and never add glows
+- Tables share one pattern: `table-wrapper` + `data-table` + `numeric-cell`; cell padding is `var(--row-y) var(--row-x)`, never hardcoded
+- Dashboard panels use `panel-shell` + `panel-title`
+- Six themes on `data-theme`, registered in `lib/theme/themes.ts`. A theme may only redefine color tokens — spacing, radii, type, and shadow geometry are shared constants. Team identity colors (`TeamChip`) never borrow theme tokens
+- Every screen opens with `PageHeader` (eyebrow / title / description / actions / rule); page actions use `PageAction`
+
 ## Code style
 
 - Always prefer immutable data structures and operations

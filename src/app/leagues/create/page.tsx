@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { LeagueForm } from "@/components/LeagueForm/LeagueForm";
+import { PageAction, PageHeader } from "@/components/PageHeader/PageHeader";
 import { getProfile } from "@/lib/auth/session";
 
 import styles from "@/app/leagues/leagues.module.scss";
@@ -14,12 +14,11 @@ export default async function CreateLeaguePage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <h1>Create league</h1>
-        <Link href="/leagues" className={styles.back}>
-          ← Leagues
-        </Link>
-      </header>
+      <PageHeader
+        eyebrow="My league"
+        title="Create league"
+        actions={<PageAction href="/leagues">Leagues</PageAction>}
+      />
       <LeagueForm league={null} />
     </main>
   );

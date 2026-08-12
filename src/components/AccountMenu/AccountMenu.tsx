@@ -59,6 +59,9 @@ export function AccountMenu({ username }: { username: string }) {
         onClick={() => setOpen((value) => !value)}
       >
         @{username}
+        <span className={styles.initials} aria-hidden="true">
+          {username.slice(0, 2)}
+        </span>
       </button>
       {open && (
         <div className={styles.dropdown} id={MENU_ID} role="menu">

@@ -1,8 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { AccountMenu } from "@/components/AccountMenu/AccountMenu";
-import { ThemeToggle } from "@/components/ThemeToggle/ThemeToggle";
+import { LeagueSwitcher } from "@/components/LeagueSwitcher/LeagueSwitcher";
+import { LogoLockup } from "@/components/Logo/Logo";
+import { ThemeSwatches } from "@/components/ThemeSwatches/ThemeSwatches";
 import { getProfile } from "@/lib/auth/session";
 
 import styles from "@/components/SiteHeader/SiteHeader.module.scss";
@@ -12,24 +13,14 @@ export async function SiteHeader() {
 
   return (
     <header className={styles.header}>
-      <Link href="/" className={styles.wordmark}>
-        {/* Decorative: the wordmark text beside it already names the link. */}
-        {/* `unoptimized` skips the Netlify image CDN — the mark is a small flat-art
-            PNG served at a fixed size, so a transform saves nothing, and it keeps
-            the logo from 404ing wherever /.netlify/images isn't served. */}
-        <Image
-          src="/court-vision-mark-cropped.png"
-          alt=""
-          width={34}
-          height={32}
-          className={styles.mark}
-          priority
-          unoptimized
-        />
-        Court Vision
+      <Link href="/" className={styles.home} aria-label="Court Vision">
+        <LogoLockup />
       </Link>
+      {/* Centre-left: the active league pill (renders nothing when the store
+          holds no leagues, e.g. signed out). */}
+      <div className={styles.league}>{!!profile && <LeagueSwitcher />}</div>
       <div className={styles.actions}>
-        <ThemeToggle />
+        <ThemeSwatches />
         {profile ? (
           <AccountMenu username={profile.username} />
         ) : (

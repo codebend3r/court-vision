@@ -2,47 +2,31 @@
 
 .header {
   display: grid;
-  grid-auto-flow: column;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-4);
   padding: var(--space-3) var(--space-6);
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
 
-.wordmark {
-  display: grid;
-  grid-auto-flow: column;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-text);
-  font-family: var(--font-display);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-  text-transform: uppercase;
-  // Brand-specific wordmark tracking (between --tracking-tight and --tracking-wide).
-  letter-spacing: 0.08em;
-  text-shadow: long-text-shadow(var(--color-retro-shadow), 7);
-  transition: color var(--duration-fast) var(--ease-out);
+.home {
+  display: inline-grid;
 
-  // The wordmark has always linked home, but with no hover affordance it did
-  // not read as clickable. Underlining would fight the retro shadow, so the
-  // colour shift carries it.
   &:hover {
     text-decoration: none;
-    color: var(--color-accent);
   }
 
   &:focus-visible {
-    @include control-focus-ring;
-    color: var(--color-accent);
+    outline: var(--focus-ring-width) solid var(--color-focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
   }
 }
 
-.mark {
-  display: block;
-  // The mark ships with its own navy field, so it reads the same in both themes.
-  // Cropped flush to the artwork — no corner rounding, which would clip the bars.
+.league {
+  display: grid;
+  justify-content: start;
 }
 
 .actions {
@@ -53,14 +37,9 @@
 }
 
 .signIn {
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
+  @include keycap;
 
   &:hover {
     text-decoration: none;
-    background: var(--color-bg);
   }
 }

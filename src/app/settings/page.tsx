@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { PageHeader } from "@/components/PageHeader/PageHeader";
 import { SettingsAppearance } from "@/components/SettingsAppearance/SettingsAppearance";
 import { SettingsFantasy } from "@/components/SettingsFantasy/SettingsFantasy";
 import { SettingsTheme } from "@/components/SettingsTheme/SettingsTheme";
@@ -20,7 +21,11 @@ export default async function SettingsPage() {
   const fontScale = isFontScale(profile.fontScale) ? profile.fontScale : "default";
   return (
     <main className={styles.page}>
-      <h1>Settings</h1>
+      <PageHeader
+        eyebrow="Account"
+        title="Settings"
+        description="Theme, text size, and which valuation formula the app should trust by default."
+      />
       <SettingsFantasy preferredFormula={preferredFormula} />
       <SettingsAppearance fontScale={fontScale} />
       <SettingsTheme />

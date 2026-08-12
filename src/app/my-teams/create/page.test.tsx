@@ -77,6 +77,6 @@ describe("CreateTeamPage", () => {
     expect(getFantasyPool).toHaveBeenCalledWith({ range: "all" });
     expect(screen.getByLabelText("Team name")).toBeInTheDocument();
     expect(screen.getByLabelText("Search players")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "← My Teams" })).toHaveAttribute("href", "/my-teams");
+    expect(screen.getByRole("link", { name: "My teams" })).toHaveAttribute("href", "/my-teams");
   });
 });

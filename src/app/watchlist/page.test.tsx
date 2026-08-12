@@ -43,7 +43,7 @@ afterEach(cleanup);
 describe("WatchlistPage", () => {
   it("renders the heading and the starred view with its counter", async () => {
     render(await WatchlistPage({ searchParams: Promise.resolve({}) }));
-    expect(screen.getByRole("heading", { name: "Starred Players" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Starred players" })).toBeInTheDocument();
     expect(screen.getByText("starred view")).toBeInTheDocument();
     expect(viewProps).toHaveBeenCalledWith(expect.objectContaining({ showCounter: true }));
   });

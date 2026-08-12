@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const pages = [
   { path: "/login", heading: "Sign in" },
@@ -30,6 +30,22 @@ pages.forEach(({ path, heading }) => {
   });
 });
 
+// The six header theme swatches sit between the wordmark and the sign-in
+// link; tab through them in order.
+const tabThroughThemeSwatches = async ({ page }: { page: Page }) => {
+  const swatches = await page
+    .getByRole("banner")
+    .getByRole("group", { name: "Theme" })
+    .getByRole("button")
+    .all();
+  expect(swatches.length).toBe(6);
+  await swatches.reduce(async (previous, swatch) => {
+    await previous;
+    await page.keyboard.press("Tab");
+    await expect(swatch).toBeFocused();
+  }, Promise.resolve());
+};
+
 test("auth forms preserve keyboard order and visible focus", async ({ page }) => {
   await page.goto("/login");
 
@@ -37,8 +53,7 @@ test("auth forms preserve keyboard order and visible focus", async ({ page }) =>
   await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("banner").getByRole("link", { name: "Court Vision" })).toBeFocused();
-  await page.keyboard.press("Tab");
-  await expect(page.getByRole("banner").getByRole("button")).toBeFocused();
+  await tabThroughThemeSwatches({ page });
   await page.keyboard.press("Tab");
   await expect(page.getByRole("banner").getByRole("link", { name: "Sign in" })).toBeFocused();
   await page.keyboard.press("Tab");
@@ -59,8 +74,7 @@ test("auth forms preserve keyboard order and visible focus", async ({ page }) =>
   await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("banner").getByRole("link", { name: "Court Vision" })).toBeFocused();
-  await page.keyboard.press("Tab");
-  await expect(page.getByRole("banner").getByRole("button")).toBeFocused();
+  await tabThroughThemeSwatches({ page });
   await page.keyboard.press("Tab");
   await expect(page.getByRole("banner").getByRole("link", { name: "Sign in" })).toBeFocused();
   await page.keyboard.press("Tab");

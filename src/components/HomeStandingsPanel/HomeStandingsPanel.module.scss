@@ -1,17 +1,11 @@
+@use "@/styles/mixins" as *;
+
 .panel {
-  display: grid;
-  align-content: start;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  @include panel-shell;
 }
 
 .title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: var(--font-size-lg);
+  @include panel-title;
 }
 
 .conferences {

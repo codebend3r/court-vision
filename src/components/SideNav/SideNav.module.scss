@@ -1,53 +1,58 @@
 @use "@/styles/mixins" as *;
 
+// Collapsed 60px, expanded 236px. Absolutely positioned inside the layout's
+// 60px-wide relative slot so the expansion overlays content instead of
+// reflowing it. Opens on hover and on keyboard focus (focus-within).
 .nav {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 5;
   display: grid;
-  grid-template-rows: 1fr auto auto;
-  align-items: start;
-  gap: var(--space-3);
-  width: 220px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  width: 60px;
   padding: var(--space-4) var(--space-3);
+  overflow: hidden;
   border-right: 1px solid var(--color-border);
-  transition: width 160ms ease;
+  background: var(--color-bg);
+  transition:
+    width 160ms var(--ease-out),
+    box-shadow 160ms var(--ease-out);
 
-  &[data-collapsed="true"] {
-    width: 64px;
-
-    .link {
-      grid-template-columns: 1fr 0;
-      padding-inline: var(--space-2);
-    }
-
-    .shortLabel {
-      width: auto;
-    }
-
-    .label {
-      width: 0;
-      overflow: hidden;
-    }
+  &:hover,
+  &:focus-within {
+    width: 236px;
+    box-shadow: 8px 0 24px rgb(0 0 0 / 0.28);
   }
 }
 
-.collapseButton {
-  position: sticky;
-  bottom: var(--space-4);
+.groups {
   display: grid;
-  place-items: center;
-  justify-self: center;
-  align-self: end;
-  width: 100%;
-  height: var(--control-height);
-  padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-lg);
-  cursor: pointer;
+  align-content: start;
+  gap: var(--space-4);
+}
 
-  &:hover {
-    color: var(--color-text);
+.group {
+  display: grid;
+  gap: var(--space-1);
+}
+
+// Same two-column grid as the items, with an empty first cell, so the title
+// clips in step with the labels rather than sliding during collapse.
+.groupTitle {
+  @include micro-label;
+  display: grid;
+  grid-template-columns: 2.25rem 1fr;
+  gap: var(--space-3);
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+
+  .cap {
+    width: auto;
+    height: auto;
+    border: none;
+    background: none;
+    box-shadow: none;
   }
 }
 
@@ -64,38 +69,59 @@
 }
 
 .link {
-  @include micro-label;
   display: grid;
-  grid-template-columns: 0 1fr;
+  grid-template-columns: 2.25rem 1fr;
   align-items: center;
-  overflow: hidden;
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-3);
+  padding: var(--space-1);
   border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
 
   &:hover {
     color: var(--color-text);
-    background: var(--color-surface);
     text-decoration: none;
+
+    .cap {
+      color: var(--color-text);
+    }
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus-ring);
+    outline-offset: 1px;
+  }
+
+  &[data-active="true"] {
+    background: var(--color-bg);
+    color: var(--color-text);
+
+    .cap {
+      @include keycap-engaged;
+    }
   }
 }
 
-.shortLabel {
-  width: 0;
-  overflow: hidden;
-  text-align: center;
+// The 36px keycap the icon sits in. Stays fixed while the rail's overflow
+// clips the label during collapse.
+.cap {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  box-shadow: var(--retro-1);
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
 }
 
 .label {
-  white-space: nowrap;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .nav {
-    transition: none;
-  }
-}
-
-.active {
-  color: var(--color-accent-strong);
-  background: var(--color-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

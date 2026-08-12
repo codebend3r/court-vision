@@ -12,74 +12,170 @@
   @return $shadow;
 }
 
-// Box-shadow counterpart to long-text-shadow: stacked solid offsets so a
-// button reads as a chunky retro extrusion, never a blurred glow.
-@function long-box-shadow($color, $length, $step: 1px) {
-  $shadow: ();
-  @for $i from 1 through $length {
-    $shadow: list.append($shadow, #{$i * $step} #{$i * $step} 0 $color, comma);
-  }
-  @return $shadow;
+// The retro text extrusion, opt-in by role. Reserved for page titles, the
+// wordmark, and large readout numbers (the stat figures on dashboard and
+// detail cards) — never applied to a heading just for being a heading. Reads
+// the shared --extrude constant so every theme extrudes with identical
+// geometry and only the color changes.
+@mixin retro-extrude {
+  text-shadow: var(--extrude);
 }
 
-// Retro-shadow button, the purple variation of the long-shadow lettering.
-// Raised at rest, lifts on hover, and presses INTO its extrusion when active
-// or toggled on — works standalone or inside a flex button group.
-@mixin retro-button {
-  display: inline-flex;
+// The keycap: the one interactive mechanic every pressable control shares —
+// stat-view tabs, page actions, filter toggles, pagination, theme cards,
+// font-size options, formula options, nav rail caps, the sign-in button. At
+// rest it sits on a 1px extrusion; engaged it lifts off its own shadow;
+// primary actions press INTO it (keycap-press). Focus uses an outline rather
+// than control-focus-ring so the ring never fights the shadow mechanic.
+@mixin keycap {
+  display: inline-grid;
+  grid-auto-flow: column;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-accent-purple);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  background: var(--color-surface);
+  background: var(--color-bg);
   color: var(--color-text);
+  font-family: var(--font-display);
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
   cursor: pointer;
-  box-shadow: long-box-shadow(var(--color-retro-shadow-purple), 4);
+  box-shadow: var(--retro-1);
   transition:
     transform var(--duration-fast) var(--ease-out),
-    box-shadow var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out);
+    box-shadow var(--duration-fast) var(--ease-out);
 
   &:hover:not(:disabled) {
     transform: translate(-1px, -1px);
-    box-shadow: long-box-shadow(var(--color-retro-shadow-purple), 5);
-  }
-
-  &:active:not(:disabled),
-  &[aria-pressed="true"]:not(:disabled) {
-    transform: translate(2px, 2px);
-    box-shadow: long-box-shadow(var(--color-retro-shadow-purple), 2);
-    color: var(--color-accent-purple);
+    box-shadow: var(--retro-2);
   }
 
   &:focus-visible {
-    @include control-focus-ring;
+    outline: var(--focus-ring-width) solid var(--color-focus-ring);
+    outline-offset: 1px;
   }
 
   &:disabled {
     transform: none;
-    border-color: var(--color-border);
     box-shadow: none;
-    color: var(--color-text-muted);
     opacity: var(--control-disabled-opacity);
     cursor: not-allowed;
   }
 }
 
-// Dashed companion for bulk actions ("Clear all") that ride along in a retro
-// button group without competing with the toggles.
-@mixin retro-button-dashed {
-  @include retro-button;
-  border-style: dashed;
-  border-color: color-mix(in srgb, var(--color-accent-purple) 45%, var(--color-border));
-  color: var(--color-text-muted);
+// Engaged (selected/active) keycap: the key lifts off its own extrusion.
+// Consumers pick the selector (`[aria-pressed="true"]`, `[data-active]`, …).
+@mixin keycap-engaged {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-bg);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--retro-4);
+}
+
+// Danger variant (destructive actions): dashed, flat, never extruded.
+@mixin keycap-danger {
+  border: 1px dashed var(--color-loss);
+  background: transparent;
+  color: var(--color-loss);
+  box-shadow: none;
 
   &:hover:not(:disabled) {
-    border-color: var(--color-accent-purple);
-    color: var(--color-accent-purple);
+    transform: none;
+    box-shadow: none;
   }
+}
+
+// Active-press for primary actions (sign-in and friends): presses into the
+// shadow instead of lifting further.
+@mixin keycap-press {
+  transform: translate(2px, 2px);
+  box-shadow: var(--retro-2);
+}
+
+// Dashboard panel shell (spec §10): every home panel and chart card share it.
+@mixin panel-shell {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+// Panel header title: uppercase display-weight sm over the 1px separator.
+// Pair with a muted xs count/action in the same row (grid 1fr auto).
+@mixin panel-title {
+  margin: 0;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+// The one table pattern (spec §7): players table, game log, and starred all
+// share it. Apply to the <table>; pair with `table-wrapper` on the box around
+// the scroller.
+@mixin data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: var(--row-y) var(--row-x);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--tracking-wide);
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+
+    &[data-sort-active="true"] {
+      color: var(--color-accent);
+      box-shadow: inset 0 -3px 0 var(--color-accent);
+    }
+  }
+
+  td {
+    padding: var(--row-y) var(--row-x);
+    border-top: 1px solid var(--color-border);
+
+    &[data-sort-active="true"] {
+      background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+      color: var(--color-text);
+      font-weight: var(--font-weight-semibold);
+    }
+  }
+}
+
+// Numeric table cells: mono, right-aligned, never wrapping.
+@mixin numeric-cell {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  text-align: right;
+  white-space: nowrap;
+}
+
+// The box the table lives in. `overflow: hidden` keeps the rounded corners;
+// the inner scroller (`overflow-x: auto`) owns horizontal scrolling.
+@mixin table-wrapper {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
 }
 
 @mixin micro-label {
@@ -87,9 +183,9 @@
   font-size: var(--font-size-xs);
   letter-spacing: var(--tracking-wide);
   color: var(--color-text-muted);
-  // When used on an h1–h5 these eyebrows inherit the global retro long-shadow,
-  // which smears 12px uppercase glyphs below AA legibility. Cancel it here so
-  // every micro-label heading stays crisp; large display headings keep it.
+  // Eyebrow labels are never extruded — the shadow smears 12px uppercase
+  // glyphs below AA legibility. Only h1 still carries it by tag, so this is a
+  // guard for the case where an eyebrow is marked up as the page title.
   text-shadow: none;
 }
 

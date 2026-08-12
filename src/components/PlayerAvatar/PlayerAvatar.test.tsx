@@ -14,16 +14,16 @@ describe("PlayerAvatar", () => {
     expect(src).toContain("/headshots/nba/latest/1040x760/1630162.png");
   });
 
-  it("sizes the sm image at 32px and the lg image at 96px", () => {
+  it("sizes the sm image at 36px and the lg image at 72px", () => {
     const { rerender } = render(
       <PlayerAvatar fullName="Anthony Edwards" nbaPersonId={1630162} size="sm" />,
     );
-    expect(screen.getByRole("img", { name: "Anthony Edwards" })).toHaveAttribute("width", "32");
-    expect(screen.getByRole("img", { name: "Anthony Edwards" })).toHaveAttribute("height", "32");
+    expect(screen.getByRole("img", { name: "Anthony Edwards" })).toHaveAttribute("width", "36");
+    expect(screen.getByRole("img", { name: "Anthony Edwards" })).toHaveAttribute("height", "36");
 
     rerender(<PlayerAvatar fullName="Anthony Edwards" nbaPersonId={1630162} size="lg" />);
-    expect(screen.getByRole("img", { name: "Anthony Edwards" })).toHaveAttribute("width", "96");
-    expect(screen.getByRole("img", { name: "Anthony Edwards" })).toHaveAttribute("height", "96");
+    expect(screen.getByRole("img", { name: "Anthony Edwards" })).toHaveAttribute("width", "72");
+    expect(screen.getByRole("img", { name: "Anthony Edwards" })).toHaveAttribute("height", "72");
   });
 
   it("shows initials (no img element) when nbaPersonId is null", () => {
@@ -49,22 +49,24 @@ describe("PlayerAvatar", () => {
     expect(screen.getByText("Z")).toBeInTheDocument();
   });
 
-  it("borders the image with the team's primary color", () => {
+  it("borders the image's wrapper with the team's primary color", () => {
     render(
       <PlayerAvatar fullName="Anthony Edwards" nbaPersonId={1630162} size="sm" teamAbbr="MIN" />,
     );
 
-    // Minnesota Timberwolves primary, same source as TeamChip
-    expect(screen.getByRole("img", { name: "Anthony Edwards" })).toHaveStyle({
-      borderColor: "#0C2340",
-    });
+    // The stripe lives on the wrapper, never the img — a border on the img
+    // itself would skew its box off the width/height attributes.
+    // Minnesota Timberwolves primary, same source as TeamChip.
+    const image = screen.getByRole("img", { name: "Anthony Edwards" });
+    expect(image.parentElement).toHaveStyle({ borderLeftColor: "#0C2340" });
+    expect(image).not.toHaveStyle({ borderLeftColor: "#0C2340" });
   });
 
   it("borders the initials fallback with the team's primary color", () => {
     render(<PlayerAvatar fullName="Anthony Edwards" nbaPersonId={null} size="sm" teamAbbr="MIN" />);
 
     expect(screen.getByRole("img", { name: "Anthony Edwards" })).toHaveStyle({
-      borderColor: "#0C2340",
+      borderLeftColor: "#0C2340",
     });
   });
 

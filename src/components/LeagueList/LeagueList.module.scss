@@ -19,7 +19,11 @@
 }
 
 .create {
-  @include retro-button;
+  @include keycap;
+
+  &:active:not(:disabled) {
+    @include keycap-press;
+  }
 }
 
 .capNotice {
@@ -83,10 +87,31 @@
   white-space: nowrap;
 }
 
-.meta {
+// Fact grid across the card's bottom (spec §10): Teams, Roster slots,
+// Replacement rank, Scoring.
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: var(--space-2) var(--space-3);
   margin: 0;
-  color: var(--color-text-muted);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.fact {
+  display: grid;
+  gap: 2px;
+}
+
+.factLabel {
+  @include micro-label;
+}
+
+.factValue {
+  margin: 0;
+  font-family: var(--font-mono);
   font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
 }
 
 .actions {
@@ -96,16 +121,14 @@
 }
 
 .activeToggle {
-  @include retro-button;
+  @include keycap;
+
+  &[aria-pressed="true"]:not(:disabled) {
+    @include keycap-engaged;
+  }
 }
 
 .delete {
-  @include retro-button-dashed;
-  border-color: color-mix(in srgb, var(--color-accent-strong) 45%, var(--color-border));
-  color: var(--color-accent-strong);
-
-  &:hover:not(:disabled) {
-    border-color: var(--color-accent-strong);
-    color: var(--color-accent-strong);
-  }
+  @include keycap;
+  @include keycap-danger;
 }

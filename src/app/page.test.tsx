@@ -135,7 +135,17 @@ describe("Home", () => {
 
   it("shows the active league's most recent team", async () => {
     getProfile.mockResolvedValue({ username: "steve" });
-    getActiveLeague.mockResolvedValue({ id: "league-1", name: "Bench Mob League" });
+    getActiveLeague.mockResolvedValue({
+      id: "league-1",
+      name: "Bench Mob League",
+      slug: "bench-mob-league",
+      scoringType: "h2h_categories",
+      teamCount: 12,
+      rosterSlots: 13,
+      scoringConfig: { categories: ["pts", "reb", "ast"] },
+      createdAt: "2026-07-01T00:00:00.000Z",
+      updatedAt: "2026-07-01T00:00:00.000Z",
+    });
     getLeagueTeams.mockResolvedValue([
       {
         id: "a",
@@ -183,7 +193,8 @@ describe("Home", () => {
     await renderHome();
 
     expect(screen.getByRole("heading", { name: "Conference Standings" })).toBeInTheDocument();
-    expect(screen.getByText("BOS")).toBeInTheDocument();
+    // BOS appears in the ladder and again as the East-leader readout.
+    expect(screen.getAllByText("BOS").length).toBeGreaterThan(0);
     expect(screen.getByText("OKC")).toBeInTheDocument();
   });
 

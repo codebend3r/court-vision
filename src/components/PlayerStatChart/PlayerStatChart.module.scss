@@ -12,7 +12,11 @@
 }
 
 .chip {
-  @include retro-button;
+  @include keycap;
+
+  &[aria-pressed="true"]:not(:disabled) {
+    @include keycap-engaged;
+  }
 }
 
 .dot {
@@ -96,6 +100,13 @@
   font-size: var(--font-size-xs);
 }
 
+// Bulk companion ("all"/"none") rides along without competing with toggles.
 .chipAction {
-  @include retro-button-dashed;
+  @include keycap;
+  border-style: dashed;
+  color: var(--color-text-muted);
+
+  &:hover:not(:disabled) {
+    color: var(--color-text);
+  }
 }

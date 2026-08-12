@@ -6,11 +6,13 @@
 
 .list {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
   margin: 0;
-  padding: 0;
+  // Breathing room below so the lifted key's extrusion never clips against
+  // the content that follows the tab strip.
+  padding: 0 0 var(--space-1);
   list-style: none;
-  border-bottom: 1px solid var(--color-border);
 }
 
 .item {
@@ -18,14 +20,8 @@
 }
 
 .link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border-bottom: 2px solid transparent;
+  @include keycap;
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
 
   &:hover {
     color: var(--color-text);
@@ -33,12 +29,7 @@
   }
 
   &[data-active="true"] {
-    @include selected-accent;
-    color: var(--color-accent);
-  }
-
-  &:focus-visible {
-    @include control-focus-ring;
+    @include keycap-engaged;
   }
 }
 

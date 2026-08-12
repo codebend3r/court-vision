@@ -1,15 +1,29 @@
+@use "@/styles/mixins" as *;
+
 .shell {
   display: grid;
-  gap: var(--space-6);
-  padding: var(--space-8) var(--space-6);
-  justify-items: start;
   align-content: center;
+  justify-items: center;
   width: 100%;
-  max-width: 26rem;
-  justify-self: center;
+  padding: var(--space-8) var(--space-6);
+}
+
+// The sign-in card (spec §10): centred 24rem, retro extrusion, vertical logo
+// lockup above a muted uppercase label.
+.card {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: center;
+  width: 100%;
+  max-width: 24rem;
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--retro-4);
 }
 
 .title {
-  font-family: var(--font-display);
-  font-size: var(--font-size-xl);
+  @include micro-label;
+  font-weight: var(--font-weight-semibold);
 }

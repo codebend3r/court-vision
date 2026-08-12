@@ -1,6 +1,8 @@
 import Link from "next/link";
 
+import { PageAction, PageHeader } from "@/components/PageHeader/PageHeader";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
+import { ReadoutCard, ReadoutRow } from "@/components/ReadoutCard/ReadoutCard";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { getTeamRoster, getTeamStats } from "@/lib/teams/loader";
 import { teamBySlug } from "@/lib/teams/meta";
@@ -24,7 +26,11 @@ export default async function TeamPage({
   if (team === undefined) {
     return (
       <main className={styles.page}>
-        <h1>Team</h1>
+        <PageHeader
+          eyebrow="Research · Team"
+          title="Team"
+          actions={<PageAction href="/teams">All teams</PageAction>}
+        />
         <p className={styles.notice}>
           No team matches “{is}”. <Link href="/teams">Browse all teams</Link>.
         </p>
@@ -42,21 +48,37 @@ export default async function TeamPage({
 
   return (
     <main className={styles.page}>
+      <PageHeader
+        eyebrow="Research · Team"
+        title={team.name}
+        description="Where every team stat ranks across the league, and who is on the floor producing it."
+        actions={<PageAction href="/teams">All teams</PageAction>}
+      />
       <header className={styles.header}>
         <TeamChip team={team.abbr} />
-        <span className={styles.identity}>
-          <h1 className={styles.name}>{team.name}</h1>
-          <span className={styles.context}>
-            {team.division} Division · {team.conference}ern Conference
-            {!!season && <> · {season} regular season</>}
-          </span>
+        <span className={styles.context}>
+          {team.division} Division · {team.conference}ern Conference
+          {!!season && <> · {season} regular season</>}
         </span>
-        {!!teamStats && (
-          <span className={styles.record}>
-            {teamStats.wins}–{teamStats.losses}
-          </span>
-        )}
       </header>
+      {!!teamStats && (
+        <ReadoutRow>
+          <ReadoutCard
+            label="Record"
+            value={`${teamStats.wins}–${teamStats.losses}`}
+            note={`${(teamStats.winPct * 100).toFixed(1)}% win rate`}
+            sentiment={teamStats.winPct >= 0.5 ? "up" : "down"}
+          />
+          <ReadoutCard
+            label="Point diff"
+            value={teamStats.diff > 0 ? `+${teamStats.diff.toFixed(1)}` : teamStats.diff.toFixed(1)}
+            note="per game"
+            sentiment={teamStats.diff >= 0 ? "up" : "down"}
+          />
+          <ReadoutCard label="Assists/g" value={teamStats.apg.toFixed(1)} note="ball movement" />
+          <ReadoutCard label="Steals/g" value={teamStats.spg.toFixed(1)} note="defensive events" />
+        </ReadoutRow>
+      )}
       <section className={styles.content}>
         {roster.length > 0 && (
           <section className={styles.rosterCard}>
@@ -106,11 +128,26 @@ export default async function TeamPage({
                         <span className={styles.statDescription}>{meta.description}</span>
                       </td>
                       <td className={styles.numeric}>{meta.format(teamStats[meta.key])}</td>
-                      <td
-                        className={styles.numeric}
-                        data-top={!!rank && rank <= 5 ? "true" : undefined}
-                      >
-                        {rank === undefined ? "—" : `${ordinal(rank)} of ${leagueSize}`}
+                      <td className={styles.numeric}>
+                        {rank === undefined ? (
+                          "—"
+                        ) : (
+                          <span className={styles.rankCell}>
+                            <span
+                              className={styles.rankBar}
+                              aria-hidden="true"
+                              data-tier={rank <= 5 ? "top" : rank >= 20 ? "bottom" : "middle"}
+                            >
+                              <span
+                                className={styles.rankBarFill}
+                                style={{
+                                  width: `${((leagueSize + 1 - rank) / leagueSize) * 100}%`,
+                                }}
+                              />
+                            </span>
+                            {ordinal(rank)} of {leagueSize}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );

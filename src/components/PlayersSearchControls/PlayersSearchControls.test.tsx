@@ -89,22 +89,29 @@ describe("PlayersSearchControls", () => {
     expect(replace).toHaveBeenLastCalledWith("/players?range=last20&mode=total");
   });
 
-  it("writes minimums=0 to the URL when the qualifying minimums switch is turned off", () => {
+  it("writes minimums=0 to the URL when qualifying minimums is turned off", () => {
     render(<PlayersSearchControls {...defaultProps} />);
 
-    fireEvent.click(screen.getByRole("switch", { name: "Qualifying minimums" }));
+    fireEvent.click(screen.getByRole("button", { name: "Off" }));
 
     expect(replace).toHaveBeenCalledTimes(1);
     expect(replace).toHaveBeenCalledWith("/players?minimums=0");
   });
 
-  it("clears the minimums param when the switch is turned back on", () => {
+  it("clears the minimums param when turned back on", () => {
     render(<PlayersSearchControls {...defaultProps} minimums={false} />);
 
-    fireEvent.click(screen.getByRole("switch", { name: "Qualifying minimums" }));
+    fireEvent.click(screen.getByRole("button", { name: "On" }));
 
     expect(replace).toHaveBeenCalledTimes(1);
     expect(replace).toHaveBeenCalledWith("/players");
+  });
+
+  it("marks the active minimums keycap pressed", () => {
+    render(<PlayersSearchControls {...defaultProps} />);
+
+    expect(screen.getByRole("button", { name: "On" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Off" })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("cancels a pending debounce timer on unmount", () => {
@@ -158,18 +165,18 @@ describe("PlayersSearchControls", () => {
     expect(replace).toHaveBeenCalledWith("/players?range=last20");
   });
 
-  it("shows the stat display select and minimums switch on the regular tab", () => {
+  it("shows the stat display select and minimums keycaps on the regular tab", () => {
     render(<PlayersSearchControls {...defaultProps} tab="regular" />);
 
     expect(screen.getByLabelText("Stat display")).toBeInTheDocument();
-    expect(screen.getByRole("switch", { name: "Qualifying minimums" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Qualifying minimums" })).toBeInTheDocument();
   });
 
-  it("hides the stat display select and qualifying minimums switch on the advanced tab", () => {
+  it("hides the stat display select and qualifying minimums keycaps on the advanced tab", () => {
     render(<PlayersSearchControls {...defaultProps} tab="advanced" />);
 
     expect(screen.queryByLabelText("Stat display")).not.toBeInTheDocument();
-    expect(screen.queryByRole("switch", { name: "Qualifying minimums" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Qualifying minimums" })).not.toBeInTheDocument();
   });
 
   it("includes the tab in the search navigation href", () => {

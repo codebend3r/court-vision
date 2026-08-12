@@ -6,6 +6,7 @@ import { type FocusEvent, type KeyboardEvent, useEffect, useRef, useState } from
 
 import styles from "@/components/LeagueSwitcher/LeagueSwitcher.module.scss";
 import { setActiveLeague } from "@/lib/leagues/actions";
+import { formatLeagueMeta } from "@/lib/leagues/format";
 import { useActiveLeague, useLeagues, useLeaguesStore } from "@/lib/leagues/store";
 
 // Active-league picker in the side menu. Optimistic: the store flips first so
@@ -121,7 +122,9 @@ export function LeagueSwitcher() {
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
+        <span className={styles.dot} aria-hidden="true" />
         <span className={styles.label}>{active?.name ?? "Pick a league"}</span>
+        {!!active && <span className={styles.meta}>{formatLeagueMeta({ league: active })}</span>}
       </button>
       {!!errorMessage && (
         <p role="alert" className={styles.error}>

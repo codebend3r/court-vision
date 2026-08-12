@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { HomeStandingsPanel } from "@/components/HomeStandingsPanel/HomeStandingsPanel";
+import { PageAction, PageHeader } from "@/components/PageHeader/PageHeader";
+import { ReadoutCard, ReadoutRow } from "@/components/ReadoutCard/ReadoutCard";
 import { HomeStarredPanel } from "@/components/HomeStarredPanel/HomeStarredPanel";
 import { HomeTeamPanel } from "@/components/HomeTeamPanel/HomeTeamPanel";
 import { WatchlistTrendChart } from "@/components/WatchlistTrendChart/WatchlistTrendChart";
@@ -8,7 +10,8 @@ import { getProfile } from "@/lib/auth/session";
 import { getActiveLeague } from "@/lib/leagues/queries";
 import { getLeagueTeams } from "@/lib/leagues/teamQueries";
 import { getConferenceStandings } from "@/lib/standings/loader";
-import { HOMEPAGE_WATCHLIST_LIMIT } from "@/lib/watchlist/constants";
+import { formatLeagueMeta } from "@/lib/leagues/format";
+import { HOMEPAGE_WATCHLIST_LIMIT, MAX_WATCHLIST } from "@/lib/watchlist/constants";
 import { getWatchlistCount, getWatchlistPlayers } from "@/lib/watchlist/queries";
 import { ROLLING_WINDOW_GAMES } from "@/lib/watchlist/trend";
 import { getGTrendSeries, getZTrendSeries } from "@/lib/watchlist/trendLoader";
@@ -32,6 +35,11 @@ export default async function Home() {
     getActiveLeague(),
   ]);
   const teams = league === null ? [] : await getLeagueTeams({ leagueId: league.id });
+  // Readout figures: first roster's fill and the East ladder's leader.
+  const firstTeam = teams[0] ?? null;
+  const filledSlots =
+    firstTeam === null ? 0 : firstTeam.slots.filter((slot) => slot.player !== null).length;
+  const eastLeader = standings?.east[0] ?? null;
   // Both charts track exactly the players the panel above lists.
   const [zSeries, gSeries] = await Promise.all([
     getZTrendSeries({ players }),
@@ -40,8 +48,35 @@ export default async function Home() {
 
   return (
     <main className={styles.page}>
-      <h1 className={styles.title}>Court Vision</h1>
-      <p className={styles.subtitle}>Your fantasy command center.</p>
+      <PageHeader
+        eyebrow="Dashboard"
+        title="Command centre"
+        description="Everything you follow, in one read: watchlist form, your roster, and where the league actually stands."
+        actions={<PageAction href="/players">Open players</PageAction>}
+      />
+      <ReadoutRow>
+        <ReadoutCard label="Watchlist" value={count} note={`of ${MAX_WATCHLIST} slots`} />
+        <ReadoutCard
+          label="Roster"
+          value={firstTeam === null ? "—" : `${filledSlots}/${firstTeam.slots.length}`}
+          note={firstTeam?.name ?? "no teams yet"}
+          sentiment={
+            firstTeam !== null && filledSlots === firstTeam.slots.length ? "up" : "neutral"
+          }
+        />
+        <ReadoutCard
+          label="League"
+          value={league === null ? "—" : formatLeagueMeta({ league }).split(" · ")[0]}
+          note={league?.name ?? "create a league"}
+        />
+        <ReadoutCard
+          label="East leader"
+          value={eastLeader === null ? "—" : eastLeader.abbreviation}
+          note={
+            eastLeader === null ? "standings pending" : `${eastLeader.wins}–${eastLeader.losses}`
+          }
+        />
+      </ReadoutRow>
       <div className={styles.dashboardGrid}>
         <HomeStarredPanel players={players} count={count} className={styles.panelCardLeft} />
         <HomeTeamPanel teams={teams} className={styles.panelCardRight} />

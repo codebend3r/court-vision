@@ -1,0 +1,2212 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="./support.js"></script>
+  </head>
+  <body>
+    <x-dc>
+      <helmet>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+        />
+        <link
+          rel="stylesheet"
+          href="_ds/court-vision-9fa09c9e-0ef3-49b5-8342-277b4eede6a0/_ds_bundle.css"
+        />
+        <link
+          rel="stylesheet"
+          href="_ds/court-vision-9fa09c9e-0ef3-49b5-8342-277b4eede6a0/styles.css"
+        />
+        <script src="_ds/court-vision-9fa09c9e-0ef3-49b5-8342-277b4eede6a0/_ds_bundle.js"></script>
+        <style>
+          html,
+          body {
+            margin: 0;
+            padding: 0;
+          }
+          *,
+          *::before,
+          *::after {
+            box-sizing: border-box;
+          }
+          body {
+            background: var(--color-bg);
+            color: var(--color-text);
+            font-family: var(--font-sans);
+            line-height: 1.5;
+          }
+          a {
+            color: var(--color-accent);
+            text-decoration: none;
+          }
+          a:hover {
+            text-decoration: underline;
+          }
+          [data-cv] h1,
+          [data-cv] h2,
+          [data-cv] h3 {
+            text-shadow: none;
+          }
+
+          [data-cv] {
+            --retro-1: 1px 1px 0 var(--color-retro-shadow);
+            --retro-2: 1px 1px 0 var(--color-retro-shadow), 2px 2px 0 var(--color-retro-shadow);
+            --retro-4:
+              1px 1px 0 var(--color-retro-shadow), 2px 2px 0 var(--color-retro-shadow),
+              3px 3px 0 var(--color-retro-shadow), 4px 4px 0 var(--color-retro-shadow);
+            --extrude:
+              0.03em 0.03em var(--color-retro-shadow), 0.06em 0.06em var(--color-retro-shadow),
+              0.09em 0.09em var(--color-retro-shadow), 0.12em 0.12em var(--color-retro-shadow),
+              0.15em 0.15em var(--color-retro-shadow), 0.18em 0.18em var(--color-retro-shadow);
+            --extrude-svg: drop-shadow(1px 1px 0 var(--color-retro-shadow))
+              drop-shadow(1px 1px 0 var(--color-retro-shadow))
+              drop-shadow(1px 1px 0 var(--color-retro-shadow))
+              drop-shadow(1px 1px 0 var(--color-retro-shadow))
+              drop-shadow(1px 1px 0 var(--color-retro-shadow))
+              drop-shadow(1px 1px 0 var(--color-retro-shadow));
+            --extrude-svg-sm: drop-shadow(1px 1px 0 var(--color-retro-shadow))
+              drop-shadow(1px 1px 0 var(--color-retro-shadow))
+              drop-shadow(1px 1px 0 var(--color-retro-shadow));
+          }
+
+          [data-cv-theme="light"] {
+            --color-bg: #f7f8fc;
+            --color-surface: #fff;
+            --color-border: #dfe3f0;
+            --color-text: #171b2e;
+            --color-text-muted: #5a6280;
+            --color-accent: #0b749a;
+            --color-accent-strong: #d6206a;
+            --color-highlight: #b35c00;
+            --color-win: #0f8a4f;
+            --color-loss: #c9283e;
+            --color-control-bg: #fff;
+            --color-accent-purple: #7b3fb0;
+            --color-retro-shadow: #bfe0ea;
+            color-scheme: light;
+          }
+          [data-cv-theme="contrast"] {
+            --color-bg: #000;
+            --color-surface: #0b0e1a;
+            --color-border: #7d86b4;
+            --color-text: #fff;
+            --color-text-muted: #cfd4ec;
+            --color-accent: #6fe3ff;
+            --color-accent-strong: #ff74ae;
+            --color-highlight: #ffc978;
+            --color-win: #68f5b0;
+            --color-loss: #ff939c;
+            --color-control-bg: #000;
+            --color-accent-purple: #c3aeff;
+            --color-retro-shadow: #1d5b6d;
+            color-scheme: dark;
+          }
+          [data-cv-theme="cvd"] {
+            --color-bg: #0f1220;
+            --color-surface: #191d2e;
+            --color-border: #2e3650;
+            --color-text: #eef1f8;
+            --color-text-muted: #98a1bd;
+            --color-accent: #5aa9ff;
+            --color-accent-strong: #ffb02e;
+            --color-highlight: #e4e8f4;
+            --color-win: #5aa9ff;
+            --color-loss: #ff9d2e;
+            --color-control-bg: #0b0e1a;
+            --color-accent-purple: #8f9bff;
+            --color-retro-shadow: #26507f;
+            color-scheme: dark;
+          }
+          [data-cv-theme="crt"] {
+            --color-bg: #120d05;
+            --color-surface: #1d1409;
+            --color-border: #402f14;
+            --color-text: #ffd694;
+            --color-text-muted: #b58c50;
+            --color-accent: #ffa726;
+            --color-accent-strong: #ff7043;
+            --color-highlight: #ffd95e;
+            --color-win: #bcd63f;
+            --color-loss: #ff7043;
+            --color-control-bg: #0b0703;
+            --color-accent-purple: #e0a94a;
+            --color-retro-shadow: #6a4413;
+            color-scheme: dark;
+          }
+          [data-cv-theme="team"] {
+            --color-bg: #14161c;
+            --color-surface: #1e222b;
+            --color-border: #333844;
+            --color-text: #f1f2f6;
+            --color-text-muted: #9aa0b2;
+            --color-accent: #ff3b5c;
+            --color-accent-strong: #ffd166;
+            --color-highlight: #ffd166;
+            --color-win: #4cc98a;
+            --color-loss: #ff6b6b;
+            --color-control-bg: #0e1015;
+            --color-accent-purple: #a08cff;
+            --color-retro-shadow: #6b1c2c;
+            color-scheme: dark;
+          }
+        </style>
+      </helmet>
+      <div
+        data-cv
+        data-cv-theme="{{ theme }}"
+        style="
+          display: grid;
+          gap: var(--space-6);
+          padding: var(--space-8);
+          background: var(--color-bg);
+          color: var(--color-text);
+          font-family: var(--font-sans);
+          min-height: 100vh;
+        "
+      >
+        <header
+          style="
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: end;
+            gap: var(--space-4);
+          "
+        >
+          <div style="display: grid; gap: var(--space-2)">
+            <span
+              style="
+                color: var(--color-accent);
+                font-size: var(--font-size-xs);
+                text-transform: uppercase;
+                letter-spacing: var(--tracking-wide);
+                font-weight: var(--font-weight-semibold);
+              "
+              >Identity · from <a href="#">2a</a></span
+            >
+            <h1
+              style="
+                margin: 0;
+                font-family: var(--font-display);
+                font-size: var(--font-size-xl);
+                font-weight: var(--font-weight-bold);
+                line-height: 1.1;
+                letter-spacing: var(--tracking-tight);
+                text-shadow: var(--extrude);
+              "
+            >
+              Icon set
+            </h1>
+            <p
+              style="
+                margin: 0;
+                max-width: 74ch;
+                color: var(--color-text-muted);
+                font-size: var(--font-size-sm);
+                text-wrap: pretty;
+              "
+            >
+              The court plate as the product icon at every size it ships in, and a UI family drawn
+              on the same 48-unit grid with the same 3.5 stroke, so a nav icon and the logo look
+              like they came from one hand.
+            </p>
+          </div>
+          <div
+            role="group"
+            aria-label="Theme"
+            style="
+              display: grid;
+              grid-auto-flow: column;
+              align-items: center;
+              gap: var(--space-1);
+              padding: var(--space-1);
+              border: 1px solid var(--color-border);
+              border-radius: var(--radius-sm);
+              background: var(--color-surface);
+            "
+          >
+            <sc-for list="{{ themeKeys }}" as="t" hint-placeholder-count="6">
+              <button
+                type="button"
+                onClick="{{ t.onClick }}"
+                aria-pressed="{{ t.pressed }}"
+                aria-label="{{ t.label }}"
+                title="{{ t.label }}"
+                style="{{ t.style }}"
+              ></button>
+            </sc-for>
+          </div>
+        </header>
+
+        <div
+          style="
+            height: 2px;
+            background: var(--color-accent);
+            box-shadow: 0 2px 0 var(--color-retro-shadow);
+          "
+        ></div>
+
+        <!-- ── Product icon: size tiers ─────────────────────────── -->
+        <section
+          style="
+            display: grid;
+            gap: var(--space-4);
+            padding: var(--space-6);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-surface);
+          "
+        >
+          <div
+            style="
+              display: grid;
+              gap: var(--space-2);
+              padding-bottom: var(--space-3);
+              border-bottom: 1px solid var(--color-border);
+            "
+          >
+            <h2
+              style="
+                margin: 0;
+                font-family: var(--font-display);
+                font-size: var(--font-size-sm);
+                font-weight: var(--font-weight-bold);
+                text-transform: uppercase;
+                letter-spacing: var(--tracking-wide);
+              "
+            >
+              Product icon — three detail tiers
+            </h2>
+            <p
+              style="
+                margin: 0;
+                max-width: 74ch;
+                color: var(--color-text-muted);
+                font-size: var(--font-size-sm);
+                text-wrap: pretty;
+              "
+            >
+              The plate does not simply scale down. Below 32px the sideline arcs close up into mush,
+              and below 20px the circle fills in — so detail is dropped on purpose at two thresholds
+              rather than left to the renderer.
+            </p>
+          </div>
+
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+              gap: var(--space-4);
+            "
+          >
+            <div
+              style="
+                display: grid;
+                align-content: start;
+                gap: var(--space-3);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  color: var(--color-accent);
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  font-weight: var(--font-weight-semibold);
+                  text-transform: uppercase;
+                  letter-spacing: var(--tracking-wide);
+                "
+                >Tier 1 · 32px and up</span
+              >
+              <div style="display: grid; place-items: center; padding-block: var(--space-4)">
+                <svg
+                  viewBox="0 0 48 48"
+                  width="112"
+                  height="112"
+                  fill="none"
+                  style="display: block; filter: var(--extrude-svg)"
+                >
+                  <rect x="3" y="8" width="42" height="32" rx="3" fill="var(--color-accent)"></rect>
+                  <line
+                    x1="24"
+                    y1="8"
+                    x2="24"
+                    y2="40"
+                    stroke="var(--color-bg)"
+                    stroke-width="3"
+                  ></line>
+                  <circle
+                    cx="24"
+                    cy="24"
+                    r="7"
+                    stroke="var(--color-bg)"
+                    stroke-width="3"
+                    fill="none"
+                  ></circle>
+                  <path
+                    d="M3 15 A 12 9 0 0 1 3 33"
+                    stroke="var(--color-bg)"
+                    stroke-width="3"
+                    fill="none"
+                  ></path>
+                  <path
+                    d="M45 15 A 12 9 0 0 0 45 33"
+                    stroke="var(--color-bg)"
+                    stroke-width="3"
+                    fill="none"
+                  ></path>
+                </svg>
+              </div>
+              <span style="color: var(--color-text-muted); font-size: var(--font-size-xs)"
+                >Full floor: centre line, tip-off circle, both sideline arcs.</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                align-content: start;
+                gap: var(--space-3);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  color: var(--color-accent);
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  font-weight: var(--font-weight-semibold);
+                  text-transform: uppercase;
+                  letter-spacing: var(--tracking-wide);
+                "
+                >Tier 2 · 20–31px</span
+              >
+              <div style="display: grid; place-items: center; padding-block: var(--space-4)">
+                <svg
+                  viewBox="0 0 48 48"
+                  width="112"
+                  height="112"
+                  fill="none"
+                  style="display: block; filter: var(--extrude-svg)"
+                >
+                  <rect x="3" y="8" width="42" height="32" rx="3" fill="var(--color-accent)"></rect>
+                  <line
+                    x1="24"
+                    y1="8"
+                    x2="24"
+                    y2="40"
+                    stroke="var(--color-bg)"
+                    stroke-width="4"
+                  ></line>
+                  <circle
+                    cx="24"
+                    cy="24"
+                    r="8"
+                    stroke="var(--color-bg)"
+                    stroke-width="4"
+                    fill="none"
+                  ></circle>
+                </svg>
+              </div>
+              <span style="color: var(--color-text-muted); font-size: var(--font-size-xs)"
+                >Arcs dropped. Line and circle thicken to 4 so they hold at small sizes.</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                align-content: start;
+                gap: var(--space-3);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  color: var(--color-accent);
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  font-weight: var(--font-weight-semibold);
+                  text-transform: uppercase;
+                  letter-spacing: var(--tracking-wide);
+                "
+                >Tier 3 · under 20px</span
+              >
+              <div style="display: grid; place-items: center; padding-block: var(--space-4)">
+                <svg
+                  viewBox="0 0 48 48"
+                  width="112"
+                  height="112"
+                  fill="none"
+                  style="display: block; filter: var(--extrude-svg)"
+                >
+                  <rect x="3" y="8" width="42" height="32" rx="3" fill="var(--color-accent)"></rect>
+                  <line
+                    x1="24"
+                    y1="8"
+                    x2="24"
+                    y2="40"
+                    stroke="var(--color-bg)"
+                    stroke-width="6"
+                  ></line>
+                </svg>
+              </div>
+              <span style="color: var(--color-text-muted); font-size: var(--font-size-xs)"
+                >Plate and centre line only — still unmistakably a court at 16px.</span
+              >
+            </div>
+          </div>
+
+          <div
+            style="
+              display: grid;
+              gap: var(--space-3);
+              padding: var(--space-4);
+              border: 1px solid var(--color-border);
+              border-radius: var(--radius-sm);
+              background: var(--color-bg);
+            "
+          >
+            <span
+              style="
+                color: var(--color-text-muted);
+                font-size: var(--font-size-xs);
+                text-transform: uppercase;
+                letter-spacing: var(--tracking-wide);
+              "
+              >Actual size</span
+            >
+            <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-6)">
+              <sc-for list="{{ iconSizes }}" as="s" hint-placeholder-count="6">
+                <span style="display: grid; justify-items: center; gap: var(--space-2)">
+                  <span style="display: grid; place-items: center; height: 64px">
+                    <svg
+                      viewBox="0 0 48 48"
+                      width="{{ s.px }}"
+                      height="{{ s.px }}"
+                      fill="none"
+                      style="display: block"
+                    >
+                      <rect
+                        x="3"
+                        y="8"
+                        width="42"
+                        height="32"
+                        rx="3"
+                        fill="var(--color-accent)"
+                      ></rect>
+                      <line
+                        x1="24"
+                        y1="8"
+                        x2="24"
+                        y2="40"
+                        stroke="var(--color-bg)"
+                        stroke-width="{{ s.line }}"
+                      ></line>
+                      <sc-if value="{{ s.showCircle }}" hint-placeholder-val="{{ true }}">
+                        <circle
+                          cx="24"
+                          cy="24"
+                          r="{{ s.circleR }}"
+                          stroke="var(--color-bg)"
+                          stroke-width="{{ s.line }}"
+                          fill="none"
+                        ></circle>
+                      </sc-if>
+                      <sc-if value="{{ s.showArcs }}" hint-placeholder-val="{{ false }}">
+                        <path
+                          d="M3 15 A 12 9 0 0 1 3 33"
+                          stroke="var(--color-bg)"
+                          stroke-width="3"
+                          fill="none"
+                        ></path>
+                      </sc-if>
+                      <sc-if value="{{ s.showArcs }}" hint-placeholder-val="{{ false }}">
+                        <path
+                          d="M45 15 A 12 9 0 0 0 45 33"
+                          stroke="var(--color-bg)"
+                          stroke-width="3"
+                          fill="none"
+                        ></path>
+                      </sc-if>
+                    </svg>
+                  </span>
+                  <span
+                    style="
+                      font-family: var(--font-mono);
+                      font-size: var(--font-size-xs);
+                      color: var(--color-text-muted);
+                    "
+                    >{{ s.label }}</span
+                  >
+                </span>
+              </sc-for>
+            </div>
+          </div>
+
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+              gap: var(--space-3);
+            "
+          >
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <svg viewBox="0 0 48 48" width="64" height="64" fill="none" style="display: block">
+                <rect x="0" y="0" width="48" height="48" rx="10" fill="var(--color-accent)"></rect>
+                <rect
+                  x="7"
+                  y="13"
+                  width="34"
+                  height="22"
+                  rx="2"
+                  stroke="var(--color-bg)"
+                  stroke-width="3"
+                ></rect>
+                <line
+                  x1="24"
+                  y1="13"
+                  x2="24"
+                  y2="35"
+                  stroke="var(--color-bg)"
+                  stroke-width="3"
+                ></line>
+                <circle
+                  cx="24"
+                  cy="24"
+                  r="5"
+                  stroke="var(--color-bg)"
+                  stroke-width="3"
+                  fill="none"
+                ></circle>
+              </svg>
+              <span
+                style="
+                  color: var(--color-text-muted);
+                  font-size: var(--font-size-xs);
+                  text-align: center;
+                "
+                >App tile — plate inverts to an outline inside the accent field</span
+              >
+            </div>
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <svg viewBox="0 0 48 48" width="64" height="64" fill="none" style="display: block">
+                <circle cx="24" cy="24" r="24" fill="var(--color-surface)"></circle>
+                <rect x="7" y="15" width="34" height="18" rx="2" fill="var(--color-accent)"></rect>
+                <line
+                  x1="24"
+                  y1="15"
+                  x2="24"
+                  y2="33"
+                  stroke="var(--color-surface)"
+                  stroke-width="3"
+                ></line>
+                <circle
+                  cx="24"
+                  cy="24"
+                  r="5"
+                  stroke="var(--color-surface)"
+                  stroke-width="3"
+                  fill="none"
+                ></circle>
+              </svg>
+              <span
+                style="
+                  color: var(--color-text-muted);
+                  font-size: var(--font-size-xs);
+                  text-align: center;
+                "
+                >Round avatar — plate centred in the safe area</span
+              >
+            </div>
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <svg viewBox="0 0 48 48" width="64" height="64" fill="none" style="display: block">
+                <rect x="3" y="8" width="42" height="32" rx="3" fill="var(--color-text)"></rect>
+                <line
+                  x1="24"
+                  y1="8"
+                  x2="24"
+                  y2="40"
+                  stroke="var(--color-bg)"
+                  stroke-width="3"
+                ></line>
+                <circle
+                  cx="24"
+                  cy="24"
+                  r="7"
+                  stroke="var(--color-bg)"
+                  stroke-width="3"
+                  fill="none"
+                ></circle>
+              </svg>
+              <span
+                style="
+                  color: var(--color-text-muted);
+                  font-size: var(--font-size-xs);
+                  text-align: center;
+                "
+                >Monochrome — for print, watermarks, and single-colour placements</span
+              >
+            </div>
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px dashed var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <svg viewBox="0 0 72 72" width="64" height="64" fill="none" style="display: block">
+                <rect
+                  x="0.5"
+                  y="0.5"
+                  width="71"
+                  height="71"
+                  rx="4"
+                  stroke="var(--color-border)"
+                  stroke-dasharray="3 3"
+                ></rect>
+                <rect x="15" y="20" width="42" height="32" rx="3" fill="var(--color-accent)"></rect>
+                <line
+                  x1="36"
+                  y1="20"
+                  x2="36"
+                  y2="52"
+                  stroke="var(--color-bg)"
+                  stroke-width="3"
+                ></line>
+                <circle
+                  cx="36"
+                  cy="36"
+                  r="7"
+                  stroke="var(--color-bg)"
+                  stroke-width="3"
+                  fill="none"
+                ></circle>
+              </svg>
+              <span
+                style="
+                  color: var(--color-text-muted);
+                  font-size: var(--font-size-xs);
+                  text-align: center;
+                "
+                >Clearspace — half the plate height on every side</span
+              >
+            </div>
+          </div>
+        </section>
+
+        <!-- ── UI icon family ───────────────────────────────────── -->
+        <section
+          style="
+            display: grid;
+            gap: var(--space-4);
+            padding: var(--space-6);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-surface);
+          "
+        >
+          <div
+            style="
+              display: grid;
+              gap: var(--space-2);
+              padding-bottom: var(--space-3);
+              border-bottom: 1px solid var(--color-border);
+            "
+          >
+            <h2
+              style="
+                margin: 0;
+                font-family: var(--font-display);
+                font-size: var(--font-size-sm);
+                font-weight: var(--font-weight-bold);
+                text-transform: uppercase;
+                letter-spacing: var(--tracking-wide);
+              "
+            >
+              UI family
+            </h2>
+            <p
+              style="
+                margin: 0;
+                max-width: 74ch;
+                color: var(--color-text-muted);
+                font-size: var(--font-size-sm);
+                text-wrap: pretty;
+              "
+            >
+              48-unit grid, 3.5 stroke, round caps, one accent detail per icon at most. Each is
+              shown at 32px and again at 18px — the size the nav rail and table controls actually
+              use.
+            </p>
+          </div>
+
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+              gap: var(--space-3);
+            "
+          >
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M7 21 L24 8 L41 21 V41 H7 Z"></path>
+                  <path d="M19 41 V28 H29 V41" stroke="var(--color-accent)"></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M7 21 L24 8 L41 21 V41 H7 Z"></path>
+                  <path d="M19 41 V28 H29 V41" stroke="var(--color-accent)"></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >home</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <circle cx="19" cy="16" r="7"></circle>
+                  <path d="M6 41 v-3 a13 13 0 0 1 26 0 v3"></path>
+                  <path
+                    d="M34 12 a6 6 0 0 1 0 12 M38 41 v-3 a11 11 0 0 0-5-9"
+                    stroke="var(--color-accent)"
+                  ></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <circle cx="19" cy="16" r="7"></circle>
+                  <path d="M6 41 v-3 a13 13 0 0 1 26 0 v3"></path>
+                  <path
+                    d="M34 12 a6 6 0 0 1 0 12 M38 41 v-3 a11 11 0 0 0-5-9"
+                    stroke="var(--color-accent)"
+                  ></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >players</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path
+                    d="M17 8 L24 12 L31 8 L41 14 L36 23 L32 21 V41 H16 V21 L12 23 L7 14 Z"
+                  ></path>
+                  <path d="M24 21 v10" stroke="var(--color-accent)"></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path
+                    d="M17 8 L24 12 L31 8 L41 14 L36 23 L32 21 V41 H16 V21 L12 23 L7 14 Z"
+                  ></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >teams</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <rect x="9" y="9" width="30" height="33" rx="3"></rect>
+                  <path d="M18 9 V6 h12 v3" stroke="var(--color-accent)"></path>
+                  <path d="M17 22 h14 M17 31 h9"></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <rect x="9" y="9" width="30" height="33" rx="3"></rect>
+                  <path d="M18 9 V6 h12 v3" stroke="var(--color-accent)"></path>
+                  <path d="M17 22 h14 M17 31 h9"></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >my-teams</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M15 7 h18 v11 a9 9 0 0 1-18 0 Z"></path>
+                  <path d="M15 10 H9 v4 a7 7 0 0 0 6 6 M33 10 h6 v4 a7 7 0 0 1-6 6"></path>
+                  <path d="M24 27 v7 M17 41 h14" stroke="var(--color-accent)"></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M15 7 h18 v11 a9 9 0 0 1-18 0 Z"></path>
+                  <path d="M24 27 v7 M17 41 h14" stroke="var(--color-accent)"></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >leagues</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-highlight)"
+                  stroke-width="3.5"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path
+                    d="M24 6 L29.5 18 L42 19.5 L33 28 L35.5 41 L24 34.5 L12.5 41 L15 28 L6 19.5 L18.5 18 Z"
+                    fill="var(--color-highlight)"
+                  ></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-highlight)"
+                  stroke-width="4"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path
+                    d="M24 6 L29.5 18 L42 19.5 L33 28 L35.5 41 L24 34.5 L12.5 41 L15 28 L6 19.5 L18.5 18 Z"
+                    fill="var(--color-highlight)"
+                  ></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >starred</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path
+                    d="M24 6 L29.5 18 L42 19.5 L33 28 L35.5 41 L24 34.5 L12.5 41 L15 28 L6 19.5 L18.5 18 Z"
+                  ></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path
+                    d="M24 6 L29.5 18 L42 19.5 L33 28 L35.5 41 L24 34.5 L12.5 41 L15 28 L6 19.5 L18.5 18 Z"
+                  ></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >star-empty</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  style="display: block"
+                >
+                  <path d="M9 14 h30 M9 24 h30 M9 34 h30"></path>
+                  <circle
+                    cx="19"
+                    cy="14"
+                    r="4"
+                    fill="var(--color-bg)"
+                    stroke="var(--color-accent)"
+                  ></circle>
+                  <circle
+                    cx="30"
+                    cy="24"
+                    r="4"
+                    fill="var(--color-bg)"
+                    stroke="var(--color-accent)"
+                  ></circle>
+                  <circle
+                    cx="16"
+                    cy="34"
+                    r="4"
+                    fill="var(--color-bg)"
+                    stroke="var(--color-accent)"
+                  ></circle>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  style="display: block"
+                >
+                  <path d="M9 14 h30 M9 24 h30 M9 34 h30"></path>
+                  <circle
+                    cx="19"
+                    cy="14"
+                    r="5"
+                    fill="var(--color-bg)"
+                    stroke="var(--color-accent)"
+                  ></circle>
+                  <circle
+                    cx="30"
+                    cy="24"
+                    r="5"
+                    fill="var(--color-bg)"
+                    stroke="var(--color-accent)"
+                  ></circle>
+                  <circle
+                    cx="16"
+                    cy="34"
+                    r="5"
+                    fill="var(--color-bg)"
+                    stroke="var(--color-accent)"
+                  ></circle>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >settings</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  style="display: block"
+                >
+                  <circle cx="21" cy="21" r="13"></circle>
+                  <path d="M31 31 L42 42" stroke="var(--color-accent)"></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  style="display: block"
+                >
+                  <circle cx="21" cy="21" r="13"></circle>
+                  <path d="M31 31 L42 42" stroke="var(--color-accent)"></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >search</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M7 10 H41 L28 25 V40 L20 44 V25 Z"></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M7 10 H41 L28 25 V40 L20 44 V25 Z"></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >filter</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M15 40 V9 M15 9 L8 17 M15 9 L22 17"></path>
+                  <path
+                    d="M33 9 V40 M33 40 L26 32 M33 40 L40 32"
+                    stroke="var(--color-accent)"
+                  ></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M15 40 V9 M15 9 L8 17 M15 9 L22 17"></path>
+                  <path
+                    d="M33 9 V40 M33 40 L26 32 M33 40 L40 32"
+                    stroke="var(--color-accent)"
+                  ></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >sort</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M24 6 V28 M24 6 L16 14 M24 6 L32 14" stroke="var(--color-accent)"></path>
+                  <path d="M9 30 V41 H39 V30"></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M24 6 V28 M24 6 L16 14 M24 6 L32 14" stroke="var(--color-accent)"></path>
+                  <path d="M9 30 V41 H39 V30"></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >export</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M8 40 H42"></path>
+                  <path d="M15 40 V26"></path>
+                  <path d="M24 40 V16"></path>
+                  <path d="M33 40 V8" stroke="var(--color-accent)"></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M8 40 H42"></path>
+                  <path d="M15 40 V26"></path>
+                  <path d="M24 40 V16"></path>
+                  <path d="M33 40 V8" stroke="var(--color-accent)"></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >compare</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M8 8 V40 H42"></path>
+                  <path d="M14 32 L22 22 L29 27 L40 12" stroke="var(--color-accent)"></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M8 8 V40 H42"></path>
+                  <path d="M14 32 L22 22 L29 27 L40 12" stroke="var(--color-accent)"></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >trend</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <circle cx="24" cy="24" r="17"></circle>
+                  <path d="M24 22 v11" stroke="var(--color-accent)"></path>
+                  <path d="M24 15 v0.5" stroke="var(--color-accent)" stroke-width="5"></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <circle cx="24" cy="24" r="17"></circle>
+                  <path d="M24 22 v11" stroke="var(--color-accent)"></path>
+                  <path d="M24 15 v0.5" stroke="var(--color-accent)" stroke-width="6"></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >info</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <rect x="7" y="7" width="34" height="34" rx="5"></rect>
+                  <path d="M24 16 V32 M16 24 H32" stroke="var(--color-accent)"></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <rect x="7" y="7" width="34" height="34" rx="5"></rect>
+                  <path d="M24 16 V32 M16 24 H32" stroke="var(--color-accent)"></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >add</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M8 13 H40" stroke="var(--color-loss)"></path>
+                  <path d="M18 13 V8 h12 v5"></path>
+                  <path d="M12 13 L14 41 h20 l2-28"></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M8 13 H40" stroke="var(--color-loss)"></path>
+                  <path d="M18 13 V8 h12 v5"></path>
+                  <path d="M12 13 L14 41 h20 l2-28"></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >delete</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M19 10 L33 24 L19 38"></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <path d="M19 10 L33 24 L19 38"></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >chevron</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  style="display: block"
+                >
+                  <circle cx="24" cy="24" r="17"></circle>
+                  <path d="M7 24 H41 M24 7 V41"></path>
+                  <path d="M13 11 C 20 17, 20 31, 13 37 M35 11 C 28 17, 28 31, 35 37"></path>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  style="display: block"
+                >
+                  <circle cx="24" cy="24" r="17"></circle>
+                  <path d="M7 24 H41 M24 7 V41"></path>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >ball</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                justify-items: center;
+                gap: var(--space-2);
+                padding: var(--space-4);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <span
+                style="
+                  display: grid;
+                  grid-auto-flow: column;
+                  align-items: center;
+                  gap: var(--space-3);
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  width="32"
+                  height="32"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="3.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <rect x="5" y="10" width="38" height="28" rx="3"></rect>
+                  <path d="M24 10 V38"></path>
+                  <circle cx="24" cy="24" r="6" stroke="var(--color-accent)"></circle>
+                </svg>
+                <svg
+                  viewBox="0 0 48 48"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="var(--color-text)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="display: block"
+                >
+                  <rect x="5" y="10" width="38" height="28" rx="3"></rect>
+                  <path d="M24 10 V38"></path>
+                  <circle cx="24" cy="24" r="6" stroke="var(--color-accent)"></circle>
+                </svg>
+              </span>
+              <span
+                style="
+                  font-family: var(--font-mono);
+                  font-size: var(--font-size-xs);
+                  color: var(--color-text-muted);
+                "
+                >court</span
+              >
+            </div>
+          </div>
+        </section>
+
+        <!-- ── In context ───────────────────────────────────────── -->
+        <section
+          style="
+            display: grid;
+            gap: var(--space-4);
+            padding: var(--space-6);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-surface);
+          "
+        >
+          <div
+            style="
+              display: grid;
+              gap: var(--space-2);
+              padding-bottom: var(--space-3);
+              border-bottom: 1px solid var(--color-border);
+            "
+          >
+            <h2
+              style="
+                margin: 0;
+                font-family: var(--font-display);
+                font-size: var(--font-size-sm);
+                font-weight: var(--font-weight-bold);
+                text-transform: uppercase;
+                letter-spacing: var(--tracking-wide);
+              "
+            >
+              In the nav rail
+            </h2>
+            <p
+              style="
+                margin: 0;
+                max-width: 74ch;
+                color: var(--color-text-muted);
+                font-size: var(--font-size-sm);
+                text-wrap: pretty;
+              "
+            >
+              Dropped into the redesign's keycaps in place of the letter placeholders. Collapsed
+              state on the left, expanded on the right.
+            </p>
+          </div>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: auto auto;
+              justify-content: start;
+              gap: var(--space-6);
+            "
+          >
+            <div
+              style="
+                display: grid;
+                align-content: start;
+                gap: var(--space-2);
+                width: 60px;
+                padding: var(--space-3);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <sc-for list="{{ railIcons }}" as="n" hint-placeholder-count="6">
+                <span style="{{ n.capStyle }}">
+                  <svg
+                    viewBox="0 0 48 48"
+                    width="20"
+                    height="20"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    style="display: block"
+                  >
+                    <path d="{{ n.d }}"></path>
+                  </svg>
+                </span>
+              </sc-for>
+            </div>
+
+            <div
+              style="
+                display: grid;
+                align-content: start;
+                gap: var(--space-2);
+                width: 212px;
+                padding: var(--space-3);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-bg);
+              "
+            >
+              <sc-for list="{{ railIcons }}" as="n" hint-placeholder-count="6">
+                <span style="{{ n.rowStyle }}">
+                  <span style="{{ n.capStyle }}">
+                    <svg
+                      viewBox="0 0 48 48"
+                      width="20"
+                      height="20"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      style="display: block"
+                    >
+                      <path d="{{ n.d }}"></path>
+                    </svg>
+                  </span>
+                  <span
+                    style="
+                      white-space: nowrap;
+                      font-size: var(--font-size-sm);
+                      font-weight: var(--font-weight-medium);
+                    "
+                    >{{ n.label }}</span
+                  >
+                </span>
+              </sc-for>
+            </div>
+          </div>
+        </section>
+      </div>
+    </x-dc>
+    <script
+      type="text/x-dc"
+      data-dc-script
+      data-props='{"theme":{"editor":"enum","options":["dark","light","contrast","cvd","crt","team"],"default":"dark","tsType":"\"dark\" | \"light\" | \"contrast\" | \"cvd\" | \"crt\" | \"team\"","section":"Appearance"}}'
+    >
+      const THEMES = [
+        ["dark", "Dark", ["#131629", "#3fc3e8"]],
+        ["light", "Light", ["#f7f8fc", "#0b749a"]],
+        ["contrast", "High contrast", ["#000000", "#6fe3ff"]],
+        ["cvd", "Colorblind-safe", ["#0f1220", "#5aa9ff"]],
+        ["crt", "Amber CRT", ["#120d05", "#ffa726"]],
+        ["team", "Team accent", ["#14161c", "#ff3b5c"]],
+      ];
+
+      // Single-path reductions of the family, for the 20px keycap slot.
+      const RAIL = [
+        ["Home", "M7 21 L24 8 L41 21 V41 H7 Z", true],
+        ["Players", "M19 9 a7 7 0 1 1 0 14 a7 7 0 1 1 0-14 M6 41 v-3 a13 13 0 0 1 26 0 v3", false],
+        ["Teams", "M17 8 L24 12 L31 8 L41 14 L36 23 L32 21 V41 H16 V21 L12 23 L7 14 Z", false],
+        ["My Teams", "M9 12 a3 3 0 0 1 3-3 h24 a3 3 0 0 1 3 3 v27 a3 3 0 0 1-3 3 H12 a3 3 0 0 1-3-3 Z M17 22 h14 M17 31 h9", false],
+        ["Leagues", "M15 7 h18 v11 a9 9 0 0 1-18 0 Z M24 27 v7 M17 41 h14", false],
+        ["Starred", "M24 6 L29.5 18 L42 19.5 L33 28 L35.5 41 L24 34.5 L12.5 41 L15 28 L6 19.5 L18.5 18 Z", false],
+      ];
+
+      class Component extends DCLogic {
+        state = { theme: null };
+        setTheme = (theme) => () => this.setState({ theme });
+
+        renderVals() {
+          const theme = this.state.theme ?? this.props.theme ?? "dark";
+          return {
+            theme,
+            themeKeys: THEMES.map(([key, label, sw]) => ({
+              label, pressed: key === theme, onClick: this.setTheme(key),
+              style: "width:1.25rem;height:1.25rem;padding:0;border-radius:2px;cursor:pointer;background:linear-gradient(135deg, " + sw[0] + " 0 50%, " + sw[1] + " 50% 100%);" +
+                (key === theme
+                  ? "border:1px solid var(--color-accent);outline:1px solid var(--color-accent);outline-offset:1px"
+                  : "border:1px solid var(--color-border)"),
+            })),
+
+            // Detail thresholds are a decision, not a rendering artefact: arcs go at
+            // 32, the tip-off circle goes at 20, the centre line thickens as it drops.
+            iconSizes: [16, 20, 24, 32, 48, 64].map((px) => ({
+              px, label: px + "px",
+              showArcs: px >= 32,
+              showCircle: px >= 20,
+              circleR: px >= 32 ? 7 : 8,
+              line: px >= 32 ? 3 : px >= 20 ? 4 : 6,
+            })),
+
+            railIcons: RAIL.map(([label, d, active]) => ({
+              label, d,
+              capStyle: "display:grid;place-items:center;width:2.25rem;height:2.25rem;border-radius:var(--radius-sm);" +
+                (active
+                  ? "border:1px solid var(--color-accent);background:var(--color-accent);color:var(--color-bg);transform:translate(-1px,-1px);box-shadow:var(--retro-2)"
+                  : "border:1px solid var(--color-border);background:var(--color-bg);color:var(--color-text-muted)"),
+              rowStyle: "display:grid;grid-template-columns:2.25rem 1fr;align-items:center;gap:var(--space-3);padding:var(--space-1);border-radius:var(--radius-sm);color:" +
+                (active ? "var(--color-text);background:var(--color-surface)" : "var(--color-text-muted)"),
+            })),
+          };
+        }
+      }
+    </script>
+  </body>
+</html>

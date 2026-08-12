@@ -1,20 +1,51 @@
 @use "@/styles/mixins" as *;
 
+// Active-league pill in the header (see spec §6): radius-full, 1px border,
+// 6px accent dot, league name, then the terse format note in muted xs.
 .switcher {
   position: relative;
   display: grid;
-  gap: var(--space-2);
 }
 
 .trigger {
-  @include retro-button;
-  width: 100%;
-  overflow: hidden;
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text);
   font-size: var(--font-size-sm);
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--color-accent);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus-ring);
+    outline-offset: 1px;
+  }
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
 }
 
 .label {
   overflow: hidden;
+  white-space: nowrap;
+  font-weight: var(--font-weight-medium);
+}
+
+.meta {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
   white-space: nowrap;
 }
 
@@ -22,16 +53,16 @@
   @include error-callout;
 }
 
+// Menu opens BELOW the pill now that the switcher lives in the header.
 .list {
   position: absolute;
-  bottom: 100%;
+  top: calc(100% + var(--space-2));
   left: 0;
-  z-index: 1;
+  z-index: 10;
   display: grid;
   gap: var(--space-1);
-  width: 100%;
-  min-width: 12rem;
-  margin: 0 0 var(--space-2);
+  min-width: 14rem;
+  margin: 0;
   padding: var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -85,12 +116,4 @@
   &:focus-visible {
     @include control-focus-ring;
   }
-}
-
-[data-collapsed="true"] .trigger {
-  padding-inline: var(--space-2);
-}
-
-[data-collapsed="true"] .label {
-  width: 0;
 }

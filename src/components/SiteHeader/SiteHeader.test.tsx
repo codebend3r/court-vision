@@ -6,6 +6,11 @@ import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 const getProfile = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({ getProfile: () => getProfile() }));
+// The signed-in header renders LeagueSwitcher, which reads the app router.
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
+  useRouter: () => ({ refresh: () => {} }),
+}));
 
 import { SiteHeader } from "@/components/SiteHeader/SiteHeader";
 
@@ -22,26 +27,25 @@ async function renderHeader() {
 }
 
 describe("SiteHeader", () => {
-  it("renders the Court Vision wordmark linking home", async () => {
+  it("renders the logo lockup linking home", async () => {
     getProfile.mockResolvedValue(null);
     await renderHeader();
-    const wordmark = screen.getByRole("link", { name: "Court Vision" });
-    expect(wordmark).toHaveAttribute("href", "/");
+    const home = screen.getByRole("link", { name: "Court Vision" });
+    expect(home).toHaveAttribute("href", "/");
   });
 
-  it("renders the logo mark as decorative inside the home link", async () => {
+  it("keeps the mark decorative inside the home link", async () => {
     getProfile.mockResolvedValue(null);
     await renderHeader();
-    const wordmark = screen.getByRole("link", { name: "Court Vision" });
-    const mark = wordmark.querySelector("img");
-    expect(mark).toHaveAttribute("alt", "");
-    expect(mark?.getAttribute("src") ?? "").toContain("court-vision-mark-cropped.png");
+    const home = screen.getByRole("link", { name: "Court Vision" });
+    expect(home.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
   });
 
-  it("renders the theme toggle", async () => {
+  it("renders the six-theme swatch strip", async () => {
     getProfile.mockResolvedValue(null);
     await renderHeader();
-    expect(screen.getByRole("button", { name: "Switch to light theme" })).toBeInTheDocument();
+    const strip = screen.getByRole("group", { name: "Theme" });
+    expect(strip.querySelectorAll("button").length).toBe(6);
   });
 
   it("shows a sign-in link when signed out", async () => {

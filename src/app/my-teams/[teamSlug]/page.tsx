@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import { PageAction, PageHeader } from "@/components/PageHeader/PageHeader";
 import { TeamEditor } from "@/components/TeamEditor/TeamEditor";
 import { getProfile } from "@/lib/auth/session";
 import { buildPlayerInsights } from "@/lib/fantasyTeams/insights";
@@ -23,12 +24,11 @@ export default async function EditTeamPage({ params }: { params: Promise<{ teamS
   if (league === null) {
     return (
       <main className={styles.page}>
-        <header className={styles.header}>
-          <h1>Edit team</h1>
-          <Link href="/my-teams" className={styles.back}>
-            ← My Teams
-          </Link>
-        </header>
+        <PageHeader
+          eyebrow="My league"
+          title="Edit team"
+          actions={<PageAction href="/my-teams">My teams</PageAction>}
+        />
         <p className={styles.scope}>
           No league yet — <Link href="/leagues/create">create a league</Link> to start building
           teams.
@@ -46,12 +46,11 @@ export default async function EditTeamPage({ params }: { params: Promise<{ teamS
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <h1>{team.name}</h1>
-        <Link href="/my-teams" className={styles.back}>
-          ← My Teams
-        </Link>
-      </header>
+      <PageHeader
+        eyebrow="My league"
+        title={team.name}
+        actions={<PageAction href="/my-teams">My teams</PageAction>}
+      />
       <TeamEditor leagueId={league.id} team={team} players={players} insights={insights} />
     </main>
   );

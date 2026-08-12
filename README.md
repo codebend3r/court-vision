@@ -27,10 +27,30 @@ filterable views for fantasy decisions.
   `/team?is=raptors`), which shows the team's season stats and where each
   ranks across the league.
 - **Auth** — Supabase email/password signup/login with per-user profiles.
-- Light/dark retro theme throughout.
+- **Six themes** — dark, light, high contrast, colorblind-safe (blue/amber),
+  amber CRT, and team accent, switchable from the header swatch strip or
+  Settings. Themes redefine color tokens only; spacing, type, and the retro
+  shadow geometry are shared constants.
+- **A deliberate retro language** — one keycap mechanic for every pressable
+  control, extrusion reserved for page titles and big readout numbers, and an
+  inline SVG logo that re-inks per theme.
 
 Still to come: the heat-score trending leaderboard, SGP (needs a sourced
 standings-gain table), and auction dollar values.
+
+## Screenshots
+
+The 2026-08 redesign (spec: `docs/superpowers/specs/redesign-2026-08.md`,
+prototypes: `docs/design/prototypes/`).
+
+|                                                             |                                                                     |
+| ----------------------------------------------------------- | ------------------------------------------------------------------- |
+| ![Players table, dark](docs/screenshots/players-dark.png)   | ![Players table, amber CRT](docs/screenshots/players-amber-crt.png) |
+| Players — dark                                              | Players — amber CRT                                                 |
+| ![Players table, light](docs/screenshots/players-light.png) | ![Teams by division](docs/screenshots/teams-dark.png)               |
+| Players — light                                             | Teams — division ladders                                            |
+| ![Team detail](docs/screenshots/team-detail-dark.png)       | ![Sign in](docs/screenshots/sign-in-dark.png)                       |
+| Team detail — readouts and rank bars                        | Sign in — the keycap and extrusion language                         |
 
 ## Design system
 

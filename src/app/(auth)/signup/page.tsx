@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { LogoLockup } from "@/components/Logo/Logo";
 import { getUser } from "@/lib/auth/session";
 
 import authStyles from "@/app/(auth)/auth.module.scss";
@@ -12,8 +13,13 @@ export default async function SignupPage() {
   }
   return (
     <main className={authStyles.shell} data-centered>
-      <h1 className={authStyles.title}>Create your account</h1>
-      <SignupForm />
+      <section className={authStyles.card} aria-labelledby="signup-title">
+        <LogoLockup orientation="vertical" />
+        <h1 className={authStyles.title} id="signup-title">
+          Create your account
+        </h1>
+        <SignupForm />
+      </section>
     </main>
   );
 }
