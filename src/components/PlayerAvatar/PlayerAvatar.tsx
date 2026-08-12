@@ -10,7 +10,9 @@ import styles from "@/components/PlayerAvatar/PlayerAvatar.module.scss";
 
 export type PlayerAvatarSize = "sm" | "lg";
 
-const SIZE_PX: Record<PlayerAvatarSize, number> = { sm: 32, lg: 96 };
+// Matches the rendered tile size (2.25rem / 4.5rem) so the requested source
+// resolution and the layout agree.
+const SIZE_PX: Record<PlayerAvatarSize, number> = { sm: 36, lg: 72 };
 
 export type PlayerAvatarProps = {
   fullName: string;
@@ -48,15 +50,20 @@ export function PlayerAvatar({ fullName, nbaPersonId, size, teamAbbr = null }: P
     );
   }
 
+  // The border (including the asymmetric team stripe) lives on the wrapper,
+  // never on the Image itself: a border on the img skews its content box off
+  // the width/height attributes and trips Next's aspect-ratio warning on
+  // every headshot.
   return (
-    <Image
-      src={headshotUrl({ nbaPersonId })}
-      alt={fullName}
-      width={dimension}
-      height={dimension}
-      className={`${styles.avatar} ${sizeClass} ${styles.image}`}
-      style={teamStyle}
-      onError={() => setFailed(true)}
-    />
+    <span className={`${styles.avatar} ${sizeClass}`} style={teamStyle}>
+      <Image
+        src={headshotUrl({ nbaPersonId })}
+        alt={fullName}
+        width={dimension}
+        height={dimension}
+        className={styles.image}
+        onError={() => setFailed(true)}
+      />
+    </span>
   );
 }

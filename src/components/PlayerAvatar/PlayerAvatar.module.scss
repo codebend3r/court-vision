@@ -14,7 +14,13 @@
   text-align: center;
 }
 
+// Fills whatever the wrapper's border leaves; both dimensions are CSS-sized
+// together so the attribute aspect ratio is overridden wholesale, not on one
+// axis (which is what Next warns about).
 .image {
+  display: block;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
 }
 
