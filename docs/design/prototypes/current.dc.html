@@ -1,0 +1,3674 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="./support.js"></script>
+  </head>
+  <body>
+    <x-dc>
+      <helmet>
+        <meta name="design_doc_mode" content="app" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+        />
+        <link
+          rel="stylesheet"
+          href="_ds/court-vision-9fa09c9e-0ef3-49b5-8342-277b4eede6a0/_ds_bundle.css"
+        />
+        <link
+          rel="stylesheet"
+          href="_ds/court-vision-9fa09c9e-0ef3-49b5-8342-277b4eede6a0/styles.css"
+        />
+        <script src="_ds/court-vision-9fa09c9e-0ef3-49b5-8342-277b4eede6a0/_ds_bundle.js"></script>
+        <style>
+          html,
+          body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+          }
+          body {
+            background: var(--color-bg);
+            color: var(--color-text);
+            font-family: var(--font-sans);
+            font-size: var(--font-size-md);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+          }
+          *,
+          *::before,
+          *::after {
+            box-sizing: border-box;
+          }
+          a {
+            color: var(--color-accent);
+            text-decoration: none;
+          }
+          a:hover {
+            text-decoration: underline;
+          }
+          @keyframes cv-results-enter {
+            from {
+              opacity: 0;
+              transform: translateY(6px);
+            }
+            to {
+              opacity: 1;
+              transform: none;
+            }
+          }
+        </style>
+      </helmet>
+      <div
+        data-theme="dark"
+        style="
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+          background: var(--color-bg);
+          color: var(--color-text);
+          font-family: var(--font-sans);
+          font-size: var(--font-size-md);
+          line-height: 1.5;
+        "
+      >
+        <header
+          style="
+            display: grid;
+            grid-auto-flow: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-3) var(--space-6);
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+          "
+        >
+          <a
+            href="#"
+            onClick="{{ goHome }}"
+            style="
+              display: grid;
+              grid-auto-flow: column;
+              align-items: center;
+              gap: var(--space-2);
+              color: var(--color-text);
+              font-family: var(--font-display);
+              font-size: var(--font-size-lg);
+              font-weight: var(--font-weight-bold);
+              text-transform: uppercase;
+              letter-spacing: 0.08em;
+              text-decoration: none;
+              text-shadow:
+                1px 1px var(--color-retro-shadow),
+                2px 2px var(--color-retro-shadow),
+                3px 3px var(--color-retro-shadow),
+                4px 4px var(--color-retro-shadow),
+                5px 5px var(--color-retro-shadow),
+                6px 6px var(--color-retro-shadow),
+                7px 7px var(--color-retro-shadow);
+            "
+          >
+            <img
+              src="public/court-vision-mark-cropped.png"
+              alt=""
+              width="34"
+              height="32"
+              style="display: block"
+            />
+            Court Vision
+          </a>
+          <div
+            style="display: grid; grid-auto-flow: column; align-items: center; gap: var(--space-4)"
+          >
+            <button
+              type="button"
+              style="
+                display: grid;
+                align-items: center;
+                padding: var(--space-1) var(--space-3);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-surface);
+                color: var(--color-text-muted);
+                font-size: var(--font-size-sm);
+                font-family: inherit;
+                cursor: pointer;
+              "
+              style-hover="color:var(--color-text)"
+            >
+              Light
+            </button>
+            <button
+              type="button"
+              onClick="{{ goSettings }}"
+              style="
+                padding: var(--space-1) var(--space-3);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-full);
+                background: var(--color-surface);
+                color: var(--color-text);
+                font-family: var(--font-display);
+                font-size: var(--font-size-sm);
+                cursor: pointer;
+              "
+            >
+              @cjrivas
+            </button>
+          </div>
+        </header>
+
+        <div style="display: grid; grid-template-columns: auto minmax(0, 1fr); flex: 1 1 auto">
+          <nav
+            aria-label="Site"
+            style="
+              display: grid;
+              grid-template-rows: 1fr auto auto;
+              align-items: start;
+              gap: var(--space-3);
+              width: 220px;
+              padding: var(--space-4) var(--space-3);
+              border-right: 1px solid var(--color-border);
+            "
+          >
+            <ul style="display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none">
+              <sc-for list="{{ navEntries }}" as="entry" hint-placeholder-count="7">
+                <li style="display: grid">
+                  <a href="#" onClick="{{ entry.onClick }}" style="{{ entry.style }}">
+                    <span
+                      aria-hidden="true"
+                      style="width: 0; overflow: hidden; text-align: center"
+                    ></span>
+                    <span style="white-space: nowrap">{{ entry.label }}</span>
+                  </a>
+                </li>
+              </sc-for>
+            </ul>
+            <button
+              type="button"
+              style="
+                display: inline-flex;
+                align-items: center;
+                gap: var(--space-2);
+                width: 100%;
+                padding: var(--space-1) var(--space-3);
+                border: 1px solid var(--color-accent-purple);
+                border-radius: var(--radius-sm);
+                background: var(--color-surface);
+                color: var(--color-text);
+                font-family: inherit;
+                font-size: var(--font-size-sm);
+                cursor: pointer;
+                box-shadow:
+                  1px 1px 0 var(--color-retro-shadow-purple),
+                  2px 2px 0 var(--color-retro-shadow-purple),
+                  3px 3px 0 var(--color-retro-shadow-purple),
+                  4px 4px 0 var(--color-retro-shadow-purple);
+              "
+              style-hover="transform:translate(-1px,-1px)"
+            >
+              Dynasty Warriors
+            </button>
+            <button
+              type="button"
+              aria-label="Collapse side menu"
+              style="
+                display: grid;
+                place-items: center;
+                justify-self: center;
+                align-self: end;
+                width: 100%;
+                height: var(--control-height);
+                padding: 0;
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                background: var(--color-surface);
+                color: var(--color-text-muted);
+                font-size: var(--font-size-lg);
+                cursor: pointer;
+              "
+              style-hover="color:var(--color-text)"
+            >
+              <span aria-hidden="true">‹</span>
+            </button>
+          </nav>
+
+          <div style="display: grid; align-content: start">
+            <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+              <main style="display: grid; gap: var(--space-6); padding: var(--space-8)">
+                <h1
+                  style="
+                    margin: 0;
+                    font-family: var(--font-display);
+                    font-size: var(--font-size-xl);
+                    font-weight: var(--font-weight-bold);
+                    line-height: 1.15;
+                    letter-spacing: var(--tracking-tight);
+                    text-shadow:
+                      0.025em 0.025em var(--color-retro-shadow),
+                      0.05em 0.05em var(--color-retro-shadow),
+                      0.075em 0.075em var(--color-retro-shadow),
+                      0.1em 0.1em var(--color-retro-shadow),
+                      0.125em 0.125em var(--color-retro-shadow),
+                      0.15em 0.15em var(--color-retro-shadow),
+                      0.175em 0.175em var(--color-retro-shadow),
+                      0.2em 0.2em var(--color-retro-shadow),
+                      0.225em 0.225em var(--color-retro-shadow),
+                      0.25em 0.25em var(--color-retro-shadow);
+                  "
+                >
+                  Court Vision
+                </h1>
+                <p
+                  style="margin: 0; color: var(--color-text-muted); font-size: var(--font-size-sm)"
+                >
+                  Your fantasy command center.
+                </p>
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(6, minmax(0, 1fr));
+                    gap: var(--space-4);
+                  "
+                >
+                  <section
+                    style="
+                      grid-column: 1 / span 2;
+                      display: grid;
+                      align-content: start;
+                      gap: var(--space-3);
+                      padding: var(--space-4);
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-lg);
+                      background: var(--color-surface);
+                    "
+                  >
+                    <h2
+                      style="
+                        margin: 0;
+                        font-family: var(--font-display);
+                        font-size: var(--font-size-lg);
+                        font-weight: var(--font-weight-bold);
+                        line-height: 1.15;
+                        letter-spacing: var(--tracking-tight);
+                        text-shadow:
+                          0.025em 0.025em var(--color-retro-shadow),
+                          0.05em 0.05em var(--color-retro-shadow),
+                          0.075em 0.075em var(--color-retro-shadow),
+                          0.1em 0.1em var(--color-retro-shadow),
+                          0.125em 0.125em var(--color-retro-shadow),
+                          0.15em 0.15em var(--color-retro-shadow),
+                          0.175em 0.175em var(--color-retro-shadow),
+                          0.2em 0.2em var(--color-retro-shadow),
+                          0.225em 0.225em var(--color-retro-shadow),
+                          0.25em 0.25em var(--color-retro-shadow);
+                      "
+                    >
+                      Starred Players
+                    </h2>
+                    <ul
+                      style="
+                        display: grid;
+                        gap: var(--space-2);
+                        margin: 0;
+                        padding: 0;
+                        list-style: none;
+                      "
+                    >
+                      <sc-for list="{{ starredPanel }}" as="p" hint-placeholder-count="5">
+                        <li
+                          style="
+                            display: grid;
+                            grid-template-columns: auto 1fr auto auto auto;
+                            align-items: center;
+                            gap: var(--space-2);
+                            padding-block: var(--space-1);
+                            border-top: 1px solid var(--color-border);
+                          "
+                        >
+                          <span role="img" style="{{ p.avatarStyle }}">{{ p.initials }}</span>
+                          <a
+                            href="#"
+                            onClick="{{ goPlayer }}"
+                            style="font-weight: var(--font-weight-medium)"
+                            >{{ p.fullName }}</a
+                          >
+                          <span style="{{ p.chipStyle }}">{{ p.teamAbbr }}</span>
+                          <span
+                            style="color: var(--color-text-muted); font-size: var(--font-size-sm)"
+                            >{{ p.pos }}</span
+                          >
+                          <button
+                            type="button"
+                            aria-pressed="true"
+                            style="
+                              display: grid;
+                              place-items: center;
+                              padding: var(--space-1);
+                              border: 0;
+                              border-radius: var(--radius-sm);
+                              background: none;
+                              color: var(--color-highlight);
+                              cursor: pointer;
+                            "
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              style="
+                                display: block;
+                                width: var(--font-size-md);
+                                height: var(--font-size-md);
+                              "
+                            >
+                              <path
+                                d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                              ></path>
+                            </svg>
+                          </button>
+                        </li>
+                      </sc-for>
+                    </ul>
+                    <a
+                      href="#"
+                      onClick="{{ goWatchlist }}"
+                      style="justify-self: start; font-size: var(--font-size-sm)"
+                      >View all (18)</a
+                    >
+                  </section>
+
+                  <section
+                    style="
+                      grid-column: 3 / span 2;
+                      display: grid;
+                      align-content: start;
+                      gap: var(--space-2);
+                      padding: var(--space-4);
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-lg);
+                      background: var(--color-surface);
+                    "
+                  >
+                    <h2
+                      style="
+                        margin: 0;
+                        font-family: var(--font-display);
+                        font-size: var(--font-size-lg);
+                        font-weight: var(--font-weight-bold);
+                        line-height: 1.15;
+                        letter-spacing: var(--tracking-tight);
+                        text-shadow:
+                          0.025em 0.025em var(--color-retro-shadow),
+                          0.05em 0.05em var(--color-retro-shadow),
+                          0.075em 0.075em var(--color-retro-shadow),
+                          0.1em 0.1em var(--color-retro-shadow),
+                          0.125em 0.125em var(--color-retro-shadow),
+                          0.15em 0.15em var(--color-retro-shadow),
+                          0.175em 0.175em var(--color-retro-shadow),
+                          0.2em 0.2em var(--color-retro-shadow),
+                          0.225em 0.225em var(--color-retro-shadow),
+                          0.25em 0.25em var(--color-retro-shadow);
+                      "
+                    >
+                      Your Team
+                    </h2>
+                    <a
+                      href="#"
+                      onClick="{{ goMyTeams }}"
+                      style="
+                        justify-self: start;
+                        font-family: var(--font-display);
+                        font-weight: var(--font-weight-bold);
+                      "
+                      >Rim Protectors</a
+                    >
+                    <p
+                      style="
+                        margin: 0;
+                        color: var(--color-text-muted);
+                        font-size: var(--font-size-sm);
+                      "
+                    >
+                      9/13 slots filled
+                    </p>
+                    <ul
+                      style="
+                        display: grid;
+                        gap: var(--space-1);
+                        margin: 0;
+                        padding: 0;
+                        list-style: none;
+                      "
+                    >
+                      <sc-for list="{{ teamSlots }}" as="s" hint-placeholder-count="8">
+                        <li
+                          style="
+                            display: grid;
+                            grid-template-columns: 2.5rem 1fr;
+                            align-items: center;
+                            gap: var(--space-2);
+                            font-size: var(--font-size-sm);
+                          "
+                        >
+                          <span
+                            style="
+                              font-family: var(--font-display);
+                              font-size: var(--font-size-xs);
+                              font-weight: var(--font-weight-bold);
+                              letter-spacing: var(--tracking-wide);
+                              color: var(--color-accent);
+                            "
+                            >{{ s.slot }}</span
+                          >
+                          <span style="{{ s.bodyStyle }}">
+                            <span role="img" style="{{ s.avatarStyle }}">{{ s.initials }}</span>
+                            <a href="#" onClick="{{ goPlayer }}">{{ s.name }}</a>
+                          </span>
+                        </li>
+                      </sc-for>
+                    </ul>
+                  </section>
+
+                  <section
+                    style="
+                      grid-column: 5 / span 2;
+                      display: grid;
+                      align-content: start;
+                      gap: var(--space-3);
+                      padding: var(--space-4);
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-lg);
+                      background: var(--color-surface);
+                    "
+                  >
+                    <h2
+                      style="
+                        margin: 0;
+                        font-family: var(--font-display);
+                        font-size: var(--font-size-lg);
+                        font-weight: var(--font-weight-bold);
+                        line-height: 1.15;
+                        letter-spacing: var(--tracking-tight);
+                        text-shadow:
+                          0.025em 0.025em var(--color-retro-shadow),
+                          0.05em 0.05em var(--color-retro-shadow),
+                          0.075em 0.075em var(--color-retro-shadow),
+                          0.1em 0.1em var(--color-retro-shadow),
+                          0.125em 0.125em var(--color-retro-shadow),
+                          0.15em 0.15em var(--color-retro-shadow),
+                          0.175em 0.175em var(--color-retro-shadow),
+                          0.2em 0.2em var(--color-retro-shadow),
+                          0.225em 0.225em var(--color-retro-shadow),
+                          0.25em 0.25em var(--color-retro-shadow);
+                      "
+                    >
+                      Conference Standings
+                    </h2>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0, 1fr));
+                        gap: var(--space-4);
+                      "
+                    >
+                      <section style="display: grid; align-content: start; gap: var(--space-2)">
+                        <h3
+                          style="
+                            margin: 0;
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-sm);
+                            text-transform: uppercase;
+                            letter-spacing: 0.06em;
+                            text-shadow: none;
+                            font-family: var(--font-display);
+                          "
+                        >
+                          East
+                        </h3>
+                        <ol style="display: grid; gap: 0; margin: 0; padding: 0; list-style: none">
+                          <sc-for list="{{ east }}" as="t" hint-placeholder-count="8">
+                            <li
+                              style="
+                                display: grid;
+                                grid-template-columns: auto 1fr auto;
+                                align-items: baseline;
+                                gap: var(--space-2);
+                                padding-block: var(--space-1);
+                                border-top: 1px solid var(--color-border);
+                              "
+                            >
+                              <span
+                                style="
+                                  min-width: 1.25rem;
+                                  color: var(--color-text-muted);
+                                  font-size: var(--font-size-sm);
+                                  font-variant-numeric: tabular-nums;
+                                "
+                                >{{ t.rank }}</span
+                              >
+                              <abbr
+                                title="{{ t.name }}"
+                                style="
+                                  font-weight: var(--font-weight-medium);
+                                  text-decoration: none;
+                                "
+                                >{{ t.abbr }}</abbr
+                              >
+                              <span
+                                style="
+                                  color: var(--color-text-muted);
+                                  font-size: var(--font-size-sm);
+                                  font-variant-numeric: tabular-nums;
+                                "
+                                >{{ t.record }}</span
+                              >
+                            </li>
+                          </sc-for>
+                        </ol>
+                      </section>
+                      <section style="display: grid; align-content: start; gap: var(--space-2)">
+                        <h3
+                          style="
+                            margin: 0;
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-sm);
+                            text-transform: uppercase;
+                            letter-spacing: 0.06em;
+                            text-shadow: none;
+                            font-family: var(--font-display);
+                          "
+                        >
+                          West
+                        </h3>
+                        <ol style="display: grid; gap: 0; margin: 0; padding: 0; list-style: none">
+                          <sc-for list="{{ west }}" as="t" hint-placeholder-count="8">
+                            <li
+                              style="
+                                display: grid;
+                                grid-template-columns: auto 1fr auto;
+                                align-items: baseline;
+                                gap: var(--space-2);
+                                padding-block: var(--space-1);
+                                border-top: 1px solid var(--color-border);
+                              "
+                            >
+                              <span
+                                style="
+                                  min-width: 1.25rem;
+                                  color: var(--color-text-muted);
+                                  font-size: var(--font-size-sm);
+                                  font-variant-numeric: tabular-nums;
+                                "
+                                >{{ t.rank }}</span
+                              >
+                              <abbr
+                                title="{{ t.name }}"
+                                style="
+                                  font-weight: var(--font-weight-medium);
+                                  text-decoration: none;
+                                "
+                                >{{ t.abbr }}</abbr
+                              >
+                              <span
+                                style="
+                                  color: var(--color-text-muted);
+                                  font-size: var(--font-size-sm);
+                                  font-variant-numeric: tabular-nums;
+                                "
+                                >{{ t.record }}</span
+                              >
+                            </li>
+                          </sc-for>
+                        </ol>
+                      </section>
+                    </div>
+                    <p
+                      style="
+                        margin: 0;
+                        color: var(--color-text-muted);
+                        font-size: var(--font-size-sm);
+                      "
+                    >
+                      Top 8 seeds by conference rank.
+                    </p>
+                  </section>
+
+                  <section
+                    style="
+                      grid-column: 1 / span 3;
+                      display: grid;
+                      gap: var(--space-3);
+                      padding: var(--space-4);
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-lg);
+                      background: var(--color-surface);
+                    "
+                  >
+                    <h2
+                      style="
+                        margin: 0;
+                        font-family: var(--font-display);
+                        font-size: var(--font-size-lg);
+                        font-weight: var(--font-weight-bold);
+                        line-height: 1.15;
+                        letter-spacing: var(--tracking-tight);
+                        text-shadow:
+                          0.025em 0.025em var(--color-retro-shadow),
+                          0.05em 0.05em var(--color-retro-shadow),
+                          0.075em 0.075em var(--color-retro-shadow),
+                          0.1em 0.1em var(--color-retro-shadow),
+                          0.125em 0.125em var(--color-retro-shadow),
+                          0.15em 0.15em var(--color-retro-shadow),
+                          0.175em 0.175em var(--color-retro-shadow),
+                          0.2em 0.2em var(--color-retro-shadow),
+                          0.225em 0.225em var(--color-retro-shadow),
+                          0.25em 0.25em var(--color-retro-shadow);
+                      "
+                    >
+                      Z-Score Trend
+                    </h2>
+                    <svg
+                      viewBox="0 0 560 200"
+                      preserveAspectRatio="none"
+                      style="width: 100%; height: 200px; display: block"
+                    >
+                      <line
+                        x1="40"
+                        y1="100"
+                        x2="550"
+                        y2="100"
+                        stroke="var(--color-border)"
+                        stroke-width="1"
+                      ></line>
+                      <line
+                        x1="40"
+                        y1="20"
+                        x2="550"
+                        y2="20"
+                        stroke="var(--color-border)"
+                        stroke-width="1"
+                        stroke-dasharray="3 4"
+                      ></line>
+                      <line
+                        x1="40"
+                        y1="180"
+                        x2="550"
+                        y2="180"
+                        stroke="var(--color-border)"
+                        stroke-width="1"
+                        stroke-dasharray="3 4"
+                      ></line>
+                      <sc-for list="{{ zSeries }}" as="s" hint-placeholder-count="3">
+                        <polyline
+                          points="{{ s.points }}"
+                          fill="none"
+                          stroke="{{ s.color }}"
+                          stroke-width="2"
+                          stroke-linejoin="round"
+                        ></polyline>
+                      </sc-for>
+                    </svg>
+                    <p
+                      style="
+                        margin: 0;
+                        color: var(--color-text-muted);
+                        font-size: var(--font-size-xs);
+                      "
+                    >
+                      Rolling 10-game z-score against this season's player pool. Zero is
+                      league-average value.
+                    </p>
+                  </section>
+
+                  <section
+                    style="
+                      grid-column: 4 / span 3;
+                      display: grid;
+                      gap: var(--space-3);
+                      padding: var(--space-4);
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-lg);
+                      background: var(--color-surface);
+                    "
+                  >
+                    <h2
+                      style="
+                        margin: 0;
+                        font-family: var(--font-display);
+                        font-size: var(--font-size-lg);
+                        font-weight: var(--font-weight-bold);
+                        line-height: 1.15;
+                        letter-spacing: var(--tracking-tight);
+                        text-shadow:
+                          0.025em 0.025em var(--color-retro-shadow),
+                          0.05em 0.05em var(--color-retro-shadow),
+                          0.075em 0.075em var(--color-retro-shadow),
+                          0.1em 0.1em var(--color-retro-shadow),
+                          0.125em 0.125em var(--color-retro-shadow),
+                          0.15em 0.15em var(--color-retro-shadow),
+                          0.175em 0.175em var(--color-retro-shadow),
+                          0.2em 0.2em var(--color-retro-shadow),
+                          0.225em 0.225em var(--color-retro-shadow),
+                          0.25em 0.25em var(--color-retro-shadow);
+                      "
+                    >
+                      G-Score Trend
+                    </h2>
+                    <svg
+                      viewBox="0 0 560 200"
+                      preserveAspectRatio="none"
+                      style="width: 100%; height: 200px; display: block"
+                    >
+                      <line
+                        x1="40"
+                        y1="100"
+                        x2="550"
+                        y2="100"
+                        stroke="var(--color-border)"
+                        stroke-width="1"
+                      ></line>
+                      <line
+                        x1="40"
+                        y1="20"
+                        x2="550"
+                        y2="20"
+                        stroke="var(--color-border)"
+                        stroke-width="1"
+                        stroke-dasharray="3 4"
+                      ></line>
+                      <line
+                        x1="40"
+                        y1="180"
+                        x2="550"
+                        y2="180"
+                        stroke="var(--color-border)"
+                        stroke-width="1"
+                        stroke-dasharray="3 4"
+                      ></line>
+                      <sc-for list="{{ gSeries }}" as="s" hint-placeholder-count="3">
+                        <polyline
+                          points="{{ s.points }}"
+                          fill="none"
+                          stroke="{{ s.color }}"
+                          stroke-width="2"
+                          stroke-linejoin="round"
+                        ></polyline>
+                      </sc-for>
+                    </svg>
+                    <p
+                      style="
+                        margin: 0;
+                        color: var(--color-text-muted);
+                        font-size: var(--font-size-xs);
+                      "
+                    >
+                      Rolling 10-game G-score: the z-score damped by each category's game-to-game
+                      volatility. Zero is league-average value.
+                    </p>
+                  </section>
+                </div>
+              </main>
+            </sc-if>
+
+            <sc-if value="{{ isPlayers }}" hint-placeholder-val="{{ false }}">
+              <main style="display: grid; gap: var(--space-4); padding: var(--space-6)">
+                <h1
+                  style="
+                    margin: 0;
+                    font-family: var(--font-display);
+                    font-size: var(--font-size-xl);
+                    font-weight: var(--font-weight-bold);
+                    line-height: 1.15;
+                    letter-spacing: var(--tracking-tight);
+                    text-shadow:
+                      0.025em 0.025em var(--color-retro-shadow),
+                      0.05em 0.05em var(--color-retro-shadow),
+                      0.075em 0.075em var(--color-retro-shadow),
+                      0.1em 0.1em var(--color-retro-shadow),
+                      0.125em 0.125em var(--color-retro-shadow),
+                      0.15em 0.15em var(--color-retro-shadow),
+                      0.175em 0.175em var(--color-retro-shadow),
+                      0.2em 0.2em var(--color-retro-shadow),
+                      0.225em 0.225em var(--color-retro-shadow),
+                      0.25em 0.25em var(--color-retro-shadow);
+                  "
+                >
+                  Players
+                </h1>
+                <nav aria-label="Player stat views" style="display: grid">
+                  <ul
+                    style="
+                      display: flex;
+                      gap: var(--space-2);
+                      margin: 0;
+                      padding: 0;
+                      list-style: none;
+                      border-bottom: 1px solid var(--color-border);
+                    "
+                  >
+                    <sc-for list="{{ playerTabs }}" as="t" hint-placeholder-count="4">
+                      <li style="display: grid">
+                        <a href="#" onClick="{{ t.onClick }}" style="{{ t.style }}"
+                          >{{ t.label }}</a
+                        >
+                      </li>
+                    </sc-for>
+                  </ul>
+                </nav>
+
+                <sc-if value="{{ notFantasy }}" hint-placeholder-val="{{ true }}">
+                  <section
+                    style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3)"
+                  >
+                    <input
+                      type="search"
+                      placeholder="Search players…"
+                      aria-label="Search players"
+                      style="
+                        height: var(--control-height);
+                        width: min(480px, 100%);
+                        padding: 0 var(--space-4);
+                        border: 1px solid var(--color-control-border);
+                        border-radius: var(--control-radius);
+                        background: var(--color-control-bg);
+                        color: var(--color-text);
+                        font-family: inherit;
+                        font-size: var(--font-size-md);
+                      "
+                    />
+                    <label
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: var(--space-2);
+                        color: var(--color-text-muted);
+                        font-size: var(--font-size-sm);
+                      "
+                      >Games
+                      <select
+                        aria-label="Game range"
+                        style="
+                          height: var(--control-height);
+                          padding: 0 var(--space-2);
+                          border: 1px solid var(--color-border);
+                          border-radius: var(--radius-sm);
+                          background: var(--color-surface);
+                          color: var(--color-text);
+                          font-family: inherit;
+                          font-size: var(--font-size-sm);
+                        "
+                      >
+                        <option>All games</option>
+                        <option>Last 5 games</option>
+                        <option>Last 10 games</option>
+                        <option>Last 20 games</option>
+                        <option>Last 40 games</option>
+                        <option>Last 60 games</option>
+                      </select>
+                    </label>
+                    <label
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: var(--space-2);
+                        color: var(--color-text-muted);
+                        font-size: var(--font-size-sm);
+                      "
+                      >Stats
+                      <select
+                        aria-label="Stat display"
+                        style="
+                          height: var(--control-height);
+                          padding: 0 var(--space-2);
+                          border: 1px solid var(--color-border);
+                          border-radius: var(--radius-sm);
+                          background: var(--color-surface);
+                          color: var(--color-text);
+                          font-family: inherit;
+                          font-size: var(--font-size-sm);
+                        "
+                      >
+                        <option>Averages</option>
+                        <option>Totals</option>
+                      </select>
+                    </label>
+                    <span
+                      style="
+                        display: inline-grid;
+                        grid-auto-flow: column;
+                        align-items: center;
+                        gap: var(--space-2);
+                      "
+                    >
+                      <x-import
+                        component-from-global-scope="CourtVision.Switch"
+                        label="Qualifying minimums"
+                        checked="{{ true }}"
+                        hint-size="200px,36px"
+                      ></x-import>
+                      <x-import
+                        component-from-global-scope="CourtVision.InfoTip"
+                        label="About qualifying minimums"
+                        hint-size="20px,20px"
+                        ><span style="color: var(--color-text-muted)"
+                          >NBA leaders must qualify: percentage leaders by made shots, per-game
+                          leaders by games played. With this on, players below the cutoff drop to
+                          the bottom of the sort.</span
+                        ></x-import
+                      >
+                    </span>
+                  </section>
+                </sc-if>
+
+                <sc-if value="{{ isFantasy }}" hint-placeholder-val="{{ false }}">
+                  <section style="display: grid; gap: var(--space-3)">
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: minmax(12rem, 20rem) auto auto;
+                        justify-content: start;
+                        align-items: center;
+                        gap: var(--space-3);
+                      "
+                    >
+                      <input
+                        type="search"
+                        placeholder="Search players…"
+                        aria-label="Search players"
+                        style="
+                          height: var(--control-height);
+                          padding: 0 var(--space-3);
+                          border: 1px solid var(--color-control-border);
+                          border-radius: var(--control-radius);
+                          background: var(--color-control-bg);
+                          color: var(--color-text);
+                          font-family: inherit;
+                          font-size: var(--font-size-sm);
+                        "
+                      />
+                      <label
+                        style="
+                          display: grid;
+                          grid-auto-flow: column;
+                          align-items: center;
+                          gap: var(--space-2);
+                          color: var(--color-text-muted);
+                          font-size: var(--font-size-sm);
+                        "
+                        >Games
+                        <select
+                          style="
+                            padding: var(--space-1) var(--space-2);
+                            border: 1px solid var(--color-border);
+                            border-radius: var(--radius-sm);
+                            background: var(--color-surface);
+                            color: var(--color-text);
+                            font-family: inherit;
+                            font-size: var(--font-size-sm);
+                          "
+                        >
+                          <option>All games</option>
+                          <option>Last 10 games</option>
+                        </select>
+                      </label>
+                      <label
+                        style="
+                          display: grid;
+                          grid-auto-flow: column;
+                          align-items: center;
+                          gap: var(--space-2);
+                          color: var(--color-text-muted);
+                          font-size: var(--font-size-sm);
+                        "
+                        >Basis
+                        <select
+                          style="
+                            padding: var(--space-1) var(--space-2);
+                            border: 1px solid var(--color-border);
+                            border-radius: var(--radius-sm);
+                            background: var(--color-surface);
+                            color: var(--color-text);
+                            font-family: inherit;
+                            font-size: var(--font-size-sm);
+                          "
+                        >
+                          <option>Per game</option>
+                          <option>Totals</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: var(--space-2)">
+                      <sc-for list="{{ catChips }}" as="c" hint-placeholder-count="9">
+                        <span style="{{ c.style }}">
+                          <button type="button" style="{{ c.toggleStyle }}">{{ c.label }}</button>
+                          <button
+                            type="button"
+                            aria-label="Exclude"
+                            style="
+                              padding: var(--space-1) var(--space-2) var(--space-1) 0;
+                              border: none;
+                              background: none;
+                              color: var(--color-text-muted);
+                              font-size: var(--font-size-xs);
+                              cursor: pointer;
+                            "
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      </sc-for>
+                    </div>
+                    <details
+                      style="
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-md);
+                        background: var(--color-surface);
+                      "
+                    >
+                      <summary
+                        style="
+                          display: flex;
+                          align-items: center;
+                          gap: var(--space-2);
+                          padding: var(--space-2) var(--space-3);
+                          color: var(--color-text-muted);
+                          font-size: var(--font-size-sm);
+                          cursor: pointer;
+                          list-style: none;
+                        "
+                      >
+                        <span
+                          aria-hidden="true"
+                          style="color: var(--color-accent); font-size: var(--font-size-xs)"
+                          >▸</span
+                        >League settings &amp; weights
+                      </summary>
+                      <div
+                        style="
+                          display: flex;
+                          flex-wrap: wrap;
+                          align-items: end;
+                          gap: var(--space-3);
+                          padding: var(--space-3);
+                          border-top: 1px solid var(--color-border);
+                        "
+                      >
+                        <label
+                          style="
+                            display: grid;
+                            gap: var(--space-1);
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-xs);
+                          "
+                          >Teams<input
+                            type="number"
+                            value="12"
+                            style="
+                              height: var(--control-height);
+                              width: 5rem;
+                              padding: 0 var(--space-3);
+                              border: 1px solid var(--color-control-border);
+                              border-radius: var(--control-radius);
+                              background: var(--color-control-bg);
+                              color: var(--color-text);
+                              font-family: inherit;
+                              font-size: var(--font-size-sm);
+                            "
+                        /></label>
+                        <label
+                          style="
+                            display: grid;
+                            gap: var(--space-1);
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-xs);
+                          "
+                          >Roster slots<input
+                            type="number"
+                            value="13"
+                            style="
+                              height: var(--control-height);
+                              width: 5rem;
+                              padding: 0 var(--space-3);
+                              border: 1px solid var(--color-control-border);
+                              border-radius: var(--control-radius);
+                              background: var(--color-control-bg);
+                              color: var(--color-text);
+                              font-family: inherit;
+                              font-size: var(--font-size-sm);
+                            "
+                        /></label>
+                        <button
+                          type="button"
+                          style="
+                            padding: var(--space-1) var(--space-2);
+                            border: 1px solid var(--color-border);
+                            border-radius: var(--radius-sm);
+                            background: var(--color-surface);
+                            color: var(--color-text);
+                            font-family: inherit;
+                            font-size: var(--font-size-sm);
+                            cursor: pointer;
+                          "
+                        >
+                          Reset weights
+                        </button>
+                      </div>
+                    </details>
+                  </section>
+                </sc-if>
+
+                <section
+                  style="
+                    display: grid;
+                    gap: var(--space-4);
+                    animation: cv-results-enter var(--duration-base) var(--ease-out) both;
+                  "
+                >
+                  <p
+                    style="
+                      margin: 0;
+                      color: var(--color-text-muted);
+                      font-size: var(--font-size-sm);
+                    "
+                  >
+                    {{ resultSummary }}
+                  </p>
+                  <nav
+                    aria-label="Pagination"
+                    style="
+                      display: grid;
+                      grid-auto-flow: column;
+                      justify-content: center;
+                      align-items: center;
+                      gap: var(--space-2);
+                      color: var(--color-text-muted);
+                      font-size: var(--font-size-sm);
+                    "
+                  >
+                    <label
+                      style="
+                        display: grid;
+                        grid-auto-flow: column;
+                        align-items: center;
+                        gap: var(--space-2);
+                      "
+                      >Page size
+                      <select
+                        style="
+                          padding: var(--space-1) var(--space-2);
+                          border: 1px solid var(--color-border);
+                          border-radius: var(--radius-sm);
+                          background: var(--color-surface);
+                          color: var(--color-text);
+                          font-family: inherit;
+                          font-size: var(--font-size-sm);
+                        "
+                      >
+                        <option>25</option>
+                        <option>50</option>
+                        <option>100</option>
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      disabled
+                      style="
+                        padding: var(--space-1) var(--space-2);
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-sm);
+                        background: var(--color-surface);
+                        color: var(--color-text);
+                        font-family: inherit;
+                        font-size: var(--font-size-sm);
+                        opacity: 0.5;
+                        cursor: not-allowed;
+                      "
+                    >
+                      Previous
+                    </button>
+                    <span>Page 1 of 23</span>
+                    <button
+                      type="button"
+                      style="
+                        padding: var(--space-1) var(--space-2);
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-sm);
+                        background: var(--color-surface);
+                        color: var(--color-text);
+                        font-family: inherit;
+                        font-size: var(--font-size-sm);
+                        cursor: pointer;
+                      "
+                    >
+                      Next
+                    </button>
+                  </nav>
+
+                  <div style="max-width: 100%; overflow-x: auto">
+                    <table
+                      style="
+                        width: 100%;
+                        min-width: 72rem;
+                        border-collapse: collapse;
+                        font-variant-numeric: tabular-nums;
+                      "
+                    >
+                      <thead>
+                        <tr>
+                          <th
+                            style="
+                              width: 1%;
+                              padding: var(--space-2);
+                              text-transform: uppercase;
+                              font-size: var(--font-size-xs);
+                              letter-spacing: var(--tracking-wide);
+                              color: var(--color-text-muted);
+                              text-align: left;
+                            "
+                          ></th>
+                          <th
+                            style="
+                              padding: var(--space-2) var(--space-3);
+                              text-transform: uppercase;
+                              font-size: var(--font-size-xs);
+                              letter-spacing: var(--tracking-wide);
+                              color: var(--color-text-muted);
+                              text-align: right;
+                            "
+                          >
+                            #
+                          </th>
+                          <sc-for list="{{ tableHeaders }}" as="h" hint-placeholder-count="18">
+                            <th style="{{ h.style }}">{{ h.label }}</th>
+                          </sc-for>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <sc-for list="{{ tableRows }}" as="row" hint-placeholder-count="10">
+                          <tr>
+                            <td
+                              style="
+                                width: 1%;
+                                padding: var(--space-2);
+                                border-top: 1px solid var(--color-border);
+                              "
+                            >
+                              <button type="button" style="{{ row.starStyle }}">
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="{{ row.starFill }}"
+                                  stroke="currentColor"
+                                  stroke-width="2"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  style="
+                                    display: block;
+                                    width: var(--font-size-md);
+                                    height: var(--font-size-md);
+                                  "
+                                >
+                                  <path
+                                    d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                                  ></path>
+                                </svg>
+                              </button>
+                            </td>
+                            <td
+                              style="
+                                padding: var(--space-2) var(--space-3);
+                                border-top: 1px solid var(--color-border);
+                                text-align: right;
+                                white-space: nowrap;
+                                font-family: var(--font-mono);
+                                color: var(--color-text-muted);
+                              "
+                            >
+                              {{ row.rank }}
+                            </td>
+                            <td
+                              style="
+                                padding: var(--space-2) var(--space-3);
+                                border-top: 1px solid var(--color-border);
+                              "
+                            >
+                              <span
+                                style="
+                                  display: grid;
+                                  grid-template-columns: auto 1fr;
+                                  align-items: center;
+                                  gap: var(--space-2);
+                                "
+                              >
+                                <span role="img" style="{{ row.avatarStyle }}"
+                                  >{{ row.initials }}</span
+                                >
+                                <a href="#" onClick="{{ goPlayer }}">{{ row.first }}</a>
+                              </span>
+                            </td>
+                            <td
+                              style="
+                                padding: var(--space-2) var(--space-3);
+                                border-top: 1px solid var(--color-border);
+                              "
+                            >
+                              <a href="#" onClick="{{ goPlayer }}">{{ row.last }}</a>
+                            </td>
+                            <td
+                              style="
+                                padding: var(--space-2) var(--space-3);
+                                border-top: 1px solid var(--color-border);
+                              "
+                            >
+                              <span style="{{ row.chipStyle }}">{{ row.teamAbbr }}</span>
+                            </td>
+                            <td
+                              style="
+                                padding: var(--space-2) var(--space-3);
+                                border-top: 1px solid var(--color-border);
+                              "
+                            >
+                              {{ row.pos }}
+                            </td>
+                            <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="14">
+                              <td style="{{ cell.style }}">{{ cell.v }}</td>
+                            </sc-for>
+                          </tr>
+                        </sc-for>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <sc-if value="{{ isAdvanced }}" hint-placeholder-val="{{ false }}">
+                    <x-import
+                      component-from-global-scope="CourtVision.AdvancedStatsLegend"
+                      hint-size="100%,56px"
+                    ></x-import>
+                  </sc-if>
+                  <sc-if value="{{ isFantasy }}" hint-placeholder-val="{{ false }}">
+                    <x-import
+                      component-from-global-scope="CourtVision.FantasyValueLegend"
+                      pool-size="156"
+                      window-label="all games"
+                      basis="perGame"
+                      hint-size="100%,56px"
+                    ></x-import>
+                  </sc-if>
+
+                  <nav
+                    aria-label="Pagination"
+                    style="
+                      display: grid;
+                      grid-auto-flow: column;
+                      justify-content: center;
+                      align-items: center;
+                      gap: var(--space-2);
+                      color: var(--color-text-muted);
+                      font-size: var(--font-size-sm);
+                    "
+                  >
+                    <label
+                      style="
+                        display: grid;
+                        grid-auto-flow: column;
+                        align-items: center;
+                        gap: var(--space-2);
+                      "
+                      >Page size
+                      <select
+                        style="
+                          padding: var(--space-1) var(--space-2);
+                          border: 1px solid var(--color-border);
+                          border-radius: var(--radius-sm);
+                          background: var(--color-surface);
+                          color: var(--color-text);
+                          font-family: inherit;
+                          font-size: var(--font-size-sm);
+                        "
+                      >
+                        <option>25</option>
+                        <option>50</option>
+                        <option>100</option>
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      disabled
+                      style="
+                        padding: var(--space-1) var(--space-2);
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-sm);
+                        background: var(--color-surface);
+                        color: var(--color-text);
+                        font-family: inherit;
+                        font-size: var(--font-size-sm);
+                        opacity: 0.5;
+                        cursor: not-allowed;
+                      "
+                    >
+                      Previous
+                    </button>
+                    <span>Page 1 of 23</span>
+                    <button
+                      type="button"
+                      style="
+                        padding: var(--space-1) var(--space-2);
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-sm);
+                        background: var(--color-surface);
+                        color: var(--color-text);
+                        font-family: inherit;
+                        font-size: var(--font-size-sm);
+                        cursor: pointer;
+                      "
+                    >
+                      Next
+                    </button>
+                  </nav>
+                </section>
+              </main>
+            </sc-if>
+
+            <sc-if value="{{ isPlayer }}" hint-placeholder-val="{{ false }}">
+              <main style="display: grid; gap: var(--space-6); padding: var(--space-6)">
+                <header
+                  style="
+                    display: grid;
+                    grid-template-columns: auto minmax(0, 1fr) auto;
+                    align-items: center;
+                    gap: var(--space-4);
+                  "
+                >
+                  <span
+                    role="img"
+                    aria-label="Nikola Jokić"
+                    style="
+                      display: grid;
+                      place-items: center;
+                      overflow: hidden;
+                      width: 96px;
+                      height: 96px;
+                      border: 2px solid #0e2240;
+                      border-radius: var(--radius-full);
+                      background: var(--color-surface);
+                      color: var(--color-text-muted);
+                      font-family: var(--font-sans);
+                      font-weight: var(--font-weight-semibold);
+                      font-size: var(--font-size-lg);
+                      text-align: center;
+                    "
+                    >NJ</span
+                  >
+                  <span style="display: grid; gap: var(--space-2)">
+                    <span
+                      style="
+                        display: grid;
+                        grid-auto-flow: column;
+                        justify-content: start;
+                        align-items: center;
+                        gap: var(--space-2);
+                      "
+                    >
+                      <h1
+                        style="
+                          margin: 0;
+                          font-family: var(--font-display);
+                          font-size: var(--font-size-xl);
+                          font-weight: var(--font-weight-bold);
+                          line-height: 1.15;
+                          letter-spacing: var(--tracking-tight);
+                          text-shadow:
+                            0.025em 0.025em var(--color-retro-shadow),
+                            0.05em 0.05em var(--color-retro-shadow),
+                            0.075em 0.075em var(--color-retro-shadow),
+                            0.1em 0.1em var(--color-retro-shadow),
+                            0.125em 0.125em var(--color-retro-shadow),
+                            0.15em 0.15em var(--color-retro-shadow),
+                            0.175em 0.175em var(--color-retro-shadow),
+                            0.2em 0.2em var(--color-retro-shadow),
+                            0.225em 0.225em var(--color-retro-shadow),
+                            0.25em 0.25em var(--color-retro-shadow);
+                        "
+                      >
+                        Nikola Jokić
+                      </h1>
+                      <button
+                        type="button"
+                        aria-pressed="true"
+                        aria-label="Unstar Nikola Jokić"
+                        style="
+                          display: grid;
+                          place-items: center;
+                          padding: var(--space-1);
+                          border: 0;
+                          border-radius: var(--radius-sm);
+                          background: none;
+                          color: var(--color-highlight);
+                          cursor: pointer;
+                        "
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          style="
+                            display: block;
+                            width: var(--font-size-lg);
+                            height: var(--font-size-lg);
+                          "
+                        >
+                          <path
+                            d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                          ></path>
+                        </svg>
+                      </button>
+                    </span>
+                    <p
+                      style="
+                        display: grid;
+                        grid-auto-flow: column;
+                        align-items: center;
+                        justify-content: start;
+                        gap: var(--space-2);
+                        margin: 0;
+                        text-transform: uppercase;
+                        font-size: var(--font-size-xs);
+                        letter-spacing: var(--tracking-wide);
+                        color: var(--color-text-muted);
+                      "
+                    >
+                      <span
+                        style="
+                          display: inline-grid;
+                          place-items: center;
+                          min-height: 0;
+                          padding: 0 var(--space-1);
+                          border: 1px solid currentcolor;
+                          border-radius: var(--radius-lg);
+                          vertical-align: middle;
+                          font-family: var(--font-display);
+                          font-size: var(--font-size-xs);
+                          font-weight: var(--font-weight-bold);
+                          letter-spacing: 0.04em;
+                          background: #0e2240;
+                          color: #ffffff;
+                        "
+                        >DEN</span
+                      >
+                      <span>C</span>
+                      <span>#15</span>
+                      <select
+                        aria-label="Season"
+                        style="
+                          height: var(--control-height);
+                          padding: 0 var(--space-2);
+                          border: 1px solid var(--color-border);
+                          border-radius: var(--radius-sm);
+                          background: var(--color-surface);
+                          color: var(--color-text);
+                          font-family: inherit;
+                          font-size: var(--font-size-sm);
+                          text-transform: none;
+                          letter-spacing: normal;
+                        "
+                      >
+                        <option>2024-25</option>
+                        <option>2023-24</option>
+                        <option>Career</option>
+                      </select>
+                      <span>70 games</span>
+                    </p>
+                    <dl
+                      style="
+                        display: grid;
+                        grid-auto-flow: column;
+                        justify-content: start;
+                        gap: var(--space-4);
+                        margin: 0;
+                      "
+                    >
+                      <sc-for list="{{ playerFacts }}" as="f" hint-placeholder-count="7">
+                        <div style="display: grid; gap: var(--space-1)">
+                          <dt
+                            style="
+                              text-transform: uppercase;
+                              font-size: var(--font-size-xs);
+                              letter-spacing: var(--tracking-wide);
+                              color: var(--color-text-muted);
+                            "
+                          >
+                            {{ f.label }}
+                          </dt>
+                          <dd
+                            style="
+                              margin: 0;
+                              font-size: var(--font-size-sm);
+                              font-weight: var(--font-weight-medium);
+                            "
+                          >
+                            {{ f.value }}
+                          </dd>
+                        </div>
+                      </sc-for>
+                    </dl>
+                  </span>
+                  <div style="display: grid; align-self: start">
+                    <x-import
+                      component-from-global-scope="CourtVision.SeasonStatCard"
+                      season="2024-25"
+                      title="Season averages"
+                      stats="{{ seasonStats }}"
+                      hint-size="520px,150px"
+                    ></x-import>
+                  </div>
+                </header>
+
+                <section style="display: flex; flex-wrap: wrap; gap: var(--space-3)">
+                  <div
+                    role="group"
+                    aria-label="Stat mode"
+                    style="
+                      display: flex;
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-sm);
+                    "
+                  >
+                    <sc-for list="{{ statModes }}" as="m" hint-placeholder-count="4">
+                      <button type="button" aria-pressed="{{ m.pressed }}" style="{{ m.style }}">
+                        {{ m.label }}
+                      </button>
+                    </sc-for>
+                  </div>
+                  <div
+                    role="group"
+                    aria-label="Timeframe"
+                    style="
+                      display: flex;
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-sm);
+                    "
+                  >
+                    <sc-for list="{{ statSpans }}" as="m" hint-placeholder-count="6">
+                      <button type="button" aria-pressed="{{ m.pressed }}" style="{{ m.style }}">
+                        {{ m.label }}
+                      </button>
+                    </sc-for>
+                  </div>
+                </section>
+
+                <section
+                  style="
+                    display: grid;
+                    gap: var(--space-3);
+                    padding: var(--space-4);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-md);
+                    background: var(--color-surface);
+                  "
+                >
+                  <svg
+                    viewBox="0 0 900 240"
+                    preserveAspectRatio="none"
+                    style="width: 100%; height: 240px; display: block"
+                  >
+                    <line x1="40" y1="200" x2="890" y2="200" stroke="var(--color-border)"></line>
+                    <line
+                      x1="40"
+                      y1="20"
+                      x2="890"
+                      y2="20"
+                      stroke="var(--color-border)"
+                      stroke-dasharray="3 4"
+                    ></line>
+                    <line
+                      x1="40"
+                      y1="110"
+                      x2="890"
+                      y2="110"
+                      stroke="var(--color-border)"
+                      stroke-dasharray="3 4"
+                    ></line>
+                    <polyline
+                      points="{{ ptsPath }}"
+                      fill="none"
+                      stroke="var(--color-accent)"
+                      stroke-width="2"
+                    ></polyline>
+                    <polyline
+                      points="{{ rebPath }}"
+                      fill="none"
+                      stroke="var(--color-accent-purple)"
+                      stroke-width="2"
+                    ></polyline>
+                    <polyline
+                      points="{{ astPath }}"
+                      fill="none"
+                      stroke="var(--color-highlight)"
+                      stroke-width="2"
+                    ></polyline>
+                  </svg>
+                </section>
+
+                <section style="display: grid; gap: var(--space-3)">
+                  <h2
+                    style="
+                      margin: 0;
+                      text-transform: uppercase;
+                      font-size: var(--font-size-xs);
+                      letter-spacing: var(--tracking-wide);
+                      color: var(--color-text-muted);
+                      text-shadow: none;
+                      font-family: var(--font-display);
+                    "
+                  >
+                    Game log
+                  </h2>
+                  <div
+                    style="
+                      overflow-x: auto;
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-md);
+                    "
+                  >
+                    <table
+                      style="
+                        width: 100%;
+                        min-width: 1180px;
+                        border-collapse: collapse;
+                        font-size: var(--font-size-sm);
+                        font-variant-numeric: tabular-nums;
+                      "
+                    >
+                      <thead>
+                        <tr>
+                          <sc-for list="{{ gameLogHeaders }}" as="h" hint-placeholder-count="20">
+                            <th style="{{ h.style }}">{{ h.label }}</th>
+                          </sc-for>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <sc-for list="{{ gameLogRows }}" as="row" hint-placeholder-count="8">
+                          <tr>
+                            <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="20">
+                              <td style="{{ cell.style }}">{{ cell.v }}</td>
+                            </sc-for>
+                          </tr>
+                        </sc-for>
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              </main>
+            </sc-if>
+
+            <sc-if value="{{ isTeams }}" hint-placeholder-val="{{ false }}">
+              <main style="display: grid; gap: var(--space-4); padding: var(--space-6)">
+                <h1
+                  style="
+                    margin: 0;
+                    font-family: var(--font-display);
+                    font-size: var(--font-size-xl);
+                    font-weight: var(--font-weight-bold);
+                    line-height: 1.15;
+                    letter-spacing: var(--tracking-tight);
+                    text-shadow:
+                      0.025em 0.025em var(--color-retro-shadow),
+                      0.05em 0.05em var(--color-retro-shadow),
+                      0.075em 0.075em var(--color-retro-shadow),
+                      0.1em 0.1em var(--color-retro-shadow),
+                      0.125em 0.125em var(--color-retro-shadow),
+                      0.15em 0.15em var(--color-retro-shadow),
+                      0.175em 0.175em var(--color-retro-shadow),
+                      0.2em 0.2em var(--color-retro-shadow),
+                      0.225em 0.225em var(--color-retro-shadow),
+                      0.25em 0.25em var(--color-retro-shadow);
+                  "
+                >
+                  Teams
+                </h1>
+                <nav
+                  aria-label="Team grouping"
+                  style="border-bottom: 1px solid var(--color-border)"
+                >
+                  <ul
+                    style="
+                      display: grid;
+                      grid-auto-flow: column;
+                      justify-content: start;
+                      gap: var(--space-2);
+                      margin: 0;
+                      padding: 0;
+                      list-style: none;
+                    "
+                  >
+                    <li>
+                      <a
+                        href="#"
+                        style="
+                          display: inline-grid;
+                          padding: var(--space-2) var(--space-3);
+                          border-bottom: 2px solid var(--color-accent);
+                          color: var(--color-accent);
+                          font-size: var(--font-size-sm);
+                        "
+                        >Division</a
+                      >
+                    </li>
+                    <li>
+                      <a
+                        href="#"
+                        style="
+                          display: inline-grid;
+                          padding: var(--space-2) var(--space-3);
+                          border-bottom: 2px solid transparent;
+                          color: var(--color-text-muted);
+                          font-size: var(--font-size-sm);
+                        "
+                        >Conference</a
+                      >
+                    </li>
+                    <li>
+                      <a
+                        href="#"
+                        style="
+                          display: inline-grid;
+                          padding: var(--space-2) var(--space-3);
+                          border-bottom: 2px solid transparent;
+                          color: var(--color-text-muted);
+                          font-size: var(--font-size-sm);
+                        "
+                        >League</a
+                      >
+                    </li>
+                  </ul>
+                </nav>
+                <p
+                  style="margin: 0; color: var(--color-text-muted); font-size: var(--font-size-sm)"
+                >
+                  2024-25 regular season
+                </p>
+                <section
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+                    gap: var(--space-4);
+                  "
+                >
+                  <sc-for list="{{ divisions }}" as="d" hint-placeholder-count="6">
+                    <section
+                      style="
+                        display: grid;
+                        gap: var(--space-2);
+                        align-content: start;
+                        padding: var(--space-4);
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-md);
+                        background: var(--color-surface);
+                      "
+                    >
+                      <h2
+                        style="
+                          margin: 0;
+                          text-transform: uppercase;
+                          font-size: var(--font-size-xs);
+                          letter-spacing: var(--tracking-wide);
+                          color: var(--color-accent);
+                          text-shadow: none;
+                          font-family: var(--font-display);
+                        "
+                      >
+                        {{ d.title }}
+                      </h2>
+                      <ol style="display: grid; margin: 0; padding: 0; list-style: none">
+                        <sc-for list="{{ d.teams }}" as="t" hint-placeholder-count="5">
+                          <li>
+                            <a
+                              href="#"
+                              onClick="{{ goTeam }}"
+                              style="
+                                display: grid;
+                                grid-template-columns: auto 1fr auto auto;
+                                align-items: center;
+                                gap: var(--space-3);
+                                padding: var(--space-2) var(--space-1);
+                                border-top: 1px solid var(--color-border);
+                                color: var(--color-text);
+                                text-decoration: none;
+                              "
+                            >
+                              <span style="{{ t.chipStyle }}">{{ t.abbr }}</span>
+                              <span style="font-weight: var(--font-weight-medium)"
+                                >{{ t.name }}</span
+                              >
+                              <span
+                                style="
+                                  font-family: var(--font-mono);
+                                  font-variant-numeric: tabular-nums;
+                                "
+                                >{{ t.record }}</span
+                              >
+                              <span
+                                style="
+                                  font-family: var(--font-mono);
+                                  font-variant-numeric: tabular-nums;
+                                  color: var(--color-text-muted);
+                                  font-size: var(--font-size-sm);
+                                "
+                                >{{ t.pct }}</span
+                              >
+                            </a>
+                          </li>
+                        </sc-for>
+                      </ol>
+                      <svg
+                        viewBox="0 0 400 120"
+                        preserveAspectRatio="none"
+                        style="
+                          width: 100%;
+                          height: 120px;
+                          display: block;
+                          margin-top: var(--space-2);
+                        "
+                      >
+                        <line x1="0" y1="110" x2="400" y2="110" stroke="var(--color-border)"></line>
+                        <sc-for list="{{ d.trend }}" as="s" hint-placeholder-count="5">
+                          <polyline
+                            points="{{ s.points }}"
+                            fill="none"
+                            stroke="{{ s.color }}"
+                            stroke-width="2"
+                          ></polyline>
+                        </sc-for>
+                      </svg>
+                    </section>
+                  </sc-for>
+                </section>
+              </main>
+            </sc-if>
+
+            <sc-if value="{{ isTeam }}" hint-placeholder-val="{{ false }}">
+              <main
+                style="
+                  display: grid;
+                  gap: var(--space-4);
+                  padding: var(--space-6);
+                  justify-items: start;
+                "
+              >
+                <header
+                  style="
+                    display: grid;
+                    grid-template-columns: auto 1fr auto;
+                    align-items: center;
+                    gap: var(--space-4);
+                    width: 100%;
+                  "
+                >
+                  <span
+                    style="
+                      display: inline-grid;
+                      place-items: center;
+                      min-height: var(--control-height);
+                      padding: var(--space-1) var(--space-3);
+                      border: 1px solid currentcolor;
+                      border-radius: var(--radius-lg);
+                      font-family: var(--font-display);
+                      font-size: var(--font-size-sm);
+                      font-weight: var(--font-weight-bold);
+                      letter-spacing: 0.04em;
+                      background: #ce1141;
+                      color: #ffffff;
+                    "
+                    >TOR</span
+                  >
+                  <span style="display: grid; gap: var(--space-1)">
+                    <h1
+                      style="
+                        margin: 0;
+                        font-family: var(--font-display);
+                        font-size: var(--font-size-xl);
+                        font-weight: var(--font-weight-bold);
+                        line-height: 1.15;
+                        letter-spacing: var(--tracking-tight);
+                        text-shadow:
+                          0.025em 0.025em var(--color-retro-shadow),
+                          0.05em 0.05em var(--color-retro-shadow),
+                          0.075em 0.075em var(--color-retro-shadow),
+                          0.1em 0.1em var(--color-retro-shadow),
+                          0.125em 0.125em var(--color-retro-shadow),
+                          0.15em 0.15em var(--color-retro-shadow),
+                          0.175em 0.175em var(--color-retro-shadow),
+                          0.2em 0.2em var(--color-retro-shadow),
+                          0.225em 0.225em var(--color-retro-shadow),
+                          0.25em 0.25em var(--color-retro-shadow);
+                      "
+                    >
+                      Toronto Raptors
+                    </h1>
+                    <span style="color: var(--color-text-muted); font-size: var(--font-size-sm)"
+                      >Atlantic Division · Eastern Conference · 2024-25 regular season</span
+                    >
+                  </span>
+                  <span
+                    style="
+                      font-family: var(--font-mono);
+                      font-size: var(--font-size-xl);
+                      font-variant-numeric: tabular-nums;
+                    "
+                    >30–52</span
+                  >
+                </header>
+                <section
+                  style="
+                    display: grid;
+                    grid-template-columns: minmax(20rem, 26rem) minmax(0, 48rem);
+                    align-items: start;
+                    gap: var(--space-4);
+                    width: 100%;
+                  "
+                >
+                  <section
+                    style="
+                      display: grid;
+                      gap: var(--space-2);
+                      align-content: start;
+                      width: 100%;
+                      padding: var(--space-4);
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-md);
+                      background: var(--color-surface);
+                    "
+                  >
+                    <h2
+                      style="
+                        margin: 0;
+                        text-transform: uppercase;
+                        font-size: var(--font-size-xs);
+                        letter-spacing: var(--tracking-wide);
+                        color: var(--color-accent);
+                        text-shadow: none;
+                        font-family: var(--font-display);
+                      "
+                    >
+                      Roster
+                    </h2>
+                    <ul
+                      style="
+                        display: grid;
+                        gap: var(--space-1);
+                        margin: 0;
+                        padding: 0;
+                        list-style: none;
+                      "
+                    >
+                      <sc-for list="{{ roster }}" as="p" hint-placeholder-count="10">
+                        <li>
+                          <a
+                            href="#"
+                            onClick="{{ goPlayer }}"
+                            style="
+                              display: grid;
+                              grid-template-columns: auto 1fr auto auto;
+                              align-items: center;
+                              gap: var(--space-2);
+                              padding: var(--space-1) 0;
+                              color: var(--color-text);
+                              text-decoration: none;
+                            "
+                          >
+                            <span role="img" style="{{ p.avatarStyle }}">{{ p.initials }}</span>
+                            <span style="font-size: var(--font-size-sm)">{{ p.name }}</span>
+                            <span
+                              style="
+                                color: var(--color-text-muted);
+                                font-family: var(--font-mono);
+                                font-size: var(--font-size-xs);
+                              "
+                              >{{ p.pos }}</span
+                            >
+                            <span
+                              style="
+                                color: var(--color-text-muted);
+                                font-family: var(--font-mono);
+                                font-size: var(--font-size-xs);
+                              "
+                              >{{ p.jersey }}</span
+                            >
+                          </a>
+                        </li>
+                      </sc-for>
+                    </ul>
+                  </section>
+                  <section
+                    style="
+                      width: 100%;
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-md);
+                      background: var(--color-surface);
+                      overflow-x: auto;
+                    "
+                  >
+                    <table
+                      style="
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-variant-numeric: tabular-nums;
+                      "
+                    >
+                      <thead>
+                        <tr>
+                          <th
+                            style="
+                              padding: var(--space-2) var(--space-4);
+                              text-transform: uppercase;
+                              font-size: var(--font-size-xs);
+                              letter-spacing: var(--tracking-wide);
+                              color: var(--color-text-muted);
+                              text-align: left;
+                            "
+                          >
+                            Stat
+                          </th>
+                          <th
+                            style="
+                              padding: var(--space-2) var(--space-4);
+                              text-transform: uppercase;
+                              font-size: var(--font-size-xs);
+                              letter-spacing: var(--tracking-wide);
+                              color: var(--color-text-muted);
+                              text-align: right;
+                              font-family: var(--font-mono);
+                              white-space: nowrap;
+                            "
+                          >
+                            Value
+                          </th>
+                          <th
+                            style="
+                              padding: var(--space-2) var(--space-4);
+                              text-transform: uppercase;
+                              font-size: var(--font-size-xs);
+                              letter-spacing: var(--tracking-wide);
+                              color: var(--color-text-muted);
+                              text-align: right;
+                              font-family: var(--font-mono);
+                              white-space: nowrap;
+                            "
+                          >
+                            League rank
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <sc-for list="{{ teamStats }}" as="s" hint-placeholder-count="12">
+                          <tr>
+                            <td
+                              style="
+                                padding: var(--space-2) var(--space-4);
+                                border-top: 1px solid var(--color-border);
+                              "
+                            >
+                              <span style="display: block; font-weight: var(--font-weight-semibold)"
+                                >{{ s.label }}</span
+                              >
+                              <span
+                                style="
+                                  display: block;
+                                  color: var(--color-text-muted);
+                                  font-size: var(--font-size-xs);
+                                "
+                                >{{ s.description }}</span
+                              >
+                            </td>
+                            <td
+                              style="
+                                padding: var(--space-2) var(--space-4);
+                                border-top: 1px solid var(--color-border);
+                                text-align: right;
+                                white-space: nowrap;
+                                font-family: var(--font-mono);
+                              "
+                            >
+                              {{ s.value }}
+                            </td>
+                            <td style="{{ s.rankStyle }}">{{ s.rank }}</td>
+                          </tr>
+                        </sc-for>
+                      </tbody>
+                    </table>
+                  </section>
+                </section>
+                <p style="margin: 0; font-size: var(--font-size-sm)">
+                  <a href="#" onClick="{{ goTeams }}">← All teams</a>
+                </p>
+              </main>
+            </sc-if>
+
+            <sc-if value="{{ isMyTeams }}" hint-placeholder-val="{{ false }}">
+              <main style="display: grid; gap: var(--space-4); padding: var(--space-6)">
+                <header
+                  style="
+                    display: grid;
+                    grid-template-columns: 1fr auto;
+                    align-items: center;
+                    gap: var(--space-4);
+                  "
+                >
+                  <h1
+                    style="
+                      margin: 0;
+                      font-family: var(--font-display);
+                      font-size: var(--font-size-xl);
+                      font-weight: var(--font-weight-bold);
+                      line-height: 1.15;
+                      letter-spacing: var(--tracking-tight);
+                      text-shadow:
+                        0.025em 0.025em var(--color-retro-shadow),
+                        0.05em 0.05em var(--color-retro-shadow),
+                        0.075em 0.075em var(--color-retro-shadow),
+                        0.1em 0.1em var(--color-retro-shadow),
+                        0.125em 0.125em var(--color-retro-shadow),
+                        0.15em 0.15em var(--color-retro-shadow),
+                        0.175em 0.175em var(--color-retro-shadow),
+                        0.2em 0.2em var(--color-retro-shadow),
+                        0.225em 0.225em var(--color-retro-shadow),
+                        0.25em 0.25em var(--color-retro-shadow);
+                    "
+                  >
+                    My Teams
+                  </h1>
+                  <a
+                    href="#"
+                    style="
+                      padding: var(--space-2) var(--space-4);
+                      border: 1px solid var(--color-accent);
+                      border-radius: var(--radius-sm);
+                      color: var(--color-accent);
+                      font-size: var(--font-size-sm);
+                      font-weight: var(--font-weight-semibold);
+                      text-decoration: none;
+                    "
+                    >Create team</a
+                  >
+                </header>
+                <section style="display: grid; gap: var(--space-3)">
+                  <p
+                    style="
+                      margin: 0;
+                      color: var(--color-text-muted);
+                      font-size: var(--font-size-sm);
+                    "
+                  >
+                    League: Dynasty Warriors
+                  </p>
+                  <details
+                    open
+                    style="
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-md);
+                      background: var(--color-surface);
+                    "
+                  >
+                    <summary
+                      style="
+                        display: grid;
+                        grid-template-columns: auto 1fr auto;
+                        align-items: center;
+                        gap: var(--space-2);
+                        padding: var(--space-3) var(--space-4);
+                        cursor: pointer;
+                        list-style: none;
+                      "
+                    >
+                      <span
+                        aria-hidden="true"
+                        style="color: var(--color-accent); font-size: var(--font-size-xs)"
+                        >▸</span
+                      >
+                      <a
+                        href="#"
+                        style="
+                          font-weight: var(--font-weight-semibold);
+                          color: var(--color-text);
+                          text-decoration: none;
+                        "
+                        >Rim Protectors</a
+                      >
+                      <span
+                        style="
+                          color: var(--color-text-muted);
+                          font-family: var(--font-mono);
+                          font-size: var(--font-size-xs);
+                        "
+                        >9/13 slots filled</span
+                      >
+                    </summary>
+                    <span
+                      style="
+                        display: grid;
+                        gap: var(--space-3);
+                        padding: var(--space-3) var(--space-4) var(--space-4);
+                        border-top: 1px solid var(--color-border);
+                      "
+                    >
+                      <sc-for list="{{ rosterGroups }}" as="g" hint-placeholder-count="3">
+                        <span style="display: grid; gap: var(--space-2)">
+                          <span
+                            style="
+                              text-transform: uppercase;
+                              font-size: var(--font-size-xs);
+                              letter-spacing: var(--tracking-wide);
+                              color: var(--color-accent);
+                            "
+                            >{{ g.title }}</span
+                          >
+                          <ul
+                            style="
+                              display: grid;
+                              gap: var(--space-1);
+                              margin: 0;
+                              padding: 0;
+                              list-style: none;
+                            "
+                          >
+                            <sc-for list="{{ g.slots }}" as="s" hint-placeholder-count="8">
+                              <li
+                                style="
+                                  display: grid;
+                                  grid-template-columns: 3rem 1fr;
+                                  align-items: center;
+                                  gap: var(--space-2);
+                                  font-size: var(--font-size-sm);
+                                "
+                              >
+                                <span
+                                  style="
+                                    font-family: var(--font-mono);
+                                    font-size: var(--font-size-xs);
+                                    letter-spacing: var(--tracking-wide);
+                                    color: var(--color-text-muted);
+                                  "
+                                  >{{ s.slot }}</span
+                                >
+                                <span style="{{ s.bodyStyle }}">
+                                  <span role="img" style="{{ s.avatarStyle }}"
+                                    >{{ s.initials }}</span
+                                  >
+                                  <a href="#" onClick="{{ goPlayer }}">{{ s.name }}</a>
+                                  <span
+                                    style="
+                                      color: var(--color-text-muted);
+                                      font-family: var(--font-mono);
+                                      font-size: var(--font-size-xs);
+                                    "
+                                    >{{ s.pos }}</span
+                                  >
+                                </span>
+                              </li>
+                            </sc-for>
+                          </ul>
+                        </span>
+                      </sc-for>
+                      <button
+                        type="button"
+                        style="
+                          justify-self: start;
+                          padding: var(--space-1) var(--space-3);
+                          border: 1px solid var(--color-border);
+                          border-radius: var(--radius-sm);
+                          background: none;
+                          color: var(--color-text-muted);
+                          font-family: inherit;
+                          font-size: var(--font-size-sm);
+                          cursor: pointer;
+                        "
+                      >
+                        Delete team
+                      </button>
+                    </span>
+                  </details>
+                  <details
+                    style="
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-md);
+                      background: var(--color-surface);
+                    "
+                  >
+                    <summary
+                      style="
+                        display: grid;
+                        grid-template-columns: auto 1fr auto;
+                        align-items: center;
+                        gap: var(--space-2);
+                        padding: var(--space-3) var(--space-4);
+                        cursor: pointer;
+                        list-style: none;
+                      "
+                    >
+                      <span
+                        aria-hidden="true"
+                        style="color: var(--color-accent); font-size: var(--font-size-xs)"
+                        >▸</span
+                      >
+                      <a
+                        href="#"
+                        style="
+                          font-weight: var(--font-weight-semibold);
+                          color: var(--color-text);
+                          text-decoration: none;
+                        "
+                        >Punt FT% Build</a
+                      >
+                      <span
+                        style="
+                          color: var(--color-text-muted);
+                          font-family: var(--font-mono);
+                          font-size: var(--font-size-xs);
+                        "
+                        >13/13 slots filled</span
+                      >
+                    </summary>
+                  </details>
+                </section>
+              </main>
+            </sc-if>
+
+            <sc-if value="{{ isLeagues }}" hint-placeholder-val="{{ false }}">
+              <main style="display: grid; gap: var(--space-4); padding: var(--space-6)">
+                <h1
+                  style="
+                    margin: 0;
+                    font-family: var(--font-display);
+                    font-size: var(--font-size-xl);
+                    font-weight: var(--font-weight-bold);
+                    line-height: 1.15;
+                    letter-spacing: var(--tracking-tight);
+                    text-shadow:
+                      0.025em 0.025em var(--color-retro-shadow),
+                      0.05em 0.05em var(--color-retro-shadow),
+                      0.075em 0.075em var(--color-retro-shadow),
+                      0.1em 0.1em var(--color-retro-shadow),
+                      0.125em 0.125em var(--color-retro-shadow),
+                      0.15em 0.15em var(--color-retro-shadow),
+                      0.175em 0.175em var(--color-retro-shadow),
+                      0.2em 0.2em var(--color-retro-shadow),
+                      0.225em 0.225em var(--color-retro-shadow),
+                      0.25em 0.25em var(--color-retro-shadow);
+                  "
+                >
+                  Leagues
+                </h1>
+                <section style="display: grid; gap: var(--space-4)">
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      justify-content: space-between;
+                      gap: var(--space-4);
+                    "
+                  >
+                    <p
+                      style="
+                        margin: 0;
+                        color: var(--color-text-muted);
+                        font-size: var(--font-size-sm);
+                      "
+                    >
+                      2 of 5 leagues
+                    </p>
+                    <button
+                      type="button"
+                      style="
+                        display: inline-flex;
+                        align-items: center;
+                        gap: var(--space-2);
+                        padding: var(--space-1) var(--space-3);
+                        border: 1px solid var(--color-accent-purple);
+                        border-radius: var(--radius-sm);
+                        background: var(--color-surface);
+                        color: var(--color-text);
+                        font-family: inherit;
+                        font-size: var(--font-size-sm);
+                        cursor: pointer;
+                        box-shadow:
+                          1px 1px 0 var(--color-retro-shadow-purple),
+                          2px 2px 0 var(--color-retro-shadow-purple),
+                          3px 3px 0 var(--color-retro-shadow-purple),
+                          4px 4px 0 var(--color-retro-shadow-purple);
+                      "
+                    >
+                      Create league
+                    </button>
+                  </div>
+                  <ul
+                    style="
+                      display: grid;
+                      gap: var(--space-4);
+                      margin: 0;
+                      padding: 0;
+                      list-style: none;
+                    "
+                  >
+                    <sc-for list="{{ leagues }}" as="l" hint-placeholder-count="2">
+                      <li
+                        style="
+                          display: grid;
+                          gap: var(--space-2);
+                          padding: var(--space-4);
+                          border: 1px solid var(--color-border);
+                          border-radius: var(--radius-lg);
+                          background: var(--color-surface);
+                        "
+                      >
+                        <div
+                          style="
+                            display: flex;
+                            align-items: center;
+                            justify-content: space-between;
+                            gap: var(--space-3);
+                          "
+                        >
+                          <a
+                            href="#"
+                            style="
+                              color: var(--color-text);
+                              font-size: var(--font-size-lg);
+                              font-weight: var(--font-weight-semibold);
+                              text-decoration: none;
+                            "
+                            >{{ l.name }}</a
+                          >
+                          <span style="{{ l.badgeStyle }}">{{ l.badge }}</span>
+                        </div>
+                        <p
+                          style="
+                            margin: 0;
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-sm);
+                          "
+                        >
+                          {{ l.meta }}
+                        </p>
+                        <div style="display: flex; flex-wrap: wrap; gap: var(--space-2)">
+                          <button
+                            type="button"
+                            style="
+                              display: inline-flex;
+                              align-items: center;
+                              gap: var(--space-2);
+                              padding: var(--space-1) var(--space-3);
+                              border: 1px solid var(--color-accent-purple);
+                              border-radius: var(--radius-sm);
+                              background: var(--color-surface);
+                              color: var(--color-text);
+                              font-family: inherit;
+                              font-size: var(--font-size-sm);
+                              cursor: pointer;
+                              box-shadow:
+                                1px 1px 0 var(--color-retro-shadow-purple),
+                                2px 2px 0 var(--color-retro-shadow-purple),
+                                3px 3px 0 var(--color-retro-shadow-purple),
+                                4px 4px 0 var(--color-retro-shadow-purple);
+                            "
+                          >
+                            {{ l.action }}
+                          </button>
+                          <button
+                            type="button"
+                            style="
+                              display: inline-flex;
+                              align-items: center;
+                              gap: var(--space-2);
+                              padding: var(--space-1) var(--space-3);
+                              border: 1px dashed
+                                color-mix(
+                                  in srgb,
+                                  var(--color-accent-strong) 45%,
+                                  var(--color-border)
+                                );
+                              border-radius: var(--radius-sm);
+                              background: var(--color-surface);
+                              color: var(--color-accent-strong);
+                              font-family: inherit;
+                              font-size: var(--font-size-sm);
+                              cursor: pointer;
+                              box-shadow:
+                                1px 1px 0 var(--color-retro-shadow-purple),
+                                2px 2px 0 var(--color-retro-shadow-purple),
+                                3px 3px 0 var(--color-retro-shadow-purple),
+                                4px 4px 0 var(--color-retro-shadow-purple);
+                            "
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </li>
+                    </sc-for>
+                  </ul>
+                </section>
+              </main>
+            </sc-if>
+
+            <sc-if value="{{ isWatchlist }}" hint-placeholder-val="{{ false }}">
+              <main style="display: grid; gap: var(--space-4); padding: var(--space-6)">
+                <h1
+                  style="
+                    margin: 0;
+                    font-family: var(--font-display);
+                    font-size: var(--font-size-xl);
+                    font-weight: var(--font-weight-bold);
+                    line-height: 1.15;
+                    letter-spacing: var(--tracking-tight);
+                    text-shadow:
+                      0.025em 0.025em var(--color-retro-shadow),
+                      0.05em 0.05em var(--color-retro-shadow),
+                      0.075em 0.075em var(--color-retro-shadow),
+                      0.1em 0.1em var(--color-retro-shadow),
+                      0.125em 0.125em var(--color-retro-shadow),
+                      0.15em 0.15em var(--color-retro-shadow),
+                      0.175em 0.175em var(--color-retro-shadow),
+                      0.2em 0.2em var(--color-retro-shadow),
+                      0.225em 0.225em var(--color-retro-shadow),
+                      0.25em 0.25em var(--color-retro-shadow);
+                  "
+                >
+                  Starred Players
+                </h1>
+                <p
+                  style="margin: 0; color: var(--color-text-muted); font-size: var(--font-size-sm)"
+                >
+                  League: Dynasty Warriors
+                </p>
+                <p
+                  style="margin: 0; color: var(--color-text-muted); font-size: var(--font-size-sm)"
+                >
+                  18 of 50 starred
+                </p>
+                <div style="max-width: 100%; overflow-x: auto">
+                  <table
+                    style="
+                      width: 100%;
+                      min-width: 72rem;
+                      border-collapse: collapse;
+                      font-variant-numeric: tabular-nums;
+                    "
+                  >
+                    <thead>
+                      <tr>
+                        <th style="width: 1%; padding: var(--space-2)"></th>
+                        <th
+                          style="
+                            padding: var(--space-2) var(--space-3);
+                            text-transform: uppercase;
+                            font-size: var(--font-size-xs);
+                            letter-spacing: var(--tracking-wide);
+                            color: var(--color-text-muted);
+                            text-align: right;
+                          "
+                        >
+                          #
+                        </th>
+                        <sc-for list="{{ regularHeaders }}" as="h" hint-placeholder-count="18">
+                          <th style="{{ h.style }}">{{ h.label }}</th>
+                        </sc-for>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <sc-for list="{{ starredRows }}" as="row" hint-placeholder-count="6">
+                        <tr>
+                          <td
+                            style="
+                              width: 1%;
+                              padding: var(--space-2);
+                              border-top: 1px solid var(--color-border);
+                            "
+                          >
+                            <button
+                              type="button"
+                              aria-pressed="true"
+                              style="
+                                display: grid;
+                                place-items: center;
+                                padding: var(--space-1);
+                                border: 0;
+                                border-radius: var(--radius-sm);
+                                background: none;
+                                color: var(--color-highlight);
+                                cursor: pointer;
+                              "
+                            >
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                style="
+                                  display: block;
+                                  width: var(--font-size-md);
+                                  height: var(--font-size-md);
+                                "
+                              >
+                                <path
+                                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                                ></path>
+                              </svg>
+                            </button>
+                          </td>
+                          <td
+                            style="
+                              padding: var(--space-2) var(--space-3);
+                              border-top: 1px solid var(--color-border);
+                              text-align: right;
+                              font-family: var(--font-mono);
+                              color: var(--color-text-muted);
+                            "
+                          >
+                            {{ row.rank }}
+                          </td>
+                          <td
+                            style="
+                              padding: var(--space-2) var(--space-3);
+                              border-top: 1px solid var(--color-border);
+                            "
+                          >
+                            <span
+                              style="
+                                display: grid;
+                                grid-template-columns: auto 1fr;
+                                align-items: center;
+                                gap: var(--space-2);
+                              "
+                            >
+                              <span role="img" style="{{ row.avatarStyle }}"
+                                >{{ row.initials }}</span
+                              >
+                              <a href="#" onClick="{{ goPlayer }}">{{ row.first }}</a>
+                            </span>
+                          </td>
+                          <td
+                            style="
+                              padding: var(--space-2) var(--space-3);
+                              border-top: 1px solid var(--color-border);
+                            "
+                          >
+                            <a href="#" onClick="{{ goPlayer }}">{{ row.last }}</a>
+                          </td>
+                          <td
+                            style="
+                              padding: var(--space-2) var(--space-3);
+                              border-top: 1px solid var(--color-border);
+                            "
+                          >
+                            <span style="{{ row.chipStyle }}">{{ row.teamAbbr }}</span>
+                          </td>
+                          <td
+                            style="
+                              padding: var(--space-2) var(--space-3);
+                              border-top: 1px solid var(--color-border);
+                            "
+                          >
+                            {{ row.pos }}
+                          </td>
+                          <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="14">
+                            <td style="{{ cell.style }}">{{ cell.v }}</td>
+                          </sc-for>
+                        </tr>
+                      </sc-for>
+                    </tbody>
+                  </table>
+                </div>
+              </main>
+            </sc-if>
+
+            <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+              <main style="display: grid; gap: var(--space-4); padding: var(--space-6)">
+                <h1
+                  style="
+                    margin: 0;
+                    font-family: var(--font-display);
+                    font-size: var(--font-size-xl);
+                    font-weight: var(--font-weight-bold);
+                    line-height: 1.15;
+                    letter-spacing: var(--tracking-tight);
+                    text-shadow:
+                      0.025em 0.025em var(--color-retro-shadow),
+                      0.05em 0.05em var(--color-retro-shadow),
+                      0.075em 0.075em var(--color-retro-shadow),
+                      0.1em 0.1em var(--color-retro-shadow),
+                      0.125em 0.125em var(--color-retro-shadow),
+                      0.15em 0.15em var(--color-retro-shadow),
+                      0.175em 0.175em var(--color-retro-shadow),
+                      0.2em 0.2em var(--color-retro-shadow),
+                      0.225em 0.225em var(--color-retro-shadow),
+                      0.25em 0.25em var(--color-retro-shadow);
+                  "
+                >
+                  Settings
+                </h1>
+
+                <section
+                  style="
+                    display: grid;
+                    gap: var(--space-3);
+                    padding: var(--space-6);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    background: var(--color-surface);
+                  "
+                >
+                  <h2
+                    style="
+                      margin: 0;
+                      font-family: var(--font-display);
+                      font-size: var(--font-size-lg);
+                      font-weight: var(--font-weight-bold);
+                      line-height: 1.15;
+                      letter-spacing: var(--tracking-tight);
+                      text-shadow:
+                        0.025em 0.025em var(--color-retro-shadow),
+                        0.05em 0.05em var(--color-retro-shadow),
+                        0.075em 0.075em var(--color-retro-shadow),
+                        0.1em 0.1em var(--color-retro-shadow),
+                        0.125em 0.125em var(--color-retro-shadow),
+                        0.15em 0.15em var(--color-retro-shadow),
+                        0.175em 0.175em var(--color-retro-shadow),
+                        0.2em 0.2em var(--color-retro-shadow),
+                        0.225em 0.225em var(--color-retro-shadow),
+                        0.25em 0.25em var(--color-retro-shadow);
+                    "
+                  >
+                    Fantasy
+                  </h2>
+                  <fieldset
+                    style="
+                      display: grid;
+                      gap: var(--space-2);
+                      align-content: start;
+                      border: 1px solid var(--color-border);
+                      border-radius: var(--radius-md);
+                      padding: var(--space-3);
+                      margin: 0;
+                    "
+                  >
+                    <legend
+                      style="
+                        padding: 0 var(--space-1);
+                        text-transform: uppercase;
+                        font-size: var(--font-size-xs);
+                        letter-spacing: var(--tracking-wide);
+                        color: var(--color-text-muted);
+                      "
+                    >
+                      Preferred value formula
+                    </legend>
+                    <sc-for list="{{ formulaOptions }}" as="o" hint-placeholder-count="8">
+                      <div style="display: grid; gap: var(--space-1)">
+                        <label
+                          style="
+                            display: grid;
+                            grid-auto-flow: column;
+                            justify-content: start;
+                            align-items: center;
+                            gap: var(--space-2);
+                            color: var(--color-text);
+                            font-size: var(--font-size-sm);
+                          "
+                        >
+                          <input
+                            type="radio"
+                            name="preferredFormula"
+                            checked="{{ o.checked }}"
+                            style="
+                              appearance: none;
+                              display: grid;
+                              place-content: center;
+                              width: var(--control-size);
+                              height: var(--control-size);
+                              border: 1px solid var(--color-control-border);
+                              border-radius: var(--radius-full);
+                              background: var(--color-control-bg);
+                              cursor: pointer;
+                            "
+                          />
+                          <span>{{ o.title }}</span>
+                        </label>
+                        <p
+                          style="
+                            margin: 0 0 0 calc(var(--control-size) + var(--space-2));
+                            color: var(--color-text-muted);
+                            font-size: var(--font-size-xs);
+                          "
+                        >
+                          {{ o.description }}
+                        </p>
+                      </div>
+                    </sc-for>
+                  </fieldset>
+                </section>
+
+                <section
+                  style="
+                    display: grid;
+                    gap: var(--space-3);
+                    padding: var(--space-6);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    background: var(--color-surface);
+                  "
+                >
+                  <h2
+                    style="
+                      margin: 0;
+                      font-family: var(--font-display);
+                      font-size: var(--font-size-lg);
+                      font-weight: var(--font-weight-bold);
+                      line-height: 1.15;
+                      letter-spacing: var(--tracking-tight);
+                      text-shadow:
+                        0.025em 0.025em var(--color-retro-shadow),
+                        0.05em 0.05em var(--color-retro-shadow),
+                        0.075em 0.075em var(--color-retro-shadow),
+                        0.1em 0.1em var(--color-retro-shadow),
+                        0.125em 0.125em var(--color-retro-shadow),
+                        0.15em 0.15em var(--color-retro-shadow),
+                        0.175em 0.175em var(--color-retro-shadow),
+                        0.2em 0.2em var(--color-retro-shadow),
+                        0.225em 0.225em var(--color-retro-shadow),
+                        0.25em 0.25em var(--color-retro-shadow);
+                    "
+                  >
+                    Appearance
+                  </h2>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                      gap: var(--space-4);
+                    "
+                  >
+                    <fieldset
+                      style="
+                        display: grid;
+                        gap: var(--space-2);
+                        align-content: start;
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-md);
+                        padding: var(--space-3);
+                        margin: 0;
+                      "
+                    >
+                      <legend
+                        style="
+                          padding: 0 var(--space-1);
+                          text-transform: uppercase;
+                          font-size: var(--font-size-xs);
+                          letter-spacing: var(--tracking-wide);
+                          color: var(--color-text-muted);
+                        "
+                      >
+                        Font size
+                      </legend>
+                      <sc-for list="{{ fontScales }}" as="s" hint-placeholder-count="4">
+                        <label
+                          style="
+                            display: grid;
+                            grid-auto-flow: column;
+                            justify-content: start;
+                            align-items: center;
+                            gap: var(--space-2);
+                            color: var(--color-text);
+                            font-size: var(--font-size-sm);
+                          "
+                        >
+                          <input
+                            type="radio"
+                            name="fontScale"
+                            checked="{{ s.checked }}"
+                            style="
+                              appearance: none;
+                              display: grid;
+                              place-content: center;
+                              width: var(--control-size);
+                              height: var(--control-size);
+                              border: 1px solid var(--color-control-border);
+                              border-radius: var(--radius-full);
+                              background: var(--color-control-bg);
+                              cursor: pointer;
+                            "
+                          />
+                          {{ s.label }}
+                        </label>
+                      </sc-for>
+                    </fieldset>
+                    <section
+                      aria-label="Preview"
+                      style="
+                        display: grid;
+                        align-content: start;
+                        gap: var(--space-2);
+                        padding: var(--space-4);
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-md);
+                        background: var(--color-bg);
+                      "
+                    >
+                      <p
+                        style="
+                          margin: 0;
+                          font-family: var(--font-display);
+                          font-size: var(--font-size-xl);
+                          color: var(--color-text);
+                        "
+                      >
+                        Court Vision
+                      </p>
+                      <p
+                        style="margin: 0; font-size: var(--font-size-md); color: var(--color-text)"
+                      >
+                        Nikola Jokić is averaging a 26/12/9 line over his last 10 games.
+                      </p>
+                      <table style="width: 100%; border-collapse: collapse">
+                        <thead>
+                          <tr>
+                            <th
+                              style="
+                                padding: var(--space-1) var(--space-2);
+                                border-bottom: 1px solid var(--color-border);
+                                color: var(--color-text);
+                                font-size: var(--font-size-sm);
+                                text-align: left;
+                              "
+                            >
+                              Player
+                            </th>
+                            <th
+                              style="
+                                padding: var(--space-1) var(--space-2);
+                                border-bottom: 1px solid var(--color-border);
+                                color: var(--color-text);
+                                font-size: var(--font-size-sm);
+                                text-align: left;
+                              "
+                            >
+                              PTS
+                            </th>
+                            <th
+                              style="
+                                padding: var(--space-1) var(--space-2);
+                                border-bottom: 1px solid var(--color-border);
+                                color: var(--color-text);
+                                font-size: var(--font-size-sm);
+                                text-align: left;
+                              "
+                            >
+                              REB
+                            </th>
+                            <th
+                              style="
+                                padding: var(--space-1) var(--space-2);
+                                border-bottom: 1px solid var(--color-border);
+                                color: var(--color-text);
+                                font-size: var(--font-size-sm);
+                                text-align: left;
+                              "
+                            >
+                              AST
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td
+                              style="
+                                padding: var(--space-1) var(--space-2);
+                                border-bottom: 1px solid var(--color-border);
+                                color: var(--color-text);
+                                font-size: var(--font-size-sm);
+                              "
+                            >
+                              N. Jokić
+                            </td>
+                            <td
+                              style="
+                                padding: var(--space-1) var(--space-2);
+                                border-bottom: 1px solid var(--color-border);
+                                color: var(--color-text);
+                                font-size: var(--font-size-sm);
+                              "
+                            >
+                              26.4
+                            </td>
+                            <td
+                              style="
+                                padding: var(--space-1) var(--space-2);
+                                border-bottom: 1px solid var(--color-border);
+                                color: var(--color-text);
+                                font-size: var(--font-size-sm);
+                              "
+                            >
+                              12.1
+                            </td>
+                            <td
+                              style="
+                                padding: var(--space-1) var(--space-2);
+                                border-bottom: 1px solid var(--color-border);
+                                color: var(--color-text);
+                                font-size: var(--font-size-sm);
+                              "
+                            >
+                              9.2
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </section>
+                  </div>
+                </section>
+
+                <section
+                  style="
+                    display: grid;
+                    gap: var(--space-2);
+                    padding: var(--space-6);
+                    border: 1px dashed var(--color-border);
+                    border-radius: var(--radius-lg);
+                    background: var(--color-surface);
+                  "
+                >
+                  <h2
+                    style="
+                      margin: 0;
+                      font-family: var(--font-display);
+                      font-size: var(--font-size-lg);
+                      font-weight: var(--font-weight-bold);
+                      line-height: 1.15;
+                      letter-spacing: var(--tracking-tight);
+                      text-shadow:
+                        0.025em 0.025em var(--color-retro-shadow),
+                        0.05em 0.05em var(--color-retro-shadow),
+                        0.075em 0.075em var(--color-retro-shadow),
+                        0.1em 0.1em var(--color-retro-shadow),
+                        0.125em 0.125em var(--color-retro-shadow),
+                        0.15em 0.15em var(--color-retro-shadow),
+                        0.175em 0.175em var(--color-retro-shadow),
+                        0.2em 0.2em var(--color-retro-shadow),
+                        0.225em 0.225em var(--color-retro-shadow),
+                        0.25em 0.25em var(--color-retro-shadow);
+                    "
+                  >
+                    Theme
+                  </h2>
+                  <p
+                    style="
+                      margin: 0;
+                      color: var(--color-text-muted);
+                      font-size: var(--font-size-sm);
+                    "
+                  >
+                    Something soon.
+                  </p>
+                </section>
+              </main>
+            </sc-if>
+
+            <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+              <main
+                style="
+                  display: grid;
+                  gap: var(--space-6);
+                  padding: var(--space-8) var(--space-6);
+                  justify-items: start;
+                  align-content: center;
+                  width: 100%;
+                  max-width: 26rem;
+                  justify-self: center;
+                "
+              >
+                <h1
+                  style="
+                    margin: 0;
+                    font-family: var(--font-display);
+                    font-size: var(--font-size-xl);
+                    font-weight: var(--font-weight-bold);
+                    line-height: 1.15;
+                    letter-spacing: var(--tracking-tight);
+                    text-shadow:
+                      0.025em 0.025em var(--color-retro-shadow),
+                      0.05em 0.05em var(--color-retro-shadow),
+                      0.075em 0.075em var(--color-retro-shadow),
+                      0.1em 0.1em var(--color-retro-shadow),
+                      0.125em 0.125em var(--color-retro-shadow),
+                      0.15em 0.15em var(--color-retro-shadow),
+                      0.175em 0.175em var(--color-retro-shadow),
+                      0.2em 0.2em var(--color-retro-shadow),
+                      0.225em 0.225em var(--color-retro-shadow),
+                      0.25em 0.25em var(--color-retro-shadow);
+                  "
+                >
+                  Sign in
+                </h1>
+                <form style="display: grid; gap: var(--space-4); width: 100%; max-width: 22rem">
+                  <label style="display: grid; gap: var(--space-1)">
+                    <span style="color: var(--color-text-muted); font-size: var(--font-size-sm)"
+                      >Email</span
+                    >
+                    <input
+                      type="email"
+                      style="
+                        height: var(--control-height);
+                        padding: 0 var(--space-3);
+                        border: 1px solid var(--color-control-border);
+                        border-radius: var(--control-radius);
+                        background: var(--color-control-bg);
+                        color: var(--color-text);
+                        font-family: inherit;
+                        font-size: var(--font-size-sm);
+                      "
+                    />
+                  </label>
+                  <label style="display: grid; gap: var(--space-1)">
+                    <span style="color: var(--color-text-muted); font-size: var(--font-size-sm)"
+                      >Password</span
+                    >
+                    <input
+                      type="password"
+                      style="
+                        height: var(--control-height);
+                        padding: 0 var(--space-3);
+                        border: 1px solid var(--color-control-border);
+                        border-radius: var(--control-radius);
+                        background: var(--color-control-bg);
+                        color: var(--color-text);
+                        font-family: inherit;
+                        font-size: var(--font-size-sm);
+                      "
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    style="
+                      padding: var(--space-2) var(--space-4);
+                      border: none;
+                      border-radius: var(--radius-sm);
+                      background: var(--color-accent);
+                      color: var(--color-bg);
+                      font-family: inherit;
+                      font-size: var(--font-size-md);
+                      font-weight: var(--font-weight-semibold);
+                      cursor: pointer;
+                    "
+                  >
+                    Sign in
+                  </button>
+                  <p style="color: var(--color-text-muted); font-size: var(--font-size-sm)">
+                    No account? <a href="#" style="text-decoration: underline">Create one</a>
+                  </p>
+                </form>
+              </main>
+            </sc-if>
+          </div>
+        </div>
+
+        <x-import
+          component-from-global-scope="CourtVision.SiteFooter"
+          hint-size="100%,50px"
+        ></x-import>
+      </div>
+    </x-dc>
+    <script type="text/x-dc" data-dc-script>
+      const TEAMS = {
+        ATL:["Atlanta Hawks","#E03A3E"],BOS:["Boston Celtics","#007A33"],BKN:["Brooklyn Nets","#000000"],
+        CHA:["Charlotte Hornets","#1D1160"],CHI:["Chicago Bulls","#CE1141"],CLE:["Cleveland Cavaliers","#860038"],
+        DAL:["Dallas Mavericks","#00538C"],DEN:["Denver Nuggets","#0E2240"],DET:["Detroit Pistons","#C8102E"],
+        GSW:["Golden State Warriors","#1D428A"],HOU:["Houston Rockets","#CE1141"],IND:["Indiana Pacers","#002D62"],
+        LAC:["LA Clippers","#C8102E"],LAL:["Los Angeles Lakers","#552583"],MEM:["Memphis Grizzlies","#5D76A9"],
+        MIA:["Miami Heat","#98002E"],MIL:["Milwaukee Bucks","#00471B"],MIN:["Minnesota Timberwolves","#0C2340"],
+        NOP:["New Orleans Pelicans","#0C2340"],NYK:["New York Knicks","#006BB6"],OKC:["Oklahoma City Thunder","#007AC1"],
+        ORL:["Orlando Magic","#0077C0"],PHI:["Philadelphia 76ers","#006BB6"],PHX:["Phoenix Suns","#1D1160"],
+        POR:["Portland Trail Blazers","#E03A3E"],SAC:["Sacramento Kings","#5A2D81"],SAS:["San Antonio Spurs","#C4CED4"],
+        TOR:["Toronto Raptors","#CE1141"],UTA:["Utah Jazz","#6A2C91"],WAS:["Washington Wizards","#002B5C"],
+      };
+
+      const chan = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+      const contrastText = (hex) => {
+        const [r, g, b] = [1, 3, 5].map((o) => parseInt(hex.slice(o, o + 2), 16) / 255).map(chan);
+        const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        return (lum + 0.05) / 0.05 >= 4.5 ? "#000000" : "#FFFFFF";
+      };
+      const chipStyle = (abbr) => {
+        const bg = TEAMS[abbr] ? TEAMS[abbr][1] : "transparent";
+        return "display:inline-grid;place-items:center;min-height:0;padding:0 var(--space-1);border:1px solid currentcolor;border-radius:var(--radius-lg);vertical-align:middle;font-family:var(--font-display);font-size:var(--font-size-xs);font-weight:var(--font-weight-bold);letter-spacing:0.04em;background:" + bg + ";color:" + contrastText(bg);
+      };
+      const avatarStyle = (abbr, size) => {
+        const px = size === "lg" ? 96 : 32;
+        const c = TEAMS[abbr] ? TEAMS[abbr][1] : null;
+        return "display:grid;place-items:center;overflow:hidden;width:" + px + "px;height:" + px + "px;border:" + (c ? "2px solid " + c : "1px solid var(--color-border)") + ";border-radius:var(--radius-full);background:var(--color-surface);color:var(--color-text-muted);font-family:var(--font-sans);font-weight:var(--font-weight-semibold);font-size:var(--font-size-" + (size === "lg" ? "lg" : "xs") + ");text-align:center";
+      };
+      const initials = (name) => {
+        const w = name.split(" ").filter(Boolean);
+        return ((w[0] && w[0][0]) || "") + (w.length > 1 ? w[w.length - 1][0] : "");
+      };
+
+      const TD = "padding:var(--space-2) var(--space-3);border-top:1px solid var(--color-border)";
+      const TD_NUM = TD + ";text-align:right;white-space:nowrap;font-family:var(--font-mono)";
+      const TD_NUM_ACTIVE = TD + ";text-align:right;white-space:nowrap;font-family:var(--font-mono);background:color-mix(in srgb, var(--color-accent) 7%, transparent)";
+      const TH_BASE = "padding:var(--space-2) var(--space-3);text-transform:uppercase;font-size:var(--font-size-xs);letter-spacing:var(--tracking-wide);color:var(--color-text-muted);text-shadow:none;text-align:left";
+      const TH_NUM = TH_BASE + ";text-align:right;white-space:nowrap";
+      const TH_ACTIVE = "padding:var(--space-2) var(--space-3);text-transform:uppercase;font-size:var(--font-size-xs);letter-spacing:var(--tracking-wide);text-align:right;white-space:nowrap;background:color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));color:var(--color-accent);box-shadow:inset 0 -2px 0 var(--color-accent)";
+
+      const PLAYERS = [
+        { first: "Nikola", last: "Jokić", team: "DEN", pos: "C",
+          reg: ["70","29.6","12.7","10.2","1.8","0.6","10.9","19.0","1.9","4.7",".576",".417",".800","3.2"],
+          adv: [".222","98.4",".478","26.3","3.2","113.2",".259",".626","8.9","122.1",".080",".172",".663","8.2",".295"],
+          fan: ["+14.2","+11.8","62.3","+9.6","+8.1","+11.4","+6.2"] },
+        { first: "Shai", last: "Gilgeous-Alexander", team: "OKC", pos: "G",
+          reg: ["76","32.7","5.0","6.4","1.7","1.0","11.2","21.8","1.7","4.9",".519",".375",".898","2.4"],
+          adv: [".195","100.1",".303","19.8","2.7","110.4",".112",".558","12.6","123.0",".020",".066",".637","7.1",".343"],
+          fan: ["+11.7","+10.4","52.1","+7.1","+6.8","+9.2","+5.4"] },
+        { first: "Giannis", last: "Antetokounmpo", team: "MIL", pos: "F",
+          reg: ["67","30.4","11.9","6.5","0.9","1.2","11.9","19.7","0.3","1.5",".601",".222",".617","3.1"],
+          adv: [".213","100.9",".316","18.9","2.1","110.9",".238",".609","5.4","116.3",".086",".162",".639","9.6",".353"],
+          fan: ["+9.8","+8.1","55.4","+5.2","+3.9","+7.6","+4.1"] },
+        { first: "Victor", last: "Wembanyama", team: "SAS", pos: "C-F",
+          reg: ["46","24.3","11.0","3.7","1.1","3.8","8.6","18.7","2.7","8.8",".476",".354",".837","3.7"],
+          adv: [".188","101.2",".180","15.0","1.0","105.1",".246",".548","6.8","111.9",".050",".148",".589","14.6",".311"],
+          fan: ["+9.1","+7.4","51.8","+4.5","+2.8","+7.1","+3.9"] },
+        { first: "Luka", last: "Dončić", team: "LAL", pos: "G-F",
+          reg: ["50","28.2","8.2","7.7","1.8","0.5","9.5","20.6","3.3","9.4",".461",".352",".784","3.6"],
+          adv: [".180","99.3",".390","22.6","2.1","116.6",".217",".541","3.1","119.7",".019",".118",".590","10.4",".327"],
+          fan: ["+8.4","+6.9","50.2","+3.8","+3.5","+6.4","+3.3"] },
+        { first: "Tyrese", last: "Haliburton", team: "IND", pos: "G",
+          reg: ["73","18.6","3.5","9.2","1.4","0.7","6.6","13.5","3.0","7.4",".473",".388",".851","1.6"],
+          adv: [".140","103.3",".432","39.7","5.8","115.1",".098",".585","4.2","119.3",".011",".054",".620","6.8",".200"],
+          fan: ["+6.9","+6.2","43.1","+2.3","+2.1","+5.3","+2.8"] },
+        { first: "Domantas", last: "Sabonis", team: "SAC", pos: "F-C",
+          reg: ["70","19.1","13.9","6.0","0.8","0.5","7.6","13.2","0.9","2.5",".590",".417",".756","3.2"],
+          adv: [".181","99.6",".295","24.0","1.9","115.8",".309",".616","1.6","117.4",".123",".215",".639","12.7",".231"],
+          fan: ["+6.5","+5.4","45.9","+1.9","+0.7","+4.9","+2.4"] },
+        { first: "Karl-Anthony", last: "Towns", team: "NYK", pos: "C-F",
+          reg: ["72","24.4","12.8","3.1","1.0","0.7","8.4","16.8","2.2","5.5",".526",".420",".829","2.8"],
+          adv: [".167","98.8",".120","13.1","1.1","114.5",".239",".592","4.9","119.4",".078",".161",".636","11.8",".276"],
+          fan: ["+5.8","+4.7","44.2","+1.2","-0.4","+4.2","+2.1"] },
+        { first: "Jayson", last: "Tatum", team: "BOS", pos: "F",
+          reg: ["72","26.8","8.7","6.0","1.1","0.5","9.1","20.9","3.5","9.9",".453",".343",".823","2.9"],
+          adv: [".166","98.1",".254","18.7","2.1","111.3",".187",".537","6.9","118.2",".026",".107",".586","9.1",".308"],
+          fan: ["+5.1","+4.3","46.8","+0.5","+0.2","+3.8","+1.9"] },
+        { first: "Anthony", last: "Edwards", team: "MIN", pos: "G",
+          reg: ["79","27.6","5.7","4.5","1.2","0.6","9.4","20.6","4.1","10.3",".447",".399",".837","3.2"],
+          adv: [".152","99.2",".199","14.9","1.4","111.5",".126",".546","3.7","115.2",".014",".070",".603","10.1",".312"],
+          fan: ["+4.3","+3.8","43.5","-0.3","-0.6","+3.1","+1.5"] },
+      ];
+
+      const REG_LABELS = ["GP","PTS","REB","AST","STL","BLK","FGM","FGA","3PM","3PA","FG%","3P%","FT%","TOV"];
+      const ADV_LABELS = ["PIE","Pace","AST%","AST Ratio","AST/TO","DRTG","DREB%","EFG%","Net Rtg","ORTG","OREB%","REB%","TS%","TOV Ratio","USG%"];
+      const FAN_LABELS = ["Z-Score","G-Score","PL Linear","VORP","Pos VORP","SGP","Sim Value"];
+
+      const DIVISIONS = [
+        ["Atlantic (East)", [["BOS",61,21],["NYK",51,31],["TOR",30,52],["BKN",26,56],["PHI",24,58]]],
+        ["Central (East)", [["CLE",64,18],["IND",50,32],["MIL",48,34],["DET",44,38],["CHI",39,43]]],
+        ["Southeast (East)", [["ORL",41,41],["ATL",40,42],["MIA",37,45],["CHA",19,63],["WAS",18,64]]],
+        ["Northwest (West)", [["OKC",68,14],["DEN",50,32],["MIN",49,33],["POR",36,46],["UTA",17,65]]],
+        ["Pacific (West)", [["LAL",50,32],["LAC",50,32],["GSW",48,34],["SAC",40,42],["PHX",36,46]]],
+        ["Southwest (West)", [["HOU",52,30],["MEM",48,34],["DAL",39,43],["SAS",34,48],["NOP",21,61]]],
+      ];
+
+      const seeded = (i) => Math.sin(i * 12.9898) * 43758.5453;
+      const wobble = (i) => seeded(i) - Math.floor(seeded(i));
+
+      class Component extends DCLogic {
+        state = { screen: "home", tab: "regular" };
+
+        go = (screen) => (e) => { if (e) e.preventDefault(); this.setState({ screen }); window.scrollTo(0, 0); };
+        setTab = (tab) => (e) => { e.preventDefault(); this.setState({ tab }); };
+
+        navLinkStyle(active) {
+          const base = "display:grid;grid-template-columns:0 1fr;align-items:center;overflow:hidden;padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);text-transform:uppercase;font-size:var(--font-size-xs);letter-spacing:var(--tracking-wide);text-decoration:none;text-shadow:none;";
+          return base + (active ? "color:var(--color-accent-strong);background:var(--color-surface)" : "color:var(--color-text-muted)");
+        }
+
+        buildRows(kind) {
+          const labels = kind === "advanced" ? ADV_LABELS : kind === "fantasy" ? FAN_LABELS : REG_LABELS;
+          const activeIndex = kind === "fantasy" ? 0 : 1;
+          const list = kind === "fantasy" ? PLAYERS : [...PLAYERS].sort((a, b) => Number(b.reg[1]) - Number(a.reg[1]));
+          return list.map((p, i) => ({
+            rank: i + 1,
+            first: p.first,
+            last: p.last,
+            pos: p.pos,
+            teamAbbr: p.team,
+            chipStyle: chipStyle(p.team),
+            avatarStyle: avatarStyle(p.team, "sm"),
+            initials: initials(p.first + " " + p.last),
+            starFill: i < 4 ? "currentColor" : "none",
+            starStyle: "display:grid;place-items:center;padding:var(--space-1);border:0;border-radius:var(--radius-sm);background:none;cursor:pointer;color:" + (i < 4 ? "var(--color-highlight)" : "var(--color-text-muted)"),
+            cells: (kind === "advanced" ? p.adv : kind === "fantasy" ? p.fan : p.reg).map((v, ci) => ({
+              v,
+              style: (ci === activeIndex ? TD_NUM_ACTIVE : TD_NUM) + (kind === "fantasy" && v.startsWith("-") ? ";color:var(--color-loss)" : ""),
+            })),
+          })).slice(0, 10);
+        }
+
+        headers(kind) {
+          const labels = kind === "advanced" ? ADV_LABELS : kind === "fantasy" ? FAN_LABELS : REG_LABELS;
+          const activeIndex = kind === "fantasy" ? 0 : 1;
+          return [
+            { label: "First name", style: TH_BASE },
+            { label: "Last name", style: TH_BASE },
+            { label: "Team", style: TH_BASE },
+            { label: "Position", style: TH_BASE },
+            ...labels.map((l, i) => ({ label: i === activeIndex ? l + " ▼" : l, style: i === activeIndex ? TH_ACTIVE : TH_NUM })),
+          ];
+        }
+
+        series(base, spread, seedOffset, color) {
+          const points = Array.from({ length: 24 }, (_, i) => {
+            const x = 40 + (i * 510) / 23;
+            const y = 100 - (base + Math.sin(i / 3 + seedOffset) * spread + (wobble(i + seedOffset) - 0.5) * 12);
+            return x.toFixed(1) + "," + y.toFixed(1);
+          }).join(" ");
+          return { points, color };
+        }
+
+        renderVals() {
+          const { screen, tab } = this.state;
+          const navDefs = [
+            ["home", "Home"], ["players", "Players"], ["teams", "Teams"],
+            ["my-teams", "My Teams"], ["leagues", "Leagues"], ["watchlist", "Starred"], ["design", "Design"],
+          ];
+          const activeNav = screen === "player" ? "players" : screen === "team" ? "teams" : screen;
+
+          const tabDefs = [["regular", "Regular Stats"], ["advanced", "Advanced Stats"], ["fantasy", "Fantasy Value"], ["starred", "Starred"]];
+
+          const starredNames = ["Nikola Jokić", "Victor Wembanyama", "Tyrese Haliburton", "Domantas Sabonis", "Anthony Edwards"];
+          const starredPanel = starredNames.map((n) => {
+            const p = PLAYERS.find((x) => x.first + " " + x.last === n);
+            return {
+              fullName: n, teamAbbr: p.team, pos: p.pos,
+              chipStyle: chipStyle(p.team), avatarStyle: avatarStyle(p.team, "sm"), initials: initials(n),
+            };
+          });
+
+          const slotDefs = [["PG", "Tyrese Haliburton", "IND"], ["SG", "Anthony Edwards", "MIN"], ["SF", "Jayson Tatum", "BOS"],
+            ["PF", "Giannis Antetokounmpo", "MIL"], ["C", "Nikola Jokić", "DEN"], ["G", "Shai Gilgeous-Alexander", "OKC"],
+            ["F", "Domantas Sabonis", "SAC"], ["UTIL", "Victor Wembanyama", "SAS"]];
+          const teamSlots = slotDefs.map(([slot, name, team]) => ({
+            slot, name, initials: initials(name), avatarStyle: avatarStyle(team, "sm"),
+            bodyStyle: "display:grid;grid-template-columns:auto 1fr;align-items:center;gap:var(--space-2)",
+          }));
+
+          const east = [["CLE", "Cleveland Cavaliers", "64-18"], ["BOS", "Boston Celtics", "61-21"], ["NYK", "New York Knicks", "51-31"],
+            ["IND", "Indiana Pacers", "50-32"], ["MIL", "Milwaukee Bucks", "48-34"], ["DET", "Detroit Pistons", "44-38"],
+            ["ORL", "Orlando Magic", "41-41"], ["ATL", "Atlanta Hawks", "40-42"]].map((t, i) => ({ rank: i + 1, abbr: t[0], name: t[1], record: t[2] }));
+          const west = [["OKC", "Oklahoma City Thunder", "68-14"], ["HOU", "Houston Rockets", "52-30"], ["LAL", "Los Angeles Lakers", "50-32"],
+            ["DEN", "Denver Nuggets", "50-32"], ["LAC", "LA Clippers", "50-32"], ["MIN", "Minnesota Timberwolves", "49-33"],
+            ["GSW", "Golden State Warriors", "48-34"], ["MEM", "Memphis Grizzlies", "48-34"]].map((t, i) => ({ rank: i + 1, abbr: t[0], name: t[1], record: t[2] }));
+
+          const kind = tab === "advanced" ? "advanced" : tab === "fantasy" ? "fantasy" : "regular";
+
+          const divisions = DIVISIONS.map(([title, teams], di) => ({
+            title,
+            teams: teams.map(([abbr, w, l]) => ({
+              abbr, name: TEAMS[abbr][0], record: w + "–" + l, pct: ((w / (w + l)) * 100).toFixed(1) + "%",
+              chipStyle: chipStyle(abbr),
+            })),
+            trend: teams.map(([abbr, w], ti) => ({
+              color: TEAMS[abbr][1] === "#000000" ? "var(--color-text-muted)" : TEAMS[abbr][1],
+              points: Array.from({ length: 12 }, (_, i) => {
+                const x = (i * 400) / 11;
+                const y = 110 - (i / 11) * ((w / 68) * 100);
+                return x.toFixed(0) + "," + y.toFixed(1);
+              }).join(" "),
+            })),
+          }));
+
+          const rosterDefs = [["Scottie Barnes", "F", "#4"], ["RJ Barrett", "G-F", "#9"], ["Immanuel Quickley", "G", "#5"],
+            ["Jakob Poeltl", "C", "#19"], ["Gradey Dick", "G", "#1"], ["Ochai Agbaji", "G-F", "#30"],
+            ["Jonathan Mogbo", "F", "#2"], ["Ja'Kobe Walter", "G", "#14"], ["Chris Boucher", "F-C", "#25"], ["Davion Mitchell", "G", "#45"]];
+          const roster = rosterDefs.map(([name, pos, jersey]) => ({
+            name, pos, jersey, initials: initials(name), avatarStyle: avatarStyle("TOR", "sm"),
+          }));
+
+          const teamStatDefs = [
+            ["Win %", "Share of games won.", "36.6%", 24], ["PPG", "Points scored per game.", "112.5", 18],
+            ["OPP PPG", "Points allowed per game. Lower is better.", "116.8", 22], ["DIFF", "Average scoring margin per game.", "-4.3", 23],
+            ["RPG", "Rebounds per game.", "44.8", 9], ["APG", "Assists per game.", "28.4", 5],
+            ["SPG", "Steals per game.", "8.9", 4], ["BPG", "Blocks per game.", "4.6", 21],
+            ["TOPG", "Turnovers per game. Lower is better.", "14.9", 17], ["3PM", "Threes made per game.", "11.9", 26],
+            ["FG%", "Field-goal percentage.", "46.7%", 12], ["FT%", "Free-throw percentage.", "78.4%", 11],
+          ];
+          const ordinal = (v) => { const t = v % 100; if (t >= 11 && t <= 13) return v + "th"; const o = v % 10; return v + (o === 1 ? "st" : o === 2 ? "nd" : o === 3 ? "rd" : "th"); };
+          const teamStats = teamStatDefs.map(([label, description, value, rank]) => ({
+            label, description, value, rank: ordinal(rank) + " of 30",
+            rankStyle: "padding:var(--space-2) var(--space-4);border-top:1px solid var(--color-border);text-align:right;white-space:nowrap;font-family:var(--font-mono)" + (rank <= 5 ? ";color:var(--color-win)" : ""),
+          }));
+
+          const gameLogCols = [["GM", "r"], ["Date", "l"], ["Matchup", "l"], ["Result", "l"], ["MIN", "r"], ["PTS", "r"], ["FGM", "r"], ["FGA", "r"], ["3PM", "r"], ["3PA", "r"], ["FTM", "r"], ["FTA", "r"], ["OREB", "r"], ["DREB", "r"], ["REB", "r"], ["AST", "r"], ["STL", "r"], ["BLK", "r"], ["TOV", "r"], ["+/-", "r"]];
+          const gameLogHeaders = gameLogCols.map(([label, align], i) => ({
+            label: label + (i === 1 ? " ↓" : " ↕"),
+            style: "padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--color-border);text-transform:uppercase;font-size:var(--font-size-xs);letter-spacing:var(--tracking-wide);white-space:nowrap;text-shadow:none;text-align:" + (align === "r" ? "right" : "left") + ";" + (i === 1 ? "background:color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));color:var(--color-accent);box-shadow:inset 0 -2px 0 var(--color-accent)" : "background:var(--color-surface);color:var(--color-text-muted)"),
+          }));
+          const logData = [
+            ["70", "13 Apr 2025", "DEN vs SAC", "W 124-116", "37", "36", "13", "22", "2", "5", "8", "9", "3", "13", "16", "22", "2", "1", "3", "+14"],
+            ["69", "11 Apr 2025", "DEN @ MEM", "L 108-117", "35", "24", "9", "18", "1", "4", "5", "6", "4", "9", "13", "11", "3", "0", "4", "-6"],
+            ["68", "09 Apr 2025", "DEN vs IND", "W 125-120", "38", "31", "12", "20", "2", "4", "5", "5", "2", "11", "13", "14", "1", "1", "2", "+9"],
+            ["67", "07 Apr 2025", "DEN @ MIN", "L 112-140", "31", "22", "8", "16", "1", "3", "5", "6", "1", "8", "9", "9", "2", "0", "5", "-18"],
+            ["66", "05 Apr 2025", "DEN vs WAS", "W 132-117", "30", "28", "11", "17", "3", "5", "3", "4", "3", "10", "13", "12", "2", "1", "1", "+21"],
+            ["65", "03 Apr 2025", "DEN @ LAL", "W 121-119", "40", "34", "13", "24", "2", "6", "6", "7", "2", "12", "14", "10", "1", "2", "3", "+7"],
+            ["64", "01 Apr 2025", "DEN vs SAS", "W 122-111", "33", "26", "10", "18", "1", "3", "5", "6", "4", "9", "13", "13", "3", "1", "2", "+11"],
+            ["63", "30 Mar 2025", "DEN @ HOU", "L 105-114", "36", "19", "7", "19", "0", "4", "5", "5", "3", "10", "13", "9", "1", "0", "4", "-9"],
+          ];
+          const gameLogRows = logData.map((cells) => ({
+            cells: cells.map((v, i) => ({
+              v,
+              style: "padding:var(--space-2) var(--space-3);border-top:1px solid var(--color-border);white-space:nowrap;text-align:" + (gameLogCols[i][1] === "r" ? "right;font-family:var(--font-mono)" : "left") + (i === 1 ? ";background:color-mix(in srgb, var(--color-accent) 7%, transparent)" : "") + (i === 3 ? ";color:" + (v.startsWith("W") ? "var(--color-win)" : "var(--color-loss)") + ";font-weight:var(--font-weight-semibold)" : ""),
+            })),
+          }));
+
+          const statModeStyle = (pressed) =>
+            "padding:var(--space-1) var(--space-3);border:none;font-family:inherit;font-size:var(--font-size-sm);cursor:pointer;" +
+            (pressed
+              ? "background:var(--color-accent);color:var(--color-surface);border-radius:var(--radius-sm);transform:translate(-2px,-2px);box-shadow:3px 3px 0 0 var(--color-retro-shadow)"
+              : "background:var(--color-surface);color:var(--color-text-muted)");
+
+          const catDefs = ["PTS", "REB", "AST", "STL", "BLK", "3PM", "FG%", "FT%", "TOV"];
+          const catChips = catDefs.map((label, i) => ({
+            label,
+            style: "display:inline-grid;grid-auto-flow:column;align-items:center;border:1px " + (i === 8 ? "dashed" : "solid") + " var(--color-border);border-radius:var(--radius-full);background:var(--color-surface)",
+            toggleStyle: "padding:var(--space-1) var(--space-2);border:none;background:none;font-family:var(--font-mono);font-size:var(--font-size-xs);letter-spacing:var(--tracking-wide);cursor:pointer;color:" + (i === 8 ? "var(--color-text-muted)" : "var(--color-text)") + (i === 7 ? ";text-decoration:line-through" : ""),
+          }));
+
+          return {
+            isHome: screen === "home", isPlayers: screen === "players", isPlayer: screen === "player",
+            isTeams: screen === "teams", isTeam: screen === "team", isMyTeams: screen === "my-teams",
+            isLeagues: screen === "leagues", isWatchlist: screen === "watchlist",
+            isSettings: screen === "settings", isLogin: screen === "login",
+            isAdvanced: tab === "advanced", isFantasy: tab === "fantasy", notFantasy: tab !== "fantasy",
+
+            goHome: this.go("home"), goSettings: this.go("settings"), goPlayer: this.go("player"),
+            goWatchlist: this.go("watchlist"), goMyTeams: this.go("my-teams"), goTeam: this.go("team"), goTeams: this.go("teams"),
+
+            navEntries: navDefs.map(([key, label]) => ({
+              label, onClick: this.go(key), style: this.navLinkStyle(key === activeNav),
+            })),
+            playerTabs: tabDefs.map(([key, label]) => ({
+              label, onClick: this.setTab(key),
+              style: "display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);border-bottom:2px solid " + (key === tab ? "var(--color-accent)" : "transparent") + ";font-size:var(--font-size-sm);font-weight:var(--font-weight-medium);text-decoration:none;color:" + (key === tab ? "var(--color-accent)" : "var(--color-text-muted)"),
+            })),
+
+            starredPanel, teamSlots, east, west,
+            zSeries: [this.series(30, 22, 1, "var(--color-accent)"), this.series(8, 18, 4, "var(--color-accent-purple)"), this.series(-14, 20, 9, "var(--color-highlight)")],
+            gSeries: [this.series(24, 16, 2, "var(--color-accent)"), this.series(4, 14, 6, "var(--color-accent-purple)"), this.series(-10, 15, 11, "var(--color-highlight)")],
+
+            tableHeaders: this.headers(kind),
+            tableRows: this.buildRows(kind),
+            regularHeaders: this.headers("regular"),
+            starredRows: this.buildRows("regular").slice(0, 6),
+            resultSummary: tab === "fantasy" ? "Showing 1–10 of 156 qualifying players" : "Showing 1–10 of 569",
+
+            playerFacts: [
+              { label: "Height", value: "6' 11\"" }, { label: "Weight", value: "284 lb" },
+              { label: "Born", value: "19 Feb 1995" }, { label: "Country", value: "Serbia" },
+              { label: "Draft", value: "2014 · Rd 2 · Pick 41" }, { label: "Experience", value: "10 seasons" },
+            ],
+            seasonStats: [
+              { key: "pts", label: "PTS", value: "29.6", rank: 3, rankTone: "positive", eligibleCount: 180 },
+              { key: "reb", label: "REB", value: "12.7", rank: 4, rankTone: "positive", eligibleCount: 180 },
+              { key: "ast", label: "AST", value: "10.2", rank: 1, rankTone: "positive", eligibleCount: 180 },
+              { key: "stl", label: "STL", value: "1.8", rank: 8, rankTone: "positive", eligibleCount: 180 },
+              { key: "blk", label: "BLK", value: "0.6", rank: 92, rankTone: "positive", eligibleCount: 180 },
+              { key: "fgPct", label: "FG%", value: ".576", rank: 5, rankTone: "positive", eligibleCount: 180 },
+              { key: "ftPct", label: "FT%", value: ".800", rank: 48, rankTone: "positive", eligibleCount: 180 },
+              { key: "fg3m", label: "3PM", value: "1.9", rank: 61, rankTone: "positive", eligibleCount: 180 },
+              { key: "tov", label: "TOV", value: "3.2", rank: 6, rankTone: "neutral", eligibleCount: 180 },
+              { key: "min", label: "MIN", value: "36.7", rank: 7, rankTone: "positive", eligibleCount: 180 },
+            ],
+            statModes: [["Avg", true], ["Game", false], ["Totals", false], ["Per 36", false]].map(([label, pressed]) => ({ label, pressed, style: statModeStyle(pressed) })),
+            statSpans: [["L5", false], ["L10", true], ["L20", false], ["L40", false], ["L60", false], ["All", false]].map(([label, pressed]) => ({ label, pressed, style: statModeStyle(pressed) })),
+            ptsPath: Array.from({ length: 30 }, (_, i) => (40 + (i * 850) / 29).toFixed(0) + "," + (200 - (22 + Math.sin(i / 2.4) * 9 + (wobble(i) - 0.5) * 14) * 4.2).toFixed(1)).join(" "),
+            rebPath: Array.from({ length: 30 }, (_, i) => (40 + (i * 850) / 29).toFixed(0) + "," + (200 - (12 + Math.sin(i / 3.1 + 2) * 4 + (wobble(i + 40) - 0.5) * 7) * 4.2).toFixed(1)).join(" "),
+            astPath: Array.from({ length: 30 }, (_, i) => (40 + (i * 850) / 29).toFixed(0) + "," + (200 - (10 + Math.sin(i / 2.8 + 4) * 3.5 + (wobble(i + 80) - 0.5) * 6) * 4.2).toFixed(1)).join(" "),
+            gameLogHeaders, gameLogRows,
+
+            divisions, roster, teamStats,
+
+            rosterGroups: [
+              { title: "Starters", slots: slotDefs.map(([slot, name, team]) => ({ slot, name, pos: PLAYERS.find((p) => p.first + " " + p.last === name).pos, initials: initials(name), avatarStyle: avatarStyle(team, "sm"), bodyStyle: "display:grid;grid-template-columns:auto auto auto;justify-content:start;align-items:center;gap:var(--space-2)" })) },
+              { title: "Bench", slots: [["BE", "Karl-Anthony Towns", "NYK"]].map(([slot, name, team]) => ({ slot, name, pos: "C-F", initials: initials(name), avatarStyle: avatarStyle(team, "sm"), bodyStyle: "display:grid;grid-template-columns:auto auto auto;justify-content:start;align-items:center;gap:var(--space-2)" })) },
+            ],
+
+            leagues: [
+              { name: "Dynasty Warriors", badge: "Active", meta: "12 teams · 13 roster slots · 9-cat head-to-head", action: "Active league",
+                badgeStyle: "padding:var(--space-1) var(--space-2);border:1px solid var(--color-accent);border-radius:var(--radius-sm);white-space:nowrap;text-transform:uppercase;font-size:var(--font-size-xs);letter-spacing:var(--tracking-wide);color:var(--color-accent)" },
+              { name: "Office Roto", badge: "", meta: "10 teams · 13 roster slots · 8-cat rotisserie", action: "Make active",
+                badgeStyle: "display:none" },
+            ],
+
+            formulaOptions: [
+              { title: "App default", description: "No override — the app's own default formula wins.", checked: false },
+              { title: "Z-Score Valuation", description: "Distance from the average pool player in each category, scaled by how spread out the category is, then summed with your weights.", checked: true },
+              { title: "G-Score Valuation", description: "Z-Score's edge divided by both the between-player spread and each category's game-to-game volatility, so unreliable weekly edges count for less in H2H.", checked: false },
+              { title: "Points-League Linear", description: "The stat line priced in points-league scoring: PTS ×1, REB ×1.2, AST ×1.5, STL ×3, BLK ×3, TOV ×−1. Ignores category weights.", checked: false },
+              { title: "Value Over Replacement", description: "Z-Score surplus over the last rostered player in your league (rank = teams × roster slots) — the real alternative on waivers.", checked: false },
+              { title: "Positional Value Over Replacement", description: "Z-Score surplus over the replacement player at the scarcest slot this player can fill (G/F/C parsed from position).", checked: false },
+              { title: "Standings Gain Points", description: "Each category divided by how much of that stat separates two adjacent places in the standings, so the total reads in standings places.", checked: false },
+              { title: "Monte Carlo Matchup Simulation", description: "Replays 400 simulated weeks and prices a player by the extra category wins they add to a league-average team.", checked: false },
+            ],
+            fontScales: [{ label: "Small", checked: false }, { label: "Default", checked: true }, { label: "Large", checked: false }, { label: "X-Large", checked: false }],
+            catChips,
+          };
+        }
+      }
+    </script>
+  </body>
+</html>
