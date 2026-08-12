@@ -1,12 +1,15 @@
+// Square avatar tile (spec §7): radius-sm, mono initials, and a 3px team-color
+// left border — team identity without a second chip. The inline style supplies
+// the team primary as border-color; only the left edge shows it at width.
 .avatar {
   display: grid;
   place-items: center;
   overflow: hidden;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
   color: var(--color-text-muted);
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   font-weight: var(--font-weight-semibold);
   text-align: center;
 }
@@ -16,17 +19,20 @@
 }
 
 .sm {
-  width: 32px;
-  height: 32px;
+  width: 2.25rem;
+  height: 2.25rem;
   font-size: var(--font-size-xs);
 }
 
 .lg {
-  width: 96px;
-  height: 96px;
+  width: 4.5rem;
+  height: 4.5rem;
   font-size: var(--font-size-lg);
 }
 
+// The inline border-left-color carries the team primary; the other edges stay
+// on the neutral token so only the left edge reads as the team stripe.
 .teamRing {
-  border-width: 2px;
+  border-left-width: 3px;
+  border-left-style: solid;
 }

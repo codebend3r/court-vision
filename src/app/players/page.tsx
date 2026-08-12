@@ -140,38 +140,28 @@ export default async function PlayersPage({
           </p>
           {total > 0 && (
             <>
-              <PlayersPager
-                q={params.q}
-                page={page}
-                size={params.size}
-                totalPages={totalPages}
-                sort={params.sort}
-                dir={params.dir}
-                range={params.range}
-                mode={params.mode}
-                minimums={params.minimums}
-                tab={params.tab}
-              />
               <PlayersTable
                 variant="advanced"
                 rows={rows}
                 params={params}
                 page={page}
                 isSignedIn={isSignedIn}
+                footer={
+                  <PlayersPager
+                    q={params.q}
+                    page={page}
+                    size={params.size}
+                    totalPages={totalPages}
+                    sort={params.sort}
+                    dir={params.dir}
+                    range={params.range}
+                    mode={params.mode}
+                    minimums={params.minimums}
+                    tab={params.tab}
+                  />
+                }
               />
               <AdvancedStatsLegend />
-              <PlayersPager
-                q={params.q}
-                page={page}
-                size={params.size}
-                totalPages={totalPages}
-                sort={params.sort}
-                dir={params.dir}
-                range={params.range}
-                mode={params.mode}
-                minimums={params.minimums}
-                tab={params.tab}
-              />
             </>
           )}
         </section>
@@ -203,39 +193,27 @@ export default async function PlayersPage({
           {renderSummary({ total, q: params.q, rangeStart, rangeEnd })}
         </p>
         {total > 0 && (
-          <>
-            <PlayersPager
-              q={params.q}
-              page={page}
-              size={params.size}
-              totalPages={totalPages}
-              sort={params.sort}
-              dir={params.dir}
-              range={params.range}
-              mode={params.mode}
-              minimums={params.minimums}
-              tab={params.tab}
-            />
-            <PlayersTable
-              variant="regular"
-              rows={rows}
-              params={params}
-              page={page}
-              isSignedIn={isSignedIn}
-            />
-            <PlayersPager
-              q={params.q}
-              page={page}
-              size={params.size}
-              totalPages={totalPages}
-              sort={params.sort}
-              dir={params.dir}
-              range={params.range}
-              mode={params.mode}
-              minimums={params.minimums}
-              tab={params.tab}
-            />
-          </>
+          <PlayersTable
+            variant="regular"
+            rows={rows}
+            params={params}
+            page={page}
+            isSignedIn={isSignedIn}
+            footer={
+              <PlayersPager
+                q={params.q}
+                page={page}
+                size={params.size}
+                totalPages={totalPages}
+                sort={params.sort}
+                dir={params.dir}
+                range={params.range}
+                mode={params.mode}
+                minimums={params.minimums}
+                tab={params.tab}
+              />
+            }
+          />
         )}
       </section>
     </main>

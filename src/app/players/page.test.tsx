@@ -91,10 +91,14 @@ describe("PlayersPage", () => {
       }),
     );
 
-    expect(screen.getByRole("link", { name: "Stephen" })).toHaveAttribute("href", "/players/1");
-    expect(screen.getByRole("link", { name: "Curry" })).toHaveAttribute("href", "/players/1");
-    expect(screen.getByRole("link", { name: "Draymond" })).toHaveAttribute("href", "/players/2");
-    expect(screen.getByRole("link", { name: "Green" })).toHaveAttribute("href", "/players/2");
+    expect(screen.getByRole("link", { name: "Stephen Curry" })).toHaveAttribute(
+      "href",
+      "/players/1",
+    );
+    expect(screen.getByRole("link", { name: "Draymond Green" })).toHaveAttribute(
+      "href",
+      "/players/2",
+    );
     expect(screen.getAllByTitle("Golden State Warriors")).toHaveLength(2);
     expect(screen.getByText("Showing 26–50 of 60")).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "PTS" })).toBeInTheDocument();
@@ -175,15 +179,15 @@ describe("PlayersPage", () => {
     // Landing view defaults to points, highest first.
     const ptsHeader = screen.getByRole("columnheader", { name: "PTS" });
     expect(ptsHeader).toHaveAttribute("aria-sort", "descending");
-    const firstNameHeader = screen.getByRole("columnheader", { name: "First name" });
-    expect(firstNameHeader).not.toHaveAttribute("aria-sort");
+    const playerHeader = screen.getByRole("columnheader", { name: "Player" });
+    expect(playerHeader).not.toHaveAttribute("aria-sort");
 
     // The active PTS header toggles direction; its default is omitted from the href.
     expect(screen.getByRole("link", { name: "PTS" })).toHaveAttribute("href", "/players?dir=asc");
-    // An inactive header sorts by its own column.
-    expect(screen.getByRole("link", { name: "First name" })).toHaveAttribute(
+    // The player column sorts by last name.
+    expect(screen.getByRole("link", { name: "Player" })).toHaveAttribute(
       "href",
-      "/players?sort=firstName",
+      "/players?sort=lastName",
     );
   });
 
@@ -214,16 +218,12 @@ describe("PlayersPage", () => {
       expect.objectContaining({ sort: "lastName", dir: "desc", q: "curry" }),
     );
 
-    const lastNameHeader = screen.getByRole("columnheader", { name: "Last name" });
-    expect(lastNameHeader).toHaveAttribute("aria-sort", "descending");
+    const playerHeader = screen.getByRole("columnheader", { name: /Player/ });
+    expect(playerHeader).toHaveAttribute("aria-sort", "descending");
 
-    expect(screen.getByRole("link", { name: "Last name" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Player/ })).toHaveAttribute(
       "href",
       "/players?q=curry&sort=lastName&dir=asc",
-    );
-    expect(screen.getByRole("link", { name: "First name" })).toHaveAttribute(
-      "href",
-      "/players?q=curry&sort=firstName",
     );
   });
 

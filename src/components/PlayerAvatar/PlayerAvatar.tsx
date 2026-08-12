@@ -32,7 +32,8 @@ export function PlayerAvatar({ fullName, nbaPersonId, size, teamAbbr = null }: P
   const teamColors = teamColorsFor({ team: teamAbbr });
   const teamRingClass = teamColors === null ? "" : ` ${styles.teamRing}`;
   const sizeClass = `${styles[size]}${teamRingClass}`;
-  const teamStyle = teamColors === null ? undefined : { borderColor: teamColors.primary };
+  // Only the left edge carries the team primary (spec §7's team stripe).
+  const teamStyle = teamColors === null ? undefined : { borderLeftColor: teamColors.primary };
 
   if (nbaPersonId === null || failed) {
     return (

@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { type ReactNode } from "react";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
+import { PositionTag } from "@/components/PositionTag/PositionTag";
 import { StarButton } from "@/components/StarButton/StarButton";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { ADVANCED_STAT_META, type AdvancedStatMeta } from "@/lib/players/advancedStatMeta";
@@ -117,23 +119,61 @@ const formatAdvancedMetric = ({
     : value.toFixed(1);
 };
 
+type PlayerIdentity = {
+  id: number;
+  fullName: string;
+  nbaPersonId: number | null;
+  teamAbbr: string | null;
+  position: string | null;
+};
+
+// The consolidated player cell (spec §7): avatar, then name over team chip +
+// position tag. Replaces the old First name / Last name / Team / Position
+// quartet — which is where the horizontal room for stats comes from.
+function PlayerCell({ row }: { row: PlayerIdentity }) {
+  return (
+    <span className={styles.playerInner}>
+      <PlayerAvatar
+        fullName={row.fullName}
+        nbaPersonId={row.nbaPersonId}
+        size="sm"
+        teamAbbr={row.teamAbbr}
+      />
+      <span className={styles.playerMeta}>
+        <Link href={`/players/${row.id}`} className={styles.playerName}>
+          {row.fullName}
+        </Link>
+        <span className={styles.playerTags}>
+          {!!row.teamAbbr && <TeamChip team={row.teamAbbr} size="sm" />}
+          {!!row.position && <PositionTag position={row.position} className={styles.position} />}
+        </span>
+      </span>
+    </span>
+  );
+}
+
 type PlayersTableProps = {
   params: PlayersSearchParams;
   page: number;
   isSignedIn: boolean;
+  // Footer bar rendered inside the table wrapper (the pager).
+  footer?: ReactNode;
 } & (
   | { variant: "regular"; rows: PlayerRow[] }
   | { variant: "advanced"; rows: AdvancedPlayerRow[] }
 );
 
 export function PlayersTable(props: PlayersTableProps) {
-  const { params, page, isSignedIn } = props;
+  const { params, page, isSignedIn, footer } = props;
 
   const nextDir = ({ sortKey }: { sortKey: PlayerSortKey | AdvancedSortKey }): SortDirection =>
     params.sort === sortKey ? (params.dir === "desc" ? "asc" : "desc") : "desc";
 
   // Rank only means something when the rows are ordered by a stat.
   const isStatSort = params.sort !== "firstName" && params.sort !== "lastName";
+  // The one player column sorts by last name; a first-name sort (via URL)
+  // still highlights it as the active column.
+  const isPlayerSort = !isStatSort;
 
   const renderSortableHeader = ({
     label,
@@ -154,9 +194,9 @@ export function PlayersTable(props: PlayersTableProps) {
         // Stat headers right-align their link. Marked explicitly rather than by
         // column position: the star column shifts every index by one, and only
         // for signed-in users.
-        className={isStatColumn ? styles.statHeader : undefined}
+        className={isStatColumn ? styles.statHeader : styles.player}
         aria-sort={isActive ? (params.dir === "asc" ? "ascending" : "descending") : undefined}
-        data-sort-active={isActive || undefined}
+        data-sort-active={(isStatColumn ? isActive : isPlayerSort) || undefined}
       >
         <Link
           href={buildPlayersHref({ ...params, page: 1, sort: sortKey, dir: nextDir({ sortKey }) })}
@@ -165,7 +205,7 @@ export function PlayersTable(props: PlayersTableProps) {
           aria-describedby={tipId}
         >
           {label}
-          {isActive && <span aria-hidden="true">{params.dir === "asc" ? "▲" : "▼"}</span>}
+          {isActive && <span aria-hidden="true">{params.dir === "asc" ? " ▲" : " ▼"}</span>}
         </Link>
         {!!meta && (
           // `hidden` keeps the bubble out of the header's accessible name; the
@@ -203,8 +243,63 @@ export function PlayersTable(props: PlayersTableProps) {
     <td className={`${styles.numeric} ${styles.rank}`}>{(page - 1) * params.size + index + 1}</td>
   );
 
+  const playerCell = (row: PlayerIdentity) => (
+    <td className={styles.player} data-sort-active={isPlayerSort || undefined}>
+      <PlayerCell row={row} />
+    </td>
+  );
+
   if (props.variant === "advanced") {
     return (
+      <div className={styles.tableWrapper}>
+        <div className={styles.tableScroller}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                {starHeader}
+                {isStatSort && (
+                  <th className={styles.numeric} title="Rank in the current sort">
+                    #
+                  </th>
+                )}
+                {renderSortableHeader({ label: "Player", sortKey: "lastName" })}
+                {ADVANCED_STAT_META.map((meta) =>
+                  renderSortableHeader({
+                    label: meta.label,
+                    sortKey: meta.key,
+                    meta,
+                    isStatColumn: true,
+                  }),
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {props.rows.map((row, index) => (
+                <tr key={row.id}>
+                  {starCell({ playerId: row.id, fullName: row.fullName })}
+                  {isStatSort && rankCell({ index })}
+                  {playerCell(row)}
+                  {ADVANCED_STAT_META.map((meta) => (
+                    <td
+                      key={meta.key}
+                      className={styles.numeric}
+                      data-sort-active={params.sort === meta.key || undefined}
+                    >
+                      {formatAdvancedMetric({ metricKey: meta.key, value: row.stats[meta.key] })}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {footer}
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.tableWrapper}>
       <div className={styles.tableScroller}>
         <table className={styles.table}>
           <thead>
@@ -215,123 +310,44 @@ export function PlayersTable(props: PlayersTableProps) {
                   #
                 </th>
               )}
-              {renderSortableHeader({ label: "First name", sortKey: "firstName" })}
-              {renderSortableHeader({ label: "Last name", sortKey: "lastName" })}
-              <th>Team</th>
-              <th>Position</th>
-              {ADVANCED_STAT_META.map((meta) =>
+              {renderSortableHeader({ label: "Player", sortKey: "lastName" })}
+              {STAT_COLUMNS.map((column) =>
                 renderSortableHeader({
-                  label: meta.label,
-                  sortKey: meta.key,
-                  meta,
+                  label: column.label,
+                  sortKey: column.sortKey,
                   isStatColumn: true,
                 }),
               )}
             </tr>
           </thead>
           <tbody>
-            {props.rows.map((row, index) => (
-              <tr key={row.id}>
-                {starCell({ playerId: row.id, fullName: row.fullName })}
-                {isStatSort && rankCell({ index })}
-                <td data-sort-active={params.sort === "firstName" || undefined}>
-                  <span className={styles.nameCell}>
-                    <PlayerAvatar
-                      fullName={row.fullName}
-                      nbaPersonId={row.nbaPersonId}
-                      size="sm"
-                      teamAbbr={row.teamAbbr}
-                    />
-                    <Link href={`/players/${row.id}`}>{row.firstName}</Link>
-                  </span>
-                </td>
-                <td data-sort-active={params.sort === "lastName" || undefined}>
-                  <Link href={`/players/${row.id}`}>{row.lastName}</Link>
-                </td>
-                <td>{row.teamAbbr === null ? "—" : <TeamChip team={row.teamAbbr} size="sm" />}</td>
-                <td>{row.position ?? "—"}</td>
-                {ADVANCED_STAT_META.map((meta) => (
-                  <td
-                    key={meta.key}
-                    className={styles.numeric}
-                    data-sort-active={params.sort === meta.key || undefined}
-                  >
-                    {formatAdvancedMetric({ metricKey: meta.key, value: row.stats[meta.key] })}
-                  </td>
-                ))}
-              </tr>
-            ))}
+            {props.rows.map((row, index) => {
+              const stats = row.stats ?? row.seasonStats?.[0];
+              const formatCountingStat = (value: number) =>
+                params.mode === "total"
+                  ? String(value)
+                  : formatPerGame(value, stats?.gamesPlayed ?? 0);
+              return (
+                <tr key={row.id}>
+                  {starCell({ playerId: row.id, fullName: row.fullName })}
+                  {isStatSort && rankCell({ index })}
+                  {playerCell(row)}
+                  {STAT_COLUMNS.map((column) => (
+                    <td
+                      key={column.sortKey}
+                      className={styles.numeric}
+                      data-sort-active={params.sort === column.sortKey || undefined}
+                    >
+                      {stats ? column.value({ stats, formatCountingStat }) : "—"}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
-    );
-  }
-
-  return (
-    <div className={styles.tableScroller}>
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            {starHeader}
-            {isStatSort && (
-              <th className={styles.numeric} title="Rank in the current sort">
-                #
-              </th>
-            )}
-            {renderSortableHeader({ label: "First name", sortKey: "firstName" })}
-            {renderSortableHeader({ label: "Last name", sortKey: "lastName" })}
-            <th>Team</th>
-            <th>Position</th>
-            {STAT_COLUMNS.map((column) =>
-              renderSortableHeader({
-                label: column.label,
-                sortKey: column.sortKey,
-                isStatColumn: true,
-              }),
-            )}
-          </tr>
-        </thead>
-        <tbody>
-          {props.rows.map((row, index) => {
-            const stats = row.stats ?? row.seasonStats?.[0];
-            const formatCountingStat = (value: number) =>
-              params.mode === "total"
-                ? String(value)
-                : formatPerGame(value, stats?.gamesPlayed ?? 0);
-            return (
-              <tr key={row.id}>
-                {starCell({ playerId: row.id, fullName: row.fullName })}
-                {isStatSort && rankCell({ index })}
-                <td data-sort-active={params.sort === "firstName" || undefined}>
-                  <span className={styles.nameCell}>
-                    <PlayerAvatar
-                      fullName={row.fullName}
-                      nbaPersonId={row.nbaPersonId}
-                      size="sm"
-                      teamAbbr={row.teamAbbr}
-                    />
-                    <Link href={`/players/${row.id}`}>{row.firstName}</Link>
-                  </span>
-                </td>
-                <td data-sort-active={params.sort === "lastName" || undefined}>
-                  <Link href={`/players/${row.id}`}>{row.lastName}</Link>
-                </td>
-                <td>{row.teamAbbr === null ? "—" : <TeamChip team={row.teamAbbr} size="sm" />}</td>
-                <td>{row.position ?? "—"}</td>
-                {STAT_COLUMNS.map((column) => (
-                  <td
-                    key={column.sortKey}
-                    className={styles.numeric}
-                    data-sort-active={params.sort === column.sortKey || undefined}
-                  >
-                    {stats ? column.value({ stats, formatCountingStat }) : "—"}
-                  </td>
-                ))}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      {footer}
     </div>
   );
 }

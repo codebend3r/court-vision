@@ -56,7 +56,7 @@ describe("PlayerAvatar", () => {
 
     // Minnesota Timberwolves primary, same source as TeamChip
     expect(screen.getByRole("img", { name: "Anthony Edwards" })).toHaveStyle({
-      borderColor: "#0C2340",
+      borderLeftColor: "#0C2340",
     });
   });
 
@@ -64,7 +64,7 @@ describe("PlayerAvatar", () => {
     render(<PlayerAvatar fullName="Anthony Edwards" nbaPersonId={null} size="sm" teamAbbr="MIN" />);
 
     expect(screen.getByRole("img", { name: "Anthony Edwards" })).toHaveStyle({
-      borderColor: "#0C2340",
+      borderLeftColor: "#0C2340",
     });
   });
 

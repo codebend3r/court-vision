@@ -1,49 +1,9 @@
 @use "@/styles/mixins" as *;
 
-// Moved out of app/players/page.module.scss when the table became a shared
-// component (regular tab, advanced tab, starred view). Rules are unchanged
-// except for the star column, which shifts every column index by one.
-.table {
-  width: 100%;
-  min-width: 72rem;
-  border-collapse: collapse;
-  transition: opacity var(--duration-base) var(--ease-out);
-
-  th {
-    @include micro-label;
-    // Anchor for the header tooltip bubble.
-    position: relative;
-    padding: var(--space-2) var(--space-3);
-    text-align: left;
-
-    &[data-sort-active="true"] {
-      position: relative;
-      background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
-      color: var(--color-accent);
-      box-shadow: inset 0 -2px 0 var(--color-accent);
-    }
-  }
-
-  td {
-    padding: var(--space-2) var(--space-3);
-    border-top: 1px solid var(--color-border);
-
-    &[data-sort-active="true"] {
-      background: color-mix(in srgb, var(--color-accent) 7%, transparent);
-    }
-  }
-
-  td.numeric {
-    font-family: var(--font-mono);
-  }
-
-  tbody {
-    font-variant-numeric: tabular-nums;
-  }
-
-  tr:hover td {
-    background: var(--color-surface);
-  }
+// The one table pattern (spec §7), shared by the regular, advanced, and
+// starred views through this component.
+.tableWrapper {
+  @include table-wrapper;
 }
 
 .tableScroller {
@@ -51,10 +11,17 @@
   overflow-x: auto;
 }
 
+.table {
+  @include data-table;
+  min-width: 64rem;
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+
 // Header tooltips (Advanced tab): the whole th is the hover/focus trigger so
-// clicking still sorts. Hidden state is display:none — a visibility-hidden
-// bubble would still extend the scroller's scrollable overflow — with
-// @starting-style providing the fade on browsers that transition display.
+// clicking still sorts (the sticky th is a positioned anchor already). Hidden
+// state is display:none — a visibility-hidden bubble would still extend the
+// scroller's scrollable overflow — with @starting-style providing the fade on
+// browsers that transition display.
 .headerTip {
   @include tooltip-bubble;
   position: absolute;
@@ -101,15 +68,50 @@
 }
 
 .numeric {
-  text-align: right;
+  @include numeric-cell;
+}
+
+// The player column is the only flexible track in a table where every other
+// cell is nowrap, so it carries an explicit floor — without it wider row
+// padding squeezes names into overflow.
+.player {
+  min-width: 17rem;
+  overflow: hidden;
+}
+
+.playerInner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.playerMeta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  min-width: 0;
+}
+
+.playerName {
+  overflow: hidden;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.nameCell {
+.playerTags {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-auto-flow: column;
+  justify-content: start;
   align-items: center;
   gap: var(--space-2);
+}
+
+.position {
+  font-size: var(--font-size-xs);
 }
 
 .sortLink {
@@ -128,16 +130,15 @@
   }
 }
 
-.table th.numeric .sortLink,
-.table th:has(.sortLink) .sortLink {
-  justify-content: inherit;
-}
-
 // Stat columns right-align their sort link. Keyed off an explicit class rather
 // than nth-child: the star column shifts every index, and only when signed in.
-.table th.statHeader .sortLink {
-  width: 100%;
-  justify-content: end;
+.table th.statHeader {
+  @include numeric-cell;
+
+  .sortLink {
+    width: 100%;
+    justify-content: end;
+  }
 }
 
 .rank {
@@ -154,11 +155,5 @@
 // Announced by screen readers, invisible on screen — the column needs a name
 // but not a label taking up row width.
 .visuallyHidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+  @include visually-hidden;
 }

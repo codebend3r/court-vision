@@ -102,7 +102,7 @@ describe("StarredPlayersView", () => {
       .getAllByRole("row")
       .slice(1)
       .map((tableRow) => within(tableRow).getAllByRole("link")[0]?.textContent ?? "");
-    expect(names).toEqual(["First7", "First3"]);
+    expect(names).toEqual(["First7 Last7", "First3 Last3"]);
   });
 
   it("passes the watchlist ids to the stats query", async () => {
