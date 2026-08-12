@@ -1,19 +1,64 @@
+@use "@/styles/mixins" as *;
+
 .section {
   display: grid;
-  gap: var(--space-2);
-  padding: var(--space-6);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  gap: var(--space-3);
 }
 
 .heading {
-  margin: 0;
   font-size: var(--font-size-lg);
 }
 
-.placeholder {
-  margin: 0;
-  color: var(--color-text-muted);
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-3);
+}
+
+// A theme card is a keycap at heart: lifted when selected.
+.card {
+  @include keycap;
+  display: grid;
+  grid-auto-flow: row;
+  justify-items: start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+
+  &[aria-pressed="true"] {
+    @include keycap-engaged;
+
+    // The engaged fill would swallow the note text; keep the card body
+    // readable and let the border + lift carry the state.
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+}
+
+.strip {
+  display: grid;
+  grid-auto-flow: column;
+  width: 100%;
+  height: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.swatch {
+  display: block;
+}
+
+.name {
+  font-family: var(--font-display);
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.note {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
 }

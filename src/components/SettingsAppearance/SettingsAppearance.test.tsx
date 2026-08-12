@@ -18,19 +18,22 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("SettingsAppearance", () => {
-  it("renders four radios labelled Small/Default/Large/X-Large", () => {
+  it("renders four keycaps labelled with their body px sizes", () => {
     render(<SettingsAppearance fontScale="default" />);
-    ["Small", "Default", "Large", "X-Large"].forEach((label) => {
-      expect(screen.getByRole("radio", { name: label })).toBeInTheDocument();
+    ["Small 15px", "Default 16px", "Large 18px", "X-Large 20px"].forEach((label) => {
+      expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
     });
   });
 
-  it("checks the radio matching the fontScale prop", () => {
+  it("presses the keycap matching the fontScale prop", () => {
     render(<SettingsAppearance fontScale="lg" />);
-    expect(screen.getByRole("radio", { name: "Large" })).toBeChecked();
+    expect(screen.getByRole("button", { name: "Large 18px" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 
-  it("carries data-font-scale on the preview region matching the checked radio", () => {
+  it("carries data-font-scale on the preview region matching the pressed keycap", () => {
     render(<SettingsAppearance fontScale="lg" />);
     expect(screen.getByRole("region", { name: "Preview" })).toHaveAttribute(
       "data-font-scale",
@@ -40,7 +43,7 @@ describe("SettingsAppearance", () => {
 
   it("sets the document font scale and saves when X-Large is clicked", async () => {
     render(<SettingsAppearance fontScale="default" />);
-    fireEvent.click(screen.getByRole("radio", { name: "X-Large" }));
+    fireEvent.click(screen.getByRole("button", { name: "X-Large 20px" }));
     expect(document.documentElement.dataset.fontScale).toBe("xl");
     expect(updatePreferencesMock).toHaveBeenCalledWith({ fontScale: "xl" });
     expect(screen.getByRole("region", { name: "Preview" })).toHaveAttribute(
@@ -53,10 +56,13 @@ describe("SettingsAppearance", () => {
   it("reverts the attribute and check when the save fails", async () => {
     updatePreferencesMock.mockReset().mockResolvedValue({ status: "error" });
     render(<SettingsAppearance fontScale="default" />);
-    fireEvent.click(screen.getByRole("radio", { name: "X-Large" }));
+    fireEvent.click(screen.getByRole("button", { name: "X-Large 20px" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not save — try again.");
     expect(document.documentElement.dataset.fontScale).toBe("default");
-    expect(screen.getByRole("radio", { name: "Default" })).toBeChecked();
+    expect(screen.getByRole("button", { name: "Default 16px" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     expect(screen.getByRole("region", { name: "Preview" })).toHaveAttribute(
       "data-font-scale",
       "default",

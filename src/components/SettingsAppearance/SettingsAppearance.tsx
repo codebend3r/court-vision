@@ -2,9 +2,19 @@
 
 import { useId, useState } from "react";
 
+import { LogoWordmark } from "@/components/Logo/Logo";
 import styles from "@/components/SettingsAppearance/SettingsAppearance.module.scss";
 import { updatePreferences } from "@/lib/settings/actions";
 import { FONT_SCALES, FONT_SCALE_LABELS, type FontScale } from "@/lib/settings/types";
+
+// Body (--font-size-md) size at each scale, shown on the keycap so the pick
+// is concrete (spec §10 settings).
+const FONT_SCALE_BODY_PX: Record<FontScale, string> = {
+  sm: "15px",
+  default: "16px",
+  lg: "18px",
+  xl: "20px",
+};
 
 export type SettingsAppearanceProps = {
   fontScale: FontScale;
@@ -46,23 +56,24 @@ export function SettingsAppearance({ fontScale }: SettingsAppearanceProps) {
         </p>
       )}
       <div className={styles.grid}>
-        <fieldset className={styles.fieldset}>
-          <legend className={styles.legend}>Font size</legend>
+        <div className={styles.options} role="group" aria-label="Font size">
           {FONT_SCALES.map((scale) => (
-            <label key={scale} className={styles.radioLabel}>
-              <input
-                type="radio"
-                name="fontScale"
-                className={styles.radio}
-                checked={selected === scale}
-                onChange={() => select({ value: scale })}
-              />
+            <button
+              key={scale}
+              type="button"
+              className={styles.option}
+              aria-pressed={selected === scale}
+              onClick={() => select({ value: scale })}
+            >
               {FONT_SCALE_LABELS[scale]}
-            </label>
+              <span className={styles.optionSize}>{FONT_SCALE_BODY_PX[scale]}</span>
+            </button>
           ))}
-        </fieldset>
+        </div>
         <section className={styles.preview} aria-label="Preview" data-font-scale={selected}>
-          <p className={styles.previewHeading}>Court Vision</p>
+          <p className={styles.previewHeading}>
+            <LogoWordmark />
+          </p>
           <p className={styles.previewBody}>
             Nikola Jokić is averaging a 26/12/9 line over his last 10 games.
           </p>
