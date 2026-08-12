@@ -22,12 +22,11 @@
   --color-position-c: #c58bf2; // center — violet
   // Extrusion color for retro long-shadow lettering (see long-text-shadow in mixins).
   --color-retro-shadow: color-mix(in srgb, var(--color-accent) 55%, var(--color-bg));
-  // Purple variation for retro-shadow buttons (see retro-button in mixins).
+  // Purple accent (animated gradient border, TeamBuilder card view).
   --color-accent-purple: #9b7dff;
   // Games a player missed, on the stat chart and the game log.
   --color-chart-dnp: #f4d35e;
   --color-chart-dnp-muted: rgb(244 211 94 / 65%);
-  --color-retro-shadow-purple: color-mix(in srgb, var(--color-accent-purple) 55%, var(--color-bg));
 
   // Retro depth geometry. A theme may only redefine color tokens — shadow
   // offsets, spacing, radii, and the type scale are hard constants shared by
@@ -241,8 +240,8 @@ h1 {
   --color-control-placeholder: #7c86a6;
   --color-focus-ring: rgba(14, 127, 168, 0.28);
 
-  // The dark-theme purple is 3.10:1 on white, below AA for the retro-button
-  // pressed text and TeamBuilder's card view. This is the same violet the
+  // The dark-theme purple is 3.10:1 on white, below AA for TeamBuilder's
+  // card view. This is the same violet the
   // light palette already uses for the center position, at 6.6:1.
   --color-accent-purple: #7b3fb0;
 

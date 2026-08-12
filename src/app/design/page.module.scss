@@ -451,13 +451,18 @@
   }
 }
 
-// The purple retro-shadow variation (see retro-button in styles/mixins.scss).
+// The keycap: the one interactive mechanic (see keycap in styles/mixins.scss).
 .retroChip {
-  @include retro-button;
+  @include keycap;
+
+  &[aria-pressed="true"]:not(:disabled) {
+    @include keycap-engaged;
+  }
 }
 
 .retroChipAction {
-  @include retro-button-dashed;
+  @include keycap;
+  @include keycap-danger;
 }
 
 .buttonSpecimens {

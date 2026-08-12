@@ -86,6 +86,10 @@
 }
 
 .submit {
-  @include retro-button;
+  @include keycap;
   justify-self: start;
+
+  &:active:not(:disabled) {
+    @include keycap-press;
+  }
 }

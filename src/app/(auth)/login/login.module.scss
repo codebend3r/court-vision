@@ -6,23 +6,14 @@
   width: 100%;
   max-width: 22rem;
 
+  // Primary action: an engaged keycap at rest that presses into its shadow.
   button[type="submit"] {
-    padding: var(--space-2) var(--space-4);
-    border: none;
-    border-radius: var(--radius-sm);
-    background: var(--color-accent);
-    color: var(--color-bg);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-semibold);
-    cursor: pointer;
+    @include keycap;
+    @include keycap-engaged;
+    justify-content: center;
 
-    &:focus-visible {
-      @include control-focus-ring;
-    }
-
-    &:disabled {
-      opacity: var(--control-disabled-opacity);
-      cursor: not-allowed;
+    &:active:not(:disabled) {
+      @include keycap-press;
     }
   }
 }

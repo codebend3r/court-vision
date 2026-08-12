@@ -19,7 +19,11 @@
 }
 
 .create {
-  @include retro-button;
+  @include keycap;
+
+  &:active:not(:disabled) {
+    @include keycap-press;
+  }
 }
 
 .capNotice {
@@ -96,16 +100,14 @@
 }
 
 .activeToggle {
-  @include retro-button;
+  @include keycap;
+
+  &[aria-pressed="true"]:not(:disabled) {
+    @include keycap-engaged;
+  }
 }
 
 .delete {
-  @include retro-button-dashed;
-  border-color: color-mix(in srgb, var(--color-accent-strong) 45%, var(--color-border));
-  color: var(--color-accent-strong);
-
-  &:hover:not(:disabled) {
-    border-color: var(--color-accent-strong);
-    color: var(--color-accent-strong);
-  }
+  @include keycap;
+  @include keycap-danger;
 }
