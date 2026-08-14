@@ -64,3 +64,6 @@ docs/design/prototypes/_ds/
 
 # local screenshot helper (session tooling, not part of the app)
 .cv-shot.mjs
+
+# Lighthouse CI output
+.lighthouseci/
