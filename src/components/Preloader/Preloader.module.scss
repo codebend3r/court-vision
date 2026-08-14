@@ -1,0 +1,60 @@
+@use "@/styles/mixins" as *;
+
+.preloader {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.hiddenLabel {
+  @include visually-hidden;
+}
+
+.blocks {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.block {
+  height: var(--space-6);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface) 82%, var(--color-text));
+
+  // Vary the widths so the skeleton reads as content, not stripes.
+  &:first-child {
+    width: 34%;
+    height: var(--space-8);
+  }
+
+  &:nth-child(even) {
+    width: 88%;
+  }
+
+  &:nth-child(3n) {
+    width: 72%;
+  }
+}
+
+// Shimmer is decorative; without it the static blocks still read as a
+// skeleton, so it is gated entirely behind the motion preference.
+@media (prefers-reduced-motion: no-preference) {
+  .block {
+    background: linear-gradient(
+      100deg,
+      color-mix(in srgb, var(--color-surface) 82%, var(--color-text)) 40%,
+      color-mix(in srgb, var(--color-surface) 65%, var(--color-text)) 50%,
+      color-mix(in srgb, var(--color-surface) 82%, var(--color-text)) 60%
+    );
+    background-size: 200% 100%;
+    animation: preloader-shimmer 1.4s var(--ease-out) infinite;
+  }
+}
+
+@keyframes preloader-shimmer {
+  from {
+    background-position: 120% 0;
+  }
+
+  to {
+    background-position: -80% 0;
+  }
+}

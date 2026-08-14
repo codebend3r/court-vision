@@ -44,6 +44,22 @@ describe("LoginForm", () => {
     expect(push).toHaveBeenCalledWith("/");
   });
 
+  it("holds a visible loading status until the redirect unmounts the form", async () => {
+    signInWithPassword.mockResolvedValue({ error: null });
+    render(<LoginForm next="/" />);
+    await submitCredentials();
+    expect(await screen.findByRole("status")).toHaveTextContent(/loading your dashboard/i);
+    expect(screen.getByRole("button", { name: /signed in/i })).toBeDisabled();
+  });
+
+  it("re-enables the form after a failed sign in", async () => {
+    signInWithPassword.mockResolvedValue({ error: { message: "Invalid login credentials" } });
+    render(<LoginForm next="/" />);
+    await submitCredentials();
+    await screen.findByText(/invalid login credentials/i);
+    expect(screen.getByRole("button", { name: /^sign in$/i })).toBeEnabled();
+  });
+
   it("renders the notice explaining a failed confirmation link", () => {
     render(<LoginForm next="/" notice="That confirmation link didn't work." />);
     expect(screen.getByText(/that confirmation link didn't work/i)).toBeInTheDocument();

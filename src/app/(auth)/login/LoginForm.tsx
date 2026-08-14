@@ -14,24 +14,30 @@ import styles from "./login.module.scss";
 // the resend button never shows up unprompted.
 type ResendState = "idle" | "offered" | "sending" | "sent";
 
+// "redirecting" persists until the navigation unmounts the form, so the user
+// sees a live status through the (dynamic, database-bound) first page load
+// instead of a button that silently stops saying "Signing in".
+type SubmitPhase = "idle" | "submitting" | "redirecting";
+
 export function LoginForm({ next, notice }: { next: string; notice?: string | null }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const [phase, setPhase] = useState<SubmitPhase>("idle");
   const [resend, setResend] = useState<ResendState>("idle");
   const errorId = useId();
+  const pending = phase !== "idle";
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setResend("idle");
-    setPending(true);
+    setPhase("submitting");
     const supabase = createClient();
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    setPending(false);
     if (signInError) {
+      setPhase("idle");
       setError(signInError.message);
       // Accounts created before the confirmation link was fixed were mailed a
       // localhost URL, so they can never get past this error on their own.
@@ -40,6 +46,7 @@ export function LoginForm({ next, notice }: { next: string; notice?: string | nu
       }
       return;
     }
+    setPhase("redirecting");
     router.push(next);
     router.refresh();
   }
@@ -92,8 +99,15 @@ export function LoginForm({ next, notice }: { next: string; notice?: string | nu
         </p>
       )}
       <button type="submit" disabled={pending}>
-        {pending ? "Signing in…" : "Sign in"}
+        {phase === "idle" ? "Sign in" : phase === "submitting" ? "Signing in…" : "Signed in"}
       </button>
+      {/* role="status" announces the handoff politely; the message stays up
+          until the destination route (and its loading skeleton) takes over. */}
+      {phase === "redirecting" && (
+        <p className={styles.redirecting} role="status">
+          Signed in. Loading your dashboard…
+        </p>
+      )}
       {(resend === "offered" || resend === "sending") && (
         <button
           type="button"
