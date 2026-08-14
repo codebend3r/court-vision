@@ -78,11 +78,16 @@ export default async function RootLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  // One watchlist read per navigation seeds every StarButton on the page. It
-  // does not depend on the profile, so the two run together rather than as a
-  // waterfall on every navigation in the app.
-  const [profile, watchlistPlayerIds] = await Promise.all([getProfile(), getWatchlistPlayerIds()]);
-  const leagues = profile === null ? [] : await getLeagues();
+  // One watchlist read per navigation seeds every StarButton on the page. All
+  // three reads run together rather than as a waterfall on every navigation:
+  // getLeagues and getWatchlistPlayerIds each resolve the profile themselves
+  // (deduped by React cache) and return [] signed out, so nothing here needs
+  // to wait for `profile` before starting.
+  const [profile, watchlistPlayerIds, leagues] = await Promise.all([
+    getProfile(),
+    getWatchlistPlayerIds(),
+    getLeagues(),
+  ]);
   // Matches resolveActiveLeague's DB-side fallback (updatedAt desc), not
   // getLeagues' display order (createdAt asc) — see fallbackActiveLeagueId.
   const activeLeagueId = fallbackActiveLeagueId({

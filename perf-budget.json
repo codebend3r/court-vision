@@ -1,0 +1,34 @@
+{
+  "runs": 5,
+  "warmupRuns": 1,
+  "percentile": 95,
+  "routes": [
+    {
+      "path": "/login",
+      "label": "Login",
+      "budgetMs": { "ttfb": 600, "total": 1500 }
+    },
+    {
+      "path": "/signup",
+      "label": "Signup",
+      "budgetMs": { "ttfb": 600, "total": 1500 }
+    },
+    {
+      "path": "/design",
+      "label": "Design system",
+      "budgetMs": { "ttfb": 600, "total": 1500 }
+    },
+    {
+      "path": "/players",
+      "label": "Players list (points sort)",
+      "requiresDb": true,
+      "budgetMs": { "ttfb": 1200, "total": 2500 }
+    },
+    {
+      "path": "/players?tab=fantasy",
+      "label": "Players fantasy tab",
+      "requiresDb": true,
+      "budgetMs": { "ttfb": 1200, "total": 2500 }
+    }
+  ]
+}

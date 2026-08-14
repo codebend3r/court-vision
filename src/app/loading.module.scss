@@ -1,0 +1,7 @@
+// Mirrors the page container every route module declares (grid, gap, padding)
+// so the skeleton occupies the same box the arriving page will.
+.page {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-6);
+}

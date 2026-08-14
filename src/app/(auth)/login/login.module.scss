@@ -68,6 +68,13 @@
   font-size: var(--font-size-sm);
 }
 
+// Post-sign-in handoff message; the wording carries the state, the color is
+// only reinforcement.
+.redirecting {
+  color: var(--color-win);
+  font-size: var(--font-size-sm);
+}
+
 .alt {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);

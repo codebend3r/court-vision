@@ -54,6 +54,56 @@ jobs:
       - name: ♿ Accessibility
         run: bun run test:a11y
 
+  perf:
+    name: ⚡ Performance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 🥟 Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+
+      - name: 📦 Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: 🧬 Generate Prisma client
+        run: bunx prisma generate
+
+      - name: 🏗️ Build
+        run: bun run build
+
+      # One production server feeds both checks below. Signed out, the audited
+      # routes touch neither Supabase nor the database, so no env is needed —
+      # the same property the a11y job relies on.
+      - name: 🚀 Start server
+        run: |
+          bun run start --port 46644 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:46644/login > /dev/null && exit 0
+            sleep 1
+          done
+          echo "Server never came up" && exit 1
+
+      # 🆓 Lighthouse CI: free, offline, no API keys. Chrome is preinstalled on
+      # ubuntu-latest. Budgets live in lighthouserc.json; assertions run on the
+      # median of 3 runs.
+      - name: 🔦 Lighthouse budgets
+        run: bunx @lhci/cli@0.15.1 autorun
+
+      # ⏱️ Server-timing ceilings from perf-budget.json. Database-backed routes
+      # skip automatically here (no DATABASE_URL); they are enforced by running
+      # `bun run perf:budget` locally — see .claude/skills/perf-budget.
+      - name: 📏 Perf budget
+        run: bun run perf:budget
+
+      - name: 📤 Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci/reports
+          if-no-files-found: ignore
+
   security:
     name: 🔒 Security
     runs-on: ubuntu-latest

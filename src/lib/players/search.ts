@@ -47,19 +47,6 @@ export type PlayerStats = {
   pts: number;
 };
 
-type CountingStatKey =
-  | "fgm"
-  | "fga"
-  | "fg3m"
-  | "fg3a"
-  | "ftm"
-  | "fta"
-  | "reb"
-  | "ast"
-  | "stl"
-  | "blk"
-  | "tov"
-  | "pts";
 type SortableCountingStatKey =
   | "pts"
   | "reb"
@@ -136,21 +123,6 @@ const emptyStats = (): PlayerStats => ({
   pts: 0,
 });
 
-const statKeys: readonly CountingStatKey[] = [
-  "fgm",
-  "fga",
-  "fg3m",
-  "fg3a",
-  "ftm",
-  "fta",
-  "reb",
-  "ast",
-  "stl",
-  "blk",
-  "tov",
-  "pts",
-];
-
 const isSortableCountingStatKey = (
   key: PlayersSearchParams["sort"],
 ): key is SortableCountingStatKey =>
@@ -171,12 +143,25 @@ const withDisplayStats = ({
   const logs = row.gameLogs ?? [];
   // Games played counts appearances only; a DNP (0 minutes) does not count.
   const appearances = logs.filter((game) => game.minutes > 0).length;
+  // One accumulator object per game, not one per stat key per game: this runs
+  // for every player on every cold stat-sorted search, and the nested-spread
+  // version allocated ~12x the objects for the same totals.
   const stats = logs.reduce<PlayerStats>(
-    (totals, game) =>
-      statKeys.reduce<PlayerStats>(
-        (updated, key) => ({ ...updated, [key]: updated[key] + game[key] }),
-        totals,
-      ),
+    (totals, game) => ({
+      gamesPlayed: totals.gamesPlayed,
+      fgm: totals.fgm + game.fgm,
+      fga: totals.fga + game.fga,
+      fg3m: totals.fg3m + game.fg3m,
+      fg3a: totals.fg3a + game.fg3a,
+      ftm: totals.ftm + game.ftm,
+      fta: totals.fta + game.fta,
+      reb: totals.reb + game.reb,
+      ast: totals.ast + game.ast,
+      stl: totals.stl + game.stl,
+      blk: totals.blk + game.blk,
+      tov: totals.tov + game.tov,
+      pts: totals.pts + game.pts,
+    }),
     { ...emptyStats(), gamesPlayed: appearances },
   );
   return { ...row, stats };
