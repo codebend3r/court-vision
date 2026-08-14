@@ -15,6 +15,7 @@
     "test": "bun test --parallel --dots",
     "test:a11y": "playwright test",
     "security:scan": "bun run scripts/security-scan.ts",
+    "perf:budget": "bun run src/lib/perf/check.ts",
     "test:watch": "bun test --isolate --watch",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
