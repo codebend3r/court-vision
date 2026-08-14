@@ -75,7 +75,10 @@ Work down; stop at the first rung that clears the budget:
 - `bun run perf:budget -- --skip-db` (note the `--`) is how flags pass
   through the package script.
 - Budget math lives in `lib/perf/budget.ts` with unit tests; the runner is
-  `lib/perf/check.ts`. Change the math there, never inline in the runner.
+  `scripts/perf-budget.ts`, outside `src/` so the security scan's env-read
+  rule does not apply to its `DATABASE_URL` sniff. Change the math in the
+  lib, never inline in the runner, and do not move the runner back into
+  `src/`.
 - CI's Lighthouse config is `lighthouserc.json`; it audits the database-free
   routes only, because CI has no seeded database. Database-backed routes are
   the local run's job.

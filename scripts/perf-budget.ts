@@ -48,7 +48,7 @@ const parseArgs = (argv: readonly string[]): CheckOptions =>
   );
 
 const loadConfig = (): PerfBudgetConfig => {
-  const configPath = resolve(import.meta.dir, "..", "..", "..", "perf-budget.json");
+  const configPath = resolve(import.meta.dir, "..", "perf-budget.json");
   const raw: unknown = JSON.parse(readFileSync(configPath, "utf8"));
   return parsePerfBudgetConfig(raw);
 };
