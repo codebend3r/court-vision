@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { isValidUsername, normalizeUsername, usernameSchema } from "./username";
+import { isValidUsername, normalizeUsername, usernameSchema } from "@/lib/auth/username";
 
 describe("username", () => {
   it("normalizes case and trims", () => {

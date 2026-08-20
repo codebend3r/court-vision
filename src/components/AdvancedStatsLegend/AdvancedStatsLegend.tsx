@@ -1,6 +1,6 @@
 import { ADVANCED_STAT_META } from "@/lib/players/advancedStatMeta";
 
-import styles from "./AdvancedStatsLegend.module.scss";
+import styles from "@/components/AdvancedStatsLegend/AdvancedStatsLegend.module.scss";
 
 export function AdvancedStatsLegend() {
   return (

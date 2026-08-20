@@ -12,7 +12,7 @@ vi.mock("@/lib/supabase/client", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh: vi.fn() }) }));
 vi.mock("@/lib/auth/signup", () => ({ resendConfirmation }));
 
-import { LoginForm } from "./LoginForm";
+import { LoginForm } from "@/app/(auth)/login/LoginForm";
 
 afterEach(cleanup);
 

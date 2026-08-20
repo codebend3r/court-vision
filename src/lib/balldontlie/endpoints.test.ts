@@ -295,7 +295,7 @@ describe("fetchAllPlayers", () => {
       .mockResolvedValueOnce(jsonResponse(pageTwo));
     const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
 
-    const { fetchAllPlayers } = await import("./endpoints");
+    const { fetchAllPlayers } = await import("@/lib/balldontlie/endpoints");
     const players = await fetchAllPlayers({
       deps: { fetchImpl, sleep, apiKey: "k" },
       throttleMs: 13000,
@@ -313,7 +313,7 @@ describe("fetchAllPlayers", () => {
       .mockResolvedValue(jsonResponse({ data: [playerRow], meta: { next_cursor: null } }));
     const onPage = vi.fn();
 
-    const { fetchAllPlayers } = await import("./endpoints");
+    const { fetchAllPlayers } = await import("@/lib/balldontlie/endpoints");
     await fetchAllPlayers({ deps: { fetchImpl, apiKey: "k", onPage } });
 
     expect(onPage).toHaveBeenCalledWith({
@@ -329,7 +329,7 @@ describe("fetchAllPlayers", () => {
     const bad = { data: [{ id: "nope" }], meta: { next_cursor: null } };
     const fetchImpl = vi.fn<FetchImpl>().mockResolvedValue(jsonResponse(bad));
 
-    const { fetchAllPlayers } = await import("./endpoints");
+    const { fetchAllPlayers } = await import("@/lib/balldontlie/endpoints");
     await expect(fetchAllPlayers({ deps: { fetchImpl, apiKey: "k" } })).rejects.toThrow();
   });
 
@@ -337,7 +337,7 @@ describe("fetchAllPlayers", () => {
     const noMeta = { data: [playerRow] };
     const fetchImpl = vi.fn<FetchImpl>().mockResolvedValue(jsonResponse(noMeta));
 
-    const { fetchAllPlayers } = await import("./endpoints");
+    const { fetchAllPlayers } = await import("@/lib/balldontlie/endpoints");
     await expect(fetchAllPlayers({ deps: { fetchImpl, apiKey: "k" } })).rejects.toThrow();
   });
 });
@@ -370,7 +370,7 @@ describe("fetchTeamGames", () => {
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ data: [gameRow], meta: { next_cursor: null } })),
       );
-    const { fetchTeamGames } = await import("./endpoints");
+    const { fetchTeamGames } = await import("@/lib/balldontlie/endpoints");
     const games = await fetchTeamGames({ teamId: 18, deps: { fetchImpl, apiKey: "k" } });
     expect(games).toEqual([expectedGame]);
     const url = fetchImpl.mock.calls[0][0];

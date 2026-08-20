@@ -126,6 +126,22 @@
       }
     },
     {
+      "files": ["src/**/*.{ts,tsx,mts,cts}", "src/**/*.{js,jsx,mjs}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["../*", "./*"],
+                "message": "Use the @/ (src), @public/, or @generated/ import alias instead of relative paths. Sibling and co-located files are imported by their full alias path too."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
       "rules": {
         "constructor-super": "off",
