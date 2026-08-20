@@ -11,7 +11,7 @@ import {
   toPlayerInputs,
   toPlayerInput,
   deriveGameContext,
-} from "./transform";
+} from "@/lib/balldontlie/transform";
 import { BdlAdvancedStat, BdlStat } from "@/lib/balldontlie/schemas";
 
 const teamAbbrById = new Map<number, string>([

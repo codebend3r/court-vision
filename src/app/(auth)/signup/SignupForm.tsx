@@ -6,7 +6,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { signUp } from "@/lib/auth/signup";
 import { isValidUsername, normalizeUsername } from "@/lib/auth/username";
 
-import styles from "./signup.module.scss";
+import styles from "@/app/(auth)/signup/signup.module.scss";
 
 type Availability = "idle" | "checking" | "available" | "taken";
 

@@ -8,7 +8,7 @@ vi.mock("next/headers", () => ({
   headers: async () => ({ get: (name: string) => getHeader(name) }),
 }));
 
-import { confirmationRedirectTo } from "./confirmationRedirect";
+import { confirmationRedirectTo } from "@/lib/auth/confirmationRedirect";
 
 describe("confirmationRedirectTo", () => {
   beforeEach(() => {

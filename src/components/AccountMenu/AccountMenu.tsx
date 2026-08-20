@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import styles from "./AccountMenu.module.scss";
+import styles from "@/components/AccountMenu/AccountMenu.module.scss";
 
 const MENU_ID = "account-menu";
 

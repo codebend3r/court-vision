@@ -6,7 +6,7 @@ import {
   isActionInt,
   isActionText,
   isOptionalActionId,
-} from "./argGuards";
+} from "@/lib/actions/argGuards";
 
 // The Prisma filter shapes a caller can smuggle through a server action
 // boundary in place of a scalar.

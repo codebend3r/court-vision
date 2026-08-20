@@ -17,7 +17,7 @@ import {
   bdlStandingSchema,
   bdlStatSchema,
   bdlTeamSchema,
-} from "./schemas";
+} from "@/lib/balldontlie/schemas";
 
 export type BdlPageProgress = {
   endpoint: string;

@@ -6,7 +6,7 @@ const signUpAction = vi.fn();
 
 vi.mock("@/lib/auth/signup", () => ({ signUp: (...a: unknown[]) => signUpAction(...a) }));
 
-import { SignupForm } from "./SignupForm";
+import { SignupForm } from "@/app/(auth)/signup/SignupForm";
 
 afterEach(cleanup);
 

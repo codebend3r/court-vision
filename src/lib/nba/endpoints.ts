@@ -12,7 +12,7 @@ import {
   gameLogRowSchema,
   playerIndexRowSchema,
   seasonStatsRowSchema,
-} from "./schemas";
+} from "@/lib/nba/schemas";
 
 export type NbaClientDeps = {
   fetchImpl?: FetchImpl;

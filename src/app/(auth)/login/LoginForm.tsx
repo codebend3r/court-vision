@@ -8,7 +8,7 @@ import { isUnconfirmedEmailError } from "@/lib/auth/loginNotice";
 import { resendConfirmation } from "@/lib/auth/signup";
 import { createClient } from "@/lib/supabase/client";
 
-import styles from "./login.module.scss";
+import styles from "@/app/(auth)/login/login.module.scss";
 
 // "offered" only appears once sign-in has told us the account is unconfirmed, so
 // the resend button never shows up unprompted.

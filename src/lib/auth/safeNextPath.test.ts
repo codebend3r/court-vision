@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { safeNextPath } from "./safeNextPath";
+import { safeNextPath } from "@/lib/auth/safeNextPath";
 
 describe("safeNextPath", () => {
   it("keeps a same-origin absolute path", () => {

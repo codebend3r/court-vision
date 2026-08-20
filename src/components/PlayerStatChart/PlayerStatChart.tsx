@@ -44,7 +44,7 @@ import {
   type StatKey,
   type StatMeta,
   type StatPanel,
-} from "./statMeta";
+} from "@/components/PlayerStatChart/statMeta";
 
 const isStatKey = (value: string): value is StatKey => STAT_KEYS.some((key) => key === value);
 

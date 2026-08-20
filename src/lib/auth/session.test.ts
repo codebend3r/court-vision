@@ -12,7 +12,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: { profile: { findUnique: (...args: unknown[]) => findUnique(...args) } },
 }));
 
-import { getProfile } from "./session";
+import { getProfile } from "@/lib/auth/session";
 
 describe("getProfile", () => {
   beforeEach(() => {

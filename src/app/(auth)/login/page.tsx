@@ -6,7 +6,7 @@ import { safeNextPath } from "@/lib/auth/safeNextPath";
 import { getUser } from "@/lib/auth/session";
 
 import authStyles from "@/app/(auth)/auth.module.scss";
-import { LoginForm } from "./LoginForm";
+import { LoginForm } from "@/app/(auth)/login/LoginForm";
 
 export default async function LoginPage({
   searchParams,

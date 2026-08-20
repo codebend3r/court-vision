@@ -8,7 +8,7 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({ auth: { verifyOtp, exchangeCodeForSession } }),
 }));
 
-import { GET } from "./route";
+import { GET } from "@/app/auth/confirm/route";
 
 const BASE = "http://localhost:46644";
 

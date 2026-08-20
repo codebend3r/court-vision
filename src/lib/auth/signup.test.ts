@@ -17,7 +17,7 @@ vi.mock("next/headers", () => ({
   headers: async () => ({ get: (name: string) => getHeader(name) }),
 }));
 
-import { resendConfirmation, signUp } from "./signup";
+import { resendConfirmation, signUp } from "@/lib/auth/signup";
 
 describe("signUp", () => {
   beforeEach(() => {

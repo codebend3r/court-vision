@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "bun:test";
 
-import { AccountMenu } from "./AccountMenu";
+import { AccountMenu } from "@/components/AccountMenu/AccountMenu";
 
 afterEach(cleanup);
 

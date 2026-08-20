@@ -4,7 +4,7 @@ import { LogoLockup } from "@/components/Logo/Logo";
 import { getUser } from "@/lib/auth/session";
 
 import authStyles from "@/app/(auth)/auth.module.scss";
-import { SignupForm } from "./SignupForm";
+import { SignupForm } from "@/app/(auth)/signup/SignupForm";
 
 export default async function SignupPage() {
   const user = await getUser();

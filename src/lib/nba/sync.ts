@@ -6,7 +6,7 @@ import {
   fetchPlayerGameLogs,
   fetchPlayerIndex,
   fetchSeasonStats,
-} from "./endpoints";
+} from "@/lib/nba/endpoints";
 import { toGameLogInput, toPlayerInput, toSeasonStatsInput } from "@/lib/nba/transform";
 import { consoleLogger } from "@/lib/logger";
 import { isMainModule } from "@/lib/runtime";

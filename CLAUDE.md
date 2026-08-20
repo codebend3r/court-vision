@@ -5,7 +5,7 @@ Operating rules for this repo.
 ## Structure
 
 - Source lives under `src/` (`src/app`, `src/components`, `src/lib`, `src/styles`); `prisma/`, `public/`, config files, `.github/`, and `.husky/` stay at the repo root. Path references below (e.g. `styles/globals.scss`, `lib/foo.ts`) are under `src/`, and the `@/*` import alias maps to `src/*` (`@public/*` and `@generated/*` map to the root `public/` and `generated/` dirs).
-- Import via aliases, never parent-relative paths (`../`); lint enforces this. Same-directory `./` imports (co-located styles, tests) are fine.
+- Import via aliases, never relative paths. This covers parent-relative (`../`) _and_ same-directory siblings (`./`): a co-located style sheet, test subject, or helper is imported by its full alias path (`@/components/Foo/Foo.module.scss`, not `./Foo.module.scss`). SCSS `@use` follows the same rule (`@use "@/styles/mixins" as *`). Lint enforces this inside `src/`; root-level config files like `next.config.ts` sit outside the alias and may still use `./`.
 
 ## Workflow
 
