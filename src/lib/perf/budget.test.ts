@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test";
 import {
   evaluateRoute,
   parsePerfBudgetConfig,
+  partitionRoutes,
   percentileOf,
   summarize,
   type RouteBudget,
@@ -127,7 +128,49 @@ describe("summarize", () => {
       samples: [{ ttfbMs: 9000, totalMs: 9000 }],
       percentile: 95,
     });
-    expect(summarize([passing, failing])).toEqual({ pass: false, failed: 1 });
-    expect(summarize([passing])).toEqual({ pass: true, failed: 0 });
+    expect(summarize([passing, failing])).toEqual({ pass: false, failed: 1, measured: 2 });
+    expect(summarize([passing])).toEqual({ pass: true, failed: 0, measured: 1 });
+  });
+
+  // Skipping deliberately is not a failure, so the boolean stays true; the
+  // count is what lets the report say the run asserted nothing.
+  it("reports a run that measured nothing as passing but empty", () => {
+    expect(summarize([])).toEqual({ pass: true, failed: 0, measured: 0 });
+  });
+});
+
+describe("partitionRoutes", () => {
+  const shell = {
+    path: "/login",
+    label: "Login",
+    requiresDb: false,
+    budgetMs: { ttfb: 1, total: 1 },
+  };
+  const backed = {
+    path: "/players",
+    label: "Players",
+    requiresDb: true,
+    budgetMs: { ttfb: 1, total: 1 },
+  };
+
+  it("measures every route when nothing is skipped", () => {
+    expect(partitionRoutes({ routes: [shell, backed], skipDbRoutes: false })).toEqual({
+      measured: [shell, backed],
+      skipped: [],
+    });
+  });
+
+  it("holds back only the database-backed routes when skipping", () => {
+    expect(partitionRoutes({ routes: [shell, backed], skipDbRoutes: true })).toEqual({
+      measured: [shell],
+      skipped: [backed],
+    });
+  });
+
+  it("preserves configured order within each side", () => {
+    const second = { ...shell, path: "/signup", label: "Signup" };
+    expect(
+      partitionRoutes({ routes: [shell, backed, second], skipDbRoutes: true }).measured,
+    ).toEqual([shell, second]);
   });
 });
