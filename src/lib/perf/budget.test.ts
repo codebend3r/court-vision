@@ -48,8 +48,25 @@ describe("parsePerfBudgetConfig", () => {
 });
 
 describe("percentileOf", () => {
-  it("returns 0 for no samples", () => {
-    expect(percentileOf({ values: [], percentile: 95 })).toBe(0);
+  // 0 would sit under every budget, so a run that measured nothing would have
+  // reported as passing all of them.
+  it("throws for no samples rather than reporting a passing 0", () => {
+    expect(() => percentileOf({ values: [], percentile: 95 })).toThrow(/at least one sample/);
+  });
+
+  it("returns the single sample whatever the percentile", () => {
+    expect(percentileOf({ values: [42], percentile: 95 })).toBe(42);
+    expect(percentileOf({ values: [42], percentile: 1 })).toBe(42);
+  });
+
+  // `percentile` is a bare number on this helper, so the index clamps have to
+  // hold outside the config schema's 1..100 bound.
+  it("clamps to the ends for percentiles at and beyond the bounds", () => {
+    const values = [100, 200, 300, 400, 500];
+    expect(percentileOf({ values, percentile: 100 })).toBe(500);
+    expect(percentileOf({ values, percentile: 1 })).toBe(100);
+    expect(percentileOf({ values, percentile: 0 })).toBe(100);
+    expect(percentileOf({ values, percentile: 250 })).toBe(500);
   });
 
   it("returns the max for p95 over five samples (nearest rank)", () => {
