@@ -19,6 +19,16 @@ type ResendState = "idle" | "offered" | "sending" | "sent";
 // instead of a button that silently stops saying "Signing in".
 type SubmitPhase = "idle" | "submitting" | "redirecting";
 
+// One label per phase, so adding a phase is a compile error here rather than a
+// silent fall-through to whatever the last branch of a ternary happened to be.
+const SUBMIT_LABEL: Record<SubmitPhase, string> = {
+  idle: "Sign in",
+  submitting: "Signing in…",
+  redirecting: "Signed in",
+};
+
+const REDIRECTING_MESSAGE = "Signed in. Loading your dashboard…";
+
 export function LoginForm({ next, notice }: { next: string; notice?: string | null }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -28,6 +38,7 @@ export function LoginForm({ next, notice }: { next: string; notice?: string | nu
   const [resend, setResend] = useState<ResendState>("idle");
   const errorId = useId();
   const pending = phase !== "idle";
+  const confirmationSent = `Confirmation sent to ${email}. Click the link in it to finish setting up your account.`;
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -99,13 +110,20 @@ export function LoginForm({ next, notice }: { next: string; notice?: string | nu
         </p>
       )}
       <button type="submit" disabled={pending}>
-        {phase === "idle" ? "Sign in" : phase === "submitting" ? "Signing in…" : "Signed in"}
+        {SUBMIT_LABEL[phase]}
       </button>
-      {/* role="status" announces the handoff politely; the message stays up
-          until the destination route (and its loading skeleton) takes over. */}
+      {/* A live region only announces content that changes inside a region
+          already in the DOM, so this one stays mounted and the message moves in
+          and out of it. Visually hidden: an always-present empty paragraph would
+          otherwise add a row and a gap to the form grid. The region keeps the
+          text while the phase lasts, so the visible copy is aria-hidden and the
+          message is never read twice. */}
+      <span className={styles.announcer} role="status">
+        {phase === "redirecting" && REDIRECTING_MESSAGE}
+      </span>
       {phase === "redirecting" && (
-        <p className={styles.redirecting} role="status">
-          Signed in. Loading your dashboard…
+        <p className={styles.redirecting} aria-hidden="true">
+          {REDIRECTING_MESSAGE}
         </p>
       )}
       {(resend === "offered" || resend === "sending") && (
@@ -118,9 +136,13 @@ export function LoginForm({ next, notice }: { next: string; notice?: string | nu
           {resend === "sending" ? "Sending…" : "Resend confirmation email"}
         </button>
       )}
+      {/* Same split as the handoff message above. */}
+      <span className={styles.announcer} role="status">
+        {resend === "sent" && confirmationSent}
+      </span>
       {resend === "sent" && (
-        <p className={styles.sent} role="status">
-          Confirmation sent to {email}. Click the link in it to finish setting up your account.
+        <p className={styles.sent} aria-hidden="true">
+          {confirmationSent}
         </p>
       )}
       <p className={styles.alt}>

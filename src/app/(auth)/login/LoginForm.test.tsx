@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
@@ -13,6 +13,8 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh: vi.fn() }
 vi.mock("@/lib/auth/signup", () => ({ resendConfirmation }));
 
 import { LoginForm } from "@/app/(auth)/login/LoginForm";
+
+const REDIRECTING_MESSAGE = "Signed in. Loading your dashboard…";
 
 afterEach(cleanup);
 
@@ -44,12 +46,32 @@ describe("LoginForm", () => {
     expect(push).toHaveBeenCalledWith("/");
   });
 
-  it("holds a visible loading status until the redirect unmounts the form", async () => {
+  it("keeps its status regions mounted and empty before there is anything to say", () => {
+    render(<LoginForm next="/" />);
+    const regions = screen.getAllByRole("status");
+    expect(regions).toHaveLength(2);
+    regions.forEach((region) => expect(region).toBeEmptyDOMElement());
+  });
+
+  // Captures the node before submitting and asserts against that same node
+  // afterwards: a region that is inserted along with its text is not reliably
+  // announced, so proving it was already there is the point of the test.
+  it("announces the handoff in a region that was already in the DOM", async () => {
+    signInWithPassword.mockResolvedValue({ error: null });
+    render(<LoginForm next="/" />);
+    const [handoffRegion] = screen.getAllByRole("status");
+    expect(handoffRegion).toBeEmptyDOMElement();
+    await submitCredentials();
+    await waitFor(() => expect(handoffRegion).toHaveTextContent(/loading your dashboard/i));
+    expect(screen.getByRole("button", { name: /signed in/i })).toBeDisabled();
+  });
+
+  it("shows the handoff message to sighted users without repeating it to screen readers", async () => {
     signInWithPassword.mockResolvedValue({ error: null });
     render(<LoginForm next="/" />);
     await submitCredentials();
-    expect(await screen.findByRole("status")).toHaveTextContent(/loading your dashboard/i);
-    expect(screen.getByRole("button", { name: /signed in/i })).toBeDisabled();
+    const visible = await screen.findByText(REDIRECTING_MESSAGE, { ignore: "[role=status]" });
+    expect(visible).toHaveAttribute("aria-hidden", "true");
   });
 
   it("re-enables the form after a failed sign in", async () => {
@@ -103,7 +125,9 @@ describe("LoginForm", () => {
     );
 
     expect(resendConfirmation).toHaveBeenCalledWith({ email: "a@b.com" });
-    expect(await screen.findByText(/a@b\.com/)).toBeInTheDocument();
+    // Two status regions in document order: the sign-in handoff, then this one.
+    const [, resendRegion] = screen.getAllByRole("status");
+    await waitFor(() => expect(resendRegion).toHaveTextContent(/a@b\.com/));
     expect(screen.queryByRole("button", { name: /resend/i })).not.toBeInTheDocument();
   });
 
