@@ -68,6 +68,14 @@
   font-size: var(--font-size-sm);
 }
 
+// Always-mounted live region for the form's status announcements. It has to
+// stay in the DOM for a screen reader to announce what lands in it, and it has
+// to stay out of the layout so an empty one does not add a row to the form
+// grid; visually-hidden is what satisfies both.
+.announcer {
+  @include visually-hidden;
+}
+
 // Post-sign-in handoff message; the wording carries the state, the color is
 // only reinforcement.
 .redirecting {
