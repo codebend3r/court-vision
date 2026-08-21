@@ -47,6 +47,14 @@ export const parsePerfBudgetConfig = (raw: unknown): PerfBudgetConfig =>
 
 // Nearest-rank percentile: for p95 over 5 samples this is the maximum, which
 // is the honest reading at small run counts.
+//
+// An empty sample set throws rather than returning 0. Zero is not the
+// percentile of nothing: it is below every budget, so a run that measured
+// nothing would report as comfortably inside all of them. The schema
+// guarantees `runs >= 1`, so reaching this is a programming error and the
+// loud version is the useful one. The index is clamped because `percentile`
+// is a bare number here; the config schema's 1..100 bound does not follow it
+// into direct calls.
 export const percentileOf = ({
   values,
   percentile,
@@ -54,11 +62,12 @@ export const percentileOf = ({
   values: readonly number[];
   percentile: number;
 }): number => {
-  if (values.length === 0) return 0;
+  if (values.length === 0) {
+    throw new Error("percentileOf requires at least one sample; a percentile of nothing is not 0");
+  }
   const sorted = [...values].sort((a, b) => a - b);
   const rank = Math.ceil((percentile / 100) * sorted.length);
-  const index = Math.min(sorted.length - 1, Math.max(0, rank - 1));
-  return sorted[index] ?? 0;
+  return sorted[Math.min(sorted.length - 1, Math.max(0, rank - 1))];
 };
 
 export const evaluateRoute = ({
