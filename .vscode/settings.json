@@ -9,31 +9,14 @@
   // so the match is null and it never consults `compilerOptions.paths`; every
   // fallback then resolves to `<root>/@/components/...`, which does not exist.
   // That same lookup backs peek, go to definition, and selector completion, so
-  // the extension has no working feature here, only the false error.
-  //
-  // Nothing in tsconfig.json can fix this (the regex runs before `paths` and
-  // `baseUrl` are read), and CLAUDE.md requires the `@/*` alias, so the
-  // diagnostics are turned off for this workspace instead.
+  // the extension has no working feature here, only the false error. Its other
+  // settings are therefore not configured: extensions.json lists it as
+  // unwanted, and this key only exists to silence the diagnostics for anyone
+  // who already has it installed.
   "reactTsScss.diagnostics": false,
 
-  // Keep the editor's own tooling aligned with the repo scripts.
+  // Keep the editor's own tooling aligned with the repo scripts. `non-relative`
+  // makes auto-import write `@/...`, which is what CLAUDE.md requires.
   "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.preferences.importModuleSpecifier": "non-relative",
-  "reactTsScss.autoComplete": true,
-  "reactTsScss.definition": true,
-  "reactTsScss.peekProperties": true,
-  "reactTsScss.cssAutoComplete": true,
-  "reactTsScss.cssDefinitions": true,
-  "reactTsScss.baseDir": "src",
-  "reactTsScss.cssSyntaxColor": true,
-  "reactTsScss.tsCleanUpDefs": true,
-  "reactTsScss.cleanUpDefs": [
-    "*.module.css",
-    "*.module.scss",
-    "*.module.sass",
-    "*.module.less",
-    "*.module.styl"
-  ],
-  "reactTsScss.references": true,
-  "reactTsScss.codelens": false
+  "typescript.preferences.importModuleSpecifier": "non-relative"
 }

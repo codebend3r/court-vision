@@ -1,9 +1,7 @@
 @use "@/styles/mixins" as *;
 
 .page {
-  display: grid;
-  gap: var(--space-6);
-  padding: var(--space-8);
+  @include page-shell(var(--space-6), var(--space-8));
 }
 
 // Signed-in dashboard: a fixed six-track grid so panels and charts can claim

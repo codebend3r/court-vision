@@ -96,6 +96,17 @@
   box-shadow: var(--retro-2);
 }
 
+// The route container every screen's `.page` declares: a single grid column
+// the page stacks into. Defaults are the common case; a route that wants more
+// air passes its own tokens. Route skeletons (`loading.tsx`) include the same
+// mixin through their own segment's module, so the placeholder box and the
+// arriving page cannot drift apart.
+@mixin page-shell($gap: var(--space-4), $padding: var(--space-6)) {
+  display: grid;
+  gap: $gap;
+  padding: $padding;
+}
+
 // Dashboard panel shell (spec §10): every home panel and chart card share it.
 @mixin panel-shell {
   display: grid;

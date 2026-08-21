@@ -1,9 +1,7 @@
 @use "@/styles/mixins" as *;
 
 .page {
-  display: grid;
-  gap: var(--space-6);
-  padding: var(--space-6);
+  @include page-shell($gap: var(--space-6));
 }
 
 .header {

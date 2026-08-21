@@ -1,5 +1,4 @@
 {
-  "recommendations": [],
   // Cannot resolve the `@/*` alias; see the note in settings.json.
   "unwantedRecommendations": ["viijay-kr.react-ts-css"]
 }
