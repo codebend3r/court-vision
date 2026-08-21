@@ -44,6 +44,6 @@ export const parseCheckOptions = ({
   const flags = parseFlags(argv);
   return {
     baseUrl: flags.baseUrl ?? perfBaseUrl ?? DEFAULT_BASE_URL,
-    skipDbRoutes: flags.skipDb || databaseUrl === undefined || databaseUrl === "",
+    skipDbRoutes: flags.skipDb || !databaseUrl,
   };
 };
