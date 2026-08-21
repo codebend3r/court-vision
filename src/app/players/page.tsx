@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { AdvancedStatsLegend } from "@/components/AdvancedStatsLegend/AdvancedStatsLegend";
 import { FantasyValueView } from "@/components/FantasyValueView/FantasyValueView";
 import { PageHeader } from "@/components/PageHeader/PageHeader";
@@ -10,10 +12,12 @@ import { getProfile, getUser } from "@/lib/auth/session";
 import { buildLeagueSeed } from "@/lib/leagues/fantasyDefaults";
 import { getActiveLeague } from "@/lib/leagues/queries";
 import { searchPlayers, searchPlayersAdvanced } from "@/lib/players/searchCached";
-import { parsePlayersSearchParams } from "@/lib/players/searchParams";
+import { parsePlayersSearchParams, type PlayersSearchParams } from "@/lib/players/searchParams";
 import { getFantasyPool } from "@/lib/valuation/loader";
 import { ENABLED_METHODS } from "@/lib/valuation/registry";
 import { loadFantasySearchParams } from "@/lib/valuation/searchParams";
+
+import { PLAYERS_PAGE_HEADER } from "@/app/players/header";
 
 import styles from "@/app/players/page.module.scss";
 
@@ -23,6 +27,9 @@ type RawSearchParams = Record<string, string | string[] | undefined>;
 
 const firstValue = (value: string | string[] | undefined): string | undefined =>
   Array.isArray(value) ? value[0] : value;
+
+const totalPagesOf = ({ total, size }: { total: number; size: number }): number =>
+  Math.max(1, Math.ceil(total / size));
 
 const renderSummary = ({
   total,
@@ -40,6 +47,64 @@ const renderSummary = ({
       ? "No players yet — the season data hasn't been synced."
       : `No players match "${q}".`
     : `Showing ${rangeStart}–${rangeEnd} of ${total}`;
+
+// The frame all four tabs share. Kept in this file rather than src/components
+// because it renders page.module.scss: a shared component would have to import
+// another segment's stylesheet to do the same job.
+function PlayersScreen({ params, children }: { params: PlayersSearchParams; children: ReactNode }) {
+  return (
+    <main className={styles.page}>
+      <PageHeader {...PLAYERS_PAGE_HEADER} />
+      <PlayersTabs active={params.tab} q={params.q} size={params.size} range={params.range} />
+      {children}
+    </main>
+  );
+}
+
+// The table tabs (regular and advanced) share everything around the table:
+// the same controls, the same counter, the same empty state. Only the query,
+// the table variant, and the advanced legend differ, and those stay in the
+// callers because `variant` and `rows` are a discriminated pair on
+// PlayersTable; collapsing them here would need a cast to reunite.
+function PlayersResults({
+  params,
+  total,
+  page,
+  children,
+}: {
+  params: PlayersSearchParams;
+  total: number;
+  page: number;
+  children: ReactNode;
+}) {
+  const rangeStart = total === 0 ? 0 : (page - 1) * params.size + 1;
+  const rangeEnd = Math.min(total, page * params.size);
+  // Remounting the results on any reorder/repage (tab, sort, range, mode, page)
+  // replays the enter animation, so a section swap reads as a deliberate
+  // transition. `q` is intentionally excluded: typing already gets the pending
+  // dim, and keying on it would refade (and interrupt) on every keystroke.
+  const resultsKey = `${params.tab}:${params.sort}:${params.dir}:${params.range}:${params.mode}:${params.page}`;
+  return (
+    <>
+      <PlayersSearchControls
+        q={params.q}
+        size={params.size}
+        sort={params.sort}
+        dir={params.dir}
+        range={params.range}
+        mode={params.mode}
+        minimums={params.minimums}
+        tab={params.tab}
+      />
+      <section className={styles.results} key={resultsKey}>
+        <p className={styles.summary}>
+          {renderSummary({ total, q: params.q, rangeStart, rangeEnd })}
+        </p>
+        {total > 0 && children}
+      </section>
+    </>
+  );
+}
 
 export default async function PlayersPage({
   searchParams,
@@ -63,31 +128,11 @@ export default async function PlayersPage({
   // account; signed out, StarButton links to sign-in instead.
   const isSignedIn = !!(await getUser());
 
-  const tabsNav = (
-    <PlayersTabs active={params.tab} q={params.q} size={params.size} range={params.range} />
-  );
-
-  const pageHeader = (
-    <PageHeader
-      eyebrow="Research"
-      title="Players"
-      description="Every player, every metric. Sort on the number your league scores, not the one the box score prints."
-    />
-  );
-
-  // Remounting the results on any reorder/repage (tab, sort, range, mode, page)
-  // replays the enter animation, so a section swap reads as a deliberate
-  // transition. `q` is intentionally excluded: typing already gets the pending
-  // dim, and keying on it would refade (and interrupt) on every keystroke.
-  const resultsKey = `${params.tab}:${params.sort}:${params.dir}:${params.range}:${params.mode}:${params.page}`;
-
   if (params.tab === "starred") {
     return (
-      <main className={styles.page}>
-        {pageHeader}
-        {tabsNav}
+      <PlayersScreen params={params}>
         <StarredPlayersView params={params} showCounter={false} />
-      </main>
+      </PlayersScreen>
     );
   }
 
@@ -106,116 +151,56 @@ export default async function PlayersPage({
       ENABLED_METHODS.find((method) => method.key === profile?.preferredFormula)?.key ?? null;
     const leagueSeed = buildLeagueSeed({ league, preferredFormula: formula, presentKeys });
     return (
-      <main className={styles.page}>
-        {pageHeader}
-        {tabsNav}
+      <PlayersScreen params={params}>
         <FantasyValueView lines={lines} isSignedIn={isSignedIn} leagueSeed={leagueSeed} />
-      </main>
+      </PlayersScreen>
     );
   }
 
   if (params.tab === "advanced") {
     const { rows, total, page } = await searchPlayersAdvanced(params);
-    const totalPages = Math.max(1, Math.ceil(total / params.size));
-    const rangeStart = total === 0 ? 0 : (page - 1) * params.size + 1;
-    const rangeEnd = Math.min(total, page * params.size);
-
     return (
-      <main className={styles.page}>
-        {pageHeader}
-        {tabsNav}
-        <PlayersSearchControls
-          q={params.q}
-          size={params.size}
-          sort={params.sort}
-          dir={params.dir}
-          range={params.range}
-          mode={params.mode}
-          minimums={params.minimums}
-          tab={params.tab}
-        />
-        <section className={styles.results} key={resultsKey}>
-          <p className={styles.summary}>
-            {renderSummary({ total, q: params.q, rangeStart, rangeEnd })}
-          </p>
-          {total > 0 && (
-            <>
-              <PlayersTable
-                variant="advanced"
-                rows={rows}
-                params={params}
-                page={page}
-                isSignedIn={isSignedIn}
-                footer={
-                  <PlayersPager
-                    q={params.q}
-                    page={page}
-                    size={params.size}
-                    totalPages={totalPages}
-                    sort={params.sort}
-                    dir={params.dir}
-                    range={params.range}
-                    mode={params.mode}
-                    minimums={params.minimums}
-                    tab={params.tab}
-                  />
-                }
-              />
-              <AdvancedStatsLegend />
-            </>
-          )}
-        </section>
-      </main>
-    );
-  }
-
-  const { rows, total, page } = await searchPlayers(params);
-  const totalPages = Math.max(1, Math.ceil(total / params.size));
-  const rangeStart = total === 0 ? 0 : (page - 1) * params.size + 1;
-  const rangeEnd = Math.min(total, page * params.size);
-
-  return (
-    <main className={styles.page}>
-      {pageHeader}
-      {tabsNav}
-      <PlayersSearchControls
-        q={params.q}
-        size={params.size}
-        sort={params.sort}
-        dir={params.dir}
-        range={params.range}
-        mode={params.mode}
-        minimums={params.minimums}
-        tab={params.tab}
-      />
-      <section className={styles.results} key={resultsKey}>
-        <p className={styles.summary}>
-          {renderSummary({ total, q: params.q, rangeStart, rangeEnd })}
-        </p>
-        {total > 0 && (
+      <PlayersScreen params={params}>
+        <PlayersResults params={params} total={total} page={page}>
           <PlayersTable
-            variant="regular"
+            variant="advanced"
             rows={rows}
             params={params}
             page={page}
             isSignedIn={isSignedIn}
             footer={
               <PlayersPager
-                q={params.q}
+                {...params}
                 page={page}
-                size={params.size}
-                totalPages={totalPages}
-                sort={params.sort}
-                dir={params.dir}
-                range={params.range}
-                mode={params.mode}
-                minimums={params.minimums}
-                tab={params.tab}
+                totalPages={totalPagesOf({ total, size: params.size })}
               />
             }
           />
-        )}
-      </section>
-    </main>
+          <AdvancedStatsLegend />
+        </PlayersResults>
+      </PlayersScreen>
+    );
+  }
+
+  const { rows, total, page } = await searchPlayers(params);
+  return (
+    <PlayersScreen params={params}>
+      <PlayersResults params={params} total={total} page={page}>
+        <PlayersTable
+          variant="regular"
+          rows={rows}
+          params={params}
+          page={page}
+          isSignedIn={isSignedIn}
+          footer={
+            <PlayersPager
+              {...params}
+              page={page}
+              totalPages={totalPagesOf({ total, size: params.size })}
+            />
+          }
+        />
+      </PlayersResults>
+    </PlayersScreen>
   );
 }

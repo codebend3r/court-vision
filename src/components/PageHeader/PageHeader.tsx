@@ -17,17 +17,14 @@ export function PageAction({ href, children }: { href: string; children: ReactNo
 // the extruded page title, a one-sentence description, right-aligned keycap
 // actions on the title baseline, and the accent rule underneath. The page
 // container supplies the outer padding; this block only owns its own rhythm.
-export function PageHeader({
-  eyebrow,
-  title,
-  description,
-  actions,
-}: {
+export type PageHeaderProps = {
   eyebrow: string;
   title: ReactNode;
   description?: string;
   actions?: ReactNode;
-}) {
+};
+
+export function PageHeader({ eyebrow, title, description, actions }: PageHeaderProps) {
   return (
     <header className={styles.header}>
       <div className={styles.row}>
