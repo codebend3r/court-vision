@@ -8,8 +8,9 @@ description: Use when a court-vision page feels slow, when a branch touches page
 `perf-budget.json` at the repo root is the acceptable-threshold contract:
 per-route TTFB and total-response ceilings in milliseconds, enforced at a
 percentile over several runs. `bun run perf:budget` measures a running server
-against it and exits 1 on a breach. CI runs the same script plus Lighthouse on
-every PR. Everything is offline and free; no API keys, no tokens.
+against it and exits 1 on a breach. It is a local and pre-release check: CI's
+perf gate is Lighthouse alone (see below). Everything is offline and free; no
+API keys, no tokens.
 
 ## 1. Run the check
 
@@ -22,7 +23,8 @@ bun run perf:budget
 ```
 
 - Routes flagged `requiresDb` are skipped automatically when `DATABASE_URL`
-  is unset (CI), and can be force-skipped with `--skip-db`.
+  is unset, and can be force-skipped with `--skip-db`. A run where every route
+  skipped says so and asserts nothing; it is not a pass.
 - `--base-url=http://localhost:3000` points the check elsewhere.
 - Dev-server numbers run hot (compilation, no minification). A dev-mode
   breach is a hint, not a verdict; confirm against `next start` before acting.
@@ -79,9 +81,14 @@ Work down; stop at the first rung that clears the budget:
   rule does not apply to its `DATABASE_URL` sniff. Change the math in the
   lib, never inline in the runner, and do not move the runner back into
   `src/`.
-- CI's Lighthouse config is `lighthouserc.json`; it audits the database-free
-  routes only, because CI has no seeded database. Database-backed routes are
-  the local run's job.
+- CI runs Lighthouse only (`lighthouserc.json`), auditing the database-free
+  routes. `perf:budget` is deliberately NOT in CI: without a `DATABASE_URL` it
+  skips its database-backed routes and measures the same three routes
+  Lighthouse already covers, with a weaker signal, so it would read as coverage
+  while asserting nothing new. Re-adding it to CI only makes sense alongside a
+  seeded database. The only seed path today is `seed:demo`, which needs a live
+  Balldontlie key and free-tier throttling; an offline fixture seed is the
+  prerequisite. Database-backed routes are the local run's job until then.
 
 ## Checklist
 

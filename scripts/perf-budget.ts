@@ -128,6 +128,14 @@ export const runPerfCheck = async (options: CheckOptions): Promise<boolean> => {
   }, Promise.resolve([]));
 
   const { pass, failed } = summarize(verdicts);
+  // A run that measured nothing is not a pass. Saying so keeps a fully skipped
+  // invocation (no DATABASE_URL, or --skip-db) from reading as green coverage.
+  if (verdicts.length === 0) {
+    console.log(
+      `\nNo routes measured: all ${skipped.length} configured route(s) were skipped. This asserts nothing. Set DATABASE_URL and re-run to cover the database-backed routes.`,
+    );
+    return true;
+  }
   console.log(
     pass
       ? `\nAll ${verdicts.length} measured routes are inside budget (p${config.percentile} over ${config.runs} runs).`

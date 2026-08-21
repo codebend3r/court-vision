@@ -72,9 +72,8 @@ jobs:
       - name: 🏗️ Build
         run: bun run build
 
-      # One production server feeds both checks below. Signed out, the audited
-      # routes touch neither Supabase nor the database, so no env is needed —
-      # the same property the a11y job relies on.
+      # Signed out, the audited routes touch neither Supabase nor the database,
+      # so no env is needed: the same property the a11y job relies on.
       - name: 🚀 Start server
         run: |
           bun run start --port 46644 &
@@ -87,14 +86,18 @@ jobs:
       # 🆓 Lighthouse CI: free, offline, no API keys. Chrome is preinstalled on
       # ubuntu-latest. Budgets live in lighthouserc.json; assertions run on the
       # median of 3 runs.
+      #
+      # Lighthouse is the ONLY perf gate here, deliberately. `bun run
+      # perf:budget` skips its database-backed routes without a DATABASE_URL,
+      # which would leave it measuring the exact three routes Lighthouse already
+      # covers, with a weaker signal (raw fetch TTFB vs LCP/CLS/TBT). Running it
+      # would read as coverage while asserting nothing new. The routes that need
+      # it (/players) need a seeded database; the only seed path is `seed:demo`,
+      # which needs a live Balldontlie key and free-tier throttling. Until an
+      # offline fixture seed exists, perf:budget runs locally and pre-release.
+      # See .claude/skills/perf-budget.
       - name: 🔦 Lighthouse budgets
         run: bunx @lhci/cli@0.15.1 autorun
-
-      # ⏱️ Server-timing ceilings from perf-budget.json. Database-backed routes
-      # skip automatically here (no DATABASE_URL); they are enforced by running
-      # `bun run perf:budget` locally — see .claude/skills/perf-budget.
-      - name: 📏 Perf budget
-        run: bun run perf:budget
 
       - name: 📤 Upload Lighthouse reports
         if: always()

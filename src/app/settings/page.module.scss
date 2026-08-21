@@ -1,5 +1,5 @@
+@use "@/styles/mixins" as *;
+
 .page {
-  display: grid;
-  gap: var(--space-4);
-  padding: var(--space-6);
+  @include page-shell;
 }
