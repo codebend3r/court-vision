@@ -14,6 +14,7 @@ import { generateGameLogs } from "@/lib/demo/generate";
 import { normalizeName } from "@/lib/demo/names";
 import { DEMO_PROFILES } from "@/lib/demo/profiles";
 import { Logger, consoleLogger, silentLogger } from "@/lib/logger";
+import { sequentially } from "@/lib/sequentially";
 import { isMainModule } from "@/lib/runtime";
 
 export async function seedDemo(
@@ -37,29 +38,35 @@ export async function seedDemo(
     new Map<string, BdlPlayer>(),
   );
 
-  const gameLogInputs = await DEMO_PROFILES.reduce(async (previous, profile) => {
-    const acc = await previous;
-    const match = byName.get(normalizeName(profile.fullName));
-    const team = match?.team ?? null;
-    if (!match || team === null) {
-      throw new Error(`Demo profile not resolvable: ${profile.fullName}`);
-    }
-    const games = await fetchTeamGames({
-      teamId: team.id,
-      deps,
-      throttleMs: FREE_TIER_THROTTLE_MS,
-    });
-    const logs = generateGameLogs({
-      playerId: match.id,
-      teamId: team.id,
-      teamAbbr: team.abbreviation,
-      games,
-      profile,
-      teamAbbrById,
-    });
-    logger(`${profile.fullName}: generated ${logs.length} game logs.`);
-    return acc.concat(logs);
-  }, Promise.resolve<GameLogInput[]>([]));
+  // One profile at a time: fetchTeamGames is throttled to the free API tier,
+  // so overlapping these would just queue against the same rate limit.
+  const gameLogInputs = (
+    await sequentially({
+      items: DEMO_PROFILES,
+      run: async ({ item: profile }): Promise<GameLogInput[]> => {
+        const match = byName.get(normalizeName(profile.fullName));
+        const team = match?.team ?? null;
+        if (!match || team === null) {
+          throw new Error(`Demo profile not resolvable: ${profile.fullName}`);
+        }
+        const games = await fetchTeamGames({
+          teamId: team.id,
+          deps,
+          throttleMs: FREE_TIER_THROTTLE_MS,
+        });
+        const logs = generateGameLogs({
+          playerId: match.id,
+          teamId: team.id,
+          teamAbbr: team.abbreviation,
+          games,
+          profile,
+          teamAbbrById,
+        });
+        logger(`${profile.fullName}: generated ${logs.length} game logs.`);
+        return logs;
+      },
+    })
+  ).flat();
 
   const gameLogs = await upsertGameLogs(gameLogInputs);
   const seasonStats = await upsertSeasonStats(aggregateSeasonStats(gameLogInputs));

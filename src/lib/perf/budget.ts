@@ -102,7 +102,37 @@ export const evaluateRoute = ({
   };
 };
 
-export const summarize = (verdicts: readonly RouteVerdict[]): { pass: boolean; failed: number } => {
+// Whether a database-backed route can be measured at all. Both reasons for
+// skipping one collapse into `skipDbRoutes` before this is called.
+const isSkipped = ({
+  route,
+  skipDbRoutes,
+}: {
+  route: RouteBudget;
+  skipDbRoutes: boolean;
+}): boolean => skipDbRoutes && route.requiresDb;
+
+export const partitionRoutes = ({
+  routes,
+  skipDbRoutes,
+}: {
+  routes: readonly RouteBudget[];
+  skipDbRoutes: boolean;
+}): { measured: RouteBudget[]; skipped: RouteBudget[] } => ({
+  measured: routes.filter((route) => !isSkipped({ route, skipDbRoutes })),
+  skipped: routes.filter((route) => isSkipped({ route, skipDbRoutes })),
+});
+
+export type BudgetSummary = {
+  pass: boolean;
+  failed: number;
+  measured: number;
+};
+
+// `pass` stays true for a run that measured nothing: skipping deliberately
+// (--skip-db, or no database to reach) is not a failure. `measured` is what
+// lets the report say so out loud instead of claiming everything passed.
+export const summarize = (verdicts: readonly RouteVerdict[]): BudgetSummary => {
   const failed = verdicts.filter((verdict) => !verdict.pass).length;
-  return { pass: failed === 0, failed };
+  return { pass: failed === 0, failed, measured: verdicts.length };
 };

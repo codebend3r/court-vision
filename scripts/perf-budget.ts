@@ -4,13 +4,17 @@ import { resolve } from "node:path";
 import {
   evaluateRoute,
   parsePerfBudgetConfig,
+  partitionRoutes,
   summarize,
   type PerfBudgetConfig,
   type RouteBudget,
   type RouteSample,
   type RouteVerdict,
 } from "@/lib/perf/budget";
+import { parseCheckOptions, type CheckOptions } from "@/lib/perf/options";
+import { skipLine, summaryLine, verdictLines } from "@/lib/perf/report";
 import { isMainModule } from "@/lib/runtime";
+import { sequentially } from "@/lib/sequentially";
 
 /**
  * Load-time budget check.
@@ -26,26 +30,11 @@ import { isMainModule } from "@/lib/runtime";
  * Routes flagged requiresDb are skipped automatically when DATABASE_URL is not
  * set, so the same command works locally (full coverage) and in CI (shell
  * routes only).
+ *
+ * This file is the I/O shell: reading the config, reading the environment,
+ * making requests, and printing. Every decision it prints lives in
+ * lib/perf/{budget,options,report}.ts, where it is unit-tested offline.
  */
-
-const DEFAULT_BASE_URL = "http://localhost:46644";
-
-type CheckOptions = {
-  baseUrl: string;
-  skipDb: boolean;
-};
-
-const parseArgs = (argv: readonly string[]): CheckOptions =>
-  argv.reduce<CheckOptions>(
-    (options, arg) => {
-      if (arg === "--skip-db") return { ...options, skipDb: true };
-      if (arg.startsWith("--base-url=")) {
-        return { ...options, baseUrl: arg.slice("--base-url=".length) };
-      }
-      return options;
-    },
-    { baseUrl: process.env.PERF_BASE_URL ?? DEFAULT_BASE_URL, skipDb: false },
-  );
 
 const loadConfig = (): PerfBudgetConfig => {
   const configPath = resolve(import.meta.dir, "..", "perf-budget.json");
@@ -58,12 +47,13 @@ const measureOnce = async ({ url }: { url: string }): Promise<RouteSample> => {
   const response = await fetch(url, { redirect: "manual" });
   // Headers received is the closest fetch gets to time-to-first-byte.
   const ttfbMs = performance.now() - started;
-  await response.arrayBuffer();
-  const totalMs = performance.now() - started;
+  // Checked before the body is read: a redirect or an error page is not a
+  // measurement, and there is no reason to time downloading one.
   if (response.status !== 200) {
     throw new Error(`${url} responded ${response.status}; budgets only apply to 200s`);
   }
-  return { ttfbMs, totalMs };
+  await response.arrayBuffer();
+  return { ttfbMs, totalMs: performance.now() - started };
 };
 
 const measureRoute = async ({
@@ -80,80 +70,67 @@ const measureRoute = async ({
   const url = new URL(route.path, baseUrl).toString();
   // Sequential on purpose: parallel requests contend for the same server and
   // would measure queueing, not the route.
-  const samples = await Array.from({ length: warmupRuns + runs }).reduce<Promise<RouteSample[]>>(
-    async (previous) => {
-      const collected = await previous;
-      const sample = await measureOnce({ url });
-      return [...collected, sample];
-    },
-    Promise.resolve([]),
-  );
+  const samples = await sequentially({
+    items: Array.from({ length: warmupRuns + runs }),
+    run: () => measureOnce({ url }),
+  });
   return samples.slice(warmupRuns);
 };
 
-const formatVerdict = (verdict: RouteVerdict): string => {
-  const status = verdict.pass ? "PASS" : "FAIL";
-  const ttfb = `ttfb ${Math.round(verdict.ttfbMs)}ms/${verdict.budgetMs.ttfb}ms`;
-  const total = `total ${Math.round(verdict.totalMs)}ms/${verdict.budgetMs.total}ms`;
-  return `${status}  ${verdict.path}  ${ttfb}  ${total}`;
-};
+export const runPerfCheck = async ({
+  config,
+  baseUrl,
+  skipDbRoutes,
+}: CheckOptions & { config: PerfBudgetConfig }): Promise<boolean> => {
+  const { measured, skipped } = partitionRoutes({ routes: config.routes, skipDbRoutes });
+  skipped.forEach((route) => console.log(skipLine(route)));
 
-export const runPerfCheck = async (options: CheckOptions): Promise<boolean> => {
-  const config = loadConfig();
-  const skipDbRoutes = options.skipDb || !process.env.DATABASE_URL;
-  const [skipped, measured] = config.routes.reduce<[RouteBudget[], RouteBudget[]]>(
-    ([toSkip, toMeasure], route) =>
-      skipDbRoutes && route.requiresDb
-        ? [[...toSkip, route], toMeasure]
-        : [toSkip, [...toMeasure, route]],
-    [[], []],
-  );
+  const verdicts = await sequentially({
+    items: measured,
+    run: async ({ item: route }): Promise<RouteVerdict> => {
+      const samples = await measureRoute({
+        baseUrl,
+        route,
+        runs: config.runs,
+        warmupRuns: config.warmupRuns,
+      });
+      const verdict = evaluateRoute({ route, samples, percentile: config.percentile });
+      verdictLines(verdict).forEach((line) => console.log(line));
+      return verdict;
+    },
+  });
 
-  skipped.map((route) =>
-    console.log(`SKIP  ${route.path}  (needs a database; DATABASE_URL not set or --skip-db)`),
-  );
-
-  const verdicts = await measured.reduce<Promise<RouteVerdict[]>>(async (previous, route) => {
-    const collected = await previous;
-    const samples = await measureRoute({
-      baseUrl: options.baseUrl,
-      route,
-      runs: config.runs,
-      warmupRuns: config.warmupRuns,
-    });
-    const verdict = evaluateRoute({ route, samples, percentile: config.percentile });
-    console.log(formatVerdict(verdict));
-    verdict.breaches.map((breach) => console.log(`      ${breach}`));
-    return [...collected, verdict];
-  }, Promise.resolve([]));
-
-  const { pass, failed } = summarize(verdicts);
-  // A run that measured nothing is not a pass. Saying so keeps a fully skipped
-  // invocation (no DATABASE_URL, or --skip-db) from reading as green coverage.
-  if (verdicts.length === 0) {
-    console.log(
-      `\nNo routes measured: all ${skipped.length} configured route(s) were skipped. This asserts nothing. Set DATABASE_URL and re-run to cover the database-backed routes.`,
-    );
-    return true;
-  }
+  const summary = summarize(verdicts);
   console.log(
-    pass
-      ? `\nAll ${verdicts.length} measured routes are inside budget (p${config.percentile} over ${config.runs} runs).`
-      : `\n${failed} route(s) over budget. See .claude/skills/perf-budget for the fix ladder; do not raise a budget to make this pass.`,
+    summaryLine({
+      summary,
+      skippedCount: skipped.length,
+      percentile: config.percentile,
+      runs: config.runs,
+    }),
   );
-  return pass;
+  return summary.pass;
 };
 
 if (isMainModule({ moduleUrl: import.meta.url })) {
-  runPerfCheck(parseArgs(process.argv.slice(2)))
+  const options = parseCheckOptions({
+    argv: process.argv.slice(2),
+    perfBaseUrl: process.env.PERF_BASE_URL,
+    databaseUrl: process.env.DATABASE_URL,
+  });
+  runPerfCheck({ config: loadConfig(), ...options })
     .then((pass) => {
       process.exit(pass ? 0 : 1);
     })
     .catch((error: unknown) => {
+      // Lead with what actually went wrong. The old wording asserted the server
+      // was down, which was a wrong diagnosis for every non-200 the check makes
+      // a point of rejecting.
+      console.error("Perf budget check could not complete:");
+      console.error(error instanceof Error ? error.message : error);
       console.error(
-        "Perf budget check failed to run. Is the server up? Start it with `bun run start` (or `bun dev`).",
+        "If that is a connection failure, start the server first with `bun run start` (or `bun dev`).",
       );
-      console.error(error);
       process.exit(1);
     });
 }
