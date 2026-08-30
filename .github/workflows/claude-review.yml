@@ -114,7 +114,7 @@ jobs:
             @agent-cv-house-rules review every change merged to `main` in the
             last 7 days (`git log --since='7 days ago' --patch main`) against
             the conventions in CLAUDE.md.
-            Skip anything oxlint, gale, or tsgo already catches. 🙅
+            Skip anything oxlint, stylelint, or tsgo already catches. 🙅
             There is no pull request in this run, so do NOT try to post review
             comments and do NOT reference a PR number.
             Write your findings to `house-rules-findings.md` as

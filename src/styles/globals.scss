@@ -100,7 +100,7 @@
   --color-control-border: var(--color-border);
   --color-control-accent: var(--color-accent);
   --color-control-placeholder: #6a7194;
-  --color-focus-ring: rgba(63, 195, 232, 0.32);
+  --color-focus-ring: rgb(63 195 232 / 32%);
   --control-height: 2.25rem;
   --control-size: 1.25rem;
   --control-radius: var(--radius-sm);
@@ -238,7 +238,7 @@ h1 {
 
   --color-control-bg: #fff;
   --color-control-placeholder: #7c86a6;
-  --color-focus-ring: rgba(14, 127, 168, 0.28);
+  --color-focus-ring: rgb(14 127 168 / 28%);
 
   // The dark-theme purple is 3.10:1 on white, below AA for TeamBuilder's
   // card view. This is the same violet the
@@ -274,7 +274,7 @@ h1 {
   --color-position-c: #cbb2ff;
 
   --color-control-bg: #000;
-  --color-focus-ring: rgba(111, 227, 255, 0.55);
+  --color-focus-ring: rgb(111 227 255 / 55%);
   // Not specified by the redesign, which leaves it inheriting the dark #6a7194
   // — 4.0:1 on this theme's black control fill, under AA and well under the
   // AAA this theme exists to hit. Placeholders are text; use the muted token.
@@ -306,7 +306,7 @@ h1 {
   --color-position-c: #c9cede;
 
   --color-control-bg: #0b0e1a;
-  --color-focus-ring: rgba(90, 169, 255, 0.34);
+  --color-focus-ring: rgb(90 169 255 / 34%);
   --color-control-placeholder: #98a1bd;
 
   --color-accent-purple: #8f9bff;
@@ -332,7 +332,7 @@ h1 {
   --color-position-c: #d7b06a;
 
   --color-control-bg: #0b0703;
-  --color-focus-ring: rgba(255, 167, 38, 0.34);
+  --color-focus-ring: rgb(255 167 38 / 34%);
   // Inheriting the dark theme's blue-grey placeholder would be the only cool
   // hue in an all-amber theme.
   --color-control-placeholder: #b58c50;
@@ -363,7 +363,7 @@ h1 {
   --color-position-c: #c9a4ff;
 
   --color-control-bg: #0e1015;
-  --color-focus-ring: rgba(255, 59, 92, 0.32);
+  --color-focus-ring: rgb(255 59 92 / 32%);
   --color-control-placeholder: #9aa0b2;
 
   --color-accent-purple: #a08cff;
@@ -374,7 +374,7 @@ h1 {
 
 // Registered angle so the animated-gradient-border mixin (mixins.scss) can
 // spin its conic gradient — a plain custom property can't be animated. The
-// companion `cvBorderSpin` keyframes must be declared inside each consuming
+// companion `cv-border-spin` keyframes must be declared inside each consuming
 // CSS module (via `cv-border-spin-keyframes`), because CSS Modules scopes the
 // animation name and a global keyframes wouldn't match the scoped reference.
 @property --cv-border-angle {
@@ -389,7 +389,7 @@ h1 {
 // `!important` is load-bearing. The universal selector scores (0,0,0), so
 // without it every class-scoped `animation`/`transition` in the app — which is
 // all of them — outranks this block and the guard never actually applies.
-/* gale-disable declaration-no-important */
+/* stylelint-disable declaration-no-important */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -400,4 +400,4 @@ h1 {
     scroll-behavior: auto !important;
   }
 }
-/* gale-enable declaration-no-important */
+/* stylelint-enable declaration-no-important */

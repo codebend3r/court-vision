@@ -33,7 +33,7 @@ jobs:
       - name: 🔍 Lint (Oxlint)
         run: bun run lint:ts
 
-      - name: 🎨 Lint SCSS (Gale)
+      - name: 🎨 Lint SCSS (Stylelint)
         run: bun run lint:scss
 
       - name: 🏷️ TypeScript (tsgo)

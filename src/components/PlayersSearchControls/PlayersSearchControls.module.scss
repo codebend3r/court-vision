@@ -65,8 +65,7 @@
 .infoList {
   display: grid;
   grid-template-columns: auto 1fr;
-  column-gap: var(--space-3);
-  row-gap: var(--space-1);
+  gap: var(--space-1) var(--space-3);
   margin: 0;
 
   dt {

@@ -3,15 +3,11 @@ set -e
 
 echo "Running pre-commit hook"
 
-# Auto-format staged files in place with Oxfmt (replaces pretty-quick), then re-stage.
-staged=$(git diff --cached --name-only --diff-filter=ACMR |
-  grep -E '\.(ts|tsx|js|jsx|mjs|cjs|json|jsonc|scss|css|md|mdx|ya?ml|toml|html)$' || true)
-if [ -n "$staged" ]; then
-  echo "$staged" | xargs oxfmt --write
-  echo "$staged" | xargs git add
-fi
+# Formats staged files with Oxfmt and fixes staged SCSS with Stylelint, then
+# re-stages them. Commands inside one glob run in order, so Stylelint's --fix
+# lands before Oxfmt has the final say on whitespace. Config: .lintstagedrc.json
+bunx lint-staged
 
 bun run typecheck && \
 bun run lint && \
-bun run lint:scss && \
 bun run test

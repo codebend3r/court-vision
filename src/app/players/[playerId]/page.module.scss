@@ -16,7 +16,7 @@
   align-self: start;
 }
 
-@media (max-width: 1180px) {
+@media (width <= 1180px) {
   .header {
     grid-template-columns: auto 1fr;
   }

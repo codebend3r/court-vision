@@ -34,7 +34,7 @@
   gap: var(--space-4);
   width: 100%;
 
-  @media (max-width: 72rem) {
+  @media (width <= 72rem) {
     grid-template-columns: 1fr;
   }
 }

@@ -127,6 +127,9 @@
   .headerTip {
     position: fixed;
     position-anchor: --fantasy-header;
+    // Kept as longhands, not `inset`: position-try-fallbacks below flips these
+    // per side, and the shorthand hides which side each anchor() belongs to.
+    /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
     top: auto;
     left: auto;
     bottom: calc(anchor(top) + var(--space-1));

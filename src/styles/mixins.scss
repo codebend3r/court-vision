@@ -218,7 +218,7 @@
   letter-spacing: normal;
   text-align: left;
   text-transform: none;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
 }
 
 @mixin control-focus-ring {
@@ -262,7 +262,7 @@
 // the @keyframes name and the animation reference to that module, so a global
 // keyframes would never match the scoped reference.
 @mixin cv-border-spin-keyframes {
-  @keyframes cvBorderSpin {
+  @keyframes cv-border-spin {
     to {
       --cv-border-angle: 360deg;
     }
@@ -288,7 +288,7 @@
         var(--color-accent)
       )
       border-box;
-  animation: cvBorderSpin 2.5s linear infinite;
+  animation: cv-border-spin 2.5s linear infinite;
 }
 
 // Text-like fields: text/email/password/date/etc. inputs and selects.
