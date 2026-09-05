@@ -113,7 +113,7 @@ git cat-file -p "v$(bun pm pkg get version | tr -d '\"')" | tail -3
 - **The bump commit is the one commit with no `CV:` prefix.** Its subject is
   the bare version. `commit-format` does not apply here; do not "fix" it,
   and do not amend it to `CV: 0.1.5`. Four tags of history say otherwise.
-- **`pre-commit` runs `typecheck`, `lint`, `lint:scss`, and the full test
+- **`pre-commit` runs `lint-staged`, `typecheck`, `lint`, and the full test
   suite** on the bump commit. It takes a while and it can fail. A failure
   means main is broken — report that, do not `--no-verify` past it.
 - **Do not push and do not push tags.** `CLAUDE.md` is explicit. The bump

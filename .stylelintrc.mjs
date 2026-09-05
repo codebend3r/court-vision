@@ -7,26 +7,8 @@
 const config = {
   extends: ["stylelint-config-standard-scss"],
   rules: {
-    // Carried over from the old gale.json.
-    "no-descending-specificity": null,
-    "no-duplicate-selectors": [true, { severity: "warning" }],
-    "property-no-unknown": [
-      true,
-      {
-        // CSS anchor positioning, not yet in the bundled known-property list.
-        ignoreProperties: [
-          "anchor-name",
-          "anchor-scope",
-          "position-anchor",
-          "position-area",
-          "position-try",
-          "position-try-fallbacks",
-        ],
-      },
-    ],
-
-    // Gale's recommended set enabled this. The only `!important` in the repo is
-    // the prefers-reduced-motion guard in globals.scss, which opts out inline.
+    // Not in the standard set. The only `!important` in the repo is the
+    // prefers-reduced-motion guard in globals.scss, which opts out inline.
     "declaration-no-important": true,
 
     // Class selectors are CSS Modules keys, read back as `styles.fooBar`, so
@@ -49,10 +31,6 @@ const config = {
     "declaration-empty-line-before": null,
     "rule-empty-line-before": null,
     "scss/double-slash-comment-empty-line-before": null,
-
-    // A bare `//` is a paragraph break inside a comment block here, not a
-    // leftover empty comment.
-    "scss/comment-no-empty": null,
   },
 };
 

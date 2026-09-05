@@ -1,4 +1,4 @@
 {
-  "*.scss": ["stylelint --fix", "oxfmt --write"],
-  "*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,css,md,mdx,yml,yaml,toml,html}": "oxfmt --write"
+  "src/**/*.scss": ["stylelint --fix", "oxfmt --write --no-error-on-unmatched-pattern"],
+  "*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,css,md,mdx,yml,yaml,toml,html}": "oxfmt --write --no-error-on-unmatched-pattern"
 }

@@ -384,11 +384,10 @@ h1 {
 }
 
 // Respect users who ask the OS to minimize motion: collapse every animation
-// and transition to an instant, non-animated swap.
-//
-// `!important` is load-bearing. The universal selector scores (0,0,0), so
-// without it every class-scoped `animation`/`transition` in the app — which is
-// all of them — outranks this block and the guard never actually applies.
+// and transition to an instant, non-animated swap. The `!important` is
+// load-bearing: the universal selector scores (0,0,0), so without it every
+// class-scoped `animation`/`transition` in the app, which is all of them,
+// outranks this block and the guard never actually applies.
 /* stylelint-disable declaration-no-important */
 @media (prefers-reduced-motion: reduce) {
   *,
