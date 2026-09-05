@@ -1,12 +1,9 @@
-name: 🚦 CI
+name: 🧪 Pull request checks
 
 on:
-  # 🔁 PR-only. `synchronize` is what fires on every push to an open PR, so a
-  # branch is checked on each push once it has a PR — and not at all before
-  # then. There is deliberately no `push:` trigger: a branch with no PR open
-  # is not checked, and neither is a direct push to main. 🚫
   pull_request:
-    types: [opened, synchronize, reopened]
+  push:
+  workflow_dispatch:
 
 permissions:
   contents: read
