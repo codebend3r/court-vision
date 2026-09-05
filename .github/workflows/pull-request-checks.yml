@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   checks:
-    name: 🚦 Pull request checks
+    name: 🩺 System check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -52,7 +52,7 @@ jobs:
         run: bun run test:a11y
 
   perf:
-    name: 🚦 Pull request checks
+    name: ⚡ Performance
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -105,7 +105,7 @@ jobs:
           if-no-files-found: ignore
 
   security:
-    name: 🚦 Pull request checks
+    name: 🔒 Security
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -135,7 +135,7 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
   codeql:
-    name: 🚦 Pull request checks
+    name: 🧠 CodeQL
     runs-on: ubuntu-latest
     permissions:
       security-events: write
