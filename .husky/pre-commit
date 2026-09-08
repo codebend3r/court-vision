@@ -3,13 +3,11 @@ set -e
 
 echo "Running pre-commit hook"
 
-# Fixes staged SCSS with Stylelint and formats staged files with Oxfmt, then
+# Fixes staged SCSS with Gale and formats staged files with Oxfmt, then
 # re-stages them (config: .lintstagedrc.json). Commands inside one glob run in
-# order, so Stylelint's --fix lands before Oxfmt has the final say on
+# order, so Gale's --fix lands before Oxfmt has the final say on
 # whitespace. Husky puts node_modules/.bin on PATH, so a missing install fails
 # here with "command not found" instead of bunx quietly fetching a copy.
 lint-staged
 
-bun run typecheck && \
-bun run lint && \
-bun run test
+bun run system-check
