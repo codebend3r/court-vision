@@ -17,7 +17,9 @@
     // name to each th's own subtree — without it, every tooltip resolves
     // against the LAST th in the row carrying the name (the SGP column), not
     // its parent.
+    // stylelint-disable-next-line custom-property-no-missing-var-function -- gale reads the dashed-ident anchor name as a custom property
     anchor-name: --fantasy-header;
+    // stylelint-disable-next-line custom-property-no-missing-var-function -- gale reads the dashed-ident anchor name as a custom property
     anchor-scope: --fantasy-header;
   }
 
@@ -126,12 +128,14 @@
 @supports (anchor-name: --a) {
   .headerTip {
     position: fixed;
+    // stylelint-disable-next-line custom-property-no-missing-var-function -- gale reads the dashed-ident anchor name as a custom property
     position-anchor: --fantasy-header;
-    // stylelint-disable-next-line declaration-block-no-redundant-longhand-properties -- position-try-fallbacks flips these per side; `inset` would hide which side each anchor() belongs to
+    // stylelint-disable declaration-block-no-redundant-longhand-properties -- position-try-fallbacks flips these per side; `inset` would hide which side each anchor() belongs to
     top: auto;
     left: auto;
     bottom: calc(anchor(top) + var(--space-1));
     right: anchor(right);
+    // stylelint-enable declaration-block-no-redundant-longhand-properties
     // If the viewport clips it (top edge, left edge), flip below / left-align.
     position-try-fallbacks: flip-block, flip-inline;
     transform: translateY(var(--space-1));

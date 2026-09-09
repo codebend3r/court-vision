@@ -6,7 +6,7 @@ model: haiku
 ---
 
 Review only the files in `git diff main...HEAD`. Report violations of the
-conventions in `CLAUDE.md` that `oxlint`, `stylelint`, and `tsgo` do not already
+conventions in `CLAUDE.md` that `oxlint`, `gale`, and `tsgo` do not already
 catch, so a finding the toolchain would flag is wasted output.
 
 SCSS system health is a separate agent (`cv-styles`). Stay on TS, TSX, and
