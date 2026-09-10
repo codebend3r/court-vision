@@ -1,0 +1,30 @@
+# Spellchecker config for `bun run lint:spell`.
+#
+# Binary is crate-ci/typos, installed through the @ocular-d/typos-bin wrapper
+# (its postinstall pulls the platform binary, hence the trustedDependencies
+# entry in package.json). typos only flags *known* misspellings rather than any
+# unknown word, so no project dictionary of NBA jargon or player names is
+# needed and the allowlists below stay short: every entry is a real word or
+# identifier it mistakes for a typo.
+#
+# Fix in place with `bun run lint:spell:fix`.
+
+[files]
+extend-exclude = [
+  # Lockfile: package name fragments, no prose.
+  "bun.lock",
+  # Design-canvas exports; each embeds a minified component bundle.
+  "docs/design/prototypes/*.dc.html",
+  # Local knowledge-graph output, regeneratable and untracked.
+  "graphify-out/",
+]
+
+[default.extend-identifiers]
+# Balldontlie's In-Season Tournament field. `ist` reads as a typo of `is`.
+ist_stage = "ist_stage"
+
+[default.extend-words]
+# Ordinal suffix in `2nd`, not a truncated `and`.
+nd = "nd"
+# Deliberate spelling used across the Balldontlie adapter and its tests.
+unparseable = "unparseable"

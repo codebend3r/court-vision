@@ -31,6 +31,9 @@ jobs:
       - name: 🎨 Lint SCSS (Gale)
         run: bun run lint:scss
 
+      - name: 🔤 Spelling (typos)
+        run: bun run lint:spell
+
       - name: 🏷️ TypeScript (tsgo)
         run: bun run typecheck
 

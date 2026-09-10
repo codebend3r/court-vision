@@ -7,12 +7,15 @@
     "dev": "next dev --port 46644",
     "build": "next build",
     "start": "next start",
-    "lint": "run-s -l lint:ts lint:scss",
+    "lint": "run-s -l lint:ts lint:scss lint:spell",
     "lint:ts": "oxlint --type-aware --deny-warnings",
     "lint:scss": "gale \"src/**/*.scss\"",
-    "lint:fix": "run-p -l lint:ts:fix lint:scss:fix",
+    "lint:fix": "run-s -l lint:spell:fix lint:fix:code",
+    "lint:fix:code": "run-p -l lint:ts:fix lint:scss:fix",
     "lint:ts:fix": "oxlint --type-aware --fix",
     "lint:scss:fix": "gale --fix \"src/**/*.scss\"",
+    "lint:spell": "typos",
+    "lint:spell:fix": "typos --write-changes",
     "typecheck": "next typegen && tsgo --noEmit",
     "test": "bun test --parallel --dots",
     "test:a11y": "playwright test",
@@ -30,7 +33,7 @@
     "sync:players": "bun run src/lib/balldontlie/sync-players.ts",
     "seed:demo": "bun run src/lib/demo/seed.ts",
     "map:headshots": "bun run src/lib/headshots/map.ts",
-    "system-check": "run-s -l format:check lint typecheck test build"
+    "system-check": "run-s -l format:check typecheck lint test build"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.8.0",
@@ -50,6 +53,7 @@
     "@axe-core/playwright": "4.12.1",
     "@codebend3r/gale": "0.2.0",
     "@happy-dom/global-registrator": "20.11.1",
+    "@ocular-d/typos-bin": "1.50.1",
     "@playwright/test": "1.62.1",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.9.1",
@@ -76,6 +80,7 @@
     "unrs-resolver"
   ],
   "trustedDependencies": [
+    "@ocular-d/typos-bin",
     "@parcel/watcher",
     "@prisma/engines",
     "prisma",

@@ -58,7 +58,7 @@ There is no `bunfig.toml` key for this as of Bun 1.3.14 — it is CLI-only.
 - Use a container driven approach, meaning the container will define the width and height and the children will be positioned within it, this means if/when the children are moved to different containers they may be laid out differently depending on what the container specifies
 - Prefer using CSS display grid for layout with the gap property for spacing between grid items; avoid using margins for spacing
 - Second preferred display value is flex
-- Avoid using plain divs; meaing divs with no class or id defined
+- Avoid using plain divs; meaning divs with no class or id defined
 - Always use token values from `styles/globals.scss` when defining font sizes, colors, and other design tokens like padding, margin, gap, and border radius
 
 ## Code style
