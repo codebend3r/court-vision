@@ -1,5 +1,6 @@
 import { Chakra_Petch, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import type { Metadata } from "next";
+import Script from "next/script";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { ReactNode } from "react";
 
@@ -105,6 +106,11 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body>
+        {/* Build provenance on window["build-meta"] (version, build date,
+            branch, last commit) so a bug report can name the exact build.
+            Written into public/ by build-meta on predev/prebuild; the
+            generated public/meta.d.ts types the global. */}
+        <Script src="/meta.js" strategy="afterInteractive" />
         <NuqsAdapter>
           <ThemeProvider>
             <a href="#main-content" className={styles.skipLink}>

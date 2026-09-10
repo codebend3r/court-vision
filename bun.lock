@@ -33,6 +33,7 @@
         "@types/react": "19.2.17",
         "@types/react-dom": "19.2.3",
         "@typescript/native-preview": "7.0.0-dev.20260707.2",
+        "build-meta": "0.1.1",
         "dotenv": "17.4.2",
         "husky": "9.1.7",
         "lint-staged": "17.4.1",
@@ -455,6 +456,8 @@
     "buffer-crc32": ["buffer-crc32@0.2.13", "", {}, "sha512-VO9Ht/+p3SN7SKWqcrgEzjGbRSJYTx+Q1pTQC0wrWqHx0vpJraQ6GtHx8tvcg1rlK1byhU5gccxgOgj7B0TDkQ=="],
 
     "buffer-image-size": ["buffer-image-size@0.6.4", "", { "dependencies": { "@types/node": "*" } }, "sha512-nEh+kZOPY1w+gcCMobZ6ETUp9WfibndnosbpwB1iJk/8Gt5ZF2bhS6+B6bPYz424KtwsR6Rflc3tCz1/ghX2dQ=="],
+
+    "build-meta": ["build-meta@0.1.1", "", { "bin": { "build-meta": "bin/build-meta.js" } }, "sha512-mtMyXDR1HosEtKlxNo/9kOfuCSDTuaXiYmeKoIVMf3NLuTw8wYvO8N9IrLZ92d/70C1PGxgj2cUVq1+uvyoegw=="],
 
     "bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
 
