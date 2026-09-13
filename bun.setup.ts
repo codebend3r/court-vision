@@ -2,14 +2,21 @@ import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { plugin } from "bun";
 import { expect } from "bun:test";
 
-import * as matchers from "@testing-library/jest-dom/matchers";
-
 // bun:test ships no DOM, so component tests need one installed on the global
 // object before @testing-library/react is imported by any test file. The
 // preload runs first, so registering here is early enough. A concrete `url` is
 // required: happy-dom otherwise starts at `about:blank`, against which the
 // relative `src` next/image emits fails to parse.
 GlobalRegistrator.register({ url: "http://localhost/" });
+
+// Loaded dynamically, and only once the DOM above exists. From v7 the matchers
+// statically `import "@testing-library/dom"`, whose `screen` binds to
+// `document.body` at module-evaluation time. A static import here would be
+// hoisted above `register()` and capture a global with no document, leaving
+// every `screen.*` call throwing "a global document has to be available".
+// v7 also declares a `default` on the namespace that does not exist at runtime;
+// `expect.extend` rejects the extra key, so drop it before handing the rest over.
+const { default: _unusedDefault, ...matchers } = await import("@testing-library/jest-dom/matchers");
 
 expect.extend(matchers);
 

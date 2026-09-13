@@ -69,18 +69,16 @@ export const bdlGameRowSchema = z
     home_team: bdlNestedTeamSchema,
     visitor_team: bdlNestedTeamSchema,
   })
-  .transform(
-    (row): BdlGame => ({
-      id: row.id,
-      date: row.date,
-      season: row.season,
-      home_team_id: row.home_team.id,
-      visitor_team_id: row.visitor_team.id,
-      home_team_score: row.home_team_score,
-      visitor_team_score: row.visitor_team_score,
-      postseason: row.postseason,
-    }),
-  );
+  .transform((row): BdlGame => ({
+    id: row.id,
+    date: row.date,
+    season: row.season,
+    home_team_id: row.home_team.id,
+    visitor_team_id: row.visitor_team.id,
+    home_team_score: row.home_team_score,
+    visitor_team_score: row.visitor_team_score,
+    postseason: row.postseason,
+  }));
 
 // Every counting stat is nullable. From 2018-19 back, `/v1/stats` returns a
 // row for each rostered player and sends `null` for all of them when that
