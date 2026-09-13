@@ -2,15 +2,15 @@
   "name": "court-vision",
   "version": "0.3.2",
   "private": true,
-  "packageManager": "bun@1.3.14",
+  "packageManager": "bun@1.4.2",
   "scripts": {
     "predev": "build-meta --src-folder public --env development",
     "dev": "next dev --port 46644",
     "prebuild": "build-meta --src-folder public --env production",
     "build": "next build",
     "start": "next start",
-    "lint": "run-s -l lint:spell lint:ts lint:scss",
-    "lint:fix": "run-s -l lint:spell:fix lint:ts:fix lint:scss:fix",
+    "lint": "bun run --sequential lint:spell lint:ts lint:scss",
+    "lint:fix": "bun run --sequential lint:spell:fix lint:ts:fix lint:scss:fix",
     "lint:ts": "oxlint",
     "lint:ts:fix": "oxlint --fix",
     "lint:scss": "gale \"src/**/*.scss\"",
@@ -34,7 +34,7 @@
     "sync:players": "bun run src/lib/balldontlie/sync-players.ts",
     "seed:demo": "bun run src/lib/demo/seed.ts",
     "map:headshots": "bun run src/lib/headshots/map.ts",
-    "system-check": "run-s -l format:check typecheck lint test build"
+    "system-check": "bun run --sequential format:check typecheck lint test build"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.8.0",
@@ -69,7 +69,6 @@
     "dotenv": "17.4.2",
     "husky": "9.1.7",
     "lint-staged": "17.4.1",
-    "npm-run-all2": "9.0.1",
     "oxfmt": "0.60.0",
     "oxlint": "1.75.0",
     "oxlint-tsgolint": "7.0.2001",
