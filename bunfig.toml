@@ -1,2 +1,9 @@
+[install]
+# Every dependency is pinned to an exact version — no `^`, no `~`. Without this,
+# `bun add` writes a caret range and the next install silently drifts onto a
+# version nobody reviewed. Setting it here means the pin holds even when someone
+# forgets `--exact`.
+exact = true
+
 [test]
 preload = ["./bun.setup.ts"]
