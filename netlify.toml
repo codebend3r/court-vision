@@ -10,3 +10,19 @@ remote_images = ["https://cdn\\.nba\\.com/.*"]
 # values (in the bundle and in the auth design docs that reference the URL).
 [build.environment]
 SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_SUPABASE_URL"
+
+# Turbopack's persistent cache captures the build environment, so any secret
+# exposed to the build — `BALLDONTLIE_API_KEY`, `DATABASE_URL` — ends up inside
+# `.next/cache/turbopack/*.sst`. The Next runtime mirrors that directory to
+# `.netlify/.next/cache` purely so `cache.save()`/`cache.restore()` can carry it
+# between builds; it is never served, and never enters the static output or the
+# server function bundle. The scanner walks it anyway and fails the build.
+#
+# Paths, not keys: omitting the KEY would blind the scanner to a genuine leak of
+# that same secret into a client bundle. This omits only the build cache, so
+# every byte that actually ships is still scanned. Verified against a production
+# build — the key appears in 0 files under `.next` once `cache/` is excluded.
+#
+# Both spellings are listed because the value is matched against repo-root
+# relative paths, and the cache is written to one and copied to the other.
+SECRETS_SCAN_OMIT_PATHS = ".next/cache/,.netlify/.next/cache/"

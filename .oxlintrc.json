@@ -18,7 +18,10 @@
     ".design-sync/**",
     ".ds-sync/**",
     "ds-dist/**",
-    "types/**"
+    "types/**",
+    ".agents/**",
+    ".windsurf/**",
+    ".claude/skills/prisma-*/**"
   ],
   "rules": {
     "no-array-constructor": "error",

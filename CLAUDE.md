@@ -18,7 +18,7 @@ Operating rules for this repo.
 ## Tooling
 
 - All scripts run through Bun: `bun install`, `bun dev`, `bun run test`, `bun run build`, `bun run lint`. Never invoke npm or yarn.
-- Pin every `package.json` dependency to an exact version, with no `^` or `~`.
+- Pin every `package.json` dependency to an exact version, with no `^` or `~`. `exact = true` under `[install]` in `bunfig.toml` enforces this, so a plain `bun add` already writes the pin — `--exact` is redundant, not required.
 
 ### Tests must run through `bun run test`
 

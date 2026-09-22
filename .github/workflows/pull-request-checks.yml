@@ -34,6 +34,14 @@ jobs:
       - name: 🔤 Spelling (typos)
         run: bun run lint:spell
 
+      # Lints the workflows in this very directory: bad `uses:` refs, undefined
+      # `needs:`/`steps:` outputs, invalid `${{ }}` expressions, and — via the
+      # shellcheck preinstalled on ubuntu-latest — the `run:` scripts themselves.
+      # Nothing else here parses these files, so a typo'd expression would
+      # otherwise only surface as a silently empty string at runtime.
+      - name: ⚙️ Workflows (actionlint)
+        run: bun run lint:actions
+
       - name: 🏷️ TypeScript (tsgo)
         run: bun run typecheck
 
@@ -75,7 +83,7 @@ jobs:
       - name: 🚀 Start server
         run: |
           bun run start --port 46644 &
-          for i in $(seq 1 60); do
+          for _ in $(seq 1 60); do
             curl -sf http://localhost:46644/login > /dev/null && exit 0
             sleep 1
           done

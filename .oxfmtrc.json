@@ -14,6 +14,9 @@
     "generated/",
     "bun.lock",
     "next-env.d.ts",
-    "prisma/migrations/"
+    "prisma/migrations/",
+    ".agents/",
+    ".windsurf/",
+    ".claude/skills/prisma-*/"
   ]
 }
