@@ -5,15 +5,63 @@
   gap: var(--space-3);
 }
 
+// The disclosure row: chevron, heading, count. Same treatment as the
+// legends' summaries so every fold on the page reads the same.
+.summary {
+  display: grid;
+  grid-auto-flow: column;
+  align-items: center;
+  justify-content: start;
+  gap: var(--space-2);
+  cursor: pointer;
+  list-style: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &:hover .title {
+    color: var(--color-text);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+    border-radius: var(--radius-sm);
+  }
+}
+
+.chevron {
+  color: var(--color-accent);
+  font-size: var(--font-size-xs);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.section[open] .chevron {
+  transform: rotate(90deg);
+}
+
 .title {
   @include micro-label;
   margin: 0;
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-medium);
 }
 
-// One pattern with the players table (spec §7).
+.count {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+// One pattern with the players table (spec §7). `contain: inline-size` keeps
+// the table's natural width out of intrinsic sizing: inside <details> the
+// scroller sits in the browser's own content slot, which would otherwise pass
+// the 21-column width up and stretch the whole page past the viewport.
 .scroll {
   @include table-wrapper;
   overflow-x: auto;
+  contain: inline-size;
 }
 
 .table {

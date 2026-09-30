@@ -76,8 +76,14 @@ const fetchWindowLines = async ({
     .filter((line) => line.gamesPlayed > 0);
 };
 
-const fetchPool = async (range: PlayerGameRange): Promise<FantasyStatLine[]> => {
-  const season = await latestSeason();
+const fetchPool = async ({
+  range,
+  season: requestedSeason,
+}: {
+  range: PlayerGameRange;
+  season: string | null;
+}): Promise<FantasyStatLine[]> => {
+  const season = requestedSeason ?? (await latestSeason());
   if (season === null) return [];
   return fetchWindowLines({
     season,
@@ -85,14 +91,23 @@ const fetchPool = async (range: PlayerGameRange): Promise<FantasyStatLine[]> => 
   });
 };
 
-// Cache key is the range alone — user config (weights, league size) must
-// never enter the key, or cardinality is unbounded (PRD §9.1). Same tag and
-// revalidate window as the other players caches so one sync invalidation
-// busts all three tabs.
-const cachedPool = unstable_cache((range: PlayerGameRange) => fetchPool(range), ["fantasy:pool"], {
-  revalidate: 300,
-  tags: ["players"],
-});
+// Cache key is the range and the season alone — user config (weights, league
+// size) must never enter the key, or cardinality is unbounded (PRD §9.1); the
+// season is bounded by the backfill window. Same tag and revalidate window as
+// the other players caches so one sync invalidation busts every surface.
+const cachedPool = unstable_cache(
+  (range: PlayerGameRange, season: string | null) => fetchPool({ range, season }),
+  ["fantasy:pool"],
+  { revalidate: 300, tags: ["players"] },
+);
 
-export const getFantasyPool = ({ range }: { range: PlayerGameRange }): Promise<FantasyStatLine[]> =>
-  cachedPool(range);
+// The Fantasy tab and the home/team surfaces value the latest season; the
+// player page passes the season its dropdown selected so a past season is
+// measured against its own pool.
+export const getFantasyPool = ({
+  range,
+  season = null,
+}: {
+  range: PlayerGameRange;
+  season?: string | null;
+}): Promise<FantasyStatLine[]> => cachedPool(range, season);

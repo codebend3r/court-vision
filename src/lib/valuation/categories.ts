@@ -157,3 +157,22 @@ export const categoryValue = ({
   const impact = attempted * (made / attempted - leaguePct);
   return perBasis({ total: impact, gamesPlayed: line.gamesPlayed, basis });
 };
+
+// Human-readable per-game value for display beside a category's score.
+// Counting stats stay positive (TOV is not negated here — the sign lives in
+// its z), ratio stats become the underlying make rate.
+export const categoryPerGame = ({
+  line,
+  category,
+}: {
+  line: FantasyStatLine;
+  category: Category;
+}): number => {
+  if (!isCountingCategory(category)) {
+    const made = category === "fg" ? line.fgm : line.ftm;
+    const attempted = category === "fg" ? line.fga : line.fta;
+    return attempted > 0 ? made / attempted : 0;
+  }
+  const total = line[COUNTING_STAT_KEY[category]];
+  return line.gamesPlayed > 0 ? total / line.gamesPlayed : 0;
+};

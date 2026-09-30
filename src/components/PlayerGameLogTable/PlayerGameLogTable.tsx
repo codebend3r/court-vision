@@ -173,11 +173,20 @@ export function PlayerGameLogTable({ rows }: { rows: PlayerGameLogTableRow[] }) 
     void setSorting({ sort: key, dir: key === "gameDate" ? "desc" : "asc" });
   };
 
+  // Always the last block on the page, whichever view is showing; the
+  // disclosure lets a reader fold eighty rows away once the charts have said
+  // their piece. Native <details> keeps it keyboard-operable for free.
   return (
-    <section className={styles.section} aria-labelledby="game-log-title">
-      <h2 id="game-log-title" className={styles.title}>
-        Game log
-      </h2>
+    <details className={styles.section} open>
+      <summary className={styles.summary}>
+        <span className={styles.chevron} aria-hidden="true">
+          ▸
+        </span>
+        <h2 className={styles.title}>Game log</h2>
+        <span className={styles.count}>
+          {rows.length} {rows.length === 1 ? "game" : "games"}
+        </span>
+      </summary>
       <div className={styles.scroll}>
         <table className={styles.table}>
           <thead>
@@ -229,6 +238,6 @@ export function PlayerGameLogTable({ rows }: { rows: PlayerGameLogTableRow[] }) 
           </tbody>
         </table>
       </div>
-    </section>
+    </details>
   );
 }

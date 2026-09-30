@@ -162,4 +162,30 @@ describe("PlayerGameLogTable", () => {
     const resultCell = screen.getByText("W").closest("td");
     expect(resultCell).toHaveTextContent(/^W$/);
   });
+
+  it("wraps the log in a disclosure that opens by default and names the game count", () => {
+    const { container } = renderTable({
+      rows: [buildRow({ id: "a" }), buildRow({ id: "b", gameDate: "2026-02-08T00:00:00.000Z" })],
+    });
+
+    const details = container.querySelector("details");
+    expect(details).not.toBeNull();
+    expect(details?.open).toBe(true);
+    const summary = container.querySelector("summary");
+    expect(summary).not.toBeNull();
+    expect(within(summary ?? container).getByRole("heading", { level: 2 })).toHaveTextContent(
+      "Game log",
+    );
+    expect(summary).toHaveTextContent("2 games");
+    expect(details?.querySelector("table")).not.toBeNull();
+  });
+
+  it("collapses when the summary is activated", () => {
+    const { container } = renderTable({ rows: [buildRow({ id: "a" })] });
+
+    const summary = container.querySelector("summary");
+    fireEvent.click(summary ?? container);
+
+    expect(container.querySelector("details")?.open).toBe(false);
+  });
 });

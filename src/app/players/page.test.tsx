@@ -437,7 +437,7 @@ describe("PlayersPage tabs", () => {
           position: "G",
           nbaPersonId: null,
           stats: {
-            pie: 15.234,
+            pie: 0.152,
             pace: 98.6,
             assistPercentage: 0.412,
             assistRatio: 30.1,
@@ -468,7 +468,8 @@ describe("PlayersPage tabs", () => {
     );
     expect(screen.getByRole("columnheader", { name: "PIE" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "TS%" })).toBeInTheDocument();
-    expect(screen.getByText("15.2")).toBeInTheDocument();
+    // PIE is a share of game events, stored as a fraction like TS%.
+    expect(screen.getByText(".152")).toBeInTheDocument();
     expect(screen.getByText(".634")).toBeInTheDocument();
     expect(screen.queryByLabelText("Stat display")).not.toBeInTheDocument();
   });
@@ -485,7 +486,7 @@ describe("PlayersPage tabs", () => {
           position: "G",
           nbaPersonId: null,
           stats: {
-            pie: 15.234,
+            pie: 0.152,
             pace: 98.6,
             assistPercentage: 0.412,
             assistRatio: 30.1,

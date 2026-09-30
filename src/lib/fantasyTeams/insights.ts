@@ -1,9 +1,8 @@
 import {
   CATEGORY_KEYS,
   CATEGORY_META,
-  COUNTING_STAT_KEY,
+  categoryPerGame,
   type CategoryKind,
-  isCountingCategory,
 } from "@/lib/valuation/categories";
 import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
 import { scoreZScore } from "@/lib/valuation/methods/zscore";
@@ -48,25 +47,6 @@ export type PlayerInsight = {
   categories: PlayerCategoryInsight[];
 };
 
-// Human-readable per-game value for display. Counting stats stay positive
-// (TOV is not negated here — the sign lives in its z), ratio stats become the
-// underlying make rate.
-const displayPerGame = ({
-  line,
-  category,
-}: {
-  line: FantasyStatLine;
-  category: Category;
-}): number => {
-  if (!isCountingCategory(category)) {
-    const made = category === "fg" ? line.fgm : line.ftm;
-    const attempted = category === "fg" ? line.fga : line.fta;
-    return attempted > 0 ? made / attempted : 0;
-  }
-  const total = line[COUNTING_STAT_KEY[category]];
-  return line.gamesPlayed > 0 ? total / line.gamesPlayed : 0;
-};
-
 // Precomputed per-player quick stats + z-score ranks for the builder's hover
 // panel. Pure and server-safe: runs once per page load off the cached pool.
 export const buildPlayerInsights = ({
@@ -109,7 +89,7 @@ export const buildPlayerInsights = ({
     const categories = CATEGORY_META.map((meta) => ({
       key: meta.key,
       label: meta.label,
-      perGame: displayPerGame({ line, category: meta.key }),
+      perGame: categoryPerGame({ line, category: meta.key }),
       z: zEntry?.breakdown[meta.key]?.raw ?? 0,
       kind: meta.kind,
     }));

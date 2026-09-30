@@ -41,6 +41,19 @@
   margin: 0;
 }
 
+// The active view's filters, charts, and legend. Dims while a view switch or
+// a filter change is in flight (the tabs and the filters both flag pending),
+// so the old chart reads as "being replaced" rather than frozen.
+.view {
+  display: grid;
+  gap: var(--space-4);
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+
+.page:has([data-pending="true"]) .view {
+  opacity: 0.6;
+}
+
 .empty {
   margin: 0;
   padding: var(--space-4);

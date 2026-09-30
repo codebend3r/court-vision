@@ -1,15 +1,43 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
+import { makeStatLine } from "@/lib/valuation/fixtures";
 
 const findUniquePlayer = vi.fn();
 const findManyGameLogs = vi.fn();
 const findManySeasonStats = vi.fn();
+const findManyAdvancedLogs = vi.fn();
 
 const getUser = vi.fn();
 const getProfile = vi.fn();
+const getFantasyPool = vi.fn();
+const getActiveLeague = vi.fn();
+
+// The fantasy view reads the cached pool and the active league; both wrap
+// prisma and `unstable_cache`/`cookies()`, so they are stubbed at the module.
+vi.mock("@/lib/valuation/loader", () => ({ getFantasyPool }));
+vi.mock("@/lib/leagues/queries", () => ({
+  getActiveLeague,
+  ensureDefaultLeague: vi.fn(),
+  getLeagues: vi.fn(),
+  resolveActiveLeague: vi.fn(),
+  fallbackActiveLeagueId: vi.fn(),
+  toLeagueSummary: vi.fn(),
+}));
+
+// The view tabs rebuild hrefs from the live URL, and the filters read it to
+// tell an explicit ?mode= from a bare URL; both go through next/navigation,
+// so the mock mirrors whatever query renderPage was given.
+let currentQuery: Record<string, string> = {};
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/players/3547238",
+  useSearchParams: () => new URLSearchParams(currentQuery),
+  notFound: () => {
+    throw new Error("NEXT_NOT_FOUND");
+  },
+}));
 
 // The page reads the session to decide whether the star is actionable; without
 // this the real getUser() calls `cookies()` outside a request scope. `getProfile`
@@ -27,6 +55,7 @@ vi.mock("@/lib/prisma", () => ({
     player: { findUnique: findUniquePlayer },
     playerGameLog: { findMany: findManyGameLogs },
     playerSeasonStats: { findMany: findManySeasonStats },
+    playerAdvancedGameLog: { findMany: findManyAdvancedLogs },
   },
 }));
 
@@ -41,8 +70,9 @@ const renderPage = async ({
 }: {
   playerId: string;
   query?: Record<string, string>;
-}) =>
-  render(
+}) => {
+  currentQuery = query;
+  return render(
     <ThemeProvider>
       {await PlayerPage({
         params: Promise.resolve({ playerId }),
@@ -51,11 +81,80 @@ const renderPage = async ({
     </ThemeProvider>,
     { wrapper: withNuqsTestingAdapter({ searchParams: query }) },
   );
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
   findManySeasonStats.mockResolvedValue([]);
+  findManyAdvancedLogs.mockResolvedValue([]);
+  getFantasyPool.mockResolvedValue([]);
+  getActiveLeague.mockResolvedValue(null);
+  getProfile.mockResolvedValue(null);
 });
+
+const buildAdvancedLog = (overrides: Partial<Record<string, unknown>> = {}) => ({
+  id: "adv-1",
+  playerId: 3547238,
+  gameId: "0022500001",
+  gameDate: new Date("2025-10-22T00:00:00Z"),
+  season: "2025-26",
+  seasonType: "Regular Season",
+  teamId: 1610612744,
+  teamAbbr: "GSW",
+  pie: 0.15,
+  pace: 100.4,
+  assistPercentage: 0.3,
+  assistRatio: 20,
+  assistToTurnover: 2,
+  defensiveRating: 110,
+  defensiveReboundPercentage: 0.2,
+  effectiveFieldGoalPercentage: 0.55,
+  netRating: 5,
+  offensiveRating: 115,
+  offensiveReboundPercentage: 0.02,
+  reboundPercentage: 0.11,
+  trueShootingPercentage: 0.6,
+  turnoverRatio: 12,
+  usagePercentage: 0.3,
+  ...overrides,
+});
+
+// A pool spread out in every category, with the page's player on top.
+const buildPool = () => [
+  makeStatLine({
+    playerId: 3547238,
+    fullName: "CJ Rivas",
+    firstName: "CJ",
+    lastName: "Rivas",
+    pts: 1500,
+    reb: 450,
+    ast: 450,
+    stl: 80,
+    blk: 30,
+    fg3m: 200,
+    tov: 100,
+    fgm: 500,
+    fga: 1000,
+    ftm: 440,
+    fta: 500,
+  }),
+  ...Array.from({ length: 20 }, (_, index) =>
+    makeStatLine({
+      playerId: index + 100,
+      pts: 300 + index * 30,
+      reb: 150 + index * 10,
+      ast: 100 + index * 8,
+      stl: 30 + index * 3,
+      blk: 15 + index * 2,
+      fg3m: 40 + index * 5,
+      tov: 60 + index * 4,
+      fgm: 150 + index * 12,
+      fga: 350 + index * 20,
+      ftm: 80 + index * 6,
+      fta: 100 + index * 7,
+    }),
+  ),
+];
 
 afterEach(cleanup);
 
@@ -420,5 +519,142 @@ describe("PlayerPage", () => {
     const firstLinePath = container.querySelector(".recharts-line-curve");
     const curveSegments = (firstLinePath?.getAttribute("d") ?? "").match(/C/g) ?? [];
     expect(curveSegments).toHaveLength(9);
+  });
+
+  it("switches between the three views with a tab strip and keeps the game log last", async () => {
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
+
+    const { container } = await renderPage({ playerId: "3547238" });
+
+    const nav = screen.getByRole("navigation", { name: "Player stat views" });
+    expect(within(nav).getByRole("link", { name: /Regular Stats/ })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(within(nav).getByRole("link", { name: /Advanced Stats/ })).toHaveAttribute(
+      "href",
+      "/players/3547238?view=advanced",
+    );
+    // The game log is the last block on the page, folded behind a summary.
+    const last = container.querySelector("main")?.lastElementChild;
+    expect(last?.tagName).toBe("DETAILS");
+    expect(last?.querySelector("h2")).toHaveTextContent("Game log");
+  });
+
+  it("renders the advanced view: window averages, scale panels, two modes, and the legend", async () => {
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([
+      buildLog({ id: "log-1" }),
+      buildLog({ id: "log-2", gameId: "0022500002" }),
+    ]);
+    findManyAdvancedLogs.mockResolvedValue([
+      buildAdvancedLog({ id: "adv-1", gameId: "0022500001", trueShootingPercentage: 0.5 }),
+      buildAdvancedLog({ id: "adv-2", gameId: "0022500002", trueShootingPercentage: 0.7 }),
+    ]);
+
+    const { container } = await renderPage({
+      playerId: "3547238",
+      query: { view: "advanced", mode: "totals" },
+    });
+
+    expect(findManyAdvancedLogs).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { playerId: 3547238, season: "2025-26" } }),
+    );
+    expect(screen.getByText("Advanced averages")).toBeInTheDocument();
+    // TS% averages the two games; PIE and pace read as a share and a rating.
+    expect(screen.getByText("60.0%")).toBeInTheDocument();
+    expect(screen.getByText("15.0%")).toBeInTheDocument();
+    expect(screen.getByText("100.4")).toBeInTheDocument();
+    expect(screen.queryByText("Season averages")).not.toBeInTheDocument();
+    expect(screen.getByText("Shooting efficiency")).toBeInTheDocument();
+    expect(container.querySelectorAll(".recharts-line")).toHaveLength(15);
+    // totals cannot be plotted for rates, so the view reads as its running average.
+    const modeGroup = screen.getByRole("group", { name: "Stat mode" });
+    expect(
+      within(modeGroup)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["Game", "Avg"]);
+    expect(screen.getByRole("button", { name: "Avg" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Running averages")).toBeInTheDocument();
+    expect(screen.getByText("What do these stats mean?")).toBeInTheDocument();
+    expect(container.querySelector("main")?.lastElementChild?.tagName).toBe("DETAILS");
+  });
+
+  it("renders the fantasy view: method readouts with ranks, both charts, no modes, and the legend", async () => {
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
+    findManySeasonStats.mockResolvedValue([buildSeasonRow({ playerId: 3547238 })]);
+    getFantasyPool.mockResolvedValue(buildPool());
+
+    const { container } = await renderPage({
+      playerId: "3547238",
+      query: { view: "fantasy", span: "10" },
+    });
+
+    // The pool is the one the Fantasy tab would load for this window and season.
+    expect(getFantasyPool).toHaveBeenCalledWith({ range: "last10", season: "2025-26" });
+    // The card names every registry method; Z-Score also appears in the chart
+    // legend and as a line label, so the readout is read inside the card.
+    const card = screen.getByRole("region", { name: "Fantasy value" });
+    expect(within(card).getByText("Z-Score")).toBeInTheDocument();
+    expect(within(card).getByText("Sim Value")).toBeInTheDocument();
+    expect(within(card).getAllByText("1st in NBA").length).toBeGreaterThan(0);
+    expect(within(card).getAllByText("1st in NBA")[0]).toHaveAttribute(
+      "title",
+      "1st of 21 valued players",
+    );
+    expect(screen.getByText("Category breakdown")).toBeInTheDocument();
+    expect(screen.getByText("Rolling value")).toBeInTheDocument();
+    expect(container.querySelectorAll(".recharts-bar")).toHaveLength(2);
+    expect(screen.queryByRole("group", { name: "Stat mode" })).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Timeframe" })).toBeInTheDocument();
+    expect(screen.getByText("How is value calculated?")).toBeInTheDocument();
+    expect(container.querySelector("main")?.lastElementChild?.tagName).toBe("DETAILS");
+  });
+
+  it("seeds the fantasy view from the active league like the Fantasy tab", async () => {
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
+    getFantasyPool.mockResolvedValue(buildPool());
+    getActiveLeague.mockResolvedValue({
+      id: "league-1",
+      name: "Test league",
+      slug: "test-league",
+      scoringType: "h2h_categories",
+      teamCount: 10,
+      rosterSlots: 15,
+      scoringConfig: { categories: ["pts", "reb", "ast"] },
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const { container } = await renderPage({ playerId: "3547238", query: { view: "fantasy" } });
+
+    // Only the league's three categories are broken down: three groups of two bars.
+    expect(container.querySelectorAll(".recharts-bar-rectangle")).toHaveLength(6);
+  });
+
+  it("explains that career has no fantasy pool", async () => {
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
+
+    await renderPage({ playerId: "3547238", query: { view: "fantasy", season: "career" } });
+
+    expect(getFantasyPool).not.toHaveBeenCalled();
+    expect(screen.getByText(/single season/)).toBeInTheDocument();
+    expect(screen.queryByText("Fantasy value")).not.toBeInTheDocument();
+  });
+
+  it("explains when the player has no line in the window's pool", async () => {
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
+    getFantasyPool.mockResolvedValue(buildPool().slice(1));
+
+    await renderPage({ playerId: "3547238", query: { view: "fantasy" } });
+
+    expect(screen.getByText(/no appearances/)).toBeInTheDocument();
+    expect(screen.queryByText("Category breakdown")).not.toBeInTheDocument();
   });
 });

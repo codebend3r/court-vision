@@ -1,0 +1,86 @@
+@use "@/styles/mixins" as *;
+
+.root {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-sm);
+}
+
+.legendItem {
+  display: grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+// The swatch carries series identity; the label keeps its own ink.
+.swatch {
+  display: block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: var(--radius-sm);
+}
+
+.panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+  gap: var(--space-4);
+}
+
+.panel {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.panelTitle {
+  @include micro-label;
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+  font-family: var(--font-sans);
+}
+
+.emptyHint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.tooltip {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: var(--font-size-sm);
+}
+
+.tooltipHeader {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.tooltipRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.dot {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-lg);
+}

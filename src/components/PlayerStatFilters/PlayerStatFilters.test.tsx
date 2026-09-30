@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { PlayerStatFilters } from "@/components/PlayerStatFilters/PlayerStatFilters";
 import { useStatModeStore } from "@/lib/stats/modeStore";
-import { DEFAULT_MODE } from "@/lib/stats/searchParams";
+import { DEFAULT_MODE, type StatMode } from "@/lib/stats/searchParams";
 
 // The component reads the raw URL through next/navigation to tell an explicit
 // ?mode= apart from a bare URL; mirror renderFilters' searchParams here.
@@ -20,10 +20,13 @@ beforeEach(() => {
   useStatModeStore.setState({ mode: DEFAULT_MODE });
 });
 
-const renderFilters = ({ searchParams = "" }: { searchParams?: string } = {}) => {
+const renderFilters = ({
+  searchParams = "",
+  modes,
+}: { searchParams?: string; modes?: readonly StatMode[] } = {}) => {
   currentSearch = searchParams;
   const onUrlUpdate = vi.fn<(event: UrlUpdateEvent) => void>();
-  render(<PlayerStatFilters />, {
+  render(<PlayerStatFilters modes={modes} />, {
     wrapper: withNuqsTestingAdapter({ searchParams, onUrlUpdate }),
   });
   return { onUrlUpdate };
@@ -127,6 +130,38 @@ describe("PlayerStatFilters", () => {
     const { onUrlUpdate } = renderFilters({ searchParams: "?mode=totals" });
 
     expect(screen.getByRole("button", { name: "Totals" })).toHaveAttribute("aria-pressed", "true");
+    expect(onUrlUpdate).not.toHaveBeenCalled();
+  });
+
+  it("offers only the modes a view can plot and presses the coerced one", () => {
+    renderFilters({ searchParams: "?mode=totals", modes: ["game", "avg"] });
+
+    const modeGroup = screen.getByRole("group", { name: "Stat mode" });
+    expect(
+      within(modeGroup)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["Game", "Avg"]);
+    // totals is not on offer here, so the view reads as its running average.
+    expect(screen.getByRole("button", { name: "Avg" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Game" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("drops the mode group entirely when a view offers no modes", () => {
+    renderFilters({ modes: [] });
+
+    expect(screen.queryByRole("group", { name: "Stat mode" })).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Timeframe" })).toBeInTheDocument();
+  });
+
+  it("does not re-apply the remembered mode when the mode group is hidden", () => {
+    useStatModeStore.getState().setMode({ mode: "per36" });
+
+    vi.useFakeTimers();
+    const { onUrlUpdate } = renderFilters({ modes: [] });
+    act(() => vi.runAllTimers());
+    vi.useRealTimers();
+
     expect(onUrlUpdate).not.toHaveBeenCalled();
   });
 });
