@@ -18,6 +18,7 @@ import {
   ensureDefaultLeague,
   fallbackActiveLeagueId,
   getActiveLeague,
+  getActiveLeagueRecord,
   getLeagues,
   resolveActiveLeague,
   toLeagueSummary,
@@ -114,6 +115,23 @@ describe("getActiveLeague", () => {
   it("returns null when signed out", async () => {
     getProfile.mockResolvedValue(null);
     expect(await getActiveLeague()).toBeNull();
+  });
+});
+
+describe("getActiveLeagueRecord", () => {
+  it("returns null without querying when signed out", async () => {
+    getProfile.mockResolvedValue(null);
+    expect(await getActiveLeagueRecord()).toBeNull();
+    expect(leagueFindFirst).not.toHaveBeenCalled();
+  });
+
+  it("resolves the session profile's active league row", async () => {
+    const league = dbLeague({ id: "league-1", slug: "a", updatedAt: new Date() });
+    leagueFindFirst.mockResolvedValue(league);
+    expect(await getActiveLeagueRecord()).toBe(league);
+    expect(leagueFindFirst).toHaveBeenCalledWith({
+      where: { id: "league-1", profileId: profile.id },
+    });
   });
 });
 

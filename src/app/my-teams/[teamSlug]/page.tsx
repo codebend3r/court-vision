@@ -37,10 +37,14 @@ export default async function EditTeamPage({ params }: { params: Promise<{ teamS
     );
   }
 
-  const team = await getLeagueTeamBySlug({ leagueId: league.id, slug: teamSlug });
+  // The pool is league-independent, so it loads alongside the team lookup
+  // rather than after it.
+  const [team, lines] = await Promise.all([
+    getLeagueTeamBySlug({ leagueId: league.id, slug: teamSlug }),
+    getFantasyPool({ range: "all" }),
+  ]);
   if (team === null) notFound();
 
-  const lines = await getFantasyPool({ range: "all" });
   const players = fantasyPlayersFromPool({ lines });
   const insights = buildPlayerInsights({ lines });
 
