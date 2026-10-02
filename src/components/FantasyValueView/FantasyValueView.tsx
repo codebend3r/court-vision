@@ -123,7 +123,27 @@ function RollingRows({
   ...listProps
 }: RollingRowsProps) {
   const result: unknown = use(logsPromise);
-  if (!isFantasyTrendLogsResult(result) || result.status === "error") {
+  // Scoring a page of rolling trends is this layout's heaviest work, so a
+  // re-render that changes none of its inputs reuses the last result. Null
+  // means the logs failed to load.
+  const trendRows = useMemo(() => {
+    if (!isFantasyTrendLogsResult(result) || result.status === "error") return null;
+    const logsById = new Map(
+      result.players.map((player) => [player.playerId, toDatedLogs({ logs: player.logs })]),
+    );
+    return rows.map((row): FantasyTrendRow => ({
+      ...row,
+      trend: buildFantasyTrend({
+        line: row,
+        logs: logsById.get(row.playerId) ?? [],
+        poolStats,
+        config,
+        methodWeights,
+        windowGames,
+      }),
+    }));
+  }, [result, rows, poolStats, config, methodWeights, windowGames]);
+  if (trendRows === null) {
     return (
       <FantasyValueTrends
         rows={rows.map((row): FantasyTrendRow => ({ ...row, trend: [] }))}
@@ -133,20 +153,6 @@ function RollingRows({
       />
     );
   }
-  const logsById = new Map(
-    result.players.map((player) => [player.playerId, toDatedLogs({ logs: player.logs })]),
-  );
-  const trendRows = rows.map((row): FantasyTrendRow => ({
-    ...row,
-    trend: buildFantasyTrend({
-      line: row,
-      logs: logsById.get(row.playerId) ?? [],
-      poolStats,
-      config,
-      methodWeights,
-      windowGames,
-    }),
-  }));
   return (
     <FantasyValueTrends rows={trendRows} status="ready" windowGames={windowGames} {...listProps} />
   );

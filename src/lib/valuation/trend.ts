@@ -1,16 +1,13 @@
 import { weightedConfig } from "@/lib/valuation/breakdown";
+import { scoreGScore } from "@/lib/valuation/methods/gscore";
+import { scoreZScore } from "@/lib/valuation/methods/zscore";
 import {
   type FantasyStatLine,
   type MethodWeights,
   type PoolStats,
   type ValuationConfig,
 } from "@/lib/valuation/types";
-import {
-  buildRollingGSeries,
-  buildRollingZSeries,
-  type DatedLog,
-  ROLLING_WINDOW_GAMES,
-} from "@/lib/watchlist/trend";
+import { rollingWindowLines, type DatedLog } from "@/lib/watchlist/trend";
 
 // The Fantasy tab's rolling charts show recent form. With no Games window
 // chosen they cover each player's last 20 games, so anyone with 29 or more
@@ -31,9 +28,9 @@ export type FantasyTrendValue = {
 };
 
 // One player's rolling ten-game Z and G across `logs` (their season in date
-// order), measured against a pool the caller holds fixed. The trend windows
-// to the last `windowGames` after scoring, so every plotted game still looks
-// back over the ten before it. The player page's trend panel and the Fantasy
+// order), measured against a pool the caller holds fixed. The trend keeps the
+// last `windowGames`, and every kept game still looks back over the ten
+// before it, cut or not. The player page's trend panel and the Fantasy
 // tab's rolling rows both read from here.
 export const buildFantasyTrend = ({
   line,
@@ -50,26 +47,34 @@ export const buildFantasyTrend = ({
   methodWeights: MethodWeights;
   windowGames: number | null;
 }): FantasyTrendValue[] => {
-  const seriesArgs = { playerId: line.playerId, fullName: line.fullName, logs, poolStats };
-  const zPoints = buildRollingZSeries({
-    ...seriesArgs,
-    config: weightedConfig({ config, methodWeights, method: "z" }),
-  }).points;
-  const gPoints = buildRollingGSeries({
-    ...seriesArgs,
-    config: weightedConfig({ config, methodWeights, method: "g" }),
-  }).points;
-  // The rolling scorers emit one point per game from the window size onward;
-  // zip them back onto the full log so every game keeps its index.
-  const lead = ROLLING_WINDOW_GAMES - 1;
-  const scored = logs.map((log, index): FantasyTrendValue => ({
-    gameIndex: index + 1,
-    gameNumber: index + 1,
-    gameDate: log.gameDate.toISOString(),
-    dnp: log.minutes === 0,
-    z: index < lead ? null : (zPoints[index - lead]?.value ?? null),
-    g: index < lead ? null : (gPoints[index - lead]?.value ?? null),
-  }));
-  const windowed = windowGames === null ? scored : scored.slice(-windowGames);
-  return windowed.map((point, index) => ({ ...point, gameIndex: index + 1 }));
+  const zConfig = weightedConfig({ config, methodWeights, method: "z" });
+  const gConfig = weightedConfig({ config, methodWeights, method: "g" });
+  const lineEndingAt = rollingWindowLines({
+    playerId: line.playerId,
+    fullName: line.fullName,
+    logs,
+  });
+  // Only the games the trend keeps are scored, and each window is aggregated
+  // once for both methods: the Fantasy tab builds fifty of these per page, and
+  // scoring every game of the season twice over was most of its render.
+  const kept = windowGames === null ? logs : logs.slice(-windowGames);
+  const offset = logs.length - kept.length;
+  return kept.map((log, position): FantasyTrendValue => {
+    const index = offset + position;
+    const rolling = lineEndingAt({ index });
+    return {
+      gameIndex: position + 1,
+      gameNumber: index + 1,
+      gameDate: log.gameDate.toISOString(),
+      dnp: log.minutes === 0,
+      z:
+        rolling === null
+          ? null
+          : (scoreZScore({ lines: [rolling], poolStats, config: zConfig })[0]?.total ?? 0),
+      g:
+        rolling === null
+          ? null
+          : (scoreGScore({ lines: [rolling], poolStats, config: gConfig })[0]?.total ?? 0),
+    };
+  });
 };

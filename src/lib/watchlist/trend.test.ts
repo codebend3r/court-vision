@@ -1,14 +1,28 @@
 import { describe, expect, it } from "bun:test";
 
 import { TEAM_BUILDER_VALUATION_CONFIG } from "@/lib/fantasyTeams/insights";
+import { aggregateWindowLogs } from "@/lib/valuation/aggregate";
+import { CATEGORY_KEYS } from "@/lib/valuation/categories";
 import { makeStatLine } from "@/lib/valuation/fixtures";
+import { scoreGScore } from "@/lib/valuation/methods/gscore";
+import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
+import { scoreZScore } from "@/lib/valuation/methods/zscore";
 import { computePoolStats } from "@/lib/valuation/pool";
-import { type FantasyStatLine } from "@/lib/valuation/types";
+import {
+  type FantasyStatLine,
+  type PlayerValue,
+  type PoolStats,
+  type ValuationConfig,
+} from "@/lib/valuation/types";
 import {
   buildRollingGSeries,
   buildRollingZSeries,
   ROLLING_WINDOW_GAMES,
+  rollingWindowLines,
   type DatedLog,
+  type RollingSeriesArgs,
+  type TrendPoint,
+  type TrendSeries,
 } from "@/lib/watchlist/trend";
 
 const log = ({ day, pts }: { day: number; pts: number }): DatedLog => ({
@@ -177,5 +191,158 @@ describe("buildRollingGSeries", () => {
       buildRollingGSeries({ ...args, poolStats, logs: logs.slice(0, ROLLING_WINDOW_GAMES - 1) })
         .points,
     ).toEqual([]);
+  });
+});
+
+// The slice-and-score-every-window implementation the shared window lines
+// replaced, kept verbatim so the new series are held to exactly its output.
+// It aggregates through the current aggregateWindowLogs, which its own test
+// holds to the previous aggregator's exact output.
+type TrendScorer = (args: {
+  lines: readonly FantasyStatLine[];
+  poolStats: PoolStats;
+  config: ValuationConfig;
+}) => PlayerValue[];
+
+const identity = ({ playerId, fullName }: { playerId: number; fullName: string }) => ({
+  playerId,
+  firstName: fullName.split(" ")[0] ?? fullName,
+  lastName: fullName.split(" ").slice(1).join(" "),
+  fullName,
+  teamAbbr: null,
+  position: null,
+  nbaPersonId: null,
+});
+
+const referenceRollingSeries = ({
+  playerId,
+  fullName,
+  logs,
+  poolStats,
+  config,
+  scorer,
+  windowSize = ROLLING_WINDOW_GAMES,
+}: RollingSeriesArgs & { scorer: TrendScorer }): TrendSeries => {
+  if (logs.length < windowSize) {
+    return { playerId, fullName, points: [] };
+  }
+  const points = logs.reduce<TrendPoint[]>((acc, log, index) => {
+    if (index + 1 < windowSize) return acc;
+    const window = logs.slice(index + 1 - windowSize, index + 1);
+    const line: FantasyStatLine = {
+      ...identity({ playerId, fullName }),
+      ...aggregateWindowLogs({ logs: window }),
+    };
+    const [value] = scorer({ lines: [line], poolStats, config });
+    return [...acc, { date: log.gameDate.getTime(), value: value?.total ?? 0 }];
+  }, []);
+  return { playerId, fullName, points };
+};
+
+// Deterministic PRNG (mulberry32) for the seeded seasons below.
+const seeded = ({ seed }: { seed: number }) => {
+  let state = seed >>> 0;
+  return (): number => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+// A season of box scores with a DNP every so often and the odd game without
+// a free throw, from one seed.
+const seededSeason = ({ seed, length }: { seed: number; length: number }): DatedLog[] => {
+  const random = seeded({ seed });
+  const between = (low: number, high: number): number =>
+    Math.floor(low + random() * (high - low + 1));
+  return Array.from({ length }, (_, index): DatedLog => {
+    const played = random() > 0.08;
+    const fga = played ? between(2, 28) : 0;
+    const fta = played ? between(0, 12) : 0;
+    return {
+      gameDate: new Date(Date.UTC(2025, 9, 21 + index)),
+      minutes: played ? between(8, 42) : 0,
+      pts: played ? between(0, 50) : 0,
+      reb: played ? between(0, 18) : 0,
+      ast: played ? between(0, 14) : 0,
+      stl: played ? between(0, 4) : 0,
+      blk: played ? between(0, 5) : 0,
+      fg3m: played ? between(0, 8) : 0,
+      tov: played ? between(0, 7) : 0,
+      fga,
+      fgm: Math.floor(fga * random()),
+      fta,
+      ftm: Math.floor(fta * random()),
+    };
+  });
+};
+
+// Pool lines aggregated from seeded seasons carry real game-to-game variance,
+// so G-Score's within term is live rather than collapsing onto Z-Score.
+const seededPoolStats = computePoolStats({
+  lines: Array.from({ length: 160 }, (_, index) => ({
+    ...identity({ playerId: index + 1000, fullName: `Pool Player ${index}` }),
+    ...aggregateWindowLogs({ logs: seededSeason({ seed: index + 1, length: 60 }) }),
+  })),
+  basis: "perGame",
+  poolSize: 150,
+  range: "all",
+});
+
+const allCategories: ValuationConfig = {
+  categories: [...CATEGORY_KEYS],
+  weights: { pts: 1.5, tov: 0, ft: 0.5 },
+  basis: "perGame",
+  teams: 12,
+  rosterSlots: 13,
+  scoring: DEFAULT_POINTS_SCORING,
+};
+
+describe("rolling series against the per-window reference", () => {
+  const seriesCases: { name: string; build: typeof buildRollingZSeries; scorer: TrendScorer }[] = [
+    { name: "Z", build: buildRollingZSeries, scorer: scoreZScore },
+    { name: "G", build: buildRollingGSeries, scorer: scoreGScore },
+  ];
+  const shapes: { length: number; windowSize?: number }[] = [
+    { length: 0 },
+    { length: ROLLING_WINDOW_GAMES - 1 },
+    { length: ROLLING_WINDOW_GAMES },
+    { length: 82 },
+    { length: 30, windowSize: 5 },
+    { length: 30, windowSize: 1 },
+  ];
+
+  seriesCases.forEach(({ name, build, scorer }) => {
+    shapes.forEach(({ length, windowSize }) => {
+      it(`${name}: matches exactly over ${length} games (window ${windowSize ?? "default"})`, () => {
+        const args = {
+          playerId: 7,
+          fullName: "Shai Gilgeous-Alexander",
+          logs: seededSeason({ seed: 0xbeef + length, length }),
+          poolStats: seededPoolStats,
+          config: allCategories,
+          windowSize,
+        };
+        expect(build(args)).toStrictEqual(referenceRollingSeries({ ...args, scorer }));
+      });
+    });
+  });
+});
+
+describe("rollingWindowLines", () => {
+  const logs = seededSeason({ seed: 42, length: 15 });
+  const lineEndingAt = rollingWindowLines({ playerId: 7, fullName: "Jalen Brunson", logs });
+
+  it("has no line until the window fills", () => {
+    expect(lineEndingAt({ index: ROLLING_WINDOW_GAMES - 2 })).toBeNull();
+  });
+
+  it("collapses the game and the nine before it under the player's identity", () => {
+    expect(lineEndingAt({ index: 12 })).toEqual({
+      ...identity({ playerId: 7, fullName: "Jalen Brunson" }),
+      ...aggregateWindowLogs({ logs: logs.slice(3, 13) }),
+    });
   });
 });

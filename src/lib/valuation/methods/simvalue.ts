@@ -39,6 +39,27 @@ const standardNormal = ({ random }: { random: () => number }): number => {
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 };
 
+// Weeks a team finishing on `total` wins: the opponents strictly below it, by
+// binary search over the ascending draws. A NaN total beats nobody, and a NaN
+// draw (sorted last by the typed array) loses to nobody, as `>` has it.
+const weeksWon = ({
+  sorted,
+  total,
+  low = 0,
+  high = sorted.length,
+}: {
+  sorted: Float64Array;
+  total: number;
+  low?: number;
+  high?: number;
+}): number => {
+  if (low >= high) return low;
+  const middle = (low + high) >>> 1;
+  return sorted[middle] < total
+    ? weeksWon({ sorted, total, low: middle + 1, high })
+    : weeksWon({ sorted, total, low, high: middle });
+};
+
 // Monte Carlo Matchup Simulation: how many extra category wins a player buys.
 //
 // The player is added to an average team in place of a freely available one,
@@ -83,11 +104,25 @@ export const scoreSimValue = ({
     {},
   );
 
+  // Each category's season sorted once, with the average team's wins against
+  // it. Scoring a player is then one binary search (nine comparisons) rather
+  // than a pass over every simulated week (eight hundred): the same whole-week
+  // count, across a 600-player pool.
+  const seasons = config.categories.map((category) => {
+    const sorted = Float64Array.from(opponents[category] ?? []).sort();
+    const { mean } = spread[category] ?? { mean: 0 };
+    return {
+      category,
+      mean,
+      sorted,
+      baselineWins: weeksWon({ sorted, total: mean }),
+      freeAgent: replacement[category] ?? 0,
+    };
+  });
+
   return lines.map((line) => {
-    const breakdown = config.categories.reduce<Partial<Record<Category, CategoryContribution>>>(
-      (acc, category) => {
-        const { mean } = spread[category] ?? { mean: 0 };
-        const weeks = opponents[category] ?? [];
+    const breakdown = seasons.reduce<Partial<Record<Category, CategoryContribution>>>(
+      (acc, { category, mean, sorted, baselineWins, freeAgent }) => {
         const value = categoryValue({
           line,
           category,
@@ -95,15 +130,12 @@ export const scoreSimValue = ({
           leagueFgPct: poolStats.leagueFgPct,
           leagueFtPct: poolStats.leagueFtPct,
         });
-        const withPlayer = mean + (value - (replacement[category] ?? 0));
-        // Common random numbers: the same week is scored with and without the
-        // player, so every week that is not close to the threshold cancels
+        const withPlayer = mean + (value - freeAgent);
+        // Common random numbers: the same weeks are scored with and without
+        // the player, so every week that is not close to the threshold cancels
         // instead of adding noise.
-        const gained = weeks.reduce(
-          (sum, opponent) => sum + ((withPlayer > opponent ? 1 : 0) - (mean > opponent ? 1 : 0)),
-          0,
-        );
-        const raw = weeks.length === 0 ? 0 : gained / weeks.length;
+        const gained = weeksWon({ sorted, total: withPlayer }) - baselineWins;
+        const raw = sorted.length === 0 ? 0 : gained / sorted.length;
         return { ...acc, [category]: { raw, weighted: raw * (config.weights[category] ?? 1) } };
       },
       {},

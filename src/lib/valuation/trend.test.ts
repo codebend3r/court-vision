@@ -1,12 +1,28 @@
 import { describe, expect, it } from "bun:test";
 
+import { aggregateWindowLogs } from "@/lib/valuation/aggregate";
+import { weightedConfig } from "@/lib/valuation/breakdown";
 import { CATEGORY_KEYS } from "@/lib/valuation/categories";
 import { makeStatLine } from "@/lib/valuation/fixtures";
 import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
 import { computePoolStats } from "@/lib/valuation/pool";
-import { buildFantasyTrend } from "@/lib/valuation/trend";
-import { type ValuationConfig } from "@/lib/valuation/types";
-import { ROLLING_WINDOW_GAMES, type DatedLog } from "@/lib/watchlist/trend";
+import {
+  buildFantasyTrend,
+  DEFAULT_TREND_GAMES,
+  type FantasyTrendValue,
+} from "@/lib/valuation/trend";
+import {
+  type FantasyStatLine,
+  type MethodWeights,
+  type PoolStats,
+  type ValuationConfig,
+} from "@/lib/valuation/types";
+import {
+  buildRollingGSeries,
+  buildRollingZSeries,
+  ROLLING_WINDOW_GAMES,
+  type DatedLog,
+} from "@/lib/watchlist/trend";
 
 const log = ({
   day,
@@ -123,5 +139,121 @@ describe("buildFantasyTrend", () => {
 
   it("is empty for a player with no games", () => {
     expect(build({ logs: [] })).toEqual([]);
+  });
+});
+
+// The score-the-whole-season-then-cut implementation, kept verbatim so the
+// windowed one is held to exactly its output. Its series builders are the
+// current ones, which their own test holds to the previous per-window output.
+const referenceBuildFantasyTrend = ({
+  line,
+  logs,
+  poolStats,
+  config,
+  methodWeights,
+  windowGames,
+}: {
+  line: Pick<FantasyStatLine, "playerId" | "fullName">;
+  logs: readonly DatedLog[];
+  poolStats: PoolStats;
+  config: ValuationConfig;
+  methodWeights: MethodWeights;
+  windowGames: number | null;
+}): FantasyTrendValue[] => {
+  const seriesArgs = { playerId: line.playerId, fullName: line.fullName, logs, poolStats };
+  const zPoints = buildRollingZSeries({
+    ...seriesArgs,
+    config: weightedConfig({ config, methodWeights, method: "z" }),
+  }).points;
+  const gPoints = buildRollingGSeries({
+    ...seriesArgs,
+    config: weightedConfig({ config, methodWeights, method: "g" }),
+  }).points;
+  const lead = ROLLING_WINDOW_GAMES - 1;
+  const scored = logs.map((log, index): FantasyTrendValue => ({
+    gameIndex: index + 1,
+    gameNumber: index + 1,
+    gameDate: log.gameDate.toISOString(),
+    dnp: log.minutes === 0,
+    z: index < lead ? null : (zPoints[index - lead]?.value ?? null),
+    g: index < lead ? null : (gPoints[index - lead]?.value ?? null),
+  }));
+  const windowed = windowGames === null ? scored : scored.slice(-windowGames);
+  return windowed.map((point, index) => ({ ...point, gameIndex: index + 1 }));
+};
+
+// Deterministic PRNG (mulberry32) for the seeded seasons below.
+const seeded = ({ seed }: { seed: number }) => {
+  let state = seed >>> 0;
+  return (): number => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+const seededSeason = ({ seed, length }: { seed: number; length: number }): DatedLog[] => {
+  const random = seeded({ seed });
+  const between = (low: number, high: number): number =>
+    Math.floor(low + random() * (high - low + 1));
+  return Array.from({ length }, (_, index): DatedLog => {
+    const played = random() > 0.08;
+    const fga = played ? between(2, 28) : 0;
+    const fta = played ? between(0, 12) : 0;
+    return {
+      gameDate: new Date(Date.UTC(2025, 9, 21 + index)),
+      minutes: played ? between(8, 42) : 0,
+      pts: played ? between(0, 50) : 0,
+      reb: played ? between(0, 18) : 0,
+      ast: played ? between(0, 14) : 0,
+      stl: played ? between(0, 4) : 0,
+      blk: played ? between(0, 5) : 0,
+      fg3m: played ? between(0, 8) : 0,
+      tov: played ? between(0, 7) : 0,
+      fga,
+      fgm: Math.floor(fga * random()),
+      fta,
+      ftm: Math.floor(fta * random()),
+    };
+  });
+};
+
+describe("buildFantasyTrend against the whole-season reference", () => {
+  // A pool with real game-to-game variance, so Z and G differ and a swap of
+  // the two would show.
+  const volatilePoolStats = computePoolStats({
+    lines: Array.from({ length: 160 }, (_, index) =>
+      makeStatLine({
+        playerId: index + 1000,
+        ...aggregateWindowLogs({ logs: seededSeason({ seed: index + 1, length: 60 }) }),
+      }),
+    ),
+    basis: "perGame",
+    poolSize: 150,
+    range: "all",
+  });
+  const methodWeights: MethodWeights = { z: { pts: 2, tov: 0 }, g: { fg: 0.5, blk: 3 } };
+  // One season length scores on totals, so the basis reaches the window lines.
+  const totalsConfig: ValuationConfig = { ...config, basis: "total" };
+  // `0` is slice(-0), the whole season, which a naive suffix length gets wrong.
+  const windows: (number | null)[] = [null, 0, 1, 5, DEFAULT_TREND_GAMES, 100];
+  const lengths = [0, 5, ROLLING_WINDOW_GAMES - 1, ROLLING_WINDOW_GAMES, 30, 82];
+
+  lengths.forEach((length) => {
+    windows.forEach((windowGames) => {
+      it(`matches exactly over ${length} games, window ${windowGames ?? "all"}`, () => {
+        const args = {
+          line: { playerId: 7, fullName: "Nikola Jokic" },
+          logs: seededSeason({ seed: 0x7e4d + length, length }),
+          poolStats: volatilePoolStats,
+          config: length === 30 ? totalsConfig : config,
+          methodWeights,
+          windowGames,
+        };
+        expect(buildFantasyTrend(args)).toStrictEqual(referenceBuildFantasyTrend(args));
+      });
+    });
   });
 });
