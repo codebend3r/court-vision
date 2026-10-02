@@ -1,4 +1,5 @@
 import { type League, type Profile } from "@generated/prisma/client";
+import { cache } from "react";
 
 import { getProfile } from "@/lib/auth/session";
 import { DEFAULT_LEAGUE_NAME, DEFAULT_LEAGUE_SLUG } from "@/lib/leagues/constants";
@@ -89,10 +90,19 @@ export const resolveActiveLeague = async ({
   });
 };
 
-export const getActiveLeague = async (): Promise<LeagueSummary | null> => {
+// The session's active league row, deduped per request with React `cache` the
+// same way getProfile is: the root layout's watchlist read, the page, and its
+// panels each ask for it, and without this every one resolves it again.
+// resolveActiveLeague itself stays uncached (it takes a fresh profile object
+// per call, so a cache keyed on it would never hit).
+export const getActiveLeagueRecord = cache(async (): Promise<League | null> => {
   const profile = await getProfile();
   if (profile === null) return null;
-  const league = await resolveActiveLeague({ profile });
+  return resolveActiveLeague({ profile });
+});
+
+export const getActiveLeague = async (): Promise<LeagueSummary | null> => {
+  const league = await getActiveLeagueRecord();
   return league === null ? null : toLeagueSummary({ league });
 };
 

@@ -1,17 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "bun:test";
 
-import { averageAdvancedLogs, searchPlayersAdvanced } from "@/lib/players/searchAdvanced";
+import type { AdvancedPlayerRow, PlayerAdvancedStats } from "@/lib/players/searchAdvanced";
 import type { PlayersSearchParams } from "@/lib/players/searchParams";
 
-const findMany = vi.fn();
-const count = vi.fn();
+const queryRaw = vi.fn<(strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>>();
 
 vi.mock("@/lib/prisma", () => ({
-  prisma: {
-    player: { findMany, count },
-    $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
-  },
+  prisma: { $queryRaw: queryRaw },
 }));
+
+const { averageAdvancedLogs, fetchAdvancedPool, rankAdvancedPlayers, searchPlayersAdvanced } =
+  await import("@/lib/players/searchAdvanced");
 
 const defaultParams: PlayersSearchParams = {
   q: "",
@@ -45,257 +44,161 @@ const buildLog = (overrides: { gameDate?: Date; season?: string; pie?: number | 
   usagePercentage: 0.25,
 });
 
-// findMany's real return type is the full Player model
-// regardless of the select passed at the call site, so every fixture row
-// needs these scalar fields even though the advanced-stats code never reads them.
-const playerScalarDefaults = {
-  teamId: null,
-  jerseyNumber: null,
-  heightInches: null,
-  weightLbs: null,
-  birthDate: null,
-  college: null,
-  country: null,
-  draftYear: null,
-  draftRound: null,
-  draftNumber: null,
-  createdAt: new Date("2025-01-01"),
-  updatedAt: new Date("2025-01-01"),
+const nullStats: PlayerAdvancedStats = {
+  pie: null,
+  pace: null,
+  assistPercentage: null,
+  assistRatio: null,
+  assistToTurnover: null,
+  defensiveRating: null,
+  defensiveReboundPercentage: null,
+  effectiveFieldGoalPercentage: null,
+  netRating: null,
+  offensiveRating: null,
+  offensiveReboundPercentage: null,
+  reboundPercentage: null,
+  trueShootingPercentage: null,
+  turnoverRatio: null,
+  usagePercentage: null,
+  gamesWithData: 0,
 };
 
-describe("searchPlayersAdvanced", () => {
+const poolRow = ({
+  id,
+  firstName = `Player${id}`,
+  lastName = `P${id}`,
+  stats = {},
+}: {
+  id: number;
+  firstName?: string;
+  lastName?: string;
+  stats?: Partial<PlayerAdvancedStats>;
+}): AdvancedPlayerRow => ({
+  id,
+  firstName,
+  lastName,
+  fullName: `${firstName} ${lastName}`,
+  teamAbbr: "AAA",
+  position: "G",
+  nbaPersonId: null,
+  stats: { ...nullStats, ...stats },
+});
+
+// A pool query result row: identity columns plus flat metric columns.
+const sqlRow = ({ id, pie = null }: { id: number; pie?: number | null }) => ({
+  id,
+  firstName: "Nikola",
+  lastName: "Jokic",
+  fullName: "Nikola Jokic",
+  teamAbbr: "DEN",
+  position: "C",
+  nbaPersonId: 203999,
+  ...nullStats,
+  gamesWithData: pie === null ? 0 : 1,
+  pie,
+});
+
+const idsOf = (rows: readonly { id: number }[]): number[] => rows.map((row) => row.id);
+
+describe("fetchAdvancedPool", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    queryRaw.mockReset();
   });
 
-  it("calls findMany with the active-player where clause when sorting by name", async () => {
-    findMany.mockResolvedValue([]);
-    count.mockResolvedValue(0);
+  it("binds the lastN window and leaves the season scope off", async () => {
+    queryRaw.mockResolvedValue([sqlRow({ id: 1, pie: 18.5 })]);
 
-    await searchPlayersAdvanced({ ...defaultParams, sort: "firstName", dir: "asc" });
+    const pool = await fetchAdvancedPool({ range: "last10" });
 
-    expect(findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { gameLogs: { some: {} } },
-        orderBy: [{ firstName: "asc" }, { lastName: "asc" }, { id: "asc" }],
-        skip: 0,
-        take: 25,
-      }),
-    );
-  });
-
-  it("adds a fullName search condition when q is provided", async () => {
-    findMany.mockResolvedValue([]);
-    count.mockResolvedValue(0);
-
-    await searchPlayersAdvanced({ ...defaultParams, sort: "firstName", q: "curry" });
-
-    expect(findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { gameLogs: { some: {} }, fullName: { contains: "curry", mode: "insensitive" } },
-      }),
-    );
-  });
-
-  it("averages non-null metrics over the last-N games and skips null-metric games", async () => {
-    const rows = [
+    const [strings, ...values] = queryRaw.mock.calls[0] ?? [];
+    expect(strings?.join("?")).toContain('"PlayerAdvancedGameLog"');
+    expect(values).toEqual([10, false]);
+    expect(pool).toEqual([
       {
-        ...playerScalarDefaults,
         id: 1,
-        firstName: "Alpha",
-        lastName: "One",
-        fullName: "Alpha One",
-        teamAbbr: "AAA",
-        position: "G",
-        nbaPersonId: null,
-        seasonStats: [{ season: "2025-26" }],
-        advancedGameLogs: [buildLog({ pie: 20 }), buildLog({ pie: null }), buildLog({ pie: 10 })],
+        firstName: "Nikola",
+        lastName: "Jokic",
+        fullName: "Nikola Jokic",
+        teamAbbr: "DEN",
+        position: "C",
+        nbaPersonId: 203999,
+        stats: { ...nullStats, gamesWithData: 1, pie: 18.5 },
       },
-    ];
-    findMany.mockResolvedValue(rows);
-
-    const result = await searchPlayersAdvanced({ ...defaultParams, sort: "pie", range: "last5" });
-
-    // (20 + 10) / 2 non-null games = 15; the null game is skipped, not treated as 0.
-    expect(result.rows[0].stats.pie).toBe(15);
+    ]);
   });
 
-  it("scopes the all range to the player's latest season", async () => {
-    const rows = [
-      {
-        ...playerScalarDefaults,
-        id: 1,
-        firstName: "Beta",
-        lastName: "Two",
-        fullName: "Beta Two",
-        teamAbbr: "BBB",
-        position: "F",
-        nbaPersonId: null,
-        seasonStats: [{ season: "2025-26" }],
-        advancedGameLogs: [
-          buildLog({ season: "2025-26", pie: 30 }),
-          buildLog({ season: "2024-25", pie: 5 }),
-        ],
-      },
-    ];
-    findMany.mockResolvedValue(rows);
+  it("scopes the all range to the latest season under the full fetch limit", async () => {
+    queryRaw.mockResolvedValue([]);
 
-    const result = await searchPlayersAdvanced({ ...defaultParams, sort: "pie", range: "all" });
+    await fetchAdvancedPool({ range: "all" });
 
-    // Only the 2025-26 log counts; the 2024-25 log is excluded from the average.
-    expect(result.rows[0].stats.pie).toBe(30);
+    expect(queryRaw.mock.calls[0]?.slice(1)).toEqual([100, true]);
   });
 
-  it("sorts by a metric with null values sinking to the bottom regardless of direction", async () => {
-    const withData = {
-      ...playerScalarDefaults,
-      id: 1,
-      firstName: "Gamma",
-      lastName: "Three",
-      fullName: "Gamma Three",
-      teamAbbr: "CCC",
-      position: "C",
-      nbaPersonId: null,
-      seasonStats: [{ season: "2025-26" }],
-      advancedGameLogs: [buildLog({ pie: 12 })],
-    };
-    const noData = {
-      ...playerScalarDefaults,
-      id: 2,
-      firstName: "Delta",
-      lastName: "Four",
-      fullName: "Delta Four",
-      teamAbbr: "DDD",
-      position: "F",
-      nbaPersonId: null,
-      seasonStats: [{ season: "2025-26" }],
-      advancedGameLogs: [],
-    };
+  it("rejects rows whose metrics are not numbers or null", async () => {
+    queryRaw.mockResolvedValue([{ ...sqlRow({ id: 1 }), pie: "18.5" }]);
 
-    findMany.mockResolvedValue([noData, withData]);
-    const ascending = await searchPlayersAdvanced({ ...defaultParams, sort: "pie", dir: "asc" });
-    expect(ascending.rows.map((row) => row.id)).toEqual([1, 2]);
+    await expect(fetchAdvancedPool({ range: "last5" })).rejects.toThrow();
+  });
+});
 
-    findMany.mockResolvedValue([noData, withData]);
-    const descending = await searchPlayersAdvanced({ ...defaultParams, sort: "pie", dir: "desc" });
-    expect(descending.rows.map((row) => row.id)).toEqual([1, 2]);
+describe("rankAdvancedPlayers", () => {
+  it("sorts by a metric with null values sinking to the bottom regardless of direction", () => {
+    const pool = [
+      poolRow({ id: 1, stats: { pie: null } }),
+      poolRow({ id: 2, stats: { pie: 12 } }),
+      poolRow({ id: 3, stats: { pie: 8 } }),
+    ];
+
+    const descending = rankAdvancedPlayers({ pool, args: defaultParams });
+    const ascending = rankAdvancedPlayers({ pool, args: { ...defaultParams, dir: "asc" } });
+
+    expect(idsOf(descending.rows)).toEqual([2, 3, 1]);
+    expect(idsOf(ascending.rows)).toEqual([3, 2, 1]);
   });
 
-  it("clamps the page when the requested page exceeds available data", async () => {
-    const secondPageRows = [
-      {
-        ...playerScalarDefaults,
-        id: 2,
-        firstName: "Echo",
-        lastName: "",
-        fullName: "Echo",
-        teamAbbr: "EEE",
-        position: "SF",
-        nbaPersonId: null,
-        seasonStats: [{ season: "2025-26" }],
-        advancedGameLogs: [],
-      },
+  it("orders by name for a name sort and filters by the query", () => {
+    const pool = [
+      poolRow({ id: 1, firstName: "Jalen", lastName: "Brunson" }),
+      poolRow({ id: 2, firstName: "Jalen", lastName: "Williams" }),
+      poolRow({ id: 3, firstName: "Jaylen", lastName: "Brown" }),
+      poolRow({ id: 4, firstName: "Luka", lastName: "Doncic" }),
     ];
-    findMany.mockResolvedValueOnce([]).mockResolvedValueOnce(secondPageRows);
-    count.mockResolvedValue(30);
 
-    const result = await searchPlayersAdvanced({
-      ...defaultParams,
-      sort: "firstName",
-      dir: "desc",
-      page: 9,
+    const result = rankAdvancedPlayers({
+      pool,
+      args: { ...defaultParams, sort: "lastName", dir: "asc", q: "j" },
     });
 
-    expect(result).toEqual({
-      rows: [expect.objectContaining({ id: 2 })],
-      total: 30,
-      page: 2,
-    });
+    expect(idsOf(result.rows)).toEqual([3, 1, 2]);
+    expect(result.total).toBe(3);
   });
 
-  it("returns empty rows on page 1 when there are zero matches", async () => {
-    findMany.mockResolvedValue([]);
-    count.mockResolvedValue(0);
+  it("clamps the page when the requested page exceeds available data", () => {
+    const pool = Array.from({ length: 30 }, (_, index) => poolRow({ id: index + 1 }));
 
-    const result = await searchPlayersAdvanced({ ...defaultParams, sort: "firstName" });
+    const result = rankAdvancedPlayers({ pool, args: { ...defaultParams, page: 9 } });
+
+    expect(result.page).toBe(2);
+    expect(result.rows).toHaveLength(5);
+  });
+
+  it("returns empty rows on page 1 when there are zero matches", () => {
+    const result = rankAdvancedPlayers({ pool: [], args: defaultParams });
 
     expect(result).toEqual({ rows: [], total: 0, page: 1 });
   });
+});
 
-  it("sizes the advancedGameLogs fetch to the requested range at the query level", async () => {
-    findMany.mockResolvedValue([]);
-    count.mockResolvedValue(0);
+describe("searchPlayersAdvanced", () => {
+  it("ranks the pool for the requested range", async () => {
+    queryRaw.mockReset();
+    queryRaw.mockResolvedValue([sqlRow({ id: 1, pie: 9 }), sqlRow({ id: 2, pie: 14 })]);
 
-    await searchPlayersAdvanced({ ...defaultParams, sort: "firstName", range: "last5" });
+    const result = await searchPlayersAdvanced({ ...defaultParams, range: "last5" });
 
-    expect(findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        select: expect.objectContaining({
-          advancedGameLogs: expect.objectContaining({ take: 5 }),
-        }),
-      }),
-    );
-  });
-
-  it("uses the full fetch limit for the all range", async () => {
-    findMany.mockResolvedValue([]);
-    count.mockResolvedValue(0);
-
-    await searchPlayersAdvanced({ ...defaultParams, sort: "firstName", range: "all" });
-
-    expect(findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        select: expect.objectContaining({
-          advancedGameLogs: expect.objectContaining({ take: 100 }),
-        }),
-      }),
-    );
-  });
-
-  it("computes gamesWithData as the max non-null metric count, not the window size", async () => {
-    const rows = [
-      {
-        ...playerScalarDefaults,
-        id: 1,
-        firstName: "Zeta",
-        lastName: "Five",
-        fullName: "Zeta Five",
-        teamAbbr: "ZZZ",
-        position: "G",
-        nbaPersonId: null,
-        seasonStats: [{ season: "2025-26" }],
-        advancedGameLogs: [
-          buildLog({ pie: 10 }),
-          buildLog({ pie: 12 }),
-          {
-            gameDate: new Date("2025-11-03"),
-            season: "2025-26",
-            pie: null,
-            pace: null,
-            assistPercentage: null,
-            assistRatio: null,
-            assistToTurnover: null,
-            defensiveRating: null,
-            defensiveReboundPercentage: null,
-            effectiveFieldGoalPercentage: null,
-            netRating: null,
-            offensiveRating: null,
-            offensiveReboundPercentage: null,
-            reboundPercentage: null,
-            trueShootingPercentage: null,
-            turnoverRatio: null,
-            usagePercentage: null,
-          },
-        ],
-      },
-    ];
-    findMany.mockResolvedValue(rows);
-
-    const result = await searchPlayersAdvanced({ ...defaultParams, sort: "pie", range: "last5" });
-
-    // 3 games in the window, but only 2 have any metric data at all — gamesWithData
-    // should reflect that (2), not the window size (3).
-    expect(result.rows[0].stats.gamesWithData).toBe(2);
+    expect(idsOf(result.rows)).toEqual([2, 1]);
+    expect(queryRaw.mock.calls[0]?.slice(1)).toEqual([5, false]);
   });
 });
 

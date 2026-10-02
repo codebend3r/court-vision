@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { type ReactNode } from "react";
 
+import { LinkPending } from "@/components/LinkPending/LinkPending";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PositionTag } from "@/components/PositionTag/PositionTag";
 import { StarButton } from "@/components/StarButton/StarButton";
@@ -176,6 +177,8 @@ export function PlayersTable(props: PlayersTableProps) {
   }) => {
     const isActive = params.sort === sortKey;
     const tipId = meta && `stat-tip-${meta.key}`;
+    const dir = nextDir({ sortKey });
+    const announcement = `Sorting by ${meta?.fullName ?? label}, ${dir === "asc" ? "ascending" : "descending"}`;
     return (
       <th
         key={sortKey}
@@ -187,13 +190,18 @@ export function PlayersTable(props: PlayersTableProps) {
         data-sort-active={(isStatColumn ? isActive : isPlayerSort) || undefined}
       >
         <Link
-          href={buildPlayersHref({ ...params, page: 1, sort: sortKey, dir: nextDir({ sortKey }) })}
+          href={buildPlayersHref({ ...params, page: 1, sort: sortKey, dir })}
+          // A sort only changes search params on this same force-dynamic route,
+          // so a prefetch has nothing reusable to fetch, yet each one still runs
+          // the auth proxy, for every header in view.
+          prefetch={false}
           className={styles.sortLink}
           data-active={isActive ? "true" : "false"}
           aria-describedby={tipId}
         >
           {label}
           {isActive && <span aria-hidden="true">{params.dir === "asc" ? " ▲" : " ▼"}</span>}
+          <LinkPending announcement={announcement} />
         </Link>
         {!!meta && (
           // `hidden` keeps the bubble out of the header's accessible name; the

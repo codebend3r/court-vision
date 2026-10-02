@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { PlayersTable } from "@/components/PlayersTable/PlayersTable";
 import { getUser } from "@/lib/auth/session";
-import { searchPlayers } from "@/lib/players/search";
+import { searchPlayers } from "@/lib/players/searchCached";
 import { type PlayersSearchParams } from "@/lib/players/searchParams";
 import { MAX_WATCHLIST } from "@/lib/watchlist/constants";
 import { getWatchlistPlayerIds } from "@/lib/watchlist/queries";

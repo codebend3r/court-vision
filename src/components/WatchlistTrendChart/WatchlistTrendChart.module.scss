@@ -37,8 +37,11 @@
   font-size: var(--font-size-xs);
 }
 
+// The box owns the plot's size: the client-only chart and its loading
+// placeholder both fill it, so the caption below never shifts when it lands.
 .plot {
   width: 100%;
+  height: 26.25rem;
 }
 
 .caption,

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
 import { StandingsTrendChart } from "@/components/StandingsTrendChart/StandingsTrendChart";
@@ -32,10 +32,30 @@ const renderChart = ({
     </ThemeProvider>,
   );
 
+// Declared first on purpose: next/dynamic caches a module once it loads, so
+// only the first mount in this file sees the placeholder before the plot.
+describe("StandingsTrendChart plot loading", () => {
+  it("holds the labelled plot box with a placeholder, then mounts the plot in it", async () => {
+    renderChart({ title: "Atlantic", rows });
+    const plot = screen.getByRole("img", { name: "Atlantic cumulative wins" });
+    expect(plot.querySelector("[data-chart-placeholder]")).not.toBeNull();
+
+    await waitFor(() =>
+      expect(plot.querySelector(".recharts-responsive-container")).not.toBeNull(),
+    );
+    expect(plot.querySelector("[data-chart-placeholder]")).toBeNull();
+  });
+});
+
 describe("StandingsTrendChart", () => {
   it("renders nothing without rows", () => {
     const { container } = renderChart({ title: "League", rows: [] });
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it("names the plot box for assistive tech whether or not the plot has loaded", () => {
+    renderChart({ title: "Atlantic", rows });
+    expect(screen.getByRole("img", { name: "Atlantic cumulative wins" })).toBeInTheDocument();
   });
 
   it("renders a legend chip per team and a summary sentence", () => {

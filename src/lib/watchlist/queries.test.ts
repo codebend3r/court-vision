@@ -4,10 +4,15 @@ const findMany = vi.fn();
 const count = vi.fn();
 const getProfile = vi.fn();
 const resolveActiveLeague = vi.fn();
+// Mirrors the real per-request helper: no session means no league, otherwise
+// the profile's active league resolves.
+const getActiveLeagueRecord = vi.fn(async () => {
+  const profile = await getProfile();
+  return profile === null ? null : resolveActiveLeague({ profile });
+});
 
 vi.mock("@/lib/prisma", () => ({ prisma: { leagueWatchlistPlayer: { findMany, count } } }));
-vi.mock("@/lib/auth/session", () => ({ getProfile }));
-vi.mock("@/lib/leagues/queries", () => ({ resolveActiveLeague }));
+vi.mock("@/lib/leagues/queries", () => ({ getActiveLeagueRecord }));
 
 import {
   getWatchlistCount,

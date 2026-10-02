@@ -1,24 +1,27 @@
 "use client";
 
-import {
-  CartesianGrid,
-  LabelList,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-  type TooltipPayloadEntry,
-} from "recharts";
+import dynamic from "next/dynamic";
 
+import { ChartPlaceholder } from "@/components/ChartPlaceholder/ChartPlaceholder";
 import { getChartChrome } from "@/components/PlayerStatChart/statMeta";
-import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
+import type { WatchlistTrendLine } from "@/components/WatchlistTrendChart/WatchlistTrendPlot";
 import { useTheme, type Theme } from "@/lib/theme/ThemeProvider";
 import { ROLLING_WINDOW_GAMES, type TrendSeries } from "@/lib/watchlist/trend";
 
 import styles from "@/components/WatchlistTrendChart/WatchlistTrendChart.module.scss";
+
+// The plot is the only part of this figure that needs recharts, and it has
+// nothing to server-render without a measured width. Loading it client-only
+// keeps the chart library off the home page's critical path. The legend,
+// caption, and empty states still arrive in the server HTML, and the
+// placeholder holds the plot box until the chart lands.
+const WatchlistTrendPlot = dynamic(
+  () =>
+    import("@/components/WatchlistTrendChart/WatchlistTrendPlot").then(
+      (mod) => mod.WatchlistTrendPlot,
+    ),
+  { ssr: false, loading: () => <ChartPlaceholder /> },
+);
 
 export type WatchlistTrendChartProps = {
   series: readonly TrendSeries[];
@@ -53,12 +56,6 @@ const seriesKey = ({ playerId }: { playerId: number }): string => `p${playerId}`
 const lastNameOf = ({ fullName }: { fullName: string }): string =>
   fullName.split(" ").slice(1).join(" ") || fullName;
 
-const formatDate = (value: number): string =>
-  new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-
-const formatValue = (value: number): string =>
-  value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
-
 export type ChartRow = Record<string, number | undefined>;
 
 // One row per game date across every series, so the x-axis can be a category
@@ -86,70 +83,10 @@ export const buildRows = ({ series }: { series: readonly TrendSeries[] }): Chart
   );
 };
 
-type ChartTooltipProps = {
-  active?: boolean;
-  label?: number;
-  payload?: readonly TooltipPayloadEntry[];
-};
-
-function ChartTooltip({ active, label, payload }: ChartTooltipProps) {
-  if (!active || payload === undefined || payload.length === 0) return null;
-  return (
-    <div className={styles.tooltip}>
-      <p className={styles.tooltipDate}>{label === undefined ? "" : formatDate(label)}</p>
-      <ul className={styles.tooltipList}>
-        {payload.map((entry) => (
-          <li key={String(entry.name)} className={styles.tooltipRow}>
-            <span
-              aria-hidden="true"
-              className={styles.swatch}
-              style={{ background: entry.color }}
-            />
-            <span>{entry.name}</span>
-            <span className={styles.tooltipValue}>
-              {typeof entry.value === "number" ? formatValue(entry.value) : "—"}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-// Recharts hands label content the resolved position of every point; only the
-// series' own final point gets a name drawn beside it.
-type EndLabelRenderProps = { x?: number | string; y?: number | string; index?: number };
-
-const endLabelRenderer = ({
-  lastIndex,
-  text,
-  color,
-}: {
-  lastIndex: number;
-  text: string;
-  color: string;
-}) => {
-  // Named rather than a bare arrow: recharts renders this as a component, and
-  // an anonymous one has no display name in the tree.
-  function EndLabel(props: EndLabelRenderProps) {
-    if (props.index !== lastIndex) return null;
-    const x = Number(props.x);
-    const y = Number(props.y);
-    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
-    return (
-      <text x={x + 8} y={y} fill={color} fontSize={12} dominantBaseline="middle">
-        {text}
-      </text>
-    );
-  }
-  return EndLabel;
-};
-
 export function WatchlistTrendChart({ series, caption }: WatchlistTrendChartProps) {
   const { theme } = useTheme();
   const chrome = getChartChrome({ theme });
   const palette = SERIES_BY_THEME[theme];
-  const prefersReducedMotion = usePrefersReducedMotion();
 
   const plotted = series.filter((entry) => entry.points.length > 0);
 
@@ -162,6 +99,12 @@ export function WatchlistTrendChart({ series, caption }: WatchlistTrendChartProp
   }
 
   const rows = buildRows({ series });
+  const lines = series.map((entry, index): WatchlistTrendLine => ({
+    dataKey: seriesKey({ playerId: entry.playerId }),
+    name: entry.fullName,
+    endLabel: lastNameOf({ fullName: entry.fullName }),
+    color: palette[index % palette.length],
+  }));
 
   return (
     <figure className={styles.figure}>
@@ -194,63 +137,7 @@ export function WatchlistTrendChart({ series, caption }: WatchlistTrendChartProp
         </p>
       ) : (
         <div className={styles.plot}>
-          <ResponsiveContainer width="100%" height={420}>
-            <LineChart data={rows} margin={{ top: 8, right: 76, bottom: 8, left: 0 }}>
-              <CartesianGrid stroke={chrome.grid} strokeDasharray="3 3" vertical={false} />
-              <XAxis
-                dataKey="date"
-                type="category"
-                tickFormatter={formatDate}
-                stroke={chrome.axis}
-                tick={{ fill: chrome.axis, fontSize: 12 }}
-                minTickGap={24}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                stroke={chrome.axis}
-                tick={{ fill: chrome.axis, fontSize: 12 }}
-                tickFormatter={formatValue}
-                width={48}
-              />
-              {/* Zero is league-average value: above it a player helps you. */}
-              <ReferenceLine y={0} stroke={chrome.axis} strokeDasharray="4 4" />
-              <Tooltip content={<ChartTooltip />} cursor={{ stroke: chrome.axis }} />
-              {series.map((entry, index) => {
-                const key = seriesKey({ playerId: entry.playerId });
-                // A player can miss the final dates; their name belongs beside
-                // their own last point, not at the chart's right edge.
-                const lastIndex = rows.reduce(
-                  (last, row, rowIndex) => (row[key] === undefined ? last : rowIndex),
-                  -1,
-                );
-                const color = palette[index % palette.length];
-                return (
-                  <Line
-                    key={entry.playerId}
-                    dataKey={key}
-                    name={entry.fullName}
-                    type="monotone"
-                    stroke={color}
-                    strokeWidth={3}
-                    dot={false}
-                    activeDot={{ r: 5 }}
-                    isAnimationActive={!prefersReducedMotion}
-                    // A missed game date must not cut the line in half.
-                    connectNulls
-                  >
-                    <LabelList
-                      dataKey={key}
-                      content={endLabelRenderer({
-                        lastIndex,
-                        text: lastNameOf({ fullName: entry.fullName }),
-                        color,
-                      })}
-                    />
-                  </Line>
-                );
-              })}
-            </LineChart>
-          </ResponsiveContainer>
+          <WatchlistTrendPlot rows={rows} lines={lines} />
         </div>
       )}
       <figcaption className={styles.caption}>{caption}</figcaption>

@@ -18,7 +18,7 @@ import {
   formatSigned,
   METHOD_LABELS,
   type MethodKey,
-} from "@/components/PlayerFantasyChart/breakdownChart";
+} from "@/components/PlayerFantasyChart/labels";
 import { getChartChrome, getSeriesPalette } from "@/components/PlayerStatChart/statMeta";
 import { useTheme } from "@/lib/theme/ThemeProvider";
 import { type FantasySortKey } from "@/lib/valuation/searchParams";

@@ -44,25 +44,23 @@ export default async function PlayerPage({
   if (!Number.isSafeInteger(numericId) || numericId < 1 || numericId > MAX_INT4) {
     notFound();
   }
-  const isSignedIn = !!(await getUser());
-  const player = await prisma.player.findUnique({ where: { id: numericId } });
+  // None of these reads depends on another, so they share one round trip
+  // instead of four. The player's own season rows drive the dropdown options,
+  // the default selection (their most recent season), and the career totals.
+  const [user, player, filters, playerSeasonRows] = await Promise.all([
+    getUser(),
+    prisma.player.findUnique({ where: { id: numericId } }),
+    loadStatFilters(searchParams ?? Promise.resolve({})),
+    prisma.playerSeasonStats.findMany({
+      where: { playerId: numericId, seasonType: SEASON_TYPE },
+      orderBy: { season: "desc" },
+    }),
+  ]);
   if (player === null) {
     notFound();
   }
-
-  const {
-    mode,
-    span,
-    season: requestedSeason,
-    view,
-  } = await loadStatFilters(searchParams ?? Promise.resolve({}));
-
-  // The player's own season rows drive the dropdown options, the default
-  // selection (their most recent season), and the career totals.
-  const playerSeasonRows = await prisma.playerSeasonStats.findMany({
-    where: { playerId: numericId, seasonType: SEASON_TYPE },
-    orderBy: { season: "desc" },
-  });
+  const isSignedIn = !!user;
+  const { mode, span, season: requestedSeason, view } = filters;
   const playerSeasons = [...new Set(playerSeasonRows.map((row) => row.season))];
   const selection = resolveSeasonSelection({ requested: requestedSeason, playerSeasons });
   const isCareer = selection === CAREER;

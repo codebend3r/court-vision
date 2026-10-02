@@ -43,6 +43,26 @@ export type RollingSeriesArgs = {
   windowSize?: number;
 };
 
+// The rolling stat line ending at a game: that game and the windowSize − 1
+// before it, under the player's identity. Null until the window fills. Bound
+// to one player's logs so the identity is built once per series, and a caller
+// scoring a window more than once (Z and G) aggregates it only once.
+export const rollingWindowLines = ({
+  playerId,
+  fullName,
+  logs,
+  windowSize = ROLLING_WINDOW_GAMES,
+}: Pick<RollingSeriesArgs, "playerId" | "fullName" | "logs" | "windowSize">) => {
+  const player = identity({ playerId, fullName });
+  return ({ index }: { index: number }): FantasyStatLine | null =>
+    index + 1 < windowSize
+      ? null
+      : {
+          ...player,
+          ...aggregateWindowLogs({ logs: logs.slice(index + 1 - windowSize, index + 1) }),
+        };
+};
+
 // One point per game from the window size onward: each scores that game and
 // the previous nine, measured against a pool the caller holds fixed for the
 // whole season. A rising line is the player improving, not the yardstick
@@ -61,16 +81,13 @@ const buildRollingSeries = ({
   if (logs.length < windowSize) {
     return { playerId, fullName, points: [] };
   }
-  const points = logs.reduce<TrendPoint[]>((acc, log, index) => {
-    if (index + 1 < windowSize) return acc;
-    const window = logs.slice(index + 1 - windowSize, index + 1);
-    const line: FantasyStatLine = {
-      ...identity({ playerId, fullName }),
-      ...aggregateWindowLogs({ logs: window }),
-    };
+  const lineEndingAt = rollingWindowLines({ playerId, fullName, logs, windowSize });
+  const points = logs.flatMap((log, index): TrendPoint[] => {
+    const line = lineEndingAt({ index });
+    if (line === null) return [];
     const [value] = scorer({ lines: [line], poolStats, config });
-    return [...acc, { date: log.gameDate.getTime(), value: value?.total ?? 0 }];
-  }, []);
+    return [{ date: log.gameDate.getTime(), value: value?.total ?? 0 }];
+  });
   return { playerId, fullName, points };
 };
 

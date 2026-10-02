@@ -1,0 +1,9 @@
+// A quiet tint, not a skeleton shimmer: a page can hold several of these at
+// once (one per division on /teams), and a still box reads as "chart goes
+// here" without competing with the content around it.
+.placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface) 90%, var(--color-text));
+}

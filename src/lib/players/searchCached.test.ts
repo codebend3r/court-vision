@@ -1,24 +1,26 @@
-import { describe, expect, it, vi } from "bun:test";
+import { beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { parsePlayersSearchParams } from "@/lib/players/searchParams";
 
-const searchPlayersUncached = vi.fn();
-const searchPlayersAdvancedUncached = vi.fn();
+const fetchRegularPool = vi.fn();
+const fetchAdvancedPool = vi.fn();
+const rankPlayers = vi.fn();
+const rankAdvancedPlayers = vi.fn();
+const unstableCache = vi.fn();
 
 // Make `unstable_cache` a pass-through so the wrappers can be exercised without
-// a Next incremental cache (which is absent under bun:test); this leaves the
-// delegation-to-the-real-query wiring as the thing under test.
+// a Next incremental cache (which is absent under bun:test), while recording
+// the cache key parts each wrapper registers.
 vi.mock("next/cache", () => ({
-  unstable_cache: (fn: unknown) => fn,
+  unstable_cache: (fn: unknown, keyParts: unknown, options: unknown) => {
+    unstableCache(keyParts, options);
+    return fn;
+  },
 }));
 
-vi.mock("@/lib/players/search", () => ({
-  searchPlayers: searchPlayersUncached,
-}));
+vi.mock("@/lib/players/search", () => ({ fetchRegularPool, rankPlayers }));
 
-vi.mock("@/lib/players/searchAdvanced", () => ({
-  searchPlayersAdvanced: searchPlayersAdvancedUncached,
-}));
+vi.mock("@/lib/players/searchAdvanced", () => ({ fetchAdvancedPool, rankAdvancedPlayers }));
 
 // Imported after the mocks are installed, not at the top of the file: bun:test
 // does not hoist `vi.mock`, and searchCached calls `unstable_cache` at module
@@ -26,21 +28,56 @@ vi.mock("@/lib/players/searchAdvanced", () => ({
 const { searchPlayers, searchPlayersAdvanced } = await import("@/lib/players/searchCached");
 
 describe("searchCached", () => {
-  it("delegates the regular query to searchPlayers with the same params", async () => {
-    const params = parsePlayersSearchParams({});
-    const result = { rows: [], total: 0, page: 1 };
-    searchPlayersUncached.mockResolvedValue(result);
-
-    await expect(searchPlayers(params)).resolves.toBe(result);
-    expect(searchPlayersUncached).toHaveBeenCalledWith(params);
+  beforeEach(() => {
+    fetchRegularPool.mockReset();
+    fetchAdvancedPool.mockReset();
+    rankPlayers.mockReset();
+    rankAdvancedPlayers.mockReset();
   });
 
-  it("delegates the advanced query to searchPlayersAdvanced with the same params", async () => {
-    const params = parsePlayersSearchParams({ tab: "advanced" });
+  it("caches one pool per range under the shared players tag", () => {
+    expect(unstableCache).toHaveBeenCalledWith(["players:regular-pool"], {
+      revalidate: 300,
+      tags: ["players"],
+    });
+    expect(unstableCache).toHaveBeenCalledWith(["players:advanced-pool"], {
+      revalidate: 300,
+      tags: ["players"],
+    });
+  });
+
+  it("ranks the regular pool for the requested range with the full params", async () => {
+    const params = parsePlayersSearchParams({ range: "last10", sort: "reb", page: "3" });
+    const pool = [{ id: 1 }];
     const result = { rows: [], total: 0, page: 1 };
-    searchPlayersAdvancedUncached.mockResolvedValue(result);
+    fetchRegularPool.mockResolvedValue(pool);
+    rankPlayers.mockReturnValue(result);
+
+    await expect(searchPlayers(params)).resolves.toBe(result);
+    expect(fetchRegularPool).toHaveBeenCalledWith({ range: "last10" });
+    expect(rankPlayers).toHaveBeenCalledWith({ pool, args: params });
+  });
+
+  it("short-circuits an empty watchlist without reading the pool", async () => {
+    const params = parsePlayersSearchParams({ tab: "starred" });
+
+    await expect(searchPlayers({ ...params, playerIds: [] })).resolves.toEqual({
+      rows: [],
+      total: 0,
+      page: 1,
+    });
+    expect(fetchRegularPool).not.toHaveBeenCalled();
+  });
+
+  it("ranks the advanced pool for the requested range with the full params", async () => {
+    const params = parsePlayersSearchParams({ tab: "advanced", range: "last5" });
+    const pool = [{ id: 2 }];
+    const result = { rows: [], total: 0, page: 1 };
+    fetchAdvancedPool.mockResolvedValue(pool);
+    rankAdvancedPlayers.mockReturnValue(result);
 
     await expect(searchPlayersAdvanced(params)).resolves.toBe(result);
-    expect(searchPlayersAdvancedUncached).toHaveBeenCalledWith(params);
+    expect(fetchAdvancedPool).toHaveBeenCalledWith({ range: "last5" });
+    expect(rankAdvancedPlayers).toHaveBeenCalledWith({ pool, args: params });
   });
 });

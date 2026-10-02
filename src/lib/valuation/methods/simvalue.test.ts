@@ -1,10 +1,19 @@
 import { describe, expect, it } from "bun:test";
 
+import { CATEGORY_KEYS, categoryValue } from "@/lib/valuation/categories";
 import { makeStatLine } from "@/lib/valuation/fixtures";
 import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
-import { scoreSimValue } from "@/lib/valuation/methods/simvalue";
+import { SIM_ITERATIONS, scoreSimValue } from "@/lib/valuation/methods/simvalue";
 import { computePoolStats } from "@/lib/valuation/pool";
-import { type FantasyStatLine, type ValuationConfig } from "@/lib/valuation/types";
+import { buildLeague, type SyntheticLeague } from "@/lib/valuation/rosters";
+import {
+  type Category,
+  type CategoryContribution,
+  type FantasyStatLine,
+  type PlayerValue,
+  type PoolStats,
+  type ValuationConfig,
+} from "@/lib/valuation/types";
 
 const config = (overrides: Partial<ValuationConfig> = {}): ValuationConfig => ({
   categories: ["pts", "reb"],
@@ -94,5 +103,176 @@ describe("scoreSimValue", () => {
     const star = values.find((value) => value.playerId === 1)?.total ?? 0;
     const fringe = values.find((value) => value.playerId === 5)?.total ?? 0;
     expect(star).toBeGreaterThan(fringe);
+  });
+});
+
+// The pass-over-every-week implementation the binary search replaced, kept
+// verbatim (SIM_SEED, mulberry32, standardNormal, and the scorer itself) so
+// the faster one is held to exactly its output, not to a tolerance.
+const SIM_SEED = 0x5eed;
+
+const mulberry32 = ({ seed }: { seed: number }) => {
+  let state = seed >>> 0;
+  return (): number => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+const standardNormal = ({ random }: { random: () => number }): number => {
+  const u = Math.max(random(), Number.MIN_VALUE);
+  const v = random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+};
+
+const referenceScoreSimValue = ({
+  lines,
+  poolStats,
+  config,
+  league,
+  iterations = SIM_ITERATIONS,
+}: {
+  lines: readonly FantasyStatLine[];
+  poolStats: PoolStats;
+  config: ValuationConfig;
+  league?: SyntheticLeague;
+  iterations?: number;
+}): PlayerValue[] => {
+  const { replacement, spread } = league ?? buildLeague({ lines, poolStats, config });
+
+  const random = mulberry32({ seed: SIM_SEED });
+  const opponents = config.categories.reduce<Partial<Record<Category, number[]>>>(
+    (acc, category) => {
+      const { mean, sd } = spread[category] ?? { mean: 0, sd: 0 };
+      return {
+        ...acc,
+        [category]: Array.from(
+          { length: iterations },
+          () => mean + sd * standardNormal({ random }),
+        ),
+      };
+    },
+    {},
+  );
+
+  return lines.map((line) => {
+    const breakdown = config.categories.reduce<Partial<Record<Category, CategoryContribution>>>(
+      (acc, category) => {
+        const { mean } = spread[category] ?? { mean: 0 };
+        const weeks = opponents[category] ?? [];
+        const value = categoryValue({
+          line,
+          category,
+          basis: config.basis,
+          leagueFgPct: poolStats.leagueFgPct,
+          leagueFtPct: poolStats.leagueFtPct,
+        });
+        const withPlayer = mean + (value - (replacement[category] ?? 0));
+        const gained = weeks.reduce(
+          (sum, opponent) => sum + ((withPlayer > opponent ? 1 : 0) - (mean > opponent ? 1 : 0)),
+          0,
+        );
+        const raw = weeks.length === 0 ? 0 : gained / weeks.length;
+        return { ...acc, [category]: { raw, weighted: raw * (config.weights[category] ?? 1) } };
+      },
+      {},
+    );
+
+    const total = config.categories.reduce(
+      (sum, category) => sum + (breakdown[category]?.weighted ?? 0),
+      0,
+    );
+    return { playerId: line.playerId, total, breakdown };
+  });
+};
+
+// A seeded pool of 300 box-score lines: realistic magnitudes, a few
+// zero-attempt shooters, and enough spread that many players sit near a
+// category's win threshold, where an off-by-one count would show.
+const randomPool = ({ seed, size }: { seed: number; size: number }): FantasyStatLine[] => {
+  const random = mulberry32({ seed });
+  const between = (low: number, high: number): number =>
+    Math.floor(low + random() * (high - low + 1));
+  return Array.from({ length: size }, (_, index) => {
+    const gamesPlayed = between(1, 82);
+    const fga = index % 37 === 0 ? 0 : between(0, 20) * gamesPlayed;
+    const fta = index % 41 === 0 ? 0 : between(0, 9) * gamesPlayed;
+    return makeStatLine({
+      playerId: index + 1,
+      gamesPlayed,
+      minutes: between(5, 38) * gamesPlayed,
+      pts: between(0, 34) * gamesPlayed,
+      reb: between(0, 14) * gamesPlayed,
+      ast: between(0, 11) * gamesPlayed,
+      stl: between(0, 3) * gamesPlayed,
+      blk: between(0, 3) * gamesPlayed,
+      fg3m: between(0, 5) * gamesPlayed,
+      tov: between(0, 5) * gamesPlayed,
+      fga,
+      fgm: Math.floor(fga * (0.35 + random() * 0.3)),
+      fta,
+      ftm: Math.floor(fta * (0.55 + random() * 0.4)),
+    });
+  });
+};
+
+describe("scoreSimValue against the per-week reference", () => {
+  const pool = randomPool({ seed: 0xc0ffee, size: 300 });
+  const allCategories = config({ categories: [...CATEGORY_KEYS], teams: 12, rosterSlots: 13 });
+
+  const cases: {
+    name: string;
+    lines: FantasyStatLine[];
+    config: ValuationConfig;
+    iterations?: number;
+  }[] = [
+    { name: "the fixture pool", lines, config: config() },
+    { name: "a punted pool", lines, config: config({ weights: { pts: 0, reb: 0 } }) },
+    { name: "a hundred iterations", lines, config: config(), iterations: 100 },
+    { name: "no iterations", lines, config: config(), iterations: 0 },
+    { name: "no categories", lines, config: config({ categories: [] }) },
+    {
+      // Identical lines make every team identical: zero spread, so every
+      // simulated week ties the average team exactly.
+      name: "a league with no spread",
+      lines: Array.from({ length: 6 }, (_, index) =>
+        makeStatLine({ playerId: index + 1, gamesPlayed: 10 }),
+      ),
+      config: config(),
+    },
+    { name: "a seeded 300-player pool, every category", lines: pool, config: allCategories },
+    {
+      name: "a seeded pool on totals with weights",
+      lines: pool,
+      config: { ...allCategories, basis: "total", weights: { pts: 2, tov: 0, fg: 0.5 } },
+    },
+  ];
+
+  cases.forEach(({ name, lines: caseLines, config: caseConfig, iterations }) => {
+    it(`matches exactly on ${name}`, () => {
+      const poolStats = computePoolStats({
+        lines: caseLines,
+        basis: caseConfig.basis,
+        poolSize: 150,
+        range: "all",
+      });
+      const args = { lines: caseLines, poolStats, config: caseConfig, iterations };
+      expect(scoreSimValue(args)).toStrictEqual(referenceScoreSimValue(args));
+    });
+  });
+
+  it("matches exactly when handed a prebuilt league", () => {
+    const poolStats = computePoolStats({
+      lines: pool,
+      basis: "perGame",
+      poolSize: 150,
+      range: "all",
+    });
+    const league = buildLeague({ lines: pool, poolStats, config: allCategories });
+    const args = { lines: pool, poolStats, config: allCategories, league };
+    expect(scoreSimValue(args)).toStrictEqual(referenceScoreSimValue(args));
   });
 });

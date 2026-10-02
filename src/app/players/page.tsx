@@ -125,8 +125,10 @@ export default async function PlayersPage({
   });
 
   // Every tab renders star controls, and a star is only actionable with an
-  // account; signed out, StarButton links to sign-in instead.
-  const isSignedIn = !!(await getUser());
+  // account; signed out, StarButton links to sign-in instead. Signed in, the
+  // session check is a Supabase round trip, so each branch runs it alongside
+  // its data read rather than before it.
+  const signedIn = async (): Promise<boolean> => !!(await getUser());
 
   if (params.tab === "starred") {
     return (
@@ -141,10 +143,11 @@ export default async function PlayersPage({
     // Everything else (weights, exclusions, sort, paging) computes client-side
     // in FantasyValueView from this one cached pool payload.
     const { range } = await loadFantasySearchParams(raw);
-    const [lines, league, profile] = await Promise.all([
+    const [lines, league, profile, isSignedIn] = await Promise.all([
       getFantasyPool({ range }),
       getActiveLeague(),
       getProfile(),
+      signedIn(),
     ]);
     const presentKeys = new Set(Object.keys(raw));
     const formula =
@@ -158,7 +161,10 @@ export default async function PlayersPage({
   }
 
   if (params.tab === "advanced") {
-    const { rows, total, page } = await searchPlayersAdvanced(params);
+    const [{ rows, total, page }, isSignedIn] = await Promise.all([
+      searchPlayersAdvanced(params),
+      signedIn(),
+    ]);
     return (
       <PlayersScreen params={params}>
         <PlayersResults params={params} total={total} page={page}>
@@ -182,7 +188,10 @@ export default async function PlayersPage({
     );
   }
 
-  const { rows, total, page } = await searchPlayers(params);
+  const [{ rows, total, page }, isSignedIn] = await Promise.all([
+    searchPlayers(params),
+    signedIn(),
+  ]);
   return (
     <PlayersScreen params={params}>
       <PlayersResults params={params} total={total} page={page}>

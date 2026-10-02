@@ -186,19 +186,52 @@ const checkPublicEnvNames = (sources: readonly SourceFile[]): readonly Violation
       })),
   );
 
-/** Rule 3: raw Prisma calls must not interpolate into the template literal. */
+// A tagged-template placeholder holding a bare identifier (`${gameLimit}`).
+// Prisma sends those as bound parameters, never as SQL text.
+const BOUND_PLACEHOLDER = /^\$\{\s*[A-Za-z_$][\w$]*\s*\}$/;
+
+/**
+ * Rule 3: raw Prisma SQL must be parameterized. Allowed: a tagged
+ * `$queryRaw`/`$executeRaw` template whose placeholders are bare identifiers,
+ * which Prisma binds as parameters. Flagged: the Unsafe variants, the call
+ * form, any placeholder holding an expression (a call, a nested template, a
+ * concatenation), and `Prisma.raw`, the one way a bound identifier could
+ * smuggle SQL text in as a pre-built fragment.
+ */
 const checkRawPrisma = (sources: readonly SourceFile[]): readonly Violation[] =>
-  sources.flatMap((file) =>
-    [...file.text.matchAll(/\$(?:query|execute)Raw(?:Unsafe)?\s*(?:`([^`]*)`|\()/g)]
-      .filter((match) => (match[1] ?? "").includes("${") || (match[0] ?? "").endsWith("("))
-      .map((match) => ({
-        rule: "raw-prisma-interpolation",
-        file: `src/${relative(SRC, file.path)}`,
-        line: lineOf({ text: file.text, index: match.index ?? 0 }),
-        detail: "raw query interpolates a value or uses the Unsafe variant",
-        fix: "use Prisma.sql with parameter placeholders, or the typed client",
-      })),
-  );
+  sources.flatMap((file) => {
+    const violation = ({ index, detail }: { index: number; detail: string }): Violation => ({
+      rule: "raw-prisma-interpolation",
+      file: `src/${relative(SRC, file.path)}`,
+      line: lineOf({ text: file.text, index }),
+      detail,
+      fix: "use a tagged $queryRaw template with bare-identifier placeholders, or the typed client",
+    });
+    const rawQueries = [
+      ...file.text.matchAll(/\$(?:query|execute)Raw(Unsafe)?\s*(?:`([^`]*)`|\()/g),
+    ]
+      .filter(
+        (match) =>
+          match[1] !== undefined ||
+          (match[0] ?? "").endsWith("(") ||
+          [...(match[2] ?? "").matchAll(/\$\{[^}]*\}/g)].some(
+            (placeholder) => !BOUND_PLACEHOLDER.test(placeholder[0] ?? ""),
+          ),
+      )
+      .map((match) =>
+        violation({
+          index: match.index ?? 0,
+          detail: "raw query uses the Unsafe variant, the call form, or an expression placeholder",
+        }),
+      );
+    const rawFragments = [...file.text.matchAll(/Prisma\.raw\s*\(/g)].map((match) =>
+      violation({
+        index: match.index ?? 0,
+        detail: "Prisma.raw splices unparameterized SQL text into a query",
+      }),
+    );
+    return [...rawQueries, ...rawFragments];
+  });
 
 /**
  * Rule 4: every exported server action must consult the session before it
