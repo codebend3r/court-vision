@@ -81,6 +81,11 @@
     background: color-mix(in srgb, var(--color-text) 4%, transparent);
   }
 
+  // Signed fantasy scores below average (spec §7: negatives in the loss colour).
+  td[data-negative="true"] {
+    color: var(--color-loss);
+  }
+
   [data-align="right"] {
     text-align: right;
   }

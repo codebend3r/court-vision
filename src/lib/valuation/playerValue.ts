@@ -3,6 +3,7 @@ import { type PlayerGameRange } from "@/lib/players/searchParams";
 import { type MetricPoint } from "@/lib/stats/metricPoint";
 import { buildCategoryBreakdown, type FantasyCategoryBreakdown } from "@/lib/valuation/breakdown";
 import { CATEGORY_KEYS } from "@/lib/valuation/categories";
+import { buildFantasyGameValues, type FantasyGameValue } from "@/lib/valuation/gameValues";
 import { valuePlayers } from "@/lib/valuation/index";
 import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
 import { FANTASY_METHODS, type FantasyMethodKey } from "@/lib/valuation/registry";
@@ -33,6 +34,8 @@ export type PlayerFantasyProfile = {
   readouts: FantasyMethodReadout[];
   breakdown: FantasyCategoryBreakdown[];
   trend: FantasyTrendPoint[];
+  // Every game in `logs`, unwindowed and aligned by index, for the game log.
+  games: FantasyGameValue[];
   poolSize: number;
 };
 
@@ -143,5 +146,7 @@ export const buildPlayerFantasyProfile = ({
     return { ...point, matchup: log?.matchup ?? "", winLoss: log?.winLoss ?? null };
   });
 
-  return { readouts, breakdown, trend, poolSize: poolStats.poolSize };
+  const games = buildFantasyGameValues({ line, logs, poolStats, config, methodWeights });
+
+  return { readouts, breakdown, trend, games, poolSize: poolStats.poolSize };
 };

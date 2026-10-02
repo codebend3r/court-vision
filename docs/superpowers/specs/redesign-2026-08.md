@@ -431,7 +431,7 @@ Six readout cards (PTS, REB, AST, FG%, STL, TOV) with league rank underneath, co
 
 Then a profile panel: 72px accent-bordered initials tile with `var(--retro-4)`, name + team chip + position + jersey, a wrapping definition list of biographical facts, and the season select with game count right-aligned. Below that, Mode and Window keycap groups, the multi-series chart, and the game log table.
 
-Game log: Result column coloured `--color-win` / `--color-loss` and semibold; Date column is the sorted column.
+Game log: Result column coloured `--color-win` / `--color-loss` and semibold; Date column is the sorted column. The game log follows the view tab: GM, Date, Matchup, Result, and MIN lead on every view, then the box score (Regular), every advanced metric with its full name on the header (Advanced), or each game's fantasy value (Fantasy): the game's own Z and G, the rolling ten-game Z and G ending at it, and each included category's Z, signed, with negatives in `--color-loss`. A missed game's own values are dashes; its rolling value stands. A sort chosen on one view that names a column another view lacks falls back to newest first. When the fantasy view has nothing to value (career, or no line in the window's pool), the log keeps the box score.
 
 ### Teams
 

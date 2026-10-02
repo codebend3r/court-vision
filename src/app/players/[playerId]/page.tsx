@@ -39,6 +39,7 @@ import { prisma } from "@/lib/prisma";
 import {
   ADVANCED_MODES,
   buildAdvancedSeries,
+  pickAdvancedMetrics,
   toAdvancedMode,
   type AdvancedPoint,
 } from "@/lib/stats/advancedSeries";
@@ -50,6 +51,7 @@ import {
   rangeForSpan,
   resolveSeasonSelection,
   spanLabel,
+  type PlayerView,
 } from "@/lib/stats/searchParams";
 import { getFantasyPool } from "@/lib/valuation/loader";
 import {
@@ -153,11 +155,17 @@ export default async function PlayerPage({
   const advancedMode = toAdvancedMode({ mode });
   let advancedSeries: AdvancedPoint[] = [];
   let advancedLine: SeasonAverageStat[] = [];
+  // Every game's advanced row by gameId, for the game log; the chart and card
+  // only read the window's.
+  let advancedByGame = new Map<string, ReturnType<typeof pickAdvancedMetrics>>();
   if (view === "advanced" && logs.length > 0) {
     const advancedLogs = await prisma.playerAdvancedGameLog.findMany({
       where: isCareer ? { playerId: numericId } : { playerId: numericId, season: selection },
       orderBy: { gameDate: "asc" },
     });
+    advancedByGame = new Map(
+      advancedLogs.map((row) => [row.gameId, pickAdvancedMetrics({ log: row })]),
+    );
     const windowGameIds = new Set(windowLogs.map((log) => log.gameId));
     const windowAdvanced = advancedLogs.filter((row) => windowGameIds.has(row.gameId));
     const averages = averageAdvancedLogs({ logs: windowAdvanced });
@@ -240,6 +248,12 @@ export default async function PlayerPage({
       }),
     },
   ].filter(isPresentFact);
+
+  // The game log follows the view: the box score, each game's advanced
+  // metrics, or each game's fantasy value. Fantasy keeps the box score when
+  // there is nothing to value (career, or no line in the window's pool), since
+  // a log of dashes says less than the games themselves.
+  const logView: PlayerView = view === "fantasy" && fantasy === null ? "regular" : view;
 
   // An empty single-season view blames the season (the dropdown can recover);
   // career or a player with no data at all blames the player.
@@ -375,10 +389,14 @@ export default async function PlayerPage({
 
       {logs.length > 0 && (
         <PlayerGameLogTable
+          view={logView}
+          categories={fantasy?.breakdown.map(({ key, label }) => ({ key, label }))}
           rows={logs.map((log, index) => ({
             ...log,
             gameNumber: index + 1,
             gameDate: log.gameDate.toISOString(),
+            advanced: advancedByGame.get(log.gameId) ?? null,
+            fantasy: fantasy?.games[index] ?? null,
           }))}
         />
       )}

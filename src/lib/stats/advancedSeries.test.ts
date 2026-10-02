@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test";
 import {
   ADVANCED_MODES,
   buildAdvancedSeries,
+  pickAdvancedMetrics,
   toAdvancedMode,
   type AdvancedSeriesLog,
   type AdvancedSourceLog,
@@ -130,5 +131,35 @@ describe("toAdvancedMode", () => {
     expect(toAdvancedMode({ mode: "avg" })).toBe("avg");
     expect(toAdvancedMode({ mode: "totals" })).toBe("avg");
     expect(toAdvancedMode({ mode: "per36" })).toBe("avg");
+  });
+});
+
+describe("pickAdvancedMetrics", () => {
+  it("keeps exactly the fifteen metrics of a stored row, nulls included", () => {
+    const picked = pickAdvancedMetrics({
+      log: {
+        gameId: "g1",
+        pie: 0.2,
+        pace: 100,
+        assistPercentage: null,
+        assistRatio: 18,
+        assistToTurnover: 2,
+        defensiveRating: 110,
+        defensiveReboundPercentage: 0.2,
+        effectiveFieldGoalPercentage: 0.5,
+        netRating: -3,
+        offensiveRating: 107,
+        offensiveReboundPercentage: 0.05,
+        reboundPercentage: 0.12,
+        trueShootingPercentage: 0.58,
+        turnoverRatio: 10,
+        usagePercentage: 0.25,
+      },
+    });
+
+    expect(Object.keys(picked)).toHaveLength(15);
+    expect(picked).not.toHaveProperty("gameId");
+    expect(picked.netRating).toBe(-3);
+    expect(picked.assistPercentage).toBeNull();
   });
 });

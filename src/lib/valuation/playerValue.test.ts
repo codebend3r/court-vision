@@ -218,6 +218,13 @@ describe("buildPlayerFantasyProfile", () => {
     expect(typeof windowed?.trend[0]?.z).toBe("number");
   });
 
+  it("values every game in the season for the game log, aligned with the logs", () => {
+    expect(profile?.games).toHaveLength(15);
+    expect(typeof profile?.games[0]?.z).toBe("number");
+    expect(profile?.games[8]?.rollingZ).toBeNull();
+    expect(typeof profile?.games[14]?.rollingG).toBe("number");
+  });
+
   it("flags DNPs in the trend", () => {
     const withDnp = buildPlayerFantasyProfile({
       lines,

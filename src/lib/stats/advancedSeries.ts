@@ -72,6 +72,18 @@ const NULL_METRICS: Record<AdvancedMetricKey, number | null> = {
   usagePercentage: null,
 };
 
+// One game's fifteen metrics from a stored advanced row, without its ids and
+// dates: what the game log needs, and nothing more to serialize.
+export const pickAdvancedMetrics = ({
+  log,
+}: {
+  log: AdvancedSeriesLog;
+}): Record<AdvancedMetricKey, number | null> =>
+  ADVANCED_METRIC_KEYS.reduce<Record<AdvancedMetricKey, number | null>>(
+    (acc, key) => ({ ...acc, [key]: log[key] }),
+    NULL_METRICS,
+  );
+
 export const buildAdvancedSeries = ({
   logs,
   advancedLogs,

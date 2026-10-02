@@ -561,11 +561,12 @@ describe("PlayerPage", () => {
     expect(findManyAdvancedLogs).toHaveBeenCalledWith(
       expect.objectContaining({ where: { playerId: 3547238, season: "2025-26" } }),
     );
-    expect(screen.getByText("Advanced averages")).toBeInTheDocument();
     // TS% averages the two games; PIE and pace read as a share and a rating.
-    expect(screen.getByText("60.0%")).toBeInTheDocument();
-    expect(screen.getByText("15.0%")).toBeInTheDocument();
-    expect(screen.getByText("100.4")).toBeInTheDocument();
+    // Read inside the card: the game log prints each game's PIE and pace too.
+    const card = screen.getByRole("region", { name: "Advanced averages" });
+    expect(within(card).getByText("60.0%")).toBeInTheDocument();
+    expect(within(card).getByText("15.0%")).toBeInTheDocument();
+    expect(within(card).getByText("100.4")).toBeInTheDocument();
     expect(screen.queryByText("Season averages")).not.toBeInTheDocument();
     expect(screen.getByText("Shooting efficiency")).toBeInTheDocument();
     expect(container.querySelectorAll(".recharts-line")).toHaveLength(15);
@@ -656,5 +657,66 @@ describe("PlayerPage", () => {
 
     expect(screen.getByText(/no appearances/)).toBeInTheDocument();
     expect(screen.queryByText("Category breakdown")).not.toBeInTheDocument();
+  });
+
+  const gameLogColumns = (container: HTMLElement): string[] => {
+    const log = container.querySelector("main")?.lastElementChild;
+    if (!(log instanceof HTMLElement)) throw new Error("no game log");
+    return within(log)
+      .getAllByRole("columnheader")
+      .map((header) => header.textContent?.replace(/[↑↓↕]/g, "").trim() ?? "");
+  };
+
+  it("shows the box score in the game log on the regular view", async () => {
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
+
+    const { container } = await renderPage({ playerId: "3547238" });
+
+    expect(gameLogColumns(container)).toContain("FGM");
+  });
+
+  it("shows each game's advanced metrics in the game log on the advanced view", async () => {
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
+    findManyAdvancedLogs.mockResolvedValue([
+      buildAdvancedLog({ gameId: "0022500001", netRating: 7.5 }),
+    ]);
+
+    const { container } = await renderPage({
+      playerId: "3547238",
+      query: { view: "advanced", adv: "netRating" },
+    });
+
+    const columns = gameLogColumns(container);
+    expect(columns).toContain("Net Rtg");
+    expect(columns).not.toContain("FGM");
+    const log = container.querySelector("main")?.lastElementChild;
+    expect(log).toHaveTextContent("7.5");
+  });
+
+  it("shows each game's fantasy value in the game log on the fantasy view", async () => {
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
+    getFantasyPool.mockResolvedValue(buildPool());
+
+    const { container } = await renderPage({ playerId: "3547238", query: { view: "fantasy" } });
+
+    const columns = gameLogColumns(container);
+    expect(columns).toContain("Roll Z");
+    expect(columns).toContain("PTS Z");
+    expect(columns).not.toContain("FGM");
+  });
+
+  it("keeps the box score in the game log when the fantasy view has nothing to value", async () => {
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
+
+    const { container } = await renderPage({
+      playerId: "3547238",
+      query: { view: "fantasy", season: "career" },
+    });
+
+    expect(gameLogColumns(container)).toContain("FGM");
   });
 });
