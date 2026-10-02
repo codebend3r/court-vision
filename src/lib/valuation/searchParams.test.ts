@@ -90,8 +90,16 @@ describe("fantasyParsers", () => {
         slots: 13,
         range: "all",
         mode: "average",
+        layout: "table",
       }),
     ).toBe("");
+  });
+
+  it("defaults the layout to the table and accepts the two chart layouts", () => {
+    expect(fantasyParsers.layout.defaultValue).toBe("table");
+    expect(fantasyParsers.layout.parse("categories")).toBe("categories");
+    expect(fantasyParsers.layout.parse("rolling")).toBe("rolling");
+    expect(fantasyParsers.layout.parse("charts")).toBeNull();
   });
 
   it("serializes non-default state compactly", () => {

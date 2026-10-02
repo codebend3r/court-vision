@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { Suspense, use, useEffect, useMemo, useState } from "react";
 import { useQueryStates } from "nuqs";
 
 import {
@@ -8,25 +8,45 @@ import {
   type FantasyControlsChange,
 } from "@/components/FantasyControls/FantasyControls";
 import { FantasyPager } from "@/components/FantasyPager/FantasyPager";
+import {
+  FantasyValueCharts,
+  type FantasyChartRow,
+} from "@/components/FantasyValueCharts/FantasyValueCharts";
 import { FantasyValueLegend } from "@/components/FantasyValueLegend/FantasyValueLegend";
 import {
   FantasyValueTable,
   type FantasyTableRow,
 } from "@/components/FantasyValueTable/FantasyValueTable";
+import {
+  FantasyValueTrends,
+  type FantasyTrendRow,
+} from "@/components/FantasyValueTrends/FantasyValueTrends";
 import { type FantasySeed } from "@/lib/leagues/fantasyDefaults";
-import { type PlayerGameRange } from "@/lib/players/searchParams";
-import { CATEGORY_KEYS } from "@/lib/valuation/categories";
+import { gamesForRange, type PlayerGameRange } from "@/lib/players/searchParams";
+import { loadFantasyTrendLogs } from "@/lib/valuation/actions";
+import { buildCategoryBreakdown } from "@/lib/valuation/breakdown";
+import { CATEGORY_KEYS, CATEGORY_META } from "@/lib/valuation/categories";
 import { valuePlayers } from "@/lib/valuation/index";
 import {
+  FANTASY_LAYOUTS,
   fantasyParsers,
   isWeightedMethodKey,
   WEIGHTED_METHOD_KEYS,
+  type FantasyLayout,
   type FantasySortKey,
 } from "@/lib/valuation/searchParams";
+import { buildFantasyTrend, DEFAULT_TREND_GAMES } from "@/lib/valuation/trend";
+import {
+  isFantasyTrendLogsResult,
+  toDatedLogs,
+  type FantasyTrendLogsResult,
+} from "@/lib/valuation/trendLogs";
 import {
   type FantasyPlayerValues,
   type FantasyStatLine,
   type MethodWeights,
+  type PoolStats,
+  type ValuationConfig,
   type WeightedMethodKey,
 } from "@/lib/valuation/types";
 
@@ -39,6 +59,12 @@ const WINDOW_LABELS: Record<PlayerGameRange, string> = {
   last20: "Last 20 games",
   last40: "Last 40 games",
   last60: "Last 60 games",
+};
+
+const LAYOUT_LABELS: Record<FantasyLayout, string> = {
+  table: "Table",
+  categories: "Categories",
+  rolling: "Rolling",
 };
 
 const NEUTRAL_VALUES = (playerId: number): FantasyPlayerValues => ({
@@ -71,6 +97,61 @@ export type FantasyValueViewProps = {
   leagueSeed?: FantasySeed;
 };
 
+type RollingRowsProps = {
+  logsPromise: Promise<FantasyTrendLogsResult>;
+  rows: readonly FantasyTableRow[];
+  poolStats: PoolStats;
+  config: ValuationConfig;
+  methodWeights: MethodWeights;
+  windowGames: number;
+  sort: FantasySortKey;
+  dir: "asc" | "desc";
+  isSignedIn: boolean;
+  onSort: (args: { sort: FantasySortKey }) => void;
+};
+
+// Suspends on the page's game logs, then scores each row's rolling value
+// against the pool the view already holds. Kept apart from the view so only
+// this subtree waits; the controls, summary, and pager stay interactive.
+function RollingRows({
+  logsPromise,
+  rows,
+  poolStats,
+  config,
+  methodWeights,
+  windowGames,
+  ...listProps
+}: RollingRowsProps) {
+  const result: unknown = use(logsPromise);
+  if (!isFantasyTrendLogsResult(result) || result.status === "error") {
+    return (
+      <FantasyValueTrends
+        rows={rows.map((row): FantasyTrendRow => ({ ...row, trend: [] }))}
+        status="error"
+        windowGames={windowGames}
+        {...listProps}
+      />
+    );
+  }
+  const logsById = new Map(
+    result.players.map((player) => [player.playerId, toDatedLogs({ logs: player.logs })]),
+  );
+  const trendRows = rows.map((row): FantasyTrendRow => ({
+    ...row,
+    trend: buildFantasyTrend({
+      line: row,
+      logs: logsById.get(row.playerId) ?? [],
+      poolStats,
+      config,
+      methodWeights,
+      windowGames,
+    }),
+  }));
+  return (
+    <FantasyValueTrends rows={trendRows} status="ready" windowGames={windowGames} {...listProps} />
+  );
+}
+
 // Client orchestrator: URL state in, table out. The server ships the window's
 // stat lines once; every config change (weights, exclusions, league size,
 // sort, search, paging) recomputes every method's score in memory with no
@@ -98,22 +179,21 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
   );
   const basis = params.mode === "total" ? "total" : "perGame";
 
+  const config = useMemo(
+    (): ValuationConfig => ({
+      categories: [...included],
+      weights: {},
+      basis,
+      teams: params.teams,
+      rosterSlots: params.slots,
+      scoring: params.s,
+    }),
+    [included, basis, params.teams, params.slots, params.s],
+  );
+
   const { values, poolStats } = useMemo(
-    () =>
-      valuePlayers({
-        lines,
-        config: {
-          categories: [...included],
-          weights: {},
-          basis,
-          teams: params.teams,
-          rosterSlots: params.slots,
-          scoring: params.s,
-        },
-        methodWeights: params.w,
-        range: params.range,
-      }),
-    [lines, included, params.w, basis, params.teams, params.slots, params.s, params.range],
+    () => valuePlayers({ lines, config, methodWeights: params.w, range: params.range }),
+    [lines, config, params.w, params.range],
   );
 
   const scored = useMemo(() => {
@@ -154,13 +234,55 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
   const rangeStart = total === 0 ? 0 : (page - 1) * params.size + 1;
   const rangeEnd = Math.min(total, page * params.size);
 
-  const pageRows: FantasyTableRow[] = visible
-    .slice((page - 1) * params.size, page * params.size)
-    .map(({ line, values: playerValues }, index) => ({
-      ...line,
-      values: playerValues,
-      rank: (page - 1) * params.size + index + 1,
-    }));
+  const pageRows = useMemo(
+    (): FantasyTableRow[] =>
+      visible
+        .slice((page - 1) * params.size, page * params.size)
+        .map(({ line, values: playerValues }, index) => ({
+          ...line,
+          values: playerValues,
+          rank: (page - 1) * params.size + index + 1,
+        })),
+    [visible, page, params.size],
+  );
+
+  // The rolling layout is the one view that needs more than the pool: each
+  // row's season game logs. They are fetched once per page of players, from
+  // an effect rather than during render (a server action started mid-render
+  // trips React's update-while-rendering check and has no server to call
+  // during SSR), and read with `use` inside Suspense below. The promise is
+  // tagged with the ids it answers for, so a page change never reads a stale
+  // one: until the new fetch is in flight the rows show their placeholders.
+  const pageIds = useMemo(() => pageRows.map((row) => row.playerId), [pageRows]);
+  const [logsRequest, setLogsRequest] = useState<{
+    pageIds: readonly number[];
+    promise: Promise<FantasyTrendLogsResult>;
+  } | null>(null);
+  useEffect(() => {
+    if (params.layout !== "rolling" || pageIds.length === 0) return;
+    setLogsRequest({ pageIds, promise: loadFantasyTrendLogs({ playerIds: pageIds }) });
+  }, [params.layout, pageIds]);
+  const logsPromise =
+    params.layout === "rolling" && logsRequest?.pageIds === pageIds ? logsRequest.promise : null;
+  // The rolling charts follow a Games window the filter names, and fall back
+  // to recent form (not the whole season) when the filter is on All games.
+  const windowGames = gamesForRange({ range: params.range }) ?? DEFAULT_TREND_GAMES;
+
+  // The categories layout scores only the page in view: fifty breakdowns
+  // against a pool already computed, not the whole pool's again.
+  const chartRows: FantasyChartRow[] =
+    params.layout === "categories"
+      ? pageRows.map((row) => ({
+          ...row,
+          breakdown: buildCategoryBreakdown({
+            line: row,
+            poolStats,
+            config,
+            methodWeights: params.w,
+          }),
+        }))
+      : [];
+  const chartCategories = CATEGORY_META.filter((meta) => included.some((key) => key === meta.key));
 
   const onControlsChange = ({ w, ...rest }: FantasyControlsChange) => {
     // The controls edit a flat weight map; it lands under the sorted column's
@@ -221,9 +343,24 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
       )}
       <section
         className={styles.results}
-        key={`${params.sort}:${params.dir}:${params.range}:${params.mode}:${page}`}
+        key={`${params.sort}:${params.dir}:${params.range}:${params.mode}:${page}:${params.layout}`}
       >
-        <p className={styles.summary}>{summary}</p>
+        <header className={styles.summaryRow}>
+          <p className={styles.summary}>{summary}</p>
+          <span className={styles.layoutGroup} role="group" aria-label="Layout">
+            {FANTASY_LAYOUTS.map((layout) => (
+              <button
+                key={layout}
+                type="button"
+                aria-pressed={params.layout === layout}
+                onClick={() => setParams({ layout })}
+                className={styles.layoutOption}
+              >
+                {LAYOUT_LABELS[layout]}
+              </button>
+            ))}
+          </span>
+        </header>
         {total > 0 && (
           <>
             <FantasyPager
@@ -233,13 +370,64 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
               onPageChange={({ page: nextPage }) => setParams({ page: nextPage })}
               onSizeChange={({ size }) => setParams({ size, page: 1 })}
             />
-            <FantasyValueTable
-              isSignedIn={isSignedIn}
-              rows={pageRows}
-              sort={params.sort}
-              dir={params.dir}
-              onSort={onSort}
-            />
+            {params.layout === "categories" && (
+              <FantasyValueCharts
+                isSignedIn={isSignedIn}
+                rows={chartRows}
+                categories={chartCategories}
+                sort={params.sort}
+                dir={params.dir}
+                onSort={onSort}
+              />
+            )}
+            {params.layout === "rolling" &&
+              (logsPromise === null ? (
+                <FantasyValueTrends
+                  rows={pageRows.map((row): FantasyTrendRow => ({ ...row, trend: [] }))}
+                  status="loading"
+                  windowGames={windowGames}
+                  isSignedIn={isSignedIn}
+                  sort={params.sort}
+                  dir={params.dir}
+                  onSort={onSort}
+                />
+              ) : (
+                <Suspense
+                  fallback={
+                    <FantasyValueTrends
+                      rows={pageRows.map((row): FantasyTrendRow => ({ ...row, trend: [] }))}
+                      status="loading"
+                      windowGames={windowGames}
+                      isSignedIn={isSignedIn}
+                      sort={params.sort}
+                      dir={params.dir}
+                      onSort={onSort}
+                    />
+                  }
+                >
+                  <RollingRows
+                    logsPromise={logsPromise}
+                    rows={pageRows}
+                    poolStats={poolStats}
+                    config={config}
+                    methodWeights={params.w}
+                    windowGames={windowGames}
+                    isSignedIn={isSignedIn}
+                    sort={params.sort}
+                    dir={params.dir}
+                    onSort={onSort}
+                  />
+                </Suspense>
+              ))}
+            {params.layout === "table" && (
+              <FantasyValueTable
+                isSignedIn={isSignedIn}
+                rows={pageRows}
+                sort={params.sort}
+                dir={params.dir}
+                onSort={onSort}
+              />
+            )}
             <FantasyValueLegend
               poolSize={poolStats.poolSize}
               windowLabel={WINDOW_LABELS[params.range]}

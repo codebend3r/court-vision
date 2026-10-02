@@ -139,6 +139,10 @@ const isPlayerSortKey = (value: string | undefined): value is PlayerSortKey =>
 export const isPlayerGameRange = (value: string | undefined): value is PlayerGameRange =>
   PLAYER_GAME_RANGES.some((range) => range === value);
 
+// The window a lastN range covers, in games; the whole season has no cap.
+export const gamesForRange = ({ range }: { range: PlayerGameRange }): number | null =>
+  range === "all" ? null : Number.parseInt(range.replace("last", ""), 10);
+
 export const isPlayerStatMode = (value: string | undefined): value is PlayerStatMode =>
   value === "average" || value === "total";
 

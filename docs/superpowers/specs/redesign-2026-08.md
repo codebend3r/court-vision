@@ -423,6 +423,8 @@ Stat-view tabs as keycaps (Regular / Advanced / Fantasy value / Starred) with th
 
 Table per §7. Advanced and Fantasy views render the existing `AdvancedStatsLegend` / `FantasyValueLegend` components below it.
 
+Fantasy view also carries a Table / Categories / Rolling keycap trio beside the result count (`layout` in the URL). Categories renders the same sorted, paged rows as a list: rank, avatar, name, Z and G readouts (the readout headers sort), then the player page's category breakdown squashed to a 48px bar chart. Band labels sit once in the header over every row's bands; every row on the page shares one symmetric scale so bars compare across players. Narrow containers drop the chart under the player line at full width. Rolling swaps the bars for the rolling ten-game Z and G lines (the player page's trend panel, squashed): the page's game logs load through a server action once per page of players and are read with `use` inside Suspense, so the rows render immediately with placeholders and fill in when the logs land; a player without ten games this season says so instead of drawing. The charts cover the window the Games filter names, or each player's last 20 games when it is on All games. Each row starts at its first game with a rolling value, so no row opens on empty space, and is labelled at both ends with the season game numbers it covers (rows can differ, so the numbers live on each row, not in the header); the tooltip names the hovered game the same way.
+
 ### Player detail
 
 Six readout cards (PTS, REB, AST, FG%, STL, TOV) with league rank underneath, coloured `--color-accent-strong` at rank 1, `--color-highlight` in the top 5, muted otherwise.

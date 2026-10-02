@@ -1,104 +1,33 @@
 "use client";
 
-import { type ReactElement } from "react";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import {
   Bar,
   BarChart,
   CartesianGrid,
-  Rectangle,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
-  type BarShapeProps,
-  type RectangleProps,
-  type TooltipPayload,
 } from "recharts";
 
 import { useTheme } from "@/lib/theme/ThemeProvider";
-import type { FantasyCategoryBreakdown, FantasyTrendPoint } from "@/lib/valuation/playerValue";
+import type { FantasyCategoryBreakdown } from "@/lib/valuation/breakdown";
+import type { FantasyTrendPoint } from "@/lib/valuation/playerValue";
 import { ROLLING_WINDOW_GAMES } from "@/lib/watchlist/trend";
 import { MetricLineChart, type MetricMeta } from "@/components/MetricLineChart/MetricLineChart";
+import {
+  BreakdownTooltip,
+  formatSigned,
+  METHOD_LABELS,
+  SignedBar,
+  type MethodKey,
+} from "@/components/PlayerFantasyChart/breakdownChart";
 import { getChartChrome, getSeriesPalette } from "@/components/PlayerStatChart/statMeta";
 import { Switch } from "@/components/Switch/Switch";
 
 import styles from "@/components/PlayerFantasyChart/PlayerFantasyChart.module.scss";
-
-type MethodKey = "z" | "g";
-
-const METHOD_LABELS: Record<MethodKey, string> = { z: "Z-Score", g: "G-Score" };
-
-const formatSigned = (value: number): string =>
-  value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
-
-// Per-game display beside a category's score: counting stats to one decimal,
-// ratio categories as the make rate the Fantasy tab prints (".480").
-const formatPerGame = (entry: FantasyCategoryBreakdown): string =>
-  entry.kind === "ratio"
-    ? entry.perGame.toFixed(3).replace(/^0(?=\.)/, "")
-    : entry.perGame.toFixed(1);
-
-// A bar's rounded end belongs at the data end. Recharts applies `radius` to
-// the same rectangle corners whichever way the bar grows, so a negative bar
-// needs its bottom corners rounded instead of its top.
-function SignedBar(props: BarShapeProps): ReactElement {
-  const value = Array.isArray(props.value) ? props.value[1] - props.value[0] : props.value;
-  const radius: NonNullable<RectangleProps["radius"]> = value < 0 ? [0, 0, 4, 4] : [4, 4, 0, 0];
-  return (
-    <Rectangle
-      x={props.x}
-      y={props.y}
-      width={props.width}
-      height={props.height}
-      fill={props.fill}
-      radius={radius}
-    />
-  );
-}
-
-type BreakdownTooltipProps = {
-  active?: boolean;
-  payload?: TooltipPayload;
-  breakdown: readonly FantasyCategoryBreakdown[];
-  colors: Record<MethodKey, string>;
-};
-
-function BreakdownTooltip({
-  active,
-  payload,
-  breakdown,
-  colors,
-}: BreakdownTooltipProps): ReactElement | null {
-  if (!active || !payload || !payload.length) {
-    return null;
-  }
-  const hovered: unknown = payload[0].payload;
-  if (typeof hovered !== "object" || hovered === null || !("key" in hovered)) {
-    return null;
-  }
-  const entry = breakdown.find((candidate) => candidate.key === hovered.key);
-  if (entry === undefined) {
-    return null;
-  }
-
-  return (
-    <div className={styles.tooltip}>
-      <p className={styles.tooltipHeader}>
-        {entry.fullName} · {formatPerGame(entry)} per game
-      </p>
-      <p className={styles.tooltipRow}>
-        <span className={styles.dot} style={{ backgroundColor: colors.z }} />
-        {METHOD_LABELS.z}: {formatSigned(entry.z)}
-      </p>
-      <p className={styles.tooltipRow}>
-        <span className={styles.dot} style={{ backgroundColor: colors.g }} />
-        {METHOD_LABELS.g}: {formatSigned(entry.g)}
-      </p>
-    </div>
-  );
-}
 
 export type PlayerFantasyChartProps = {
   breakdown: FantasyCategoryBreakdown[];

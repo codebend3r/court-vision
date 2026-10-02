@@ -1,31 +1,19 @@
 import { type FantasySeed } from "@/lib/leagues/fantasyDefaults";
 import { type PlayerGameRange } from "@/lib/players/searchParams";
 import { type MetricPoint } from "@/lib/stats/metricPoint";
-import {
-  CATEGORY_KEYS,
-  CATEGORY_META,
-  categoryPerGame,
-  type CategoryKind,
-} from "@/lib/valuation/categories";
+import { buildCategoryBreakdown, type FantasyCategoryBreakdown } from "@/lib/valuation/breakdown";
+import { CATEGORY_KEYS } from "@/lib/valuation/categories";
 import { valuePlayers } from "@/lib/valuation/index";
-import { scoreGScore } from "@/lib/valuation/methods/gscore";
 import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
-import { scoreZScore } from "@/lib/valuation/methods/zscore";
 import { FANTASY_METHODS, type FantasyMethodKey } from "@/lib/valuation/registry";
+import { buildFantasyTrend } from "@/lib/valuation/trend";
 import {
-  type Category,
   type FantasyPlayerValues,
   type FantasyStatLine,
   type MethodWeights,
   type ValuationConfig,
-  type WeightedMethodKey,
 } from "@/lib/valuation/types";
-import {
-  buildRollingGSeries,
-  buildRollingZSeries,
-  type DatedLog,
-  ROLLING_WINDOW_GAMES,
-} from "@/lib/watchlist/trend";
+import { type DatedLog } from "@/lib/watchlist/trend";
 
 // One method column's score for the viewed player, with their standing among
 // every player valued in the same window (competition ranking: ties share).
@@ -35,18 +23,6 @@ export type FantasyMethodReadout = {
   value: number;
   rank: number;
   of: number;
-};
-
-// Where the value comes from: each included category's sign-corrected raw z
-// and g beside the per-game line that produced them.
-export type FantasyCategoryBreakdown = {
-  key: Category;
-  label: string;
-  fullName: string;
-  kind: CategoryKind;
-  perGame: number;
-  z: number;
-  g: number;
 };
 
 // Rolling value per game: null until the window fills, so the chart draws
@@ -107,16 +83,6 @@ const rankAmong = ({
   pick: (values: FantasyPlayerValues) => number;
 }): number => values.filter((entry) => pick(entry) > value).length + 1;
 
-const weightedConfig = ({
-  config,
-  methodWeights,
-  method,
-}: {
-  config: ValuationConfig;
-  methodWeights: MethodWeights;
-  method: WeightedMethodKey;
-}): ValuationConfig => ({ ...config, weights: methodWeights[method] ?? config.weights });
-
 // Everything the fantasy view shows for one player, scored the way the Fantasy
 // Value tab scores the whole pool (lib/valuation/index) so the two agree to
 // the decimal. `logs` is the player's full season in date order; the trend
@@ -158,39 +124,24 @@ export const buildPlayerFantasyProfile = ({
     };
   });
 
-  const zConfig = weightedConfig({ config, methodWeights, method: "z" });
-  const gConfig = weightedConfig({ config, methodWeights, method: "g" });
-  const [zValue] = scoreZScore({ lines: [line], poolStats, config: zConfig });
-  const [gValue] = scoreGScore({ lines: [line], poolStats, config: gConfig });
-  const breakdown = CATEGORY_META.filter((meta) =>
-    config.categories.some((category) => category === meta.key),
-  ).map((meta): FantasyCategoryBreakdown => ({
-    key: meta.key,
-    label: meta.label,
-    fullName: meta.fullName,
-    kind: meta.kind,
-    perGame: categoryPerGame({ line, category: meta.key }),
-    z: zValue?.breakdown[meta.key]?.raw ?? 0,
-    g: gValue?.breakdown[meta.key]?.raw ?? 0,
-  }));
+  const breakdown = buildCategoryBreakdown({ line, poolStats, config, methodWeights });
 
-  // The rolling scorers emit one point per game from the window size onward;
-  // zip them back onto the full log so every game keeps its index.
-  const seriesArgs = { playerId, fullName: line.fullName, logs, poolStats };
-  const zPoints = buildRollingZSeries({ ...seriesArgs, config: zConfig }).points;
-  const gPoints = buildRollingGSeries({ ...seriesArgs, config: gConfig }).points;
-  const lead = ROLLING_WINDOW_GAMES - 1;
-  const scored = logs.map((log, index): FantasyTrendPoint => ({
-    gameIndex: index + 1,
-    gameDate: log.gameDate.toISOString(),
-    matchup: log.matchup,
-    winLoss: log.winLoss,
-    dnp: log.minutes === 0,
-    z: index < lead ? null : (zPoints[index - lead]?.value ?? null),
-    g: index < lead ? null : (gPoints[index - lead]?.value ?? null),
-  }));
-  const windowed = windowGames === null ? scored : scored.slice(-windowGames);
-  const trend = windowed.map((point, index) => ({ ...point, gameIndex: index + 1 }));
+  // The shared trend carries the value per game; the matchup and result come
+  // from this page's richer logs. The trend is the tail of `logs`, so its
+  // i-th point belongs to the log `offset` places in.
+  const trendValues = buildFantasyTrend({
+    line,
+    logs,
+    poolStats,
+    config,
+    methodWeights,
+    windowGames,
+  });
+  const offset = logs.length - trendValues.length;
+  const trend = trendValues.map((point, index): FantasyTrendPoint => {
+    const log = logs[offset + index];
+    return { ...point, matchup: log?.matchup ?? "", winLoss: log?.winLoss ?? null };
+  });
 
   return { readouts, breakdown, trend, poolSize: poolStats.poolSize };
 };

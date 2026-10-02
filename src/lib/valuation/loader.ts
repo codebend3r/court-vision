@@ -1,8 +1,9 @@
 import { unstable_cache } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
-import { type PlayerGameRange } from "@/lib/players/searchParams";
+import { gamesForRange, type PlayerGameRange } from "@/lib/players/searchParams";
 import { aggregateWindowLogs } from "@/lib/valuation/aggregate";
+import { latestSeason } from "@/lib/valuation/season";
 import { type FantasyStatLine } from "@/lib/valuation/types";
 
 const identitySelect = {
@@ -28,17 +29,6 @@ const statSelect = {
   fga: true,
   ftm: true,
   fta: true,
-};
-
-// A valuation pool must come from a single season; mixing each player's
-// personal latest season would compare 2023 lines against 2025 lines.
-const latestSeason = async (): Promise<string | null> => {
-  const row = await prisma.playerSeasonStats.findFirst({
-    where: { seasonType: "Regular Season" },
-    orderBy: { season: "desc" },
-    select: { season: true },
-  });
-  return row?.season ?? null;
 };
 
 // All ranges go through game logs (season aggregates lack the second moments
@@ -85,10 +75,7 @@ const fetchPool = async ({
 }): Promise<FantasyStatLine[]> => {
   const season = requestedSeason ?? (await latestSeason());
   if (season === null) return [];
-  return fetchWindowLines({
-    season,
-    gameLimit: range === "all" ? null : Number.parseInt(range.replace("last", ""), 10),
-  });
+  return fetchWindowLines({ season, gameLimit: gamesForRange({ range }) });
 };
 
 // Cache key is the range and the season alone — user config (weights, league
