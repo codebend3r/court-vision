@@ -89,10 +89,12 @@ export function FantasyValueCharts({
       bands={
         <span
           className={styles.bandLabels}
-          style={{ gridTemplateColumns: `repeat(${categories.length}, 1fr)` }}
+          style={{ gridTemplateColumns: `repeat(${categories.length}, minmax(0, 1fr))` }}
         >
           {categories.map((category) => (
-            <span key={category.key}>{category.label}</span>
+            <span key={category.key} title={category.label}>
+              {category.label}
+            </span>
           ))}
         </span>
       }

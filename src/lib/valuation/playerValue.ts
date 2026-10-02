@@ -7,7 +7,7 @@ import { buildFantasyGameValues, type FantasyGameValue } from "@/lib/valuation/g
 import { valuePlayers } from "@/lib/valuation/index";
 import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
 import { FANTASY_METHODS, type FantasyMethodKey } from "@/lib/valuation/registry";
-import { buildFantasyTrend } from "@/lib/valuation/trend";
+import { type FantasyTrendValue } from "@/lib/valuation/trend";
 import {
   type FantasyPlayerValues,
   type FantasyStatLine,
@@ -28,7 +28,7 @@ export type FantasyMethodReadout = {
 
 // Rolling value per game: null until the window fills, so the chart draws
 // nothing rather than a stub built on too few games.
-export type FantasyTrendPoint = MetricPoint & { z: number | null; g: number | null };
+export type FantasyTrendPoint = FantasyTrendValue & Pick<MetricPoint, "matchup" | "winLoss">;
 
 export type PlayerFantasyProfile = {
   readouts: FantasyMethodReadout[];
@@ -129,24 +129,21 @@ export const buildPlayerFantasyProfile = ({
 
   const breakdown = buildCategoryBreakdown({ line, poolStats, config, methodWeights });
 
-  // The shared trend carries the value per game; the matchup and result come
-  // from this page's richer logs. The trend is the tail of `logs`, so its
-  // i-th point belongs to the log `offset` places in.
-  const trendValues = buildFantasyTrend({
-    line,
-    logs,
-    poolStats,
-    config,
-    methodWeights,
-    windowGames,
-  });
-  const offset = logs.length - trendValues.length;
-  const trend = trendValues.map((point, index): FantasyTrendPoint => {
-    const log = logs[offset + index];
-    return { ...point, matchup: log?.matchup ?? "", winLoss: log?.winLoss ?? null };
-  });
-
+  // Game values compute the full-season rolling timeline once. The chart is
+  // just a window onto those same readings, with metadata from the log spine.
   const games = buildFantasyGameValues({ line, logs, poolStats, config, methodWeights });
+  const points = logs.map((log, index): FantasyTrendPoint => ({
+    gameIndex: index + 1,
+    gameNumber: index + 1,
+    gameDate: log.gameDate.toISOString(),
+    matchup: log.matchup,
+    winLoss: log.winLoss,
+    dnp: log.minutes === 0,
+    z: games[index]?.rollingZ ?? null,
+    g: games[index]?.rollingG ?? null,
+  }));
+  const windowed = windowGames === null ? points : points.slice(-windowGames);
+  const trend = windowed.map((point, index) => ({ ...point, gameIndex: index + 1 }));
 
   return { readouts, breakdown, trend, games, poolSize: poolStats.poolSize };
 };

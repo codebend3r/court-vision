@@ -108,7 +108,7 @@
 
 .player {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
@@ -177,6 +177,7 @@
 // Whatever labels the x direction, sitting over the chart track.
 .bands {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
 }
 
@@ -190,15 +191,71 @@
 @container (max-width: 56rem) {
   .head,
   .row {
-    grid-template-columns: 2.5rem 1fr 6rem 6rem;
+    grid-template-columns: 2.5rem minmax(0, 1fr) 6rem 6rem;
   }
 
   .wrapper[data-star="true"] :is(.head, .row) {
-    grid-template-columns: auto 2.5rem 1fr 6rem 6rem;
+    grid-template-columns: auto 2.5rem minmax(0, 1fr) 6rem 6rem;
   }
 
   .bands,
   .chart {
     grid-column: 1 / -1;
+  }
+}
+
+// At phone widths (or zoomed layouts), give identity its own full-width
+// row and place the two readouts below it rather than squeezing the name.
+@container (max-width: 32rem) {
+  .caption {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .head,
+  .row,
+  .wrapper[data-star="true"] :is(.head, .row) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "rank rank"
+      "player player"
+      "z g"
+      "chart chart";
+  }
+
+  .wrapper[data-star="true"] :is(.head, .row) {
+    grid-template-areas:
+      "star rank"
+      "player player"
+      "z g"
+      "chart chart";
+  }
+
+  .starCell {
+    grid-area: star;
+    justify-self: start;
+  }
+
+  .rank {
+    grid-area: rank;
+  }
+
+  .playerHeading,
+  .player {
+    grid-area: player;
+  }
+
+  .sortButton[data-method="z"],
+  .readout[data-method="z"] {
+    grid-area: z;
+  }
+
+  .sortButton[data-method="g"],
+  .readout[data-method="g"] {
+    grid-area: g;
+  }
+
+  .bands,
+  .chart {
+    grid-area: chart;
   }
 }

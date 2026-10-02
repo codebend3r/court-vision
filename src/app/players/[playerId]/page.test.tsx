@@ -542,6 +542,47 @@ describe("PlayerPage", () => {
     expect(last?.querySelector("h2")).toHaveTextContent("Game log");
   });
 
+  it.each(["advanced", "fantasy"])(
+    "loads only the selected %s view's pool, not the regular leaderboard",
+    async (view) => {
+      findUniquePlayer.mockResolvedValue(player);
+      findManyGameLogs.mockResolvedValue([buildLog()]);
+      findManyAdvancedLogs.mockResolvedValue([buildAdvancedLog()]);
+      getFantasyPool.mockResolvedValue(buildPool());
+
+      await renderPage({ playerId: "3547238", query: { view } });
+
+      // The player's season rows still drive the dropdown; the league-wide
+      // season pool belongs exclusively to the regular view.
+      expect(findManySeasonStats).toHaveBeenCalledTimes(1);
+      expect(findManySeasonStats).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { playerId: 3547238, seasonType: "Regular Season" } }),
+      );
+      if (view === "advanced") {
+        expect(findManyAdvancedLogs).toHaveBeenCalledTimes(1);
+        expect(getFantasyPool).not.toHaveBeenCalled();
+        expect(getActiveLeague).not.toHaveBeenCalled();
+        expect(getProfile).not.toHaveBeenCalled();
+      } else {
+        expect(getFantasyPool).toHaveBeenCalledTimes(1);
+        expect(findManyAdvancedLogs).not.toHaveBeenCalled();
+      }
+    },
+  );
+
+  it("does not load advanced or fantasy dependencies for the regular view", async () => {
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([buildLog()]);
+
+    await renderPage({ playerId: "3547238" });
+
+    expect(findManySeasonStats).toHaveBeenCalledTimes(2);
+    expect(findManyAdvancedLogs).not.toHaveBeenCalled();
+    expect(getFantasyPool).not.toHaveBeenCalled();
+    expect(getActiveLeague).not.toHaveBeenCalled();
+    expect(getProfile).not.toHaveBeenCalled();
+  });
+
   it("renders the advanced view: window averages, scale panels, two modes, and the legend", async () => {
     findUniquePlayer.mockResolvedValue(player);
     findManyGameLogs.mockResolvedValue([

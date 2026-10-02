@@ -74,6 +74,7 @@ export function FantasyChartList<Row extends FantasyTableRow>({
         onClick={() => onSort({ sort: key })}
         className={styles.sortButton}
         data-active={isActive ? "true" : "false"}
+        data-method={key}
       >
         {METHOD_LABELS[key]}
         {isActive && <span aria-hidden="true">{dir === "asc" ? "▲" : "▼"}</span>}
@@ -84,6 +85,7 @@ export function FantasyChartList<Row extends FantasyTableRow>({
   const readout = ({ key, value }: { key: MethodKey; value: number }) => (
     <span
       className={styles.readout}
+      data-method={key}
       data-sort-active={sort === key || undefined}
       data-negative={value < 0 || undefined}
     >
@@ -115,7 +117,7 @@ export function FantasyChartList<Row extends FantasyTableRow>({
           <span className={styles.rank} title="Rank in the current sort">
             #
           </span>
-          <span>Player</span>
+          <span className={styles.playerHeading}>Player</span>
           {sortHeader({ key: "z" })}
           {sortHeader({ key: "g" })}
           <span className={styles.bands}>{bands}</span>

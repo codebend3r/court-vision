@@ -251,19 +251,29 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
   // an effect rather than during render (a server action started mid-render
   // trips React's update-while-rendering check and has no server to call
   // during SSR), and read with `use` inside Suspense below. The promise is
-  // tagged with the ids it answers for, so a page change never reads a stale
-  // one: until the new fetch is in flight the rows show their placeholders.
-  const pageIds = useMemo(() => pageRows.map((row) => row.playerId), [pageRows]);
+  // keyed by the unordered player set, not the freshly scored row objects:
+  // sorting and weight changes reuse it. A new server pool invalidates it so
+  // a refreshed season/range never reads logs from the previous payload.
+  const idsKey = pageRows
+    .map((row) => row.playerId)
+    .sort((a, b) => a - b)
+    .join(",");
   const [logsRequest, setLogsRequest] = useState<{
-    pageIds: readonly number[];
+    idsKey: string;
+    lines: readonly FantasyStatLine[];
     promise: Promise<FantasyTrendLogsResult>;
   } | null>(null);
+  const requestMatches =
+    logsRequest !== null && logsRequest.idsKey === idsKey && logsRequest.lines === lines;
   useEffect(() => {
-    if (params.layout !== "rolling" || pageIds.length === 0) return;
-    setLogsRequest({ pageIds, promise: loadFantasyTrendLogs({ playerIds: pageIds }) });
-  }, [params.layout, pageIds]);
-  const logsPromise =
-    params.layout === "rolling" && logsRequest?.pageIds === pageIds ? logsRequest.promise : null;
+    if (params.layout !== "rolling" || idsKey === "" || requestMatches) return;
+    setLogsRequest({
+      idsKey,
+      lines,
+      promise: loadFantasyTrendLogs({ playerIds: idsKey.split(",").map(Number) }),
+    });
+  }, [params.layout, idsKey, lines, requestMatches]);
+  const logsPromise = requestMatches && logsRequest !== null ? logsRequest.promise : null;
   // The rolling charts follow a Games window the filter names, and fall back
   // to recent form (not the whole season) when the filter is on All games.
   const windowGames = gamesForRange({ range: params.range }) ?? DEFAULT_TREND_GAMES;

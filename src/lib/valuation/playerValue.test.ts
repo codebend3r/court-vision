@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, vi } from "bun:test";
 
 import { makeStatLine } from "@/lib/valuation/fixtures";
 import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
@@ -8,6 +8,7 @@ import {
   type FantasyProfileLog,
 } from "@/lib/valuation/playerValue";
 import { FANTASY_METHODS } from "@/lib/valuation/registry";
+import * as trendModule from "@/lib/valuation/trend";
 
 // A pool spread out in every category so each sigma is honestly non-zero.
 const poolLine = (index: number) =>
@@ -223,6 +224,40 @@ describe("buildPlayerFantasyProfile", () => {
     expect(typeof profile?.games[0]?.z).toBe("number");
     expect(profile?.games[8]?.rollingZ).toBeNull();
     expect(typeof profile?.games[14]?.rollingG).toBe("number");
+  });
+
+  it("computes one rolling timeline shared by the windowed chart and full game log", () => {
+    const buildTrend = vi.spyOn(trendModule, "buildFantasyTrend");
+    try {
+      const shared = buildPlayerFantasyProfile({
+        lines,
+        playerId: 7,
+        config,
+        methodWeights,
+        range: "last5",
+        logs: [...logs, log({ gameId: "dnp", day: 16, minutes: 0, pts: 0 })],
+        windowGames: 5,
+      });
+
+      if (shared === null) throw new Error("missing fantasy profile");
+      expect(buildTrend).toHaveBeenCalledTimes(1);
+      expect(buildTrend).toHaveBeenCalledWith(expect.objectContaining({ windowGames: null }));
+      expect(shared.games).toHaveLength(16);
+      expect(
+        shared.trend.map(({ gameIndex, gameNumber, z, g }) => ({ gameIndex, gameNumber, z, g })),
+      ).toEqual(
+        shared.games.slice(-5).map((game, index) => ({
+          gameIndex: index + 1,
+          gameNumber: index + 12,
+          z: game.rollingZ,
+          g: game.rollingG,
+        })),
+      );
+      expect(shared.trend.at(-1)?.matchup ?? "").toBe("LAL vs. OPP16");
+      expect(shared.trend.at(-1)?.dnp ?? false).toBe(true);
+    } finally {
+      buildTrend.mockRestore();
+    }
   });
 
   it("flags DNPs in the trend", () => {

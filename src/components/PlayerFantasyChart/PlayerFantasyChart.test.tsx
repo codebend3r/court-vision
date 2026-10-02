@@ -51,6 +51,7 @@ const trendPoint = ({
   g: number | null;
 }): FantasyTrendPoint => ({
   gameIndex,
+  gameNumber: gameIndex,
   gameDate: new Date(Date.UTC(2026, 0, gameIndex)).toISOString(),
   matchup: `vs. OPP${gameIndex}`,
   winLoss: "W",

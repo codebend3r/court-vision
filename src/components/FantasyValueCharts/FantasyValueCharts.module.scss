@@ -1,5 +1,12 @@
 // Category labels, one per band, centred the way recharts centres each group.
 .bandLabels {
   display: grid;
+  min-width: 0;
   text-align: center;
+
+  > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }

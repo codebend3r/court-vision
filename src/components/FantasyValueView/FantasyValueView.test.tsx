@@ -49,10 +49,15 @@ const lines = [alpha, beta, ...fillers];
 const renderView = ({
   searchParams = "?",
   onUrlUpdate,
-}: { searchParams?: string; onUrlUpdate?: (event: { queryString: string }) => void } = {}) =>
+  lines: statLines = lines,
+}: {
+  searchParams?: string;
+  onUrlUpdate?: (event: { queryString: string }) => void;
+  lines?: FantasyStatLine[];
+} = {}) =>
   render(
     <ThemeProvider>
-      <FantasyValueView isSignedIn={false} lines={lines} />
+      <FantasyValueView isSignedIn={false} lines={statLines} />
     </ThemeProvider>,
     { wrapper: withNuqsTestingAdapter({ searchParams, onUrlUpdate }) },
   );
@@ -321,6 +326,60 @@ describe("FantasyValueView rolling layout", () => {
     const [args] = loadFantasyTrendLogs.mock.calls[0] ?? [];
     expect(args).toEqual({ playerIds: expect.arrayContaining([1, 2, 3, 4, 5, 6]) });
     expect(screen.getAllByText(/needs 10 games/i)).toHaveLength(4);
+  });
+
+  it("reuses loaded logs when sorting, reweighting, and switching layouts without changing players", async () => {
+    const { container } = await renderRolling();
+    await waitFor(() => expect(container.querySelectorAll(".recharts-line")).toHaveLength(4));
+
+    await act(async () => {
+      screen.getByRole("button", { name: /G-Score/ }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: "Punt FT%" }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: "Categories" }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: "Rolling" }).click();
+    });
+
+    expect(loadFantasyTrendLogs).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/loading rolling value/i)).not.toBeInTheDocument();
+    expect(container.querySelectorAll(".recharts-line")).toHaveLength(4);
+  });
+
+  it("loads a new player set on paging and never shows the previous page's logs", async () => {
+    const pageLines = Array.from({ length: 15 }, (_, index) => line({ playerId: index + 1 }));
+    await act(async () =>
+      renderView({ searchParams: "?layout=rolling&size=10", lines: pageLines }),
+    );
+    await waitFor(() => expect(loadFantasyTrendLogs).toHaveBeenCalledTimes(1));
+    loadFantasyTrendLogs.mockImplementation(() => new Promise(() => {}));
+
+    await act(async () => {
+      screen.getAllByRole("button", { name: "Next" })[0].click();
+    });
+
+    expect(loadFantasyTrendLogs).toHaveBeenCalledTimes(2);
+    expect(loadFantasyTrendLogs).toHaveBeenLastCalledWith({ playerIds: [11, 12, 13, 14, 15] });
+    expect(screen.getAllByText(/loading rolling value/i)).toHaveLength(5);
+  });
+
+  it("refreshes logs when a new server pool arrives for the same player set", async () => {
+    const { rerender } = await renderRolling();
+    expect(loadFantasyTrendLogs).toHaveBeenCalledTimes(1);
+
+    await act(async () =>
+      rerender(
+        <ThemeProvider>
+          <FantasyValueView isSignedIn={false} lines={[...lines]} />
+        </ThemeProvider>,
+      ),
+    );
+
+    expect(loadFantasyTrendLogs).toHaveBeenCalledTimes(2);
   });
 
   it("charts each player's last 20 games by default, numbered by game in the season", async () => {
