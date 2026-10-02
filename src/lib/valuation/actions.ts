@@ -62,6 +62,9 @@ const cachedLogs = unstable_cache(
 const idsKeyOf = ({ playerIds }: { playerIds: readonly number[] }): string =>
   [...playerIds].sort((a, b) => a - b).join(",");
 
+// Intentionally public: the Players Fantasy tab works signed out. This action
+// only reads NBA box scores, never account data or writes. Its security-scan
+// exception must be re-reviewed if this module gains other exports or queries.
 // The season's game logs for one page of the Fantasy tab, so the client can
 // draw each player's rolling value against the pool it already holds. Only
 // the box-score fields travel: the rolling scorers need nothing else, and a

@@ -2,12 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "bun:test";
 
 const findMany = vi.fn();
 const latestSeason = vi.fn();
+const getUser = vi.fn();
+const getProfile = vi.fn();
 // Outside Next there is no incremental cache; the wrapper passes the fetch
 // through and records how it was registered.
 const unstableCache = vi.fn(
   (fetch: (...args: unknown[]) => unknown, _keyParts: string[], _options: unknown) => fetch,
 );
 
+vi.mock("@/lib/auth/session", () => ({ getUser, getProfile }));
 vi.mock("@/lib/prisma", () => ({ prisma: { playerGameLog: { findMany } } }));
 vi.mock("@/lib/valuation/season", () => ({ latestSeason }));
 vi.mock("next/cache", () => ({ unstable_cache: unstableCache }));
@@ -34,6 +37,10 @@ const row = ({ playerId, day }: { playerId: number; day: number }) => ({
 });
 
 beforeEach(() => {
+  getUser.mockReset();
+  getProfile.mockReset();
+  getUser.mockResolvedValue(null);
+  getProfile.mockResolvedValue(null);
   findMany.mockReset();
   latestSeason.mockReset();
   latestSeason.mockResolvedValue("2025-26");
@@ -73,6 +80,19 @@ describe("loadFantasyTrendLogs", () => {
         orderBy: { gameDate: "asc" },
       }),
     );
+  });
+
+  it("serves public box scores without a session or profile lookup", async () => {
+    const log = row({ playerId: 1, day: 1 });
+    findMany.mockResolvedValue([log]);
+    const { playerId, gameDate, ...stats } = log;
+
+    expect(await loadFantasyTrendLogs({ playerIds: [playerId] })).toEqual({
+      status: "ok",
+      players: [{ playerId, logs: [{ ...stats, gameDate: gameDate.toISOString() }] }],
+    });
+    expect(getUser).not.toHaveBeenCalled();
+    expect(getProfile).not.toHaveBeenCalled();
   });
 
   it("lists a requested player with no games as an empty log", async () => {
