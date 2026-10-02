@@ -4,6 +4,7 @@ import { TEAM_BUILDER_VALUATION_CONFIG } from "@/lib/fantasyTeams/insights";
 import { prisma } from "@/lib/prisma";
 import { getFantasyPool } from "@/lib/valuation/loader";
 import { computePoolStats } from "@/lib/valuation/pool";
+import { latestSeason } from "@/lib/valuation/season";
 import { buildRollingGSeries, buildRollingZSeries, type TrendSeries } from "@/lib/watchlist/trend";
 
 // Mirrors POOL_FLOOR in lib/valuation/index.ts and lib/fantasyTeams/insights.ts:
@@ -33,15 +34,6 @@ const buildersByMethod = {
 } as const;
 
 type TrendMethod = keyof typeof buildersByMethod;
-
-const latestSeason = async (): Promise<string | null> => {
-  const row = await prisma.playerSeasonStats.findFirst({
-    where: { seasonType: "Regular Season" },
-    orderBy: { season: "desc" },
-    select: { season: true },
-  });
-  return row?.season ?? null;
-};
 
 const fetchSeries = async ({
   playerId,

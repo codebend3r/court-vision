@@ -1,23 +1,28 @@
 import { describe, expect, it } from "bun:test";
 
 import {
+  coerceStatMode,
   gamesForSpan,
+  isPlayerView,
   loadStatFilters,
+  PLAYER_VIEWS,
+  rangeForSpan,
   resolveSeasonSelection,
   SEASON_OPTIONS,
+  spanLabel,
 } from "@/lib/stats/searchParams";
 
 describe("loadStatFilters", () => {
   it("falls back to defaults when params are absent", async () => {
     const result = await loadStatFilters({});
 
-    expect(result).toEqual({ mode: "game", span: "season", season: null });
+    expect(result).toEqual({ mode: "game", span: "season", season: null, view: "regular" });
   });
 
   it("parses valid mode and span literals", async () => {
     const result = await loadStatFilters({ mode: "totals", span: "10" });
 
-    expect(result).toEqual({ mode: "totals", span: "10", season: null });
+    expect(result).toEqual({ mode: "totals", span: "10", season: null, view: "regular" });
   });
 
   it("parses per36 mode and every game-count span", async () => {
@@ -36,13 +41,20 @@ describe("loadStatFilters", () => {
   it("falls back to defaults on invalid values", async () => {
     const result = await loadStatFilters({ mode: "bogus", span: "15" });
 
-    expect(result).toEqual({ mode: "game", span: "season", season: null });
+    expect(result).toEqual({ mode: "game", span: "season", season: null, view: "regular" });
   });
 
   it("falls back to defaults on array values", async () => {
     const result = await loadStatFilters({ mode: ["totals", "per36"], span: ["10", "20"] });
 
-    expect(result).toEqual({ mode: "totals", span: "10", season: null });
+    expect(result).toEqual({ mode: "totals", span: "10", season: null, view: "regular" });
+  });
+
+  it("parses each player view and falls back to regular", async () => {
+    expect((await loadStatFilters({ view: "advanced" })).view).toBe("advanced");
+    expect((await loadStatFilters({ view: "fantasy" })).view).toBe("fantasy");
+    expect((await loadStatFilters({ view: "regular" })).view).toBe("regular");
+    expect((await loadStatFilters({ view: "starred" })).view).toBe("regular");
   });
 
   it("parses every known season label and the career sentinel", async () => {
@@ -99,5 +111,61 @@ describe("gamesForSpan", () => {
 
   it("maps season to null (no window)", () => {
     expect(gamesForSpan({ span: "season" })).toBeNull();
+  });
+});
+
+describe("PLAYER_VIEWS / isPlayerView", () => {
+  it("lists the three player views in tab order", () => {
+    expect(PLAYER_VIEWS).toEqual(["regular", "advanced", "fantasy"]);
+  });
+
+  it("guards arbitrary strings", () => {
+    expect(isPlayerView("advanced")).toBe(true);
+    expect(isPlayerView("fantasy")).toBe(true);
+    expect(isPlayerView("regular")).toBe(true);
+    expect(isPlayerView("starred")).toBe(false);
+    expect(isPlayerView("")).toBe(false);
+    expect(isPlayerView(undefined)).toBe(false);
+  });
+});
+
+describe("coerceStatMode", () => {
+  it("keeps a mode the view offers", () => {
+    expect(coerceStatMode({ mode: "game", modes: ["game", "avg"] })).toBe("game");
+    expect(coerceStatMode({ mode: "per36", modes: ["game", "avg", "totals", "per36"] })).toBe(
+      "per36",
+    );
+  });
+
+  it("falls back to avg when the view cannot plot the requested mode", () => {
+    expect(coerceStatMode({ mode: "totals", modes: ["game", "avg"] })).toBe("avg");
+    expect(coerceStatMode({ mode: "per36", modes: ["game", "avg"] })).toBe("avg");
+  });
+
+  it("falls back to the first offered mode when avg is not offered", () => {
+    expect(coerceStatMode({ mode: "totals", modes: ["game"] })).toBe("game");
+  });
+
+  it("falls back to the default mode when the view offers none", () => {
+    expect(coerceStatMode({ mode: "totals", modes: [] })).toBe("game");
+  });
+});
+
+describe("rangeForSpan", () => {
+  it("maps each timeframe onto the players-list game range", () => {
+    expect(rangeForSpan({ span: "5" })).toBe("last5");
+    expect(rangeForSpan({ span: "10" })).toBe("last10");
+    expect(rangeForSpan({ span: "20" })).toBe("last20");
+    expect(rangeForSpan({ span: "40" })).toBe("last40");
+    expect(rangeForSpan({ span: "60" })).toBe("last60");
+    expect(rangeForSpan({ span: "season" })).toBe("all");
+  });
+});
+
+describe("spanLabel", () => {
+  it("names the window the way the Fantasy tab does", () => {
+    expect(spanLabel({ span: "5" })).toBe("Last 5 games");
+    expect(spanLabel({ span: "60" })).toBe("Last 60 games");
+    expect(spanLabel({ span: "season" })).toBe("All games");
   });
 });

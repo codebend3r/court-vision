@@ -423,13 +423,15 @@ Stat-view tabs as keycaps (Regular / Advanced / Fantasy value / Starred) with th
 
 Table per §7. Advanced and Fantasy views render the existing `AdvancedStatsLegend` / `FantasyValueLegend` components below it.
 
+Fantasy view also carries a Table / Categories / Rolling keycap trio beside the result count (`layout` in the URL). Categories renders the same sorted, paged rows as a list: rank, avatar, name, Z and G readouts (the readout headers sort), then the player page's category breakdown squashed to a 48px bar chart. Band labels sit once in the header over every row's bands; every row on the page shares one symmetric scale so bars compare across players. Narrow containers drop the chart under the player line at full width. Rolling swaps the bars for the rolling ten-game Z and G lines (the player page's trend panel, squashed): the page's game logs load through a server action once per page of players and are read with `use` inside Suspense, so the rows render immediately with placeholders and fill in when the logs land; a player without ten games this season says so instead of drawing. The charts cover the window the Games filter names, or each player's last 20 games when it is on All games. Each row starts at its first game with a rolling value, so no row opens on empty space, and is labelled at both ends with the season game numbers it covers (rows can differ, so the numbers live on each row, not in the header); the tooltip names the hovered game the same way.
+
 ### Player detail
 
 Six readout cards (PTS, REB, AST, FG%, STL, TOV) with league rank underneath, coloured `--color-accent-strong` at rank 1, `--color-highlight` in the top 5, muted otherwise.
 
 Then a profile panel: 72px accent-bordered initials tile with `var(--retro-4)`, name + team chip + position + jersey, a wrapping definition list of biographical facts, and the season select with game count right-aligned. Below that, Mode and Window keycap groups, the multi-series chart, and the game log table.
 
-Game log: Result column coloured `--color-win` / `--color-loss` and semibold; Date column is the sorted column.
+Game log: Result column coloured `--color-win` / `--color-loss` and semibold; Date column is the sorted column. The game log follows the view tab: GM, Date, Matchup, Result, and MIN lead on every view, then the box score (Regular), every advanced metric with its full name on the header (Advanced), or each game's fantasy value (Fantasy): the game's own Z and G, the rolling ten-game Z and G ending at it, and each included category's Z, signed, with negatives in `--color-loss`. A missed game's own values are dashes; its rolling value stands. A sort chosen on one view that names a column another view lacks falls back to newest first. When the fantasy view has nothing to value (career, or no line in the window's pool), the log keeps the box score.
 
 ### Teams
 

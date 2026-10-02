@@ -1,5 +1,5 @@
 {
-  "_comment": "Violations that predate the security-scan gate. Each is a reviewed decision with a tracked follow-up, not a snooze. Anything not listed here fails CI. Removing an entry once fixed is required: the scan prints a 'stale' warning when a baselined entry no longer matches.",
+  "_comment": "Reviewed security-scan exceptions: existing findings with tracked follow-ups and intentionally public actions, not a snooze. Anything not listed here fails CI. Removing an entry once fixed is required: the scan prints a 'stale' warning when a baselined entry no longer matches.",
   "known": [
     {
       "rule": "secret-module-unguarded",
@@ -15,6 +15,11 @@
       "rule": "server-action-unauthenticated",
       "file": "src/lib/auth/signup.ts",
       "reason": "isUsernameTaken backs the signup form and must work signed out, so the missing session check is correct. It does need rate limiting, tracked separately as a username-enumeration finding."
+    },
+    {
+      "rule": "server-action-unauthenticated",
+      "file": "src/lib/valuation/actions.ts",
+      "reason": "loadFantasyTrendLogs is an intentionally public, read-only action for the signed-out Players Fantasy tab. It selects only NBA box-score fields, never reads account data or writes, validates positive integer player ids, caps requests at one page (100 players), and caches results for 300 seconds. Session gating would break public rolling charts. Re-review this exception before adding exports, private data, or writes to this module."
     }
   ]
 }

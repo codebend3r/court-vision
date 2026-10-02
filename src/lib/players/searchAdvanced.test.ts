@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "bun:test";
 
-import { searchPlayersAdvanced } from "@/lib/players/searchAdvanced";
+import { averageAdvancedLogs, searchPlayersAdvanced } from "@/lib/players/searchAdvanced";
 import type { PlayersSearchParams } from "@/lib/players/searchParams";
 
 const findMany = vi.fn();
@@ -296,5 +296,25 @@ describe("searchPlayersAdvanced", () => {
     // 3 games in the window, but only 2 have any metric data at all — gamesWithData
     // should reflect that (2), not the window size (3).
     expect(result.rows[0].stats.gamesWithData).toBe(2);
+  });
+});
+
+describe("averageAdvancedLogs", () => {
+  it("averages each metric over the games that recorded it", () => {
+    const stats = averageAdvancedLogs({
+      logs: [buildLog({ pie: 10 }), buildLog({ pie: 20 }), buildLog({ pie: null })],
+    });
+
+    expect(stats.pie).toBe(15);
+    expect(stats.pace).toBe(98);
+    expect(stats.gamesWithData).toBe(3);
+  });
+
+  it("reports null metrics and zero games for an empty window", () => {
+    const stats = averageAdvancedLogs({ logs: [] });
+
+    expect(stats.pie).toBeNull();
+    expect(stats.usagePercentage).toBeNull();
+    expect(stats.gamesWithData).toBe(0);
   });
 });

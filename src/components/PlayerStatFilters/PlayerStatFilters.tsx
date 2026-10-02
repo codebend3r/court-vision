@@ -6,6 +6,7 @@ import { useEffect, useTransition } from "react";
 
 import { useStatModeStore } from "@/lib/stats/modeStore";
 import {
+  coerceStatMode,
   STAT_MODES,
   STAT_SPANS,
   statFilterParsers,
@@ -34,7 +35,15 @@ const SPAN_LABELS: Record<StatSpan, string> = {
   season: "All",
 };
 
-export function PlayerStatFilters() {
+export type PlayerStatFiltersProps = {
+  // The modes this view can plot, in button order. The URL may still name a
+  // mode outside this set (chosen on another view); it is shown coerced, the
+  // same way the page coerces it before building the series. Empty hides the
+  // mode group altogether.
+  modes?: readonly StatMode[];
+};
+
+export function PlayerStatFilters({ modes = STAT_MODES }: PlayerStatFiltersProps) {
   const [isPending, startTransition] = useTransition();
   // shallow: false re-runs the RSC page so the series is recomputed
   // server-side; the transition drives the pending state while it streams.
@@ -47,14 +56,17 @@ export function PlayerStatFilters() {
   // A shared link's explicit ?mode= wins over the remembered preference, so
   // only bare URLs (fresh navigations between players) re-apply it.
   const urlNamesMode = !!(useSearchParams()?.get("mode") ?? "");
+  const showsModes = modes.length > 0;
+  const pressedMode = coerceStatMode({ mode, modes });
 
   useEffect(() => {
     // While a click's transition is pending the store already holds the new
-    // mode but the URL doesn't yet; skip so the pick isn't written twice.
-    if (!urlNamesMode && !isPending && mode !== preferredMode) {
+    // mode but the URL doesn't yet; skip so the pick isn't written twice. A
+    // view with no mode group has nothing to re-apply the preference to.
+    if (showsModes && !urlNamesMode && !isPending && mode !== preferredMode) {
       setFilters({ mode: preferredMode });
     }
-  }, [urlNamesMode, isPending, mode, preferredMode, setFilters]);
+  }, [showsModes, urlNamesMode, isPending, mode, preferredMode, setFilters]);
 
   return (
     <section
@@ -62,22 +74,24 @@ export function PlayerStatFilters() {
       data-pending={isPending ? "true" : "false"}
       aria-busy={isPending}
     >
-      <div className={styles.group} role="group" aria-label="Stat mode">
-        {STAT_MODES.map((option) => (
-          <button
-            key={option}
-            type="button"
-            aria-pressed={mode === option}
-            onClick={() => {
-              setPreferredMode({ mode: option });
-              setFilters({ mode: option });
-            }}
-            className={styles.option}
-          >
-            {MODE_LABELS[option]}
-          </button>
-        ))}
-      </div>
+      {showsModes && (
+        <div className={styles.group} role="group" aria-label="Stat mode">
+          {modes.map((option) => (
+            <button
+              key={option}
+              type="button"
+              aria-pressed={pressedMode === option}
+              onClick={() => {
+                setPreferredMode({ mode: option });
+                setFilters({ mode: option });
+              }}
+              className={styles.option}
+            >
+              {MODE_LABELS[option]}
+            </button>
+          ))}
+        </div>
+      )}
       <div className={styles.group} role="group" aria-label="Timeframe">
         {STAT_SPANS.map((option) => (
           <button

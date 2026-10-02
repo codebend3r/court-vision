@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test";
 import {
   CATEGORY_KEYS,
   CATEGORY_META,
+  categoryPerGame,
   categoryValue,
   isCategory,
 } from "@/lib/valuation/categories";
@@ -110,5 +111,25 @@ describe("categoryValue", () => {
     const dnp = line({ gamesPlayed: 0 });
     expect(categoryValue({ line: dnp, category: "pts", basis: "perGame", ...league })).toBe(0);
     expect(categoryValue({ line: dnp, category: "fg", basis: "perGame", ...league })).toBe(0);
+  });
+});
+
+describe("categoryPerGame", () => {
+  it("reads counting categories as positive per-game averages, turnovers included", () => {
+    const stats = line({ gamesPlayed: 10, pts: 250, tov: 30, fg3m: 25 });
+
+    expect(categoryPerGame({ line: stats, category: "pts" })).toBe(25);
+    expect(categoryPerGame({ line: stats, category: "tov" })).toBe(3);
+    expect(categoryPerGame({ line: stats, category: "tpm" })).toBe(2.5);
+  });
+
+  it("reads ratio categories as the make rate, neutral with no attempts", () => {
+    expect(categoryPerGame({ line: line({ fgm: 45, fga: 100 }), category: "fg" })).toBe(0.45);
+    expect(categoryPerGame({ line: line({ ftm: 9, fta: 10 }), category: "ft" })).toBe(0.9);
+    expect(categoryPerGame({ line: line({ ftm: 0, fta: 0 }), category: "ft" })).toBe(0);
+  });
+
+  it("is zero for a player with no appearances", () => {
+    expect(categoryPerGame({ line: line({ gamesPlayed: 0, pts: 0 }), category: "pts" })).toBe(0);
   });
 });

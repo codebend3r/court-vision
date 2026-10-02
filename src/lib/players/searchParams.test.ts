@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test";
 import {
   ADVANCED_SORT_KEYS,
   buildPlayersHref,
+  gamesForRange,
   isAdvancedMetricKey,
   isAdvancedSortKey,
   isPlayerGameRange,
@@ -229,5 +230,13 @@ describe("isPlayerStatMode", () => {
     expect(isPlayerStatMode("avg")).toBe(false);
     expect(isPlayerStatMode(undefined)).toBe(false);
     expect(isPlayerStatMode("")).toBe(false);
+  });
+});
+
+describe("gamesForRange", () => {
+  it("maps a lastN range to N games and the whole season to null", () => {
+    expect(gamesForRange({ range: "last5" })).toBe(5);
+    expect(gamesForRange({ range: "last60" })).toBe(60);
+    expect(gamesForRange({ range: "all" })).toBeNull();
   });
 });

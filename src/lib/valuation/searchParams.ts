@@ -44,6 +44,12 @@ export const FANTASY_SORT_KEYS: readonly FantasySortKey[] = [
 const SORT_DIRECTIONS = ["asc", "desc"] as const;
 const STAT_MODES = ["average", "total"] as const;
 
+// How the scored rows render: the method-column table, or one row per player
+// carrying a compact Z/G chart (each category's score, or the rolling ten-game
+// value). All three read the same sorted, paged rows.
+export const FANTASY_LAYOUTS = ["table", "categories", "rolling"] as const;
+export type FantasyLayout = (typeof FANTASY_LAYOUTS)[number];
+
 // Weights are multiplicative, clamped to [0, 2] in 0.25 steps (PRD §7).
 // NaN reads as "untouched", i.e. the default weight of 1.
 export const snapWeight = (value: number): number => {
@@ -162,6 +168,7 @@ export const fantasyParsers = {
     shallow: false,
   }),
   mode: parseAsStringLiteral(STAT_MODES).withDefault("average"),
+  layout: parseAsStringLiteral(FANTASY_LAYOUTS).withDefault("table"),
 };
 
 export type FantasySearchParams = inferParserType<typeof fantasyParsers>;

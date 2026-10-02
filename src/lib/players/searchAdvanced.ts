@@ -120,10 +120,14 @@ const emptyAdvancedStats = (): PlayerAdvancedStats => ({
 const average = (values: readonly number[]): number | null =>
   values.length === 0 ? null : values.reduce((sum, value) => sum + value, 0) / values.length;
 
-const toAdvancedStats = ({
+// One window of a player's advanced rows collapsed to per-metric means. Each
+// metric averages only the games that recorded it (Balldontlie leaves a metric
+// null when the player logged no minutes), and gamesWithData is the widest
+// such set. Shared by the Advanced tab and the player page's advanced card.
+export const averageAdvancedLogs = ({
   logs,
 }: {
-  logs: readonly AdvancedGameLogRow[];
+  logs: readonly Record<AdvancedMetricKey, number | null>[];
 }): PlayerAdvancedStats => {
   const gamesWithData =
     logs.length === 0
@@ -163,7 +167,7 @@ const toAdvancedPlayerRow = ({
     teamAbbr: row.teamAbbr,
     position: row.position,
     nbaPersonId: row.nbaPersonId,
-    stats: toAdvancedStats({ logs: scoped }),
+    stats: averageAdvancedLogs({ logs: scoped }),
   };
 };
 

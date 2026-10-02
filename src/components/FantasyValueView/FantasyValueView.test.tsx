@@ -1,9 +1,14 @@
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
+
+const loadFantasyTrendLogs = vi.fn();
+
+vi.mock("@/lib/valuation/actions", () => ({ loadFantasyTrendLogs }));
 
 import { FantasyValueView } from "@/components/FantasyValueView/FantasyValueView";
+import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 import { makeStatLine } from "@/lib/valuation/fixtures";
 import { type FantasyStatLine } from "@/lib/valuation/types";
 
@@ -41,10 +46,21 @@ const beta = line({
 const fillers = [3, 4, 5, 6].map((playerId) => line({ playerId }));
 const lines = [alpha, beta, ...fillers];
 
-const renderView = ({ searchParams = "?" }: { searchParams?: string } = {}) =>
-  render(<FantasyValueView isSignedIn={false} lines={lines} />, {
-    wrapper: withNuqsTestingAdapter({ searchParams }),
-  });
+const renderView = ({
+  searchParams = "?",
+  onUrlUpdate,
+  lines: statLines = lines,
+}: {
+  searchParams?: string;
+  onUrlUpdate?: (event: { queryString: string }) => void;
+  lines?: FantasyStatLine[];
+} = {}) =>
+  render(
+    <ThemeProvider>
+      <FantasyValueView isSignedIn={false} lines={statLines} />
+    </ThemeProvider>,
+    { wrapper: withNuqsTestingAdapter({ searchParams, onUrlUpdate }) },
+  );
 
 const firstDataRow = (): HTMLElement => {
   const table = screen.getByRole("table");
@@ -203,5 +219,205 @@ describe("FantasyValueView per-column weights", () => {
     // With every Z weight at 0, the whole Z column ties at 0.0 — while G-Score
     // still separates players, proving the punt did not leak across columns.
     expect(cells.some((cell) => cell.textContent === "0.0")).toBe(true);
+  });
+});
+
+describe("FantasyValueView layouts", () => {
+  it("renders the table by default with the Table keycap pressed", () => {
+    renderView();
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Table" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Categories" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
+
+  it("renders one chart row per player instead of the table under layout=categories", () => {
+    renderView({ searchParams: "?layout=categories" });
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    const list = screen.getByRole("list", { name: "Fantasy value charts" });
+    expect(within(list).getAllByRole("listitem")).toHaveLength(lines.length);
+    expect(screen.getByText("Showing 1–6 of 6")).toBeInTheDocument();
+  });
+
+  it("switches to the categories layout from the keycap and writes it to the URL", async () => {
+    const user = userEvent.setup();
+    const updates: string[] = [];
+    renderView({ onUrlUpdate: (event) => updates.push(event.queryString) });
+
+    await user.click(screen.getByRole("button", { name: "Categories" }));
+
+    expect(updates.at(-1)).toContain("layout=categories");
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Fantasy value charts" })).toBeInTheDocument();
+  });
+
+  it("sorts from the chart headers with the same URL state as the table", async () => {
+    const user = userEvent.setup();
+    const updates: string[] = [];
+    renderView({
+      searchParams: "?layout=categories",
+      onUrlUpdate: (event) => updates.push(event.queryString),
+    });
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /G-Score/ }));
+
+    expect(updates.at(-1)).toContain("sort=g");
+  });
+
+  it("drops excluded categories from the chart bands", () => {
+    renderView({ searchParams: "?layout=categories&x=ft" });
+    const charts = within(screen.getByRole("region", { name: "Fantasy value charts" }));
+    expect(charts.queryByText("FT%")).not.toBeInTheDocument();
+    expect(charts.getByText("FG%")).toBeInTheDocument();
+  });
+});
+
+// Thirty games for the two named players (enough to fill the rolling window
+// across a 20-game chart), three for everyone else.
+const serializedLog = ({ day }: { day: number }) => ({
+  gameDate: new Date(Date.UTC(2026, 0, day)).toISOString(),
+  minutes: 34,
+  pts: 28,
+  reb: 8,
+  ast: 6,
+  stl: 1,
+  blk: 1,
+  fg3m: 3,
+  tov: 3,
+  fgm: 10,
+  fga: 20,
+  ftm: 5,
+  fta: 6,
+});
+
+const trendLogsFor = ({ playerIds }: { playerIds: readonly number[] }) => ({
+  status: "ok" as const,
+  players: playerIds.map((playerId) => ({
+    playerId,
+    logs: Array.from({ length: playerId <= 2 ? 30 : 3 }, (_, index) =>
+      serializedLog({ day: index + 1 }),
+    ),
+  })),
+});
+
+describe("FantasyValueView rolling layout", () => {
+  beforeEach(() => {
+    loadFantasyTrendLogs.mockReset();
+    loadFantasyTrendLogs.mockImplementation(({ playerIds }: { playerIds: number[] }) =>
+      Promise.resolve(trendLogsFor({ playerIds })),
+    );
+  });
+
+  // The rolling rows suspend on mount (`use` on the logs promise), and React
+  // only retries a tree that suspended inside an awaited act scope.
+  const renderRolling = ({ searchParams = "?layout=rolling" } = {}) =>
+    act(async () => renderView({ searchParams }));
+
+  it("loads the page's game logs once and draws rolling lines for filled windows", async () => {
+    const { container } = await renderRolling();
+
+    const list = await screen.findByRole("list", { name: "Fantasy value trends" });
+    await waitFor(() => expect(container.querySelectorAll(".recharts-line")).toHaveLength(4));
+    expect(within(list).getAllByRole("listitem")).toHaveLength(lines.length);
+    expect(loadFantasyTrendLogs).toHaveBeenCalledTimes(1);
+    const [args] = loadFantasyTrendLogs.mock.calls[0] ?? [];
+    expect(args).toEqual({ playerIds: expect.arrayContaining([1, 2, 3, 4, 5, 6]) });
+    expect(screen.getAllByText(/needs 10 games/i)).toHaveLength(4);
+  });
+
+  it("reuses loaded logs when sorting, reweighting, and switching layouts without changing players", async () => {
+    const { container } = await renderRolling();
+    await waitFor(() => expect(container.querySelectorAll(".recharts-line")).toHaveLength(4));
+
+    await act(async () => {
+      screen.getByRole("button", { name: /G-Score/ }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: "Punt FT%" }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: "Categories" }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: "Rolling" }).click();
+    });
+
+    expect(loadFantasyTrendLogs).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/loading rolling value/i)).not.toBeInTheDocument();
+    expect(container.querySelectorAll(".recharts-line")).toHaveLength(4);
+  });
+
+  it("loads a new player set on paging and never shows the previous page's logs", async () => {
+    const pageLines = Array.from({ length: 15 }, (_, index) => line({ playerId: index + 1 }));
+    await act(async () =>
+      renderView({ searchParams: "?layout=rolling&size=10", lines: pageLines }),
+    );
+    await waitFor(() => expect(loadFantasyTrendLogs).toHaveBeenCalledTimes(1));
+    loadFantasyTrendLogs.mockImplementation(() => new Promise(() => {}));
+
+    await act(async () => {
+      screen.getAllByRole("button", { name: "Next" })[0].click();
+    });
+
+    expect(loadFantasyTrendLogs).toHaveBeenCalledTimes(2);
+    expect(loadFantasyTrendLogs).toHaveBeenLastCalledWith({ playerIds: [11, 12, 13, 14, 15] });
+    expect(screen.getAllByText(/loading rolling value/i)).toHaveLength(5);
+  });
+
+  it("refreshes logs when a new server pool arrives for the same player set", async () => {
+    const { rerender } = await renderRolling();
+    expect(loadFantasyTrendLogs).toHaveBeenCalledTimes(1);
+
+    await act(async () =>
+      rerender(
+        <ThemeProvider>
+          <FantasyValueView isSignedIn={false} lines={[...lines]} />
+        </ThemeProvider>,
+      ),
+    );
+
+    expect(loadFantasyTrendLogs).toHaveBeenCalledTimes(2);
+  });
+
+  it("charts each player's last 20 games by default, numbered by game in the season", async () => {
+    await renderRolling();
+
+    expect(await screen.findAllByText("Game 11")).toHaveLength(2);
+    expect(screen.getAllByText("Game 30")).toHaveLength(2);
+    const trends = within(screen.getByRole("region", { name: "Fantasy value trends" }));
+    expect(trends.getByText("Last 20 games")).toBeInTheDocument();
+  });
+
+  it("follows a Games window the filter names", async () => {
+    await renderRolling({ searchParams: "?layout=rolling&range=last5" });
+
+    expect(await screen.findAllByText("Game 26")).toHaveLength(2);
+    expect(screen.getAllByText("Game 30")).toHaveLength(2);
+    const trends = within(screen.getByRole("region", { name: "Fantasy value trends" }));
+    expect(trends.getByText("Last 5 games")).toBeInTheDocument();
+  });
+
+  it("shows loading placeholders until the logs arrive", async () => {
+    loadFantasyTrendLogs.mockImplementation(() => new Promise(() => {}));
+    await renderRolling();
+
+    expect(await screen.findAllByText(/loading rolling value/i)).toHaveLength(lines.length);
+  });
+
+  it("announces a failed log load", async () => {
+    loadFantasyTrendLogs.mockResolvedValue({ status: "error" });
+    await renderRolling();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/game logs/i);
+  });
+
+  it("does not fetch game logs for the other layouts", () => {
+    renderView({ searchParams: "?layout=categories" });
+    renderView();
+
+    expect(loadFantasyTrendLogs).not.toHaveBeenCalled();
   });
 });

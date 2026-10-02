@@ -1,8 +1,9 @@
 import { unstable_cache } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
-import { type PlayerGameRange } from "@/lib/players/searchParams";
+import { gamesForRange, type PlayerGameRange } from "@/lib/players/searchParams";
 import { aggregateWindowLogs } from "@/lib/valuation/aggregate";
+import { latestSeason } from "@/lib/valuation/season";
 import { type FantasyStatLine } from "@/lib/valuation/types";
 
 const identitySelect = {
@@ -28,17 +29,6 @@ const statSelect = {
   fga: true,
   ftm: true,
   fta: true,
-};
-
-// A valuation pool must come from a single season; mixing each player's
-// personal latest season would compare 2023 lines against 2025 lines.
-const latestSeason = async (): Promise<string | null> => {
-  const row = await prisma.playerSeasonStats.findFirst({
-    where: { seasonType: "Regular Season" },
-    orderBy: { season: "desc" },
-    select: { season: true },
-  });
-  return row?.season ?? null;
 };
 
 // All ranges go through game logs (season aggregates lack the second moments
@@ -76,23 +66,35 @@ const fetchWindowLines = async ({
     .filter((line) => line.gamesPlayed > 0);
 };
 
-const fetchPool = async (range: PlayerGameRange): Promise<FantasyStatLine[]> => {
-  const season = await latestSeason();
+const fetchPool = async ({
+  range,
+  season: requestedSeason,
+}: {
+  range: PlayerGameRange;
+  season: string | null;
+}): Promise<FantasyStatLine[]> => {
+  const season = requestedSeason ?? (await latestSeason());
   if (season === null) return [];
-  return fetchWindowLines({
-    season,
-    gameLimit: range === "all" ? null : Number.parseInt(range.replace("last", ""), 10),
-  });
+  return fetchWindowLines({ season, gameLimit: gamesForRange({ range }) });
 };
 
-// Cache key is the range alone — user config (weights, league size) must
-// never enter the key, or cardinality is unbounded (PRD §9.1). Same tag and
-// revalidate window as the other players caches so one sync invalidation
-// busts all three tabs.
-const cachedPool = unstable_cache((range: PlayerGameRange) => fetchPool(range), ["fantasy:pool"], {
-  revalidate: 300,
-  tags: ["players"],
-});
+// Cache key is the range and the season alone — user config (weights, league
+// size) must never enter the key, or cardinality is unbounded (PRD §9.1); the
+// season is bounded by the backfill window. Same tag and revalidate window as
+// the other players caches so one sync invalidation busts every surface.
+const cachedPool = unstable_cache(
+  (range: PlayerGameRange, season: string | null) => fetchPool({ range, season }),
+  ["fantasy:pool"],
+  { revalidate: 300, tags: ["players"] },
+);
 
-export const getFantasyPool = ({ range }: { range: PlayerGameRange }): Promise<FantasyStatLine[]> =>
-  cachedPool(range);
+// The Fantasy tab and the home/team surfaces value the latest season; the
+// player page passes the season its dropdown selected so a past season is
+// measured against its own pool.
+export const getFantasyPool = ({
+  range,
+  season = null,
+}: {
+  range: PlayerGameRange;
+  season?: string | null;
+}): Promise<FantasyStatLine[]> => cachedPool(range, season);

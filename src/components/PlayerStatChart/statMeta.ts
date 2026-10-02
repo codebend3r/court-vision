@@ -79,6 +79,12 @@ const CHROME_BY_THEME: Record<Theme, ChartChrome> = {
   "team-accent": { grid: "#333844", axis: "#9aa0b2", endLabel: "#9aa0b2" },
 };
 
+// The categorical series palette, in fixed slot order. Every player-page
+// chart assigns hues from it by position within its own panel, so a metric
+// keeps its colour however the neighbouring chips are toggled.
+export const getSeriesPalette = ({ theme }: { theme: Theme }): readonly string[] =>
+  SERIES_BY_THEME[theme];
+
 export const getStatMeta = ({ theme }: { theme: Theme }): StatMeta[] => {
   const palette = SERIES_BY_THEME[theme];
   const counting = COUNTING_STATS.map((stat, index): StatMeta => ({

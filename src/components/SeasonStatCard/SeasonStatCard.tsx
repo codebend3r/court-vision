@@ -1,3 +1,5 @@
+import { useId } from "react";
+
 import { formatOrdinal } from "@/lib/players/format";
 import type { RankTone, SeasonAverageStat } from "@/lib/players/seasonAverages";
 
@@ -18,23 +20,31 @@ const rankTier = ({ rank, tone }: { rank: number; tone: RankTone }): RankTier =>
           ? "strong"
           : "regular";
 
+// The headline readout card the player page opens each view with: season
+// averages, advanced averages, or fantasy value, all in one shape. The rank
+// pill names the scope it ranks in and the tooltip the pool it counts.
 export function SeasonStatCard({
   season,
   stats,
   title = "Season averages",
+  rankScope = "in NBA",
+  poolNoun = "qualified players",
 }: {
   season: string;
   stats: SeasonAverageStat[];
   title?: string;
+  rankScope?: string;
+  poolNoun?: string;
 }) {
+  const titleId = useId();
   if (!stats.length) {
     return null;
   }
 
   return (
-    <section className={styles.card} aria-labelledby="season-averages-title">
+    <section className={styles.card} aria-labelledby={titleId}>
       <header className={styles.cardHeader}>
-        <h2 id="season-averages-title" className={styles.title}>
+        <h2 id={titleId} className={styles.title}>
           {title}
         </h2>
         <span className={styles.season}>{season}</span>
@@ -48,9 +58,9 @@ export function SeasonStatCard({
               <dd
                 className={styles.rank}
                 data-tier={rankTier({ rank: stat.rank, tone: stat.rankTone })}
-                title={`${formatOrdinal({ value: stat.rank })} of ${stat.eligibleCount} qualified players`}
+                title={`${formatOrdinal({ value: stat.rank })} of ${stat.eligibleCount} ${poolNoun}`}
               >
-                {formatOrdinal({ value: stat.rank })} in NBA
+                {formatOrdinal({ value: stat.rank })} {rankScope}
               </dd>
             )}
           </div>

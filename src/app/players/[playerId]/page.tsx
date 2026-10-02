@@ -4,10 +4,8 @@ import type { SearchParams } from "nuqs/server";
 import { PageHeader } from "@/components/PageHeader/PageHeader";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayerGameLogTable } from "@/components/PlayerGameLogTable/PlayerGameLogTable";
-import { PlayerStatChart } from "@/components/PlayerStatChart/PlayerStatChart";
-import { PlayerStatFilters } from "@/components/PlayerStatFilters/PlayerStatFilters";
+import { PlayerViewTabs } from "@/components/PlayerViewTabs/PlayerViewTabs";
 import { SeasonSelect } from "@/components/SeasonSelect/SeasonSelect";
-import { SeasonStatCard } from "@/components/SeasonStatCard/SeasonStatCard";
 import { StarButton } from "@/components/StarButton/StarButton";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { getUser } from "@/lib/auth/session";
@@ -19,21 +17,9 @@ import {
   formatHeight,
   formatWeight,
 } from "@/lib/players/format";
-import {
-  aggregateCareerTotals,
-  buildCareerAverageLine,
-  buildSeasonAverageLine,
-  type SeasonAverageStat,
-} from "@/lib/players/seasonAverages";
-import { getSeasonStatsPool } from "@/lib/players/seasonPool";
 import { prisma } from "@/lib/prisma";
-import { buildStatSeries } from "@/lib/stats/cumulative";
-import {
-  CAREER,
-  gamesForSpan,
-  loadStatFilters,
-  resolveSeasonSelection,
-} from "@/lib/stats/searchParams";
+import { CAREER, loadStatFilters, resolveSeasonSelection } from "@/lib/stats/searchParams";
+import { loadPlayerView } from "@/app/players/[playerId]/views";
 
 import styles from "@/app/players/[playerId]/page.module.scss";
 
@@ -68,6 +54,7 @@ export default async function PlayerPage({
     mode,
     span,
     season: requestedSeason,
+    view,
   } = await loadStatFilters(searchParams ?? Promise.resolve({}));
 
   // The player's own season rows drive the dropdown options, the default
@@ -89,20 +76,6 @@ export default async function PlayerPage({
   // Games played counts appearances only, not DNPs (0-minute roster games).
   const gamesPlayed = logs.filter((log) => log.minutes > 0).length;
 
-  let statLine: SeasonAverageStat[] = [];
-  if (isCareer) {
-    const careerTotals = aggregateCareerTotals({ rows: playerSeasonRows, playerId: numericId });
-    statLine = careerTotals ? buildCareerAverageLine({ totals: careerTotals }) : [];
-  } else {
-    // The whole qualified pool is needed to place this player's averages on the
-    // league leaderboards, not just their own row.
-    const seasonRows = await getSeasonStatsPool({
-      season: selection,
-      seasonType: SEASON_TYPE,
-    });
-    statLine = buildSeasonAverageLine({ rows: seasonRows, playerId: numericId }) ?? [];
-  }
-
   const newestSeason = playerSeasons[0] ?? null;
   const oldestSeason = playerSeasons[playerSeasons.length - 1] ?? null;
   // The card labels the career with its actual data span (the backfill only
@@ -111,10 +84,17 @@ export default async function PlayerPage({
     !!oldestSeason && oldestSeason !== newestSeason
       ? `${oldestSeason} to ${newestSeason ?? ""}`
       : (newestSeason ?? SEASON_LABEL);
-
-  const windowSize = gamesForSpan({ span });
-  const windowLogs = windowSize === null ? logs : logs.slice(-windowSize);
-  const series = buildStatSeries({ logs: windowLogs, mode });
+  const seasonLabel = isCareer ? careerSpanLabel : selection;
+  const { card, content, gameLog } = await loadPlayerView({
+    view,
+    playerId: numericId,
+    selection,
+    seasonLabel,
+    seasonRows: playerSeasonRows,
+    logs,
+    mode,
+    span,
+  });
 
   const isPresentFact = (fact: {
     label: string;
@@ -143,6 +123,10 @@ export default async function PlayerPage({
     },
   ].filter(isPresentFact);
 
+  // An empty single-season view blames the season (the dropdown can recover);
+  // career or a player with no data at all blames the player.
+  const emptySubject = isCareer || playerSeasons.length === 0 ? "player" : "season";
+
   return (
     <main className={styles.page}>
       <PageHeader
@@ -158,6 +142,7 @@ export default async function PlayerPage({
           />
         }
       />
+      <PlayerViewTabs active={view} />
       <header className={styles.header}>
         <PlayerAvatar
           fullName={player.fullName}
@@ -192,35 +177,18 @@ export default async function PlayerPage({
             </dl>
           )}
         </span>
-        {statLine.length > 0 && (
-          <div className={styles.headerCard}>
-            <SeasonStatCard
-              season={isCareer ? careerSpanLabel : selection}
-              stats={statLine}
-              title={isCareer ? "Career averages" : "Season averages"}
-            />
-          </div>
-        )}
+        {!!card && <div className={styles.headerCard}>{card}</div>}
       </header>
-      {series.length === 0 ? (
-        <p className={styles.empty}>
-          {/* An empty single-season view blames the season (the dropdown can
-              recover); career or a player with no data at all blames the player. */}
-          No game logs for this {isCareer || playerSeasons.length === 0 ? "player" : "season"} yet.
-        </p>
+
+      {logs.length === 0 ? (
+        <p className={styles.empty}>No game logs for this {emptySubject} yet.</p>
       ) : (
-        <>
-          <PlayerStatFilters />
-          <PlayerStatChart series={series} mode={mode} />
-          <PlayerGameLogTable
-            rows={logs.map((log, index) => ({
-              ...log,
-              gameNumber: index + 1,
-              gameDate: log.gameDate.toISOString(),
-            }))}
-          />
-        </>
+        <section className={styles.view} aria-label="Stat view">
+          {content}
+        </section>
       )}
+
+      {logs.length > 0 && <PlayerGameLogTable {...gameLog} />}
     </main>
   );
 }

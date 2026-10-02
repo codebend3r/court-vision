@@ -1,0 +1,261 @@
+@use "@/styles/mixins" as *;
+
+.root {
+  display: grid;
+  gap: var(--space-3);
+  container-type: inline-size;
+}
+
+.caption {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-sm);
+}
+
+.legendItem {
+  display: grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.swatch {
+  display: block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: var(--radius-sm);
+}
+
+// The box the rows live in. Unlike table-wrapper it never clips overflow: a
+// row's hover tooltip has to hang below its 48px chart, over the next rows.
+.wrapper {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+// One grid for the header and every row, so the band labels sit exactly over
+// the bars. The chart track takes whatever width the player track leaves.
+.head,
+.row {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(14rem, 18rem) 6rem 6rem minmax(16rem, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--row-y) var(--row-x);
+}
+
+// Signed in, a star track leads the row, as narrow as its button.
+.wrapper[data-star="true"] :is(.head, .row) {
+  grid-template-columns: auto 2.5rem minmax(14rem, 18rem) 6rem 6rem minmax(16rem, 1fr);
+}
+
+.head {
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  border-top: 1px solid var(--color-border);
+
+  &:first-child {
+    border-top: 0;
+  }
+
+  &:hover {
+    background: color-mix(in srgb, var(--color-text) 4%, transparent);
+  }
+}
+
+.starCell {
+  display: grid;
+}
+
+.rank {
+  @include numeric-cell;
+
+  color: var(--color-text-muted);
+}
+
+.player {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.identity {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.readout {
+  @include numeric-cell;
+
+  &[data-negative="true"] {
+    color: var(--color-loss);
+  }
+
+  &[data-sort-active="true"] {
+    color: var(--color-text);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+// Sort triggers are buttons (client-side sorting), styled like the table's.
+.sortButton {
+  display: inline-grid;
+  grid-auto-flow: column;
+  justify-content: end;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+
+  &[data-active="true"] {
+    color: var(--color-accent);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+  }
+}
+
+// Whatever labels the x direction, sitting over the chart track.
+.bands {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.chart {
+  display: block;
+  min-width: 0;
+}
+
+// Narrow containers drop the chart under the player line, full width; the
+// band labels follow so they stay aligned over the bars.
+@container (max-width: 56rem) {
+  .head,
+  .row {
+    grid-template-columns: 2.5rem minmax(0, 1fr) 6rem 6rem;
+  }
+
+  .wrapper[data-star="true"] :is(.head, .row) {
+    grid-template-columns: auto 2.5rem minmax(0, 1fr) 6rem 6rem;
+  }
+
+  .bands,
+  .chart {
+    grid-column: 1 / -1;
+  }
+}
+
+// At phone widths (or zoomed layouts), give identity its own full-width
+// row and place the two readouts below it rather than squeezing the name.
+@container (max-width: 32rem) {
+  .caption {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .head,
+  .row,
+  .wrapper[data-star="true"] :is(.head, .row) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "rank rank"
+      "player player"
+      "z g"
+      "chart chart";
+  }
+
+  .wrapper[data-star="true"] :is(.head, .row) {
+    grid-template-areas:
+      "star rank"
+      "player player"
+      "z g"
+      "chart chart";
+  }
+
+  .starCell {
+    grid-area: star;
+    justify-self: start;
+  }
+
+  .rank {
+    grid-area: rank;
+  }
+
+  .playerHeading,
+  .player {
+    grid-area: player;
+  }
+
+  .sortButton[data-method="z"],
+  .readout[data-method="z"] {
+    grid-area: z;
+  }
+
+  .sortButton[data-method="g"],
+  .readout[data-method="g"] {
+    grid-area: g;
+  }
+
+  .bands,
+  .chart {
+    grid-area: chart;
+  }
+}

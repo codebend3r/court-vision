@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
 import type { SeasonAverageStat } from "@/lib/players/seasonAverages";
@@ -78,6 +78,50 @@ describe("SeasonStatCard", () => {
       "title",
       "24th of 312 qualified players",
     );
+  });
+
+  it("lets a caller rename the rank scope and the pool the tooltip describes", () => {
+    render(
+      <SeasonStatCard
+        season="2025-26"
+        title="Fantasy value"
+        rankScope="in NBA"
+        poolNoun="valued players"
+        stats={[
+          buildStat({
+            key: "zscore",
+            label: "Z-Score",
+            value: "+12.4",
+            rank: 2,
+            eligibleCount: 480,
+          }),
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Fantasy value")).toBeInTheDocument();
+    expect(screen.getByText("2nd in NBA")).toHaveAttribute("title", "2nd of 480 valued players");
+  });
+
+  it("gives each card its own heading id so two can share a page", () => {
+    render(
+      <>
+        <SeasonStatCard season="2025-26" stats={[buildStat({ key: "pts" })]} />
+        <SeasonStatCard
+          season="2025-26"
+          title="Advanced stats"
+          stats={[buildStat({ key: "pie" })]}
+        />
+      </>,
+    );
+
+    const [first, second] = screen.getAllByRole("region");
+    const firstId = first.getAttribute("aria-labelledby") ?? "";
+    const secondId = second.getAttribute("aria-labelledby") ?? "";
+    expect(firstId).not.toBe("");
+    expect(firstId).not.toBe(secondId);
+    expect(within(first).getByRole("heading", { level: 2 })).toHaveAttribute("id", firstId);
+    expect(within(second).getByRole("heading", { level: 2 })).toHaveAttribute("id", secondId);
   });
 
   it("renders nothing without stats", () => {

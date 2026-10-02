@@ -10,7 +10,6 @@ import { type PlayerRow, type PlayerStats } from "@/lib/players/search";
 import { type AdvancedPlayerRow } from "@/lib/players/searchAdvanced";
 import {
   buildPlayersHref,
-  type AdvancedMetricKey,
   type AdvancedSortKey,
   type PlayerSortKey,
   type PlayersSearchParams,
@@ -94,29 +93,18 @@ const STAT_COLUMNS: readonly StatColumn[] = [
   },
 ];
 
-// TS%/eFG%/usage-style metrics are fractions (display like FG%); the rest are
-// rating/ratio-style numbers (display to one decimal).
-const PERCENTAGE_METRIC_KEYS: readonly AdvancedMetricKey[] = [
-  "assistPercentage",
-  "defensiveReboundPercentage",
-  "effectiveFieldGoalPercentage",
-  "offensiveReboundPercentage",
-  "reboundPercentage",
-  "trueShootingPercentage",
-  "usagePercentage",
-];
-
+// Share-style metrics (TS%, USG%, PIE, the rebound shares) are fractions and
+// display like FG%; ratings and ratios read to one decimal. The kind lives on
+// the shared meta so the player page formats the same metric the same way.
 const formatAdvancedMetric = ({
-  metricKey,
+  meta,
   value,
 }: {
-  metricKey: AdvancedMetricKey;
+  meta: AdvancedStatMeta;
   value: number | null;
 }): string => {
   if (value === null) return "—";
-  return PERCENTAGE_METRIC_KEYS.includes(metricKey)
-    ? value.toFixed(3).replace(/^0/, "")
-    : value.toFixed(1);
+  return meta.kind === "percentage" ? value.toFixed(3).replace(/^0/, "") : value.toFixed(1);
 };
 
 type PlayerIdentity = {
@@ -285,7 +273,7 @@ export function PlayersTable(props: PlayersTableProps) {
                       className={styles.numeric}
                       data-sort-active={params.sort === meta.key || undefined}
                     >
-                      {formatAdvancedMetric({ metricKey: meta.key, value: row.stats[meta.key] })}
+                      {formatAdvancedMetric({ meta, value: row.stats[meta.key] })}
                     </td>
                   ))}
                 </tr>
