@@ -82,6 +82,20 @@ Useful scripts: `bun run test`, `bun run test:a11y`, `bun run lint`,
 `bunx playwright install chromium` before running the accessibility suite locally.
 Conventions live in `CLAUDE.md`; design specs and plans under `docs/superpowers/`.
 
+## Git hooks
+
+`bun install` installs Lefthook's Git hooks and clears the old Husky
+`core.hooksPath` setting. Run `bun run prepare` to reinstall them manually.
+
+- **Pre-commit:** `lint-staged` fixes staged SCSS with Gale, then formats staged
+  files with Oxfmt. Partially staged files keep their unstaged changes.
+- **Pre-push:** `bun run system-check` checks formatting, types, lint, tests, and
+  the production build. Any failure blocks the push; it does not fetch or prune
+  remote branches.
+
+Hook configuration lives in `lefthook.yml`; staged-file rules remain in
+`.lintstagedrc.json`.
+
 ## Accessibility checks
 
 CI runs axe WCAG 2.2 A/AA scans in Chromium against the login, signup, and design

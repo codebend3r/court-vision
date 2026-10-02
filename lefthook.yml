@@ -1,0 +1,9 @@
+pre-commit:
+  commands:
+    staged-files:
+      run: bun run lint-staged
+
+pre-push:
+  commands:
+    system-check:
+      run: bun run system-check
