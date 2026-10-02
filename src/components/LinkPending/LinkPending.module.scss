@@ -1,0 +1,39 @@
+@use "@/styles/mixins" as *;
+
+// Sized off the type scale so it sits level with the label it follows. Under
+// reduced motion it stays a static ring: still a distinct shape beside the
+// label, just not a moving one.
+.spinner {
+  display: inline-block;
+  width: var(--font-size-xs);
+  height: var(--font-size-xs);
+  border: 0.125rem solid color-mix(in srgb, var(--color-accent) 35%, transparent);
+  border-top-color: var(--color-accent);
+  border-radius: var(--radius-full);
+}
+
+// The fade-in waits a beat so a navigation that lands quickly finishes before
+// the spinner flashes; the spin itself is the non-essential motion this gates.
+@media (prefers-reduced-motion: no-preference) {
+  .spinner {
+    animation:
+      link-pending-in var(--duration-base) var(--duration-fast) both,
+      link-pending-spin 0.6s linear infinite;
+  }
+}
+
+@keyframes link-pending-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes link-pending-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.announcement {
+  @include visually-hidden;
+}

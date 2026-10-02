@@ -79,3 +79,9 @@
     color: var(--color-text);
   }
 }
+
+// Announces an in-flight filter change to screen readers; invisible on screen,
+// where the pending dim already says it.
+.status {
+  @include visually-hidden;
+}
