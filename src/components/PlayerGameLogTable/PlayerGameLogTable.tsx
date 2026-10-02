@@ -3,7 +3,7 @@
 import { useMemo, type ReactNode } from "react";
 import { parseAsString, useQueryStates } from "nuqs";
 
-import { formatSigned } from "@/components/PlayerFantasyChart/breakdownChart";
+import { formatSigned } from "@/components/PlayerFantasyChart/labels";
 import { TeamMatchup } from "@/components/TeamMatchup/TeamMatchup";
 import { ADVANCED_STAT_META, formatAdvancedStat } from "@/lib/players/advancedStatMeta";
 import { type AdvancedMetricKey } from "@/lib/players/searchParams";

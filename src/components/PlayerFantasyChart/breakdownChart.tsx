@@ -3,17 +3,14 @@
 import { type ReactElement } from "react";
 import { Rectangle, type BarShapeProps, type RectangleProps, type TooltipPayload } from "recharts";
 
+import {
+  formatSigned,
+  METHOD_LABELS,
+  type MethodKey,
+} from "@/components/PlayerFantasyChart/labels";
 import type { FantasyCategoryBreakdown } from "@/lib/valuation/breakdown";
 
 import styles from "@/components/PlayerFantasyChart/PlayerFantasyChart.module.scss";
-
-// The two series every category breakdown chart draws, in palette slot order.
-export type MethodKey = "z" | "g";
-
-export const METHOD_LABELS: Record<MethodKey, string> = { z: "Z-Score", g: "G-Score" };
-
-export const formatSigned = (value: number): string =>
-  value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
 
 // Per-game display beside a category's score: counting stats to one decimal,
 // ratio categories as the make rate the Fantasy tab prints (".480").

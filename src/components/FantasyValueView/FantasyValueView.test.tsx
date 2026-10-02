@@ -70,6 +70,18 @@ const firstDataRow = (): HTMLElement => {
   return first;
 };
 
+// Declared first on purpose: next/dynamic caches a module once it loads, so
+// only the first chart-layout mount in this file sees the loading fallback.
+describe("FantasyValueView chart layout loading", () => {
+  it("shows a loading status while the category charts load, then the charts", async () => {
+    renderView({ searchParams: "?layout=categories" });
+
+    expect(screen.getByRole("status")).toHaveTextContent("Loading category charts");
+    expect(await screen.findByRole("list", { name: "Fantasy value charts" })).toBeInTheDocument();
+    expect(screen.queryByText("Loading category charts")).not.toBeInTheDocument();
+  });
+});
+
 describe("FantasyValueView", () => {
   it("renders every player sorted by Z-Score descending by default", () => {
     renderView();
@@ -233,10 +245,10 @@ describe("FantasyValueView layouts", () => {
     );
   });
 
-  it("renders one chart row per player instead of the table under layout=categories", () => {
+  it("renders one chart row per player instead of the table under layout=categories", async () => {
     renderView({ searchParams: "?layout=categories" });
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
-    const list = screen.getByRole("list", { name: "Fantasy value charts" });
+    const list = await screen.findByRole("list", { name: "Fantasy value charts" });
     expect(within(list).getAllByRole("listitem")).toHaveLength(lines.length);
     expect(screen.getByText("Showing 1–6 of 6")).toBeInTheDocument();
   });
@@ -250,7 +262,7 @@ describe("FantasyValueView layouts", () => {
 
     expect(updates.at(-1)).toContain("layout=categories");
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
-    expect(screen.getByRole("list", { name: "Fantasy value charts" })).toBeInTheDocument();
+    expect(await screen.findByRole("list", { name: "Fantasy value charts" })).toBeInTheDocument();
   });
 
   it("sorts from the chart headers with the same URL state as the table", async () => {
@@ -261,15 +273,16 @@ describe("FantasyValueView layouts", () => {
       onUrlUpdate: (event) => updates.push(event.queryString),
     });
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    await screen.findByRole("list", { name: "Fantasy value charts" });
 
     await user.click(screen.getByRole("button", { name: /G-Score/ }));
 
     expect(updates.at(-1)).toContain("sort=g");
   });
 
-  it("drops excluded categories from the chart bands", () => {
+  it("drops excluded categories from the chart bands", async () => {
     renderView({ searchParams: "?layout=categories&x=ft" });
-    const charts = within(screen.getByRole("region", { name: "Fantasy value charts" }));
+    const charts = within(await screen.findByRole("region", { name: "Fantasy value charts" }));
     expect(charts.queryByText("FT%")).not.toBeInTheDocument();
     expect(charts.getByText("FG%")).toBeInTheDocument();
   });

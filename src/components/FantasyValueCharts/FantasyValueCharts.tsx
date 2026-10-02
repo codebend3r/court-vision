@@ -4,13 +4,12 @@ import { Bar, BarChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxi
 
 import { FantasyChartList } from "@/components/FantasyChartList/FantasyChartList";
 import { type FantasyTableRow } from "@/components/FantasyValueTable/FantasyValueTable";
+import { BreakdownTooltip, SignedBar } from "@/components/PlayerFantasyChart/breakdownChart";
 import {
-  BreakdownTooltip,
   formatSigned,
   METHOD_LABELS,
-  SignedBar,
   type MethodKey,
-} from "@/components/PlayerFantasyChart/breakdownChart";
+} from "@/components/PlayerFantasyChart/labels";
 import { getChartChrome, getSeriesPalette } from "@/components/PlayerStatChart/statMeta";
 import { useTheme } from "@/lib/theme/ThemeProvider";
 import { type FantasyCategoryBreakdown } from "@/lib/valuation/breakdown";

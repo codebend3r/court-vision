@@ -9,7 +9,7 @@ import {
   formatSigned,
   METHOD_LABELS,
   type MethodKey,
-} from "@/components/PlayerFantasyChart/breakdownChart";
+} from "@/components/PlayerFantasyChart/labels";
 import { getSeriesPalette } from "@/components/PlayerStatChart/statMeta";
 import { StarButton } from "@/components/StarButton/StarButton";
 import { TeamChip } from "@/components/TeamChip/TeamChip";

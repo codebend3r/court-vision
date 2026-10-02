@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
 import {
@@ -40,6 +40,24 @@ const renderChart = ({
     </ThemeProvider>,
   );
 
+// Declared first on purpose: next/dynamic caches a module once it loads, so
+// only the first mount in this file sees the placeholder before the plot.
+describe("WatchlistTrendChart plot loading", () => {
+  it("holds the plot box with a placeholder, then mounts the plot in it", async () => {
+    const { container } = renderChart({
+      entries: [series({ playerId: 1, fullName: "Jalen Brunson", pointCount: 12 })],
+    });
+    const plot = container.querySelector(".plot");
+    expect(plot).not.toBeNull();
+    expect(plot?.querySelector("[data-chart-placeholder]") ?? null).not.toBeNull();
+
+    await waitFor(() =>
+      expect(plot?.querySelector(".recharts-responsive-container") ?? null).not.toBeNull(),
+    );
+    expect(plot?.querySelector("[data-chart-placeholder]") ?? null).toBeNull();
+  });
+});
+
 describe("WatchlistTrendChart", () => {
   it("invites starring when there is nothing to plot", () => {
     renderChart({ entries: [] });
@@ -68,8 +86,11 @@ describe("WatchlistTrendChart", () => {
   });
 
   it("explains an all-empty chart rather than rendering bare axes", () => {
-    renderChart({ entries: [series({ playerId: 2, fullName: "Rookie Guy", pointCount: 0 })] });
+    const { container } = renderChart({
+      entries: [series({ playerId: 2, fullName: "Rookie Guy", pointCount: 0 })],
+    });
     expect(screen.getByText(/No starred player has 10 games yet/)).toBeInTheDocument();
+    expect(container.querySelector(".plot")).toBeNull();
   });
 
   it("renders the caption it is handed", () => {

@@ -17,13 +17,12 @@ import type { FantasyCategoryBreakdown } from "@/lib/valuation/breakdown";
 import type { FantasyTrendPoint } from "@/lib/valuation/playerValue";
 import { ROLLING_WINDOW_GAMES } from "@/lib/watchlist/trend";
 import { MetricLineChart, type MetricMeta } from "@/components/MetricLineChart/MetricLineChart";
+import { BreakdownTooltip, SignedBar } from "@/components/PlayerFantasyChart/breakdownChart";
 import {
-  BreakdownTooltip,
   formatSigned,
   METHOD_LABELS,
-  SignedBar,
   type MethodKey,
-} from "@/components/PlayerFantasyChart/breakdownChart";
+} from "@/components/PlayerFantasyChart/labels";
 import { getChartChrome, getSeriesPalette } from "@/components/PlayerStatChart/statMeta";
 import { Switch } from "@/components/Switch/Switch";
 

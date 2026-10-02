@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { buildTeamStats } from "@/lib/teams/stats";
@@ -127,6 +127,9 @@ describe("TeamsPage", () => {
 
     await renderPage({});
     expect(screen.getAllByRole("img")).toHaveLength(6);
+    // The plots load on demand; let the first one land inside the test so its
+    // state update isn't flagged as outside act(). Later renders reuse it.
+    await waitFor(() => expect(document.querySelector("[data-chart-placeholder]")).toBeNull());
     cleanup();
 
     await renderPage({ view: "conference" });
