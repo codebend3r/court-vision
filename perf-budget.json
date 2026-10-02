@@ -25,6 +25,12 @@
       "budgetMs": { "ttfb": 1200, "total": 2500 }
     },
     {
+      "path": "/players?tab=advanced",
+      "label": "Players advanced tab",
+      "requiresDb": true,
+      "budgetMs": { "ttfb": 1200, "total": 2500 }
+    },
+    {
       "path": "/players?tab=fantasy",
       "label": "Players fantasy tab",
       "requiresDb": true,

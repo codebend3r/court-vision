@@ -7,7 +7,7 @@ const searchPlayers = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({ getUser }));
 vi.mock("@/lib/watchlist/queries", () => ({ getWatchlistPlayerIds }));
-vi.mock("@/lib/players/search", () => ({ searchPlayers }));
+vi.mock("@/lib/players/searchCached", () => ({ searchPlayers }));
 
 import { StarredPlayersView } from "@/components/StarredPlayersView/StarredPlayersView";
 import { type PlayersSearchParams } from "@/lib/players/searchParams";

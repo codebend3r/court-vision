@@ -1,9 +1,11 @@
-import { Prisma } from "@generated/prisma/client";
+import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 
+import { compareByName, compareByNameAscending, matchesQuery, pageOf } from "@/lib/players/search";
 import {
   ADVANCED_METRIC_KEYS,
+  gamesForRange,
   isAdvancedMetricKey,
   type AdvancedMetricKey,
   type PlayerGameRange,
@@ -31,72 +33,9 @@ export type PlayersAdvancedSearchResult = {
   page: number;
 };
 
-type AdvancedGameLogRow = Record<AdvancedMetricKey, number | null> & {
-  gameDate: Date;
-  season: string;
-};
-
-type AdvancedPlayerCandidate = {
-  id: number;
-  firstName: string;
-  lastName: string;
-  fullName: string;
-  teamAbbr: string | null;
-  position: string | null;
-  nbaPersonId: number | null;
-  seasonStats: Array<{ season: string }>;
-  advancedGameLogs: AdvancedGameLogRow[];
-};
-
-const advancedMetricSelect = {
-  pie: true,
-  pace: true,
-  assistPercentage: true,
-  assistRatio: true,
-  assistToTurnover: true,
-  defensiveRating: true,
-  defensiveReboundPercentage: true,
-  effectiveFieldGoalPercentage: true,
-  netRating: true,
-  offensiveRating: true,
-  offensiveReboundPercentage: true,
-  reboundPercentage: true,
-  trueShootingPercentage: true,
-  turnoverRatio: true,
-  usagePercentage: true,
-};
-
 // A full season tops out at 82 regular-season games (postseason is excluded
 // from the sync); 100 leaves comfortable margin without an unbounded fetch.
 const ADVANCED_GAME_LOG_FETCH_LIMIT = 100;
-
-const gameCountFor = (range: PlayerGameRange): number | null =>
-  range === "all" ? null : Number.parseInt(range.replace("last", ""), 10);
-
-const advancedRowSelectFor = (range: PlayerGameRange) => ({
-  id: true,
-  firstName: true,
-  lastName: true,
-  fullName: true,
-  teamAbbr: true,
-  position: true,
-  nbaPersonId: true,
-  seasonStats: {
-    where: { seasonType: "Regular Season" },
-    orderBy: { season: "desc" as const },
-    take: 1,
-    select: { season: true },
-  },
-  advancedGameLogs: {
-    orderBy: { gameDate: "desc" as const },
-    take: gameCountFor(range) ?? ADVANCED_GAME_LOG_FETCH_LIMIT,
-    select: {
-      gameDate: true,
-      season: true,
-      ...advancedMetricSelect,
-    },
-  },
-});
 
 const emptyAdvancedStats = (): PlayerAdvancedStats => ({
   pie: null,
@@ -123,7 +62,8 @@ const average = (values: readonly number[]): number | null =>
 // One window of a player's advanced rows collapsed to per-metric means. Each
 // metric averages only the games that recorded it (Balldontlie leaves a metric
 // null when the player logged no minutes), and gamesWithData is the widest
-// such set. Shared by the Advanced tab and the player page's advanced card.
+// such set. Shared by the player page's advanced card; the Advanced tab runs
+// the same reduction in SQL (fetchAdvancedPool).
 export const averageAdvancedLogs = ({
   logs,
 }: {
@@ -146,97 +86,143 @@ export const averageAdvancedLogs = ({
   );
 };
 
+const advancedPoolRowSchema = z.object({
+  id: z.number(),
+  firstName: z.string(),
+  lastName: z.string(),
+  fullName: z.string(),
+  teamAbbr: z.string().nullable(),
+  position: z.string().nullable(),
+  nbaPersonId: z.number().nullable(),
+  gamesWithData: z.number(),
+  pie: z.number().nullable(),
+  pace: z.number().nullable(),
+  assistPercentage: z.number().nullable(),
+  assistRatio: z.number().nullable(),
+  assistToTurnover: z.number().nullable(),
+  defensiveRating: z.number().nullable(),
+  defensiveReboundPercentage: z.number().nullable(),
+  effectiveFieldGoalPercentage: z.number().nullable(),
+  netRating: z.number().nullable(),
+  offensiveRating: z.number().nullable(),
+  offensiveReboundPercentage: z.number().nullable(),
+  reboundPercentage: z.number().nullable(),
+  trueShootingPercentage: z.number().nullable(),
+  turnoverRatio: z.number().nullable(),
+  usagePercentage: z.number().nullable(),
+});
+
 const toAdvancedPlayerRow = ({
-  row,
+  id,
+  firstName,
+  lastName,
+  fullName,
+  teamAbbr,
+  position,
+  nbaPersonId,
+  ...stats
+}: z.infer<typeof advancedPoolRowSchema>): AdvancedPlayerRow => ({
+  id,
+  firstName,
+  lastName,
+  fullName,
+  teamAbbr,
+  position,
+  nbaPersonId,
+  stats,
+});
+
+// Per-player advanced averages for a range, aggregated in SQL. A lastN range
+// averages the N most recent advanced logs; the season range averages the most
+// recent 100 that fall in the player's latest Regular Season (null when they
+// have none, which matches no rows). AVG skips nulls, so each metric averages
+// only the games that recorded it, and gamesWithData is the widest such count,
+// exactly as averageAdvancedLogs does in memory. The per-player LIMIT reads the
+// (playerId, gameDate) index instead of the whole 300k-row table.
+export const fetchAdvancedPool = async ({
   range,
 }: {
-  row: AdvancedPlayerCandidate;
   range: PlayerGameRange;
-}): AdvancedPlayerRow => {
-  const limit = gameCountFor(range);
-  const latestSeason = row.seasonStats[0]?.season ?? null;
-  const scoped =
-    limit === null
-      ? row.advancedGameLogs.filter((log) => log.season === latestSeason)
-      : row.advancedGameLogs.slice(0, limit);
-  return {
-    id: row.id,
-    firstName: row.firstName,
-    lastName: row.lastName,
-    fullName: row.fullName,
-    teamAbbr: row.teamAbbr,
-    position: row.position,
-    nbaPersonId: row.nbaPersonId,
-    stats: averageAdvancedLogs({ logs: scoped }),
-  };
+}): Promise<AdvancedPlayerRow[]> => {
+  const gameLimit = gamesForRange({ range }) ?? ADVANCED_GAME_LOG_FETCH_LIMIT;
+  const scopeToLatestSeason = range === "all";
+  const rows: unknown = await prisma.$queryRaw`
+    SELECT p.id, p."firstName", p."lastName", p."fullName", p."teamAbbr", p.position,
+           p."nbaPersonId", a.*
+    FROM "Player" p
+    LEFT JOIN LATERAL (
+      SELECT ss.season FROM "PlayerSeasonStats" ss
+      WHERE ss."playerId" = p.id AND ss."seasonType" = 'Regular Season'
+      ORDER BY ss.season DESC
+      LIMIT 1
+    ) s ON true
+    CROSS JOIN LATERAL (
+      SELECT GREATEST(
+               count(l.pie), count(l.pace), count(l."assistPercentage"), count(l."assistRatio"),
+               count(l."assistToTurnover"), count(l."defensiveRating"),
+               count(l."defensiveReboundPercentage"), count(l."effectiveFieldGoalPercentage"),
+               count(l."netRating"), count(l."offensiveRating"),
+               count(l."offensiveReboundPercentage"), count(l."reboundPercentage"),
+               count(l."trueShootingPercentage"), count(l."turnoverRatio"),
+               count(l."usagePercentage")
+             )::int AS "gamesWithData",
+             avg(l.pie) AS pie, avg(l.pace) AS pace,
+             avg(l."assistPercentage") AS "assistPercentage",
+             avg(l."assistRatio") AS "assistRatio",
+             avg(l."assistToTurnover") AS "assistToTurnover",
+             avg(l."defensiveRating") AS "defensiveRating",
+             avg(l."defensiveReboundPercentage") AS "defensiveReboundPercentage",
+             avg(l."effectiveFieldGoalPercentage") AS "effectiveFieldGoalPercentage",
+             avg(l."netRating") AS "netRating",
+             avg(l."offensiveRating") AS "offensiveRating",
+             avg(l."offensiveReboundPercentage") AS "offensiveReboundPercentage",
+             avg(l."reboundPercentage") AS "reboundPercentage",
+             avg(l."trueShootingPercentage") AS "trueShootingPercentage",
+             avg(l."turnoverRatio") AS "turnoverRatio",
+             avg(l."usagePercentage") AS "usagePercentage"
+      FROM (
+        SELECT al.* FROM "PlayerAdvancedGameLog" al
+        WHERE al."playerId" = p.id
+        ORDER BY al."gameDate" DESC
+        LIMIT ${gameLimit}
+      ) l
+      WHERE NOT ${scopeToLatestSeason} OR l.season = s.season
+    ) a
+    WHERE EXISTS (SELECT 1 FROM "PlayerGameLog" g WHERE g."playerId" = p.id)
+  `;
+  return z.array(advancedPoolRowSchema).parse(rows).map(toAdvancedPlayerRow);
+};
+
+// Filters, orders and pages an advanced pool in memory. Metric sorts sink
+// players with no value for that metric to the bottom in either direction.
+export const rankAdvancedPlayers = ({
+  pool,
+  args,
+}: {
+  pool: readonly AdvancedPlayerRow[];
+  args: PlayersSearchParams;
+}): PlayersAdvancedSearchResult => {
+  const { q, page, size, sort, dir } = args;
+  const candidates = pool.filter((row) => matchesQuery({ fullName: row.fullName, q }));
+  if (!isAdvancedMetricKey(sort)) {
+    const nameSort = sort === "lastName" ? "lastName" : "firstName";
+    const ordered = candidates.toSorted((a, b) => compareByName({ a, b, sort: nameSort, dir }));
+    return pageOf({ rows: ordered, page, size });
+  }
+  const ordered = candidates.toSorted((a, b) => {
+    const aValue = a.stats[sort];
+    const bValue = b.stats[sort];
+    const aIsNull = aValue === null ? 1 : 0;
+    const bIsNull = bValue === null ? 1 : 0;
+    if (aIsNull !== bIsNull) return aIsNull - bIsNull;
+    const difference = (aValue ?? 0) - (bValue ?? 0);
+    if (difference !== 0) return dir === "asc" ? difference : -difference;
+    return compareByNameAscending({ a, b });
+  });
+  return pageOf({ rows: ordered, page, size });
 };
 
 export const searchPlayersAdvanced = async (
   args: PlayersSearchParams,
-): Promise<PlayersAdvancedSearchResult> => {
-  const { q, page, size, sort, dir, range } = args;
-  const where: Prisma.PlayerWhereInput = {
-    gameLogs: { some: {} },
-    ...(q === "" ? {} : { fullName: { contains: q, mode: "insensitive" } }),
-  };
-  const orderBy: Prisma.PlayerOrderByWithRelationInput[] =
-    sort === "lastName"
-      ? [{ lastName: dir }, { firstName: dir }, { id: "asc" }]
-      : [{ firstName: dir }, { lastName: dir }, { id: "asc" }];
-
-  if (isAdvancedMetricKey(sort)) {
-    const candidates = await prisma.player.findMany({ where, select: advancedRowSelectFor(range) });
-    const sortedRows = candidates
-      .map((row) => toAdvancedPlayerRow({ row, range }))
-      .sort((a, b) => {
-        const aValue = a.stats[sort];
-        const bValue = b.stats[sort];
-        const aIsNull = aValue === null ? 1 : 0;
-        const bIsNull = bValue === null ? 1 : 0;
-        if (aIsNull !== bIsNull) return aIsNull - bIsNull;
-        const difference = (aValue ?? 0) - (bValue ?? 0);
-        if (difference !== 0) return dir === "asc" ? difference : -difference;
-        return (
-          a.lastName.localeCompare(b.lastName) ||
-          a.firstName.localeCompare(b.firstName) ||
-          a.id - b.id
-        );
-      });
-    const total = sortedRows.length;
-    const lastPage = Math.max(1, Math.ceil(total / size));
-    const clampedPage = Math.min(page, lastPage);
-    return {
-      rows: sortedRows.slice((clampedPage - 1) * size, clampedPage * size),
-      total,
-      page: total === 0 ? 1 : clampedPage,
-    };
-  }
-
-  const pageQuery = (pageNumber: number) =>
-    prisma.player.findMany({
-      where,
-      select: advancedRowSelectFor(range),
-      orderBy,
-      skip: (pageNumber - 1) * size,
-      take: size,
-    });
-
-  const [rows, total] = await prisma.$transaction([
-    pageQuery(page),
-    prisma.player.count({ where }),
-  ]);
-  if (rows.length > 0 || total === 0) {
-    return {
-      rows: rows.map((row) => toAdvancedPlayerRow({ row, range })),
-      total,
-      page: total === 0 ? 1 : page,
-    };
-  }
-  const lastPage = Math.max(1, Math.ceil(total / size));
-  const clamped = await pageQuery(lastPage);
-  return {
-    rows: clamped.map((row) => toAdvancedPlayerRow({ row, range })),
-    total,
-    page: lastPage,
-  };
-};
+): Promise<PlayersAdvancedSearchResult> =>
+  rankAdvancedPlayers({ pool: await fetchAdvancedPool({ range: args.range }), args });

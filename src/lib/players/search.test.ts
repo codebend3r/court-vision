@@ -1,18 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "bun:test";
 
-import { searchPlayers } from "@/lib/players/search";
-import type { PlayerRow } from "@/lib/players/search";
+import type { PlayerPoolRow, PlayerStats } from "@/lib/players/search";
 import type { PlayersSearchParams } from "@/lib/players/searchParams";
 
-const findMany = vi.fn<(arg: unknown) => Promise<PlayerRow[]>>();
-const count = vi.fn<(arg: unknown) => Promise<number>>();
+const queryRaw = vi.fn<(strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>>();
 
 vi.mock("@/lib/prisma", () => ({
-  prisma: {
-    player: { findMany, count },
-    $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
-  },
+  prisma: { $queryRaw: queryRaw },
 }));
+
+const { compareByName, fetchRegularPool, matchesQuery, pageOf, rankPlayers, searchPlayers } =
+  await import("@/lib/players/search");
 
 const defaultParams: PlayersSearchParams = {
   q: "",
@@ -26,566 +24,339 @@ const defaultParams: PlayersSearchParams = {
   tab: "regular",
 };
 
-const expectedSelect = {
-  id: true,
-  firstName: true,
-  lastName: true,
-  fullName: true,
-  teamAbbr: true,
-  position: true,
-  nbaPersonId: true,
-  seasonStats: {
-    where: { seasonType: "Regular Season" },
-    orderBy: { season: "desc" },
-    take: 1,
-    select: {
-      gamesPlayed: true,
-      fgm: true,
-      fga: true,
-      fg3m: true,
-      fg3a: true,
-      ftm: true,
-      fta: true,
-      reb: true,
-      ast: true,
-      stl: true,
-      blk: true,
-      tov: true,
-      pts: true,
-    },
-  },
+const zeroStats: PlayerStats = {
+  gamesPlayed: 0,
+  fgm: 0,
+  fga: 0,
+  fg3m: 0,
+  fg3a: 0,
+  ftm: 0,
+  fta: 0,
+  reb: 0,
+  ast: 0,
+  stl: 0,
+  blk: 0,
+  tov: 0,
+  pts: 0,
 };
 
-describe("searchPlayers", () => {
+const poolRow = ({
+  id,
+  firstName = `Player${id}`,
+  lastName = `P${id}`,
+  stats = {},
+}: {
+  id: number;
+  firstName?: string;
+  lastName?: string;
+  stats?: Partial<PlayerStats>;
+}): PlayerPoolRow => ({
+  id,
+  firstName,
+  lastName,
+  fullName: `${firstName} ${lastName}`,
+  teamAbbr: "AAA",
+  position: "G",
+  nbaPersonId: null,
+  stats: { ...zeroStats, ...stats },
+});
+
+// A pool query result row: identity columns plus flat stat columns.
+const sqlRow = ({
+  id,
+  pts = 0,
+  gamesPlayed = 0,
+}: {
+  id: number;
+  pts?: number;
+  gamesPlayed?: number;
+}) => ({
+  id,
+  firstName: "Stephen",
+  lastName: "Curry",
+  fullName: "Stephen Curry",
+  teamAbbr: "GSW",
+  position: "PG",
+  nbaPersonId: 201939,
+  ...zeroStats,
+  gamesPlayed,
+  pts,
+});
+
+const idsOf = (rows: readonly { id: number }[]): number[] => rows.map((row) => row.id);
+
+describe("fetchRegularPool", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    queryRaw.mockReset();
   });
 
-  it("calls findMany with default view (active players, no query)", async () => {
-    const mockRows = [
+  it("reads the latest season aggregate for the all range, with no window parameter", async () => {
+    queryRaw.mockResolvedValue([sqlRow({ id: 1, pts: 2000, gamesPlayed: 70 })]);
+
+    const pool = await fetchRegularPool({ range: "all" });
+
+    const [strings, ...values] = queryRaw.mock.calls[0] ?? [];
+    expect(strings?.join("?")).toContain('"PlayerSeasonStats"');
+    expect(values).toEqual([]);
+    expect(pool).toEqual([
       {
         id: 1,
         firstName: "Stephen",
         lastName: "Curry",
         fullName: "Stephen Curry",
-        teamId: 1,
         teamAbbr: "GSW",
         position: "PG",
-        jerseyNumber: "30",
-        nbaPersonId: null,
-        heightInches: null,
-        weightLbs: null,
-        birthDate: null,
-        college: null,
-        country: null,
-        draftYear: null,
-        draftRound: null,
-        draftNumber: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        nbaPersonId: 201939,
+        stats: { ...zeroStats, gamesPlayed: 70, pts: 2000 },
       },
-    ];
-    findMany.mockResolvedValue(mockRows);
-    count.mockResolvedValue(100);
-
-    const result = await searchPlayers(defaultParams);
-
-    expect(findMany).toHaveBeenCalledWith({
-      where: { gameLogs: { some: {} } },
-      select: expectedSelect,
-      orderBy: [{ firstName: "desc" }, { lastName: "desc" }, { id: "asc" }],
-      skip: 0,
-      take: 25,
-    });
-    expect(result).toEqual({ rows: [expect.objectContaining(mockRows[0])], total: 100, page: 1 });
+    ]);
   });
 
-  it("adds fullName search condition when q is provided", async () => {
-    const mockRows = [
-      {
-        id: 1,
-        firstName: "Stephen",
-        lastName: "Curry",
-        fullName: "Stephen Curry",
-        teamId: 1,
-        teamAbbr: "GSW",
-        position: "PG",
-        jerseyNumber: "30",
-        nbaPersonId: null,
-        heightInches: null,
-        weightLbs: null,
-        birthDate: null,
-        college: null,
-        country: null,
-        draftYear: null,
-        draftRound: null,
-        draftNumber: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ];
-    findMany.mockResolvedValue(mockRows);
-    count.mockResolvedValue(1);
+  it("binds the game window as a query parameter for a lastN range", async () => {
+    queryRaw.mockResolvedValue([sqlRow({ id: 1, pts: 300, gamesPlayed: 10 })]);
 
-    await searchPlayers({ ...defaultParams, q: "curry" });
+    const pool = await fetchRegularPool({ range: "last10" });
 
-    expect(findMany).toHaveBeenCalledWith({
-      where: {
-        gameLogs: { some: {} },
-        fullName: { contains: "curry", mode: "insensitive" },
-      },
-      select: expectedSelect,
-      orderBy: [{ firstName: "desc" }, { lastName: "desc" }, { id: "asc" }],
-      skip: 0,
-      take: 25,
-    });
+    const [strings, ...values] = queryRaw.mock.calls[0] ?? [];
+    expect(strings?.join("?")).toContain('"PlayerGameLog"');
+    expect(values).toEqual([10]);
+    expect(pool[0]?.stats).toEqual({ ...zeroStats, gamesPlayed: 10, pts: 300 });
   });
 
-  it("orders by last name with first name and id tiebreaks when sort is lastName", async () => {
-    findMany.mockResolvedValue([]);
-    count.mockResolvedValue(0);
+  it("rejects rows whose stats are not plain numbers", async () => {
+    // An uncast Postgres sum arrives as a bigint; failing loudly beats
+    // silently ranking on the wrong type.
+    queryRaw.mockResolvedValue([{ ...sqlRow({ id: 1 }), pts: BigInt(12) }]);
 
-    await searchPlayers({ ...defaultParams, sort: "lastName", dir: "desc" });
-
-    expect(findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        orderBy: [{ lastName: "desc" }, { firstName: "desc" }, { id: "asc" }],
-      }),
-    );
-  });
-
-  it("orders by first name descending with tiebreaks when dir is desc", async () => {
-    findMany.mockResolvedValue([]);
-    count.mockResolvedValue(0);
-
-    await searchPlayers({ ...defaultParams, dir: "desc" });
-
-    expect(findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        orderBy: [{ firstName: "desc" }, { lastName: "desc" }, { id: "asc" }],
-      }),
-    );
-  });
-
-  it("clamps page when requested page exceeds available data", async () => {
-    const secondQueryRows = [
-      {
-        id: 2,
-        firstName: "Player",
-        lastName: "",
-        fullName: "Player",
-        teamId: 2,
-        teamAbbr: "LAL",
-        position: "SF",
-        jerseyNumber: null,
-        nbaPersonId: null,
-        heightInches: null,
-        weightLbs: null,
-        birthDate: null,
-        college: null,
-        country: null,
-        draftYear: null,
-        draftRound: null,
-        draftNumber: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ];
-
-    findMany.mockResolvedValueOnce([]).mockResolvedValueOnce(secondQueryRows);
-    count.mockResolvedValue(30);
-
-    const result = await searchPlayers({ ...defaultParams, page: 9 });
-
-    expect(result).toEqual({
-      rows: [expect.objectContaining(secondQueryRows[0])],
-      total: 30,
-      page: 2,
-    });
-    expect(findMany).toHaveBeenCalledTimes(2);
-    expect(findMany).toHaveBeenNthCalledWith(1, expect.objectContaining({ skip: 200, take: 25 }));
-    expect(findMany).toHaveBeenNthCalledWith(2, expect.objectContaining({ skip: 25, take: 25 }));
-  });
-
-  it("returns page 1 with empty rows when total is 0", async () => {
-    findMany.mockResolvedValue([]);
-    count.mockResolvedValue(0);
-
-    const result = await searchPlayers(defaultParams);
-
-    expect(result).toEqual({ rows: [], total: 0, page: 1 });
-    expect(findMany).toHaveBeenCalledTimes(1);
-  });
-
-  it("aggregates and sorts the selected recent-game range", async () => {
-    const recentRows = [
-      {
-        id: 1,
-        firstName: "Alpha",
-        lastName: "One",
-        fullName: "Alpha One",
-        teamAbbr: "AAA",
-        position: "G",
-        nbaPersonId: null,
-        teamId: 1,
-        jerseyNumber: null,
-        heightInches: null,
-        weightLbs: null,
-        birthDate: null,
-        college: null,
-        country: null,
-        draftYear: null,
-        draftRound: null,
-        draftNumber: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        gameLogs: [
-          {
-            minutes: 30,
-            fgm: 2,
-            fga: 4,
-            fg3m: 1,
-            fg3a: 3,
-            ftm: 1,
-            fta: 2,
-            reb: 2,
-            ast: 3,
-            stl: 1,
-            blk: 0,
-            tov: 1,
-            pts: 6,
-          },
-        ],
-      },
-      {
-        id: 2,
-        firstName: "Beta",
-        lastName: "Two",
-        fullName: "Beta Two",
-        teamAbbr: "BBB",
-        position: "F",
-        nbaPersonId: null,
-        teamId: 2,
-        jerseyNumber: null,
-        heightInches: null,
-        weightLbs: null,
-        birthDate: null,
-        college: null,
-        country: null,
-        draftYear: null,
-        draftRound: null,
-        draftNumber: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        gameLogs: [
-          {
-            minutes: 32,
-            fgm: 4,
-            fga: 8,
-            fg3m: 2,
-            fg3a: 6,
-            ftm: 2,
-            fta: 2,
-            reb: 4,
-            ast: 2,
-            stl: 0,
-            blk: 1,
-            tov: 2,
-            pts: 12,
-          },
-        ],
-      },
-    ];
-    findMany.mockResolvedValue(recentRows);
-
-    const result = await searchPlayers({
-      ...defaultParams,
-      sort: "pts",
-      dir: "desc",
-      range: "last20",
-    });
-
-    expect(findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        select: expect.objectContaining({ gameLogs: expect.objectContaining({ take: 20 }) }),
-      }),
-    );
-    expect(result.rows.map((row) => row.id)).toEqual([2, 1]);
-    expect(result.rows[0].stats?.pts).toBe(12);
-  });
-
-  it("counts only appearances (not DNPs) as games played in a recent range", async () => {
-    const rows = [
-      {
-        id: 1,
-        firstName: "Gamma",
-        lastName: "Three",
-        fullName: "Gamma Three",
-        teamAbbr: "CCC",
-        position: "G",
-        nbaPersonId: null,
-        teamId: 3,
-        jerseyNumber: null,
-        heightInches: null,
-        weightLbs: null,
-        birthDate: null,
-        college: null,
-        country: null,
-        draftYear: null,
-        draftRound: null,
-        draftNumber: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        gameLogs: [
-          {
-            minutes: 30,
-            fgm: 5,
-            fga: 10,
-            fg3m: 0,
-            fg3a: 0,
-            ftm: 0,
-            fta: 0,
-            reb: 0,
-            ast: 0,
-            stl: 0,
-            blk: 0,
-            tov: 0,
-            pts: 10,
-          },
-          {
-            minutes: 0,
-            fgm: 0,
-            fga: 0,
-            fg3m: 0,
-            fg3a: 0,
-            ftm: 0,
-            fta: 0,
-            reb: 0,
-            ast: 0,
-            stl: 0,
-            blk: 0,
-            tov: 0,
-            pts: 0,
-          },
-        ],
-      },
-    ];
-    findMany.mockResolvedValue(rows);
-
-    const result = await searchPlayers({ ...defaultParams, sort: "pts", range: "last5" });
-
-    // Two logs fetched, one DNP: one game played.
-    expect(result.rows[0].stats?.gamesPlayed).toBe(1);
-    expect(result.rows[0].stats?.pts).toBe(10);
-  });
-
-  it("sinks players below the qualifying minimum on percentage sorts", async () => {
-    const buildPctRow = ({ id, fgm, fga }: { id: number; fgm: number; fga: number }) => ({
-      id,
-      firstName: `Player${id}`,
-      lastName: `P${id}`,
-      fullName: `Player${id} P${id}`,
-      teamAbbr: "AAA",
-      position: "G",
-      nbaPersonId: null,
-      teamId: 1,
-      jerseyNumber: null,
-      heightInches: null,
-      weightLbs: null,
-      birthDate: null,
-      college: null,
-      country: null,
-      draftYear: null,
-      draftRound: null,
-      draftNumber: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      seasonStats: [
-        {
-          gamesPlayed: 50,
-          fgm,
-          fga,
-          fg3m: 0,
-          fg3a: 0,
-          ftm: 200,
-          fta: 250,
-          reb: 0,
-          ast: 0,
-          stl: 0,
-          blk: 0,
-          tov: 0,
-          pts: fgm * 2,
-        },
-      ],
-    });
-    // Player 1 shoots a perfect but tiny sample; player 2 qualifies at .500
-    const rows = [
-      buildPctRow({ id: 1, fgm: 10, fga: 10 }),
-      buildPctRow({ id: 2, fgm: 400, fga: 800 }),
-    ];
-
-    findMany.mockResolvedValue(rows);
-    const withMinimums = await searchPlayers({ ...defaultParams, sort: "fgPct", dir: "desc" });
-    expect(withMinimums.rows.map((row) => row.id)).toEqual([2, 1]);
-
-    findMany.mockResolvedValue(rows);
-    const withoutMinimums = await searchPlayers({
-      ...defaultParams,
-      sort: "fgPct",
-      dir: "desc",
-      minimums: false,
-    });
-    expect(withoutMinimums.rows.map((row) => row.id)).toEqual([1, 2]);
-  });
-
-  it("sinks players under 58 games on per-game sorts, but not on totals", async () => {
-    const buildGamesRow = ({
-      id,
-      gamesPlayed,
-      pts,
-    }: {
-      id: number;
-      gamesPlayed: number;
-      pts: number;
-    }) => ({
-      id,
-      firstName: `Player${id}`,
-      lastName: `P${id}`,
-      fullName: `Player${id} P${id}`,
-      teamAbbr: "AAA",
-      position: "G",
-      nbaPersonId: null,
-      teamId: 1,
-      jerseyNumber: null,
-      heightInches: null,
-      weightLbs: null,
-      birthDate: null,
-      college: null,
-      country: null,
-      draftYear: null,
-      draftRound: null,
-      draftNumber: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      seasonStats: [
-        {
-          gamesPlayed,
-          fgm: 0,
-          fga: 0,
-          fg3m: 0,
-          fg3a: 0,
-          ftm: 0,
-          fta: 0,
-          reb: 0,
-          ast: 0,
-          stl: 0,
-          blk: 0,
-          tov: 0,
-          pts,
-        },
-      ],
-    });
-    // Player 1 averages 45 over 20 games; player 2 averages 12 over 70 games.
-    const rows = [
-      buildGamesRow({ id: 1, gamesPlayed: 20, pts: 900 }),
-      buildGamesRow({ id: 2, gamesPlayed: 70, pts: 840 }),
-    ];
-
-    findMany.mockResolvedValue(rows);
-    const averages = await searchPlayers({ ...defaultParams, sort: "pts", dir: "desc" });
-    expect(averages.rows.map((row) => row.id)).toEqual([2, 1]);
-
-    findMany.mockResolvedValue(rows);
-    const withoutMinimums = await searchPlayers({
-      ...defaultParams,
-      sort: "pts",
-      dir: "desc",
-      minimums: false,
-    });
-    expect(withoutMinimums.rows.map((row) => row.id)).toEqual([1, 2]);
-
-    findMany.mockResolvedValue(rows);
-    const totals = await searchPlayers({
-      ...defaultParams,
-      sort: "pts",
-      dir: "desc",
-      mode: "total",
-    });
-    expect(totals.rows.map((row) => row.id)).toEqual([1, 2]);
-  });
-
-  it("scales the games-played minimum to a lastN range window", async () => {
-    const buildLogRow = ({ id, games, pts }: { id: number; games: number; pts: number }) => ({
-      id,
-      firstName: `Player${id}`,
-      lastName: `P${id}`,
-      fullName: `Player${id} P${id}`,
-      teamAbbr: "AAA",
-      position: "G",
-      nbaPersonId: null,
-      teamId: 1,
-      jerseyNumber: null,
-      heightInches: null,
-      weightLbs: null,
-      birthDate: null,
-      college: null,
-      country: null,
-      draftYear: null,
-      draftRound: null,
-      draftNumber: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      gameLogs: Array.from({ length: games }, () => ({
-        minutes: 30,
-        fgm: 0,
-        fga: 0,
-        fg3m: 0,
-        fg3a: 0,
-        ftm: 0,
-        fta: 0,
-        reb: 0,
-        ast: 0,
-        stl: 0,
-        blk: 0,
-        tov: 0,
-        pts,
-      })),
-    });
-    // Threshold for last10 is 7 games: player 1 misses it on a higher average,
-    // player 2 clears it on a lower one.
-    const rows = [
-      buildLogRow({ id: 1, games: 6, pts: 20 }),
-      buildLogRow({ id: 2, games: 7, pts: 10 }),
-    ];
-
-    findMany.mockResolvedValue(rows);
-    const result = await searchPlayers({
-      ...defaultParams,
-      sort: "pts",
-      dir: "desc",
-      range: "last10",
-    });
-    expect(result.rows.map((row) => row.id)).toEqual([2, 1]);
+    await expect(fetchRegularPool({ range: "last5" })).rejects.toThrow();
   });
 });
 
-describe("searchPlayers watchlist filter", () => {
-  it("restricts the query to the given player ids", async () => {
-    // findMany is shared across this file's tests, so drop earlier calls
-    // before asserting on the first one.
-    findMany.mockClear();
-    findMany.mockResolvedValue([]);
-    count.mockResolvedValue(0);
-    await searchPlayers({ ...defaultParams, playerIds: [7, 3] });
-    expect(findMany.mock.calls[0]?.[0]).toMatchObject({
-      where: { gameLogs: { some: {} }, id: { in: [7, 3] } },
+describe("rankPlayers", () => {
+  it("orders by first name descending with last name and id tiebreaks", () => {
+    const pool = [
+      poolRow({ id: 3, firstName: "Anthony", lastName: "Davis" }),
+      poolRow({ id: 1, firstName: "Stephen", lastName: "Curry" }),
+      poolRow({ id: 2, firstName: "Anthony", lastName: "Edwards" }),
+      poolRow({ id: 4, firstName: "Anthony", lastName: "Davis" }),
+    ];
+
+    const result = rankPlayers({ pool, args: defaultParams });
+
+    expect(idsOf(result.rows)).toEqual([1, 2, 3, 4]);
+    expect(result.total).toBe(4);
+  });
+
+  it("orders by last name then first name when sort is lastName", () => {
+    const pool = [
+      poolRow({ id: 1, firstName: "Seth", lastName: "Curry" }),
+      poolRow({ id: 2, firstName: "Anthony", lastName: "Davis" }),
+      poolRow({ id: 3, firstName: "Stephen", lastName: "Curry" }),
+    ];
+
+    const result = rankPlayers({ pool, args: { ...defaultParams, sort: "lastName", dir: "asc" } });
+
+    expect(idsOf(result.rows)).toEqual([1, 3, 2]);
+  });
+
+  it("keeps only players whose full name contains the query, ignoring case", () => {
+    const pool = [
+      poolRow({ id: 1, firstName: "Stephen", lastName: "Curry" }),
+      poolRow({ id: 2, firstName: "LeBron", lastName: "James" }),
+    ];
+
+    const result = rankPlayers({ pool, args: { ...defaultParams, q: "CURR" } });
+
+    expect(idsOf(result.rows)).toEqual([1]);
+    expect(result.total).toBe(1);
+  });
+
+  it("restricts the pool to the given player ids", () => {
+    const pool = [poolRow({ id: 7 }), poolRow({ id: 3 }), poolRow({ id: 5 })];
+
+    const result = rankPlayers({ pool, args: { ...defaultParams, playerIds: [7, 3] } });
+
+    expect(idsOf(result.rows).toSorted()).toEqual([3, 7]);
+  });
+
+  it("clamps the page when the requested page exceeds available data", () => {
+    const pool = Array.from({ length: 30 }, (_, index) => poolRow({ id: index + 1 }));
+
+    const result = rankPlayers({ pool, args: { ...defaultParams, page: 9 } });
+
+    expect(result.page).toBe(2);
+    expect(result.rows).toHaveLength(5);
+    expect(result.total).toBe(30);
+  });
+
+  it("returns page 1 with empty rows when nothing matches", () => {
+    const result = rankPlayers({ pool: [poolRow({ id: 1 })], args: { ...defaultParams, q: "zz" } });
+
+    expect(result).toEqual({ rows: [], total: 0, page: 1 });
+  });
+
+  it("sorts a stat by per-game average or by total, per the mode", () => {
+    // Player 1 averages 30 over 60 games; player 2 averages 25 over 70 games.
+    const pool = [
+      poolRow({ id: 1, stats: { gamesPlayed: 60, pts: 1800 } }),
+      poolRow({ id: 2, stats: { gamesPlayed: 70, pts: 1750 } }),
+    ];
+
+    const averages = rankPlayers({ pool, args: { ...defaultParams, sort: "pts" } });
+    const ascending = rankPlayers({ pool, args: { ...defaultParams, sort: "pts", dir: "asc" } });
+
+    expect(idsOf(averages.rows)).toEqual([1, 2]);
+    expect(idsOf(ascending.rows)).toEqual([2, 1]);
+  });
+
+  it("breaks stat ties by last name, first name, then id, whatever the direction", () => {
+    const pool = [
+      poolRow({ id: 2, firstName: "Bo", lastName: "Zed", stats: { gamesPlayed: 60, reb: 600 } }),
+      poolRow({ id: 1, firstName: "Al", lastName: "Zed", stats: { gamesPlayed: 60, reb: 600 } }),
+      poolRow({ id: 3, firstName: "Cy", lastName: "Abe", stats: { gamesPlayed: 60, reb: 600 } }),
+    ];
+
+    const result = rankPlayers({ pool, args: { ...defaultParams, sort: "reb", dir: "asc" } });
+
+    expect(idsOf(result.rows)).toEqual([3, 1, 2]);
+  });
+
+  it("sinks players below the qualifying minimum on percentage sorts", () => {
+    // Player 1 shoots a perfect but tiny sample; player 2 qualifies at .500.
+    const pool = [
+      poolRow({ id: 1, stats: { gamesPlayed: 50, fgm: 10, fga: 10 } }),
+      poolRow({ id: 2, stats: { gamesPlayed: 50, fgm: 400, fga: 800 } }),
+    ];
+
+    const withMinimums = rankPlayers({ pool, args: { ...defaultParams, sort: "fgPct" } });
+    const withoutMinimums = rankPlayers({
+      pool,
+      args: { ...defaultParams, sort: "fgPct", minimums: false },
     });
+
+    expect(idsOf(withMinimums.rows)).toEqual([2, 1]);
+    expect(idsOf(withoutMinimums.rows)).toEqual([1, 2]);
+  });
+
+  it("ranks a player with no attempts last on a percentage sort", () => {
+    const pool = [
+      poolRow({ id: 1, stats: { fgm: 0, fga: 0 } }),
+      poolRow({ id: 2, stats: { fgm: 1, fga: 4 } }),
+    ];
+
+    const result = rankPlayers({
+      pool,
+      args: { ...defaultParams, sort: "fgPct", minimums: false },
+    });
+
+    expect(idsOf(result.rows)).toEqual([2, 1]);
+  });
+
+  it("sinks players under 58 games on per-game sorts, but not on totals", () => {
+    // Player 1 averages 45 over 20 games; player 2 averages 12 over 70 games.
+    const pool = [
+      poolRow({ id: 1, stats: { gamesPlayed: 20, pts: 900 } }),
+      poolRow({ id: 2, stats: { gamesPlayed: 70, pts: 840 } }),
+    ];
+
+    const averages = rankPlayers({ pool, args: { ...defaultParams, sort: "pts" } });
+    const withoutMinimums = rankPlayers({
+      pool,
+      args: { ...defaultParams, sort: "pts", minimums: false },
+    });
+    const totals = rankPlayers({ pool, args: { ...defaultParams, sort: "pts", mode: "total" } });
+
+    expect(idsOf(averages.rows)).toEqual([2, 1]);
+    expect(idsOf(withoutMinimums.rows)).toEqual([1, 2]);
+    expect(idsOf(totals.rows)).toEqual([1, 2]);
+  });
+
+  it("scales the games-played minimum to a lastN range window", () => {
+    // Threshold for last10 is 7 games: player 1 misses it on a higher average,
+    // player 2 clears it on a lower one.
+    const pool = [
+      poolRow({ id: 1, stats: { gamesPlayed: 6, pts: 120 } }),
+      poolRow({ id: 2, stats: { gamesPlayed: 7, pts: 70 } }),
+    ];
+
+    const result = rankPlayers({ pool, args: { ...defaultParams, sort: "pts", range: "last10" } });
+
+    expect(idsOf(result.rows)).toEqual([2, 1]);
+  });
+
+  it("does not apply minimums to games played, which is a count", () => {
+    const pool = [
+      poolRow({ id: 1, stats: { gamesPlayed: 3 } }),
+      poolRow({ id: 2, stats: { gamesPlayed: 9 } }),
+    ];
+
+    const result = rankPlayers({ pool, args: { ...defaultParams, sort: "gamesPlayed" } });
+
+    expect(idsOf(result.rows)).toEqual([2, 1]);
+  });
+});
+
+describe("searchPlayers", () => {
+  beforeEach(() => {
+    queryRaw.mockReset();
+  });
+
+  it("ranks the pool for the requested range", async () => {
+    queryRaw.mockResolvedValue([
+      sqlRow({ id: 1, pts: 100, gamesPlayed: 10 }),
+      sqlRow({ id: 2, pts: 300, gamesPlayed: 10 }),
+    ]);
+
+    const result = await searchPlayers({ ...defaultParams, sort: "pts", range: "last10" });
+
+    expect(idsOf(result.rows)).toEqual([2, 1]);
+    expect(queryRaw.mock.calls[0]?.slice(1)).toEqual([10]);
   });
 
   it("short-circuits an empty id list without querying", async () => {
-    findMany.mockClear();
     const result = await searchPlayers({ ...defaultParams, playerIds: [] });
+
     expect(result).toEqual({ rows: [], total: 0, page: 1 });
-    expect(findMany).not.toHaveBeenCalled();
+    expect(queryRaw).not.toHaveBeenCalled();
+  });
+});
+
+describe("matchesQuery", () => {
+  it("matches every name for an empty query", () => {
+    expect(matchesQuery({ fullName: "Stephen Curry", q: "" })).toBe(true);
+  });
+
+  it("matches a case-insensitive substring and rejects a miss", () => {
+    expect(matchesQuery({ fullName: "Stephen Curry", q: "phen cu" })).toBe(true);
+    expect(matchesQuery({ fullName: "Stephen Curry", q: "james" })).toBe(false);
+  });
+});
+
+describe("compareByName", () => {
+  it("falls back to id ascending for identical names in either direction", () => {
+    const a = { id: 2, firstName: "Jalen", lastName: "Williams" };
+    const b = { id: 1, firstName: "Jalen", lastName: "Williams" };
+
+    expect(compareByName({ a, b, sort: "lastName", dir: "asc" })).toBeGreaterThan(0);
+    expect(compareByName({ a, b, sort: "lastName", dir: "desc" })).toBeGreaterThan(0);
+  });
+});
+
+describe("pageOf", () => {
+  it("slices the requested page", () => {
+    expect(pageOf({ rows: [1, 2, 3, 4, 5], page: 2, size: 2 })).toEqual({
+      rows: [3, 4],
+      total: 5,
+      page: 2,
+    });
+  });
+
+  it("clamps to the last page and reports page 1 for an empty list", () => {
+    expect(pageOf({ rows: [1, 2, 3], page: 5, size: 2 })).toEqual({
+      rows: [3],
+      total: 3,
+      page: 2,
+    });
+    expect(pageOf({ rows: [], page: 3, size: 2 })).toEqual({ rows: [], total: 0, page: 1 });
   });
 });

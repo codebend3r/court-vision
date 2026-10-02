@@ -48,10 +48,13 @@ Work down; stop at the first rung that clears the budget:
    runs profile, watchlist, and leagues in one `Promise.all`; new layout or
    page reads should join that shape, not chain after it.
 3. **Query shape.** Over-fetching in Prisma: selecting relations the page
-   never renders, or fetching all rows to sort in JS. The known debt here is
-   `lib/players/search.ts` stat sorts (fetch-all-and-sort); the structural
-   fix is pushing the sort into SQL, which is branch-sized work, so raise it
-   as its own task rather than bolting it onto an unrelated fix.
+   never renders, or fetching all rows to sort in JS. Watch for Prisma's
+   nested `take` on a relation: it does not limit per parent in SQL, it
+   fetches every child row and trims in memory. The players and fantasy
+   pools hit this (352k logs for a "last 10" sort); they now aggregate in a
+   tagged `$queryRaw` (`lib/players/search.ts`, `searchAdvanced.ts`,
+   `lib/valuation/loader.ts`), cache the pool per range, and rank in memory.
+   Follow that shape rather than re-adding a nested `take`.
 4. **Client payload.** Heavy client components (recharts is the big one) on
    routes that breach Lighthouse budgets; split or defer them.
 
