@@ -74,19 +74,22 @@ export const valuePlayers = <K extends SportKeys>({
   const sgpValues = scoreSGP({ sport, lines, poolStats, config: configFor("sgp") });
   const simValues = scoreSimValue({ sport, lines, poolStats, config: configFor("sim") });
 
-  // VORP and Positional re-standardize with their own weight sets before the
-  // replacement shift.
-  const vorpTotals = scoreZScore({ sport, lines, poolStats, config: configFor("vorp") }).map(
-    ({ playerId, total }) => ({ playerId, total }),
-  );
+  // VORP and Positional shift a base value by a replacement level. Category
+  // sports re-standardize with each method's own weight set; points-only
+  // sports shift the points total.
+  const replacementBase = (method: "vorp" | "pos"): { playerId: number; total: number }[] =>
+    sport.replacementBase === "points"
+      ? pointsValues
+      : scoreZScore({ sport, lines, poolStats, config: configFor(method) }).map(
+          ({ playerId, total }) => ({ playerId, total }),
+        );
+  const vorpTotals = replacementBase("vorp");
   const globalReplacement = replacementLevel({
     totals: vorpTotals,
     rank: config.teams * config.rosterSlots,
   });
   const positionByPlayer = new Map(lines.map((line) => [line.playerId, line.position]));
-  const posTotals = scoreZScore({ sport, lines, poolStats, config: configFor("pos") }).map(
-    ({ playerId, total }) => ({ playerId, total }),
-  );
+  const posTotals = replacementBase("pos");
   const positional = positionalValues({
     sport,
     players: posTotals.map((entry) => ({

@@ -102,13 +102,17 @@ const DEFAULT_METHODS: readonly FantasyMethodMeta[] = [
   },
 ];
 
-// Every method, with the sport's own wording laid over the defaults.
+// The sport's methods in registry order, with its own wording laid over the
+// defaults.
 export const fantasyMethods = <K extends SportKeys>({
   sport,
 }: {
   sport: SportDescriptor<K>;
 }): FantasyMethodMeta[] =>
-  DEFAULT_METHODS.map((method) => ({ ...method, ...sport.methodCopy[method.key] }));
+  DEFAULT_METHODS.filter((method) => sport.methods.includes(method.key)).map((method) => ({
+    ...method,
+    ...sport.methodCopy[method.key],
+  }));
 
 export const enabledMethods = ({
   methods,

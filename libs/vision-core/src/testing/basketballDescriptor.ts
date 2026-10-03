@@ -48,6 +48,19 @@ export const basketballFixture: SportDescriptor<BasketballKeys> = {
   season: { label: crossYearSeasonLabel },
   playingTime: { label: "MIN", perUnit: 36 },
   valuedStats: VALUED_STATS,
+  statLabels: {
+    pts: "PTS",
+    reb: "REB",
+    ast: "AST",
+    stl: "STL",
+    blk: "BLK",
+    fg3m: "3PM",
+    tov: "TOV",
+    fgm: "FGM",
+    fga: "FGA",
+    ftm: "FTM",
+    fta: "FTA",
+  },
   counting: {
     pts: {
       kind: "counting",
@@ -282,6 +295,8 @@ export const basketballFixture: SportDescriptor<BasketballKeys> = {
       accepts: "any",
     },
   ],
+  methods: ["zscore", "gscore", "points", "vorp", "positional", "sgp", "simvalue"],
+  replacementBase: "z",
   methodCopy: {
     zscore: {
       whyItMatters:

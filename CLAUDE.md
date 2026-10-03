@@ -1,16 +1,21 @@
 # CLAUDE.md
 
-Court Vision is a fantasy-basketball stats app: Next.js App Router, React 19, Prisma on Supabase Postgres, Supabase auth. The repo is an Nx + Bun-workspaces monorepo. Its sport-agnostic logic is being extracted into shared `@vision/*` libs, so that sibling apps (rink-vision, diamond-vision, field-vision) can reuse it.
+Court Vision is a fantasy-basketball stats app: Next.js App Router, React 19, Prisma on Supabase Postgres, Supabase auth. The repo is an Nx + Bun-workspaces monorepo. Its sport-agnostic logic lives in shared `@vision/*` libs, so that sibling apps (rink-vision, diamond-vision, field-vision) reuse the same engine and design system.
 
 ## Workflow
 
-- Never commit, push, merge, create a branch, or open a PR until I tell you to.
+- Do not commit anything until I tell you to. Finishing a change is not permission to commit it.
+- Do not push anything until I tell you to. Once I have told you to commit on a branch that already tracks a remote, push it in the same step, don't ask again.
+- Do not merge anything until I tell you to.
+- Do not create a PR until I tell you to.
 
 ## Structure
 
 - `apps/court-vision/` is the Next app. It holds the UI, server actions, the Prisma schema and generated client, Supabase auth, and the Balldontlie sync CLIs. It stays one full-stack app with no separate backend.
 - `libs/vision-core/` (`@vision/core`) holds sport-agnostic logic: the valuation engine, roster slots, running stat series, leaderboards, and league scoring. Each function takes a `SportDescriptor` (`sport/types.ts`), the one place a sport's categories, positions, slots, pools and season format are defined. It is framework-free: no React, Next, Prisma, Supabase, nuqs or zustand, and no other `@vision/*` lib. Import a module by path (`@vision/core/util/logger`); there are no barrel files.
-- `libs/sport-basketball/` (`@vision/sport-basketball`) holds basketball's descriptor (`descriptor`), its type aliases (`types`), and `engine`, which is the core engine bound to basketball under Court Vision's names. App code imports engine functions from `@vision/sport-basketball/engine` and never threads a descriptor itself. A new sport is a new `libs/sport-*` lib with a descriptor and its own `engine` binding.
+- `libs/sport-basketball/` (`@vision/sport-basketball`) holds basketball's descriptor (`descriptor`), its type aliases (`types`), and `engine`, which is the core engine bound to basketball under Court Vision's names. App code imports engine functions from `@vision/sport-basketball/engine` and never threads a descriptor itself.
+- `libs/sport-hockey/`, `libs/sport-baseball/` and `libs/sport-football/` hold those sports' descriptors and bound engines. Each one's tests run `describeSportIssues` and value a small synthetic pool. A new sport is a new `libs/sport-*` lib with the same three files.
+- `apps/rink-vision/`, `apps/diamond-vision/` and `apps/field-vision/` are Next shells (ports 46645–46647) with no data source, database or auth yet. Each renders its sport's descriptor through `@vision/ui`'s `SportOverview`. Start one with `bun run dev:rink`, `bun run dev:diamond` or `bun run dev:field`.
 - Dependency rules, enforced by oxlint: core imports no other workspace lib, sport libs import only core, `@vision/ui` imports no sport lib, and no lib imports an app.
 - `libs/vision-ui/` (`@vision/ui`) is the shared design system: tokens (`styles/globals.scss`), mixins (`styles/mixins.scss`), the theme registry (`theme/themes.ts`), `ThemeProvider`/`ThemeInitScript`, the chart palette, and the sport-neutral components (`PageHeader`, `ReadoutCard`, `Switch`, `Wordmark`, …). It may use React and Next but never data, auth, or a sport lib. An app's `styles/mixins.scss` forwards the shared mixins, so `@use "@/styles/mixins" as *` still works; its `styles/globals.scss` uses the shared globals and adds sport-only tokens.
 - `libs/vision-testing/` (`@vision/testing`) holds the bun:test preload, env stubs and jest-dom matcher types.

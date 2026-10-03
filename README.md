@@ -70,14 +70,22 @@ An [Nx](https://nx.dev/) monorepo on Bun workspaces:
 
 ```
 apps/court-vision/     the Court Vision Next.js app (UI, server actions, Prisma, auth, sync jobs)
+apps/rink-vision/      Rink Vision (NHL), a shell with no data yet — `bun run dev:rink`, port 46645
+apps/diamond-vision/   Diamond Vision (MLB), a shell with no data yet — `bun run dev:diamond`, port 46646
+apps/field-vision/     Field Vision (NFL), a shell with no data yet — `bun run dev:field`, port 46647
 libs/vision-core/      @vision/core: sport-agnostic, framework-free logic driven by a sport descriptor
 libs/sport-basketball/ @vision/sport-basketball: the basketball descriptor and the engine bound to it
+libs/sport-hockey/     @vision/sport-hockey: skater and goalie pools, GAA and SV%
+libs/sport-baseball/   @vision/sport-baseball: hitter and pitcher pools, 5×5 categories
+libs/sport-football/   @vision/sport-football: points-only PPR, valued over replacement
 libs/vision-ui/        @vision/ui: design tokens, mixins, themes, and sport-neutral components
 libs/vision-testing/   @vision/testing: the shared bun:test preload and helpers
 ```
 
 Shared `@vision/*` libraries hold the sport-agnostic logic so sibling apps
-for other sports can reuse it. They ship TypeScript source, and apps compile
+for other sports can reuse it. A sport plugs in through one `SportDescriptor`
+(categories, positions, roster slots, pools, points table, season format) and
+the shared engine values players for it. They ship TypeScript source, and apps compile
 them directly; there is no library build step.
 
 ## Getting started

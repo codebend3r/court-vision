@@ -1,0 +1,20 @@
+{
+  "name": "@vision/sport-football",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "scripts": {
+    "test": "bun test --parallel --dots",
+    "typecheck": "tsgo --noEmit"
+  },
+  "imports": {
+    "#football/*": "./src/*.ts"
+  },
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@vision/core": "workspace:*"
+  }
+}

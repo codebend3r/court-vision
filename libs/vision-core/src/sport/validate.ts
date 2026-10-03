@@ -52,6 +52,15 @@ export const describeSportIssues = <K extends SportKeys>({
     ...duplicates(sport.slots.map((slot) => slot.type)).map(
       (type) => `slot "${type}" is declared twice`,
     ),
+    ...(sport.methods.length === 0 ? ["methods lists no method"] : []),
+    ...(sport.replacementBase === "points" && sport.points.keys.length === 0
+      ? ["replacementBase is points but the points table is empty"]
+      : []),
+    ...(sport.categoryOrder.length === 0
+      ? sport.methods
+          .filter((method) => method !== "points" && method !== "vorp" && method !== "positional")
+          .map((method) => `method "${method}" needs categories, and this sport has none`)
+      : []),
     ...sport.slots.flatMap((slot) =>
       slot.defaultCount > slot.max
         ? [`slot "${slot.type}" defaults above its max (${slot.defaultCount} > ${slot.max})`]

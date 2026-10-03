@@ -1,0 +1,38 @@
+@use "@/styles/mixins" as *;
+
+// First tab stop on every route, ahead of the header controls.
+.skipLink {
+  @include visually-hidden;
+
+  &:focus-visible {
+    @include control-focus-ring;
+
+    position: fixed;
+    z-index: 10;
+    top: var(--space-2);
+    left: var(--space-2);
+    width: auto;
+    height: auto;
+    padding: var(--space-2) var(--space-3);
+    clip-path: none;
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+}
+
+.header {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-6);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.content {
+  display: grid;
+  align-content: start;
+}

@@ -8,6 +8,9 @@
   ],
   "scripts": {
     "dev": "bun run --cwd apps/court-vision dev",
+    "dev:rink": "bun run --cwd apps/rink-vision dev",
+    "dev:diamond": "bun run --cwd apps/diamond-vision dev",
+    "dev:field": "bun run --cwd apps/field-vision dev",
     "build": "nx run-many -t build --output-style=static",
     "start": "bun run --cwd apps/court-vision start",
     "lint": "bun run --sequential lint:spell lint:actions lint:ts lint:scss",

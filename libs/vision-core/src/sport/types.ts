@@ -83,6 +83,8 @@ export type SportDescriptor<K extends SportKeys> = {
   // pace rate charts normalize to (per 36 minutes), or null when none applies.
   playingTime: { label: string; perUnit: number | null };
   valuedStats: readonly K["valued"][];
+  // Column headings for the valued stats (box scores, points tables).
+  statLabels: Readonly<Record<K["valued"], string>>;
   counting: { readonly [C in K["counting"]]: CountingCategoryDef<K> & { key: C } };
   ratio: { readonly [R in K["ratio"]]: RatioCategoryDef<K> & { key: R } };
   // Table order, and the order every multi-category sum adds in.
@@ -100,6 +102,13 @@ export type SportDescriptor<K extends SportKeys> = {
     replacementSlots: Readonly<Record<K["group"], number>>;
   };
   slots: readonly SlotDef<K>[];
+  // The method columns that mean something for this sport, in display order.
+  // A points-only sport (no categories) keeps points and the replacement
+  // methods; Z-Score, G-Score, SGP and Sim Value need categories.
+  methods: readonly FantasyMethodKey[];
+  // What VORP and positional value subtract a replacement level from: the
+  // Z-Score total (category sports) or the points total (points-only sports).
+  replacementBase: "z" | "points";
   // Sport-specific wording for the method registry; anything absent keeps
   // the sport-neutral default.
   methodCopy: Partial<Record<FantasyMethodKey, Partial<MethodCopy>>>;
