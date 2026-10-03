@@ -33,7 +33,7 @@ export const THEME_META: readonly ThemeMeta[] = [
   {
     id: "dark",
     label: "Dark",
-    note: "The original navy court, tuned for evening research.",
+    note: "The original navy palette, tuned for evening research.",
     bg: "#131629",
     surface: "#1c2138",
     accent: "#3fc3e8",
@@ -43,7 +43,7 @@ export const THEME_META: readonly ThemeMeta[] = [
   {
     id: "light",
     label: "Light",
-    note: "Bright rooms and daytime box-score reading.",
+    note: "Bright rooms and daytime stat reading.",
     bg: "#f7f8fc",
     surface: "#ffffff",
     accent: "#0b749a",
