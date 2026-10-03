@@ -46,6 +46,7 @@
     "@types/bun": "1.4.2",
     "@types/node": "26.6.4",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
+    "@vitejs/plugin-react": "6.1.1",
     "github-actionlint": "1.7.12",
     "lefthook": "2.1.16",
     "lint-staged": "17.6.0",
@@ -53,7 +54,8 @@
     "oxfmt": "0.71.0",
     "oxlint": "1.86.0",
     "oxlint-tsgolint": "7.0.2003",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "vite": "8.3.2"
   },
   "trustedDependencies": [
     "@ocular-d/typos-bin",

@@ -47,7 +47,7 @@
     "TeamChip": "apps/court-vision/src/components/TeamChip/TeamChip.tsx",
     "TeamEditor": "apps/court-vision/src/components/TeamEditor/TeamEditor.tsx",
     "TeamMatchup": "apps/court-vision/src/components/TeamMatchup/TeamMatchup.tsx",
-    "ThemeToggle": "apps/court-vision/src/components/ThemeToggle/ThemeToggle.tsx",
+    "ThemeSwatches": "libs/vision-ui/src/components/ThemeSwatches/ThemeSwatches.tsx",
     "TokenSwatch": "libs/vision-ui/src/components/TokenSwatch/TokenSwatch.tsx"
   }
 }

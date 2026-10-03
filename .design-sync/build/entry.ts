@@ -39,5 +39,5 @@ export { TeamBuilder } from "@/components/TeamBuilder/TeamBuilder";
 export { TeamChip } from "@/components/TeamChip/TeamChip";
 export { TeamEditor } from "@/components/TeamEditor/TeamEditor";
 export { TeamMatchup } from "@/components/TeamMatchup/TeamMatchup";
-export { ThemeToggle } from "@/components/ThemeToggle/ThemeToggle";
+export { ThemeSwatches } from "@vision/ui/components/ThemeSwatches/ThemeSwatches";
 export { TokenSwatch } from "@vision/ui/components/TokenSwatch/TokenSwatch";

@@ -1,3 +1,3 @@
-import { ThemeToggle } from "court-vision";
+import { ThemeSwatches } from "court-vision";
 
-export const Default = () => <ThemeToggle />;
+export const Default = () => <ThemeSwatches />;
