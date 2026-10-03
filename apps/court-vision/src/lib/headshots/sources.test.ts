@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "bun:test";
 
-import type { FetchImpl } from "@/lib/fetchImpl";
+import type { FetchImpl } from "@vision/core/util/fetchImpl";
 
 import { fetchNbaPlayerIndex, NBA_DATA_PY_URL } from "@/lib/headshots/sources";
 

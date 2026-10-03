@@ -70,6 +70,7 @@ An [Nx](https://nx.dev/) monorepo on Bun workspaces:
 
 ```
 apps/court-vision/     the Court Vision Next.js app (UI, server actions, Prisma, auth, sync jobs)
+libs/vision-core/      @vision/core: sport-agnostic, framework-free logic
 libs/vision-testing/   @vision/testing: the shared bun:test preload and helpers
 ```
 

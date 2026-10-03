@@ -1,13 +1,8 @@
 import { GameLogInput, PlayerInput, SeasonStatsInput } from "@/lib/stats/inputs";
-import { parseGameDate, parseMinutes } from "@/lib/stats/parse";
+import { blankToNull, parseGameDate, parseMinutes } from "@vision/core/util/parse";
 
 import { SEASON, SEASON_TYPE } from "@/lib/nba/constants";
 import { GameLogRow, PlayerIndexRow, SeasonStatsRow } from "@/lib/nba/schemas";
-
-const blankToNull = (value: string | null): string | null => {
-  const trimmed = (value ?? "").trim();
-  return trimmed === "" ? null : trimmed;
-};
 
 export const parseMatchup = (
   matchup: string,

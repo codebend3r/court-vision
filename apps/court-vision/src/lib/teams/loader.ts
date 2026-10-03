@@ -2,7 +2,9 @@ import { unstable_cache } from "next/cache";
 
 import { SEASON_LABEL } from "@/lib/balldontlie/constants";
 import { prisma } from "@/lib/prisma";
-import { buildTeamStats, type TeamGameResult, type TeamSeasonStats } from "@/lib/teams/stats";
+import { type TeamGameResult } from "@vision/core/series/teamTrend";
+
+import { buildTeamStats, type TeamSeasonStats } from "@/lib/teams/stats";
 
 export type TeamsData = {
   season: string | null;

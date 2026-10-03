@@ -1,4 +1,4 @@
-import { replacementLevel } from "@/lib/valuation/modifiers/replacement";
+import { replacementLevel } from "@vision/core/valuation/modifiers/replacement";
 
 export type PositionGroup = "G" | "F" | "C";
 

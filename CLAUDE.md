@@ -9,6 +9,7 @@ Court Vision is a fantasy-basketball stats app: Next.js App Router, React 19, Pr
 ## Structure
 
 - `apps/court-vision/` is the Next app. It holds the UI, server actions, the Prisma schema and generated client, Supabase auth, and the Balldontlie sync CLIs. It stays one full-stack app with no separate backend.
+- `libs/vision-core/` (`@vision/core`) holds sport-agnostic logic. It is framework-free: no React, Next, Prisma, Supabase, nuqs or zustand, and no other `@vision/*` lib. Import a module by path (`@vision/core/util/logger`); there are no barrel files.
 - `libs/vision-testing/` (`@vision/testing`) holds the bun:test preload, env stubs and jest-dom matcher types.
 - Libs ship TypeScript source: `exports` in their `package.json` point at `./src/**.ts`, and apps compile them through `transpilePackages`. Libs have no build step.
 - This Next.js version differs from older ones. Read the relevant guide in `node_modules/next/dist/docs/` before writing Next code.

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "bun:test";
 
-import { consoleLogger, silentLogger } from "@/lib/logger";
+import { consoleLogger, silentLogger } from "#core/util/logger";
 
 afterEach(() => {
   vi.restoreAllMocks();

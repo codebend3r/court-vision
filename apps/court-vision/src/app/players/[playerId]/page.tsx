@@ -16,7 +16,7 @@ import {
   formatExperience,
   formatHeight,
   formatWeight,
-} from "@/lib/players/format";
+} from "@vision/core/util/format";
 import { prisma } from "@/lib/prisma";
 import { CAREER, loadStatFilters, resolveSeasonSelection } from "@/lib/stats/searchParams";
 import { loadPlayerView } from "@/app/players/[playerId]/views";

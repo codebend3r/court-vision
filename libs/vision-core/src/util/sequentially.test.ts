@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { sequentially } from "@/lib/sequentially";
+import { sequentially } from "#core/util/sequentially";
 
 describe("sequentially", () => {
   it("returns results in input order", async () => {

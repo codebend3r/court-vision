@@ -15,10 +15,12 @@ seams, the ordering rules, and the environment traps.
 
 ## How tests run (never bare `bun test`)
 
-Every Nx project with tests (each `apps/*` and `libs/*`) has its own
-`bunfig.toml` that preloads `@vision/testing/setup`, and a `test` script of
-`bun test --parallel --dots`. The root `bun run test` runs that script in
-every project through `nx run-many -t test`.
+Every Nx project with tests has a `test` script of
+`bun test --parallel --dots`, and the root `bun run test` runs it in every
+project through `nx run-many -t test`. Projects whose tests render React or
+use jest-dom matchers (the apps) also have a `bunfig.toml`
+that preloads `@vision/testing/setup`. Framework-free libs such as
+`@vision/core` need no preload and have no bunfig.
 
 Never run bare `bun test`, at the root or in a project; it reports ~27 false
 failures. Bun stores module mocks per global object, and without isolation
@@ -47,7 +49,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 ## Prefer injection over mocking
 
 The house pattern for `src/lib` is a seam on the options object, not a
-module mock. `apps/court-vision/src/lib/fetchImpl.ts` exists for exactly this:
+module mock. `FetchImpl` (`@vision/core/util/fetchImpl`) exists for exactly this:
 
 ```ts
 const fetchImpl = vi.fn<FetchImpl>().mockResolvedValue(textResponse(body));

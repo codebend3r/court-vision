@@ -1,6 +1,6 @@
 import { type FantasySeed } from "@/lib/leagues/fantasyDefaults";
 import { type PlayerGameRange } from "@/lib/players/searchParams";
-import { type MetricPoint } from "@/lib/stats/metricPoint";
+import { type MetricPoint } from "@vision/core/series/metricPoint";
 import { buildCategoryBreakdown, type FantasyCategoryBreakdown } from "@/lib/valuation/breakdown";
 import { CATEGORY_KEYS } from "@/lib/valuation/categories";
 import { buildFantasyGameValues, type FantasyGameValue } from "@/lib/valuation/gameValues";

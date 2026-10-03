@@ -5,7 +5,7 @@ import { scoreSGP } from "@/lib/valuation/methods/sgp";
 import { scoreSimValue } from "@/lib/valuation/methods/simvalue";
 import { scoreZScore } from "@/lib/valuation/methods/zscore";
 import { positionalValues } from "@/lib/valuation/modifiers/positional";
-import { replacementLevel } from "@/lib/valuation/modifiers/replacement";
+import { replacementLevel } from "@vision/core/valuation/modifiers/replacement";
 import { computePoolStats } from "@/lib/valuation/pool";
 import {
   type FantasyPlayerValues,

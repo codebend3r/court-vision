@@ -1,7 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { buildCumulativeWins } from "@/lib/teams/trend";
-import { type TeamGameResult } from "@/lib/teams/stats";
+import { buildCumulativeWins, type TeamGameResult } from "#core/series/teamTrend";
 
 const result = ({
   teamAbbr,

@@ -19,8 +19,8 @@ import {
   toGameLogInput,
   toPlayerInputs,
 } from "@/lib/balldontlie/transform";
-import { Logger, consoleLogger, silentLogger } from "@/lib/logger";
-import { isMainModule } from "@/lib/runtime";
+import { Logger, consoleLogger, silentLogger } from "@vision/core/util/logger";
+import { isMainModule } from "@vision/core/util/runtime";
 
 const emptySummary: SyncSummary = { players: 0, seasonStats: 0, gameLogs: 0, advancedGameLogs: 0 };
 

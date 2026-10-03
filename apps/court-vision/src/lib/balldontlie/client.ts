@@ -1,4 +1,4 @@
-import type { FetchImpl } from "@/lib/fetchImpl";
+import type { FetchImpl } from "@vision/core/util/fetchImpl";
 
 import { BDL_BASE_URL, getApiKey } from "@/lib/balldontlie/constants";
 

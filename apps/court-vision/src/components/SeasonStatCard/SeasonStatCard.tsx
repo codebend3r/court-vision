@@ -1,6 +1,6 @@
 import { useId } from "react";
 
-import { formatOrdinal } from "@/lib/players/format";
+import { formatOrdinal } from "@vision/core/util/format";
 import type { RankTone, SeasonAverageStat } from "@/lib/players/seasonAverages";
 
 import styles from "@/components/SeasonStatCard/SeasonStatCard.module.scss";

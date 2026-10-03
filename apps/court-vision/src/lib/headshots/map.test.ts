@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "bun:test";
 
-import type { FetchImpl } from "@/lib/fetchImpl";
+import type { FetchImpl } from "@vision/core/util/fetchImpl";
 
 import { mapHeadshots } from "@/lib/headshots/map";
 import * as sources from "@/lib/headshots/sources";

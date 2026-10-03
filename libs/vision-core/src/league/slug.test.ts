@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { uniqueSlug } from "@/lib/leagues/slug";
+import { uniqueSlug } from "#core/league/slug";
 
 describe("uniqueSlug", () => {
   it("returns the base when free", () => {

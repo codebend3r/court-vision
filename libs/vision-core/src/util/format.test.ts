@@ -7,7 +7,7 @@ import {
   formatHeight,
   formatOrdinal,
   formatWeight,
-} from "@/lib/players/format";
+} from "#core/util/format";
 
 describe("formatHeight", () => {
   it("formats inches as feet and inches", () => {
@@ -67,6 +67,8 @@ describe("formatOrdinal", () => {
     expect(formatOrdinal({ value: 3 })).toBe("3rd");
     expect(formatOrdinal({ value: 4 })).toBe("4th");
     expect(formatOrdinal({ value: 21 })).toBe("21st");
+    expect(formatOrdinal({ value: 22 })).toBe("22nd");
+    expect(formatOrdinal({ value: 30 })).toBe("30th");
   });
 
   it("uses th for the 11 to 13 exceptions", () => {

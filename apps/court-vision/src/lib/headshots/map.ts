@@ -1,11 +1,11 @@
-import type { FetchImpl } from "@/lib/fetchImpl";
+import type { FetchImpl } from "@vision/core/util/fetchImpl";
 
 import { normalizeName } from "@/lib/demo/names";
 import { prisma } from "@/lib/prisma";
 
 import { fetchNbaPlayerIndex } from "@/lib/headshots/sources";
-import { Logger, consoleLogger, silentLogger } from "@/lib/logger";
-import { isMainModule } from "@/lib/runtime";
+import { Logger, consoleLogger, silentLogger } from "@vision/core/util/logger";
+import { isMainModule } from "@vision/core/util/runtime";
 
 export type MapHeadshotsDeps = {
   fetchImpl?: FetchImpl;

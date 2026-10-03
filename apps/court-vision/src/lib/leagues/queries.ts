@@ -2,7 +2,7 @@ import { type League, type Profile } from "@generated/prisma/client";
 import { cache } from "react";
 
 import { getProfile } from "@/lib/auth/session";
-import { DEFAULT_LEAGUE_NAME, DEFAULT_LEAGUE_SLUG } from "@/lib/leagues/constants";
+import { DEFAULT_LEAGUE_NAME, DEFAULT_LEAGUE_SLUG } from "@vision/core/league/constants";
 import {
   defaultScoringConfig,
   isLeagueScoringType,

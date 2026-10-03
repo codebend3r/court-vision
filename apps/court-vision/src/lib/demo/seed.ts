@@ -13,9 +13,9 @@ import { SyncSummary, upsertGameLogs, upsertPlayers, upsertSeasonStats } from "@
 import { generateGameLogs } from "@/lib/demo/generate";
 import { normalizeName } from "@/lib/demo/names";
 import { DEMO_PROFILES } from "@/lib/demo/profiles";
-import { Logger, consoleLogger, silentLogger } from "@/lib/logger";
-import { sequentially } from "@/lib/sequentially";
-import { isMainModule } from "@/lib/runtime";
+import { Logger, consoleLogger, silentLogger } from "@vision/core/util/logger";
+import { sequentially } from "@vision/core/util/sequentially";
+import { isMainModule } from "@vision/core/util/runtime";
 
 export async function seedDemo(
   args: { deps?: BdlClientDeps; logger?: Logger } = {},

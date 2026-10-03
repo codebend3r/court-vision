@@ -1,12 +1,8 @@
 import { describe, expect, it } from "bun:test";
 
-import {
-  buildTeamStats,
-  ordinal,
-  rankTeams,
-  type TeamBoxTotals,
-  type TeamGameResult,
-} from "@/lib/teams/stats";
+import { type TeamGameResult } from "@vision/core/series/teamTrend";
+
+import { buildTeamStats, rankTeams, type TeamBoxTotals } from "@/lib/teams/stats";
 
 const box = (overrides: Partial<TeamBoxTotals> & { teamAbbr: string }): TeamBoxTotals => ({
   pts: 200,
@@ -88,19 +84,5 @@ describe("rankTeams", () => {
     expect(ranks.get("CCC")?.topg).toBe(1); // tied at 10 per game
     expect(ranks.get("BBB")?.topg).toBe(3);
     expect(ranks.get("AAA")?.oppPpg).toBe(1); // fewest points allowed
-  });
-});
-
-describe("ordinal", () => {
-  it("formats English ordinals including the teens", () => {
-    expect(ordinal(1)).toBe("1st");
-    expect(ordinal(2)).toBe("2nd");
-    expect(ordinal(3)).toBe("3rd");
-    expect(ordinal(4)).toBe("4th");
-    expect(ordinal(11)).toBe("11th");
-    expect(ordinal(12)).toBe("12th");
-    expect(ordinal(13)).toBe("13th");
-    expect(ordinal(21)).toBe("21st");
-    expect(ordinal(30)).toBe("30th");
   });
 });

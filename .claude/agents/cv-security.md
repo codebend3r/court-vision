@@ -20,7 +20,7 @@ Router, Prisma, Supabase auth, and the Balldontlie API.
    style problem.
 4. **Raw Prisma.** `$queryRaw` or `$executeRaw` with interpolated input.
 5. **Injection and leakage.** `dangerouslySetInnerHTML`, secrets committed
-   to `.env`, sensitive values reaching `apps/court-vision/src/lib/logger.ts`.
+   to `.env`, sensitive values reaching `libs/vision-core/src/util/logger.ts`.
 
 ## Output
 

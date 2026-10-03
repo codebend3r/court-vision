@@ -2,14 +2,7 @@
 // distinct (team, game) for the record and scores, plus box-score totals
 // aggregated per team. Pure math — the prisma reads live in loader.ts.
 
-export type TeamGameResult = {
-  teamAbbr: string;
-  gameId: string;
-  teamScore: number | null;
-  opponentScore: number | null;
-  winLoss: string | null;
-  gameDate: Date;
-};
+import { type TeamGameResult } from "@vision/core/series/teamTrend";
 
 export type TeamBoxTotals = {
   teamAbbr: string;
@@ -199,15 +192,4 @@ export const rankTeams = ({
       ),
     ]),
   );
-};
-
-// 1 → "1st", 2 → "2nd", 11 → "11th", 22 → "22nd".
-export const ordinal = (value: number): string => {
-  const tens = value % 100;
-  if (tens >= 11 && tens <= 13) return `${value}th`;
-  const ones = value % 10;
-  if (ones === 1) return `${value}st`;
-  if (ones === 2) return `${value}nd`;
-  if (ones === 3) return `${value}rd`;
-  return `${value}th`;
 };

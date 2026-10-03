@@ -4,15 +4,10 @@ import {
   PlayerInput,
   SeasonStatsInput,
 } from "@/lib/stats/inputs";
-import { parseGameDate, parseMinutes } from "@/lib/stats/parse";
+import { blankToNull, parseGameDate, parseMinutes } from "@vision/core/util/parse";
 
 import { SEASON_TYPE, seasonLabelFromYear } from "@/lib/balldontlie/constants";
 import { BdlAdvancedStat, BdlGame, BdlPlayer, BdlStat } from "@/lib/balldontlie/schemas";
-
-export const blankToNull = (value: string | null | undefined): string | null => {
-  const trimmed = (value ?? "").trim();
-  return trimmed === "" ? null : trimmed;
-};
 
 export const parseHeightInches = (value: string | null | undefined): number | null => {
   const match = /^(\d+)\s*-\s*(\d+)$/.exec((value ?? "").trim());

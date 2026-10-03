@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 
 import { HomeTeamPanel } from "@/components/HomeTeamPanel/HomeTeamPanel";
 import { buildSlots, DEFAULT_SLOT_COUNTS } from "@/lib/fantasyTeams/slots";
-import { teamNameToSlug } from "@/lib/fantasyTeams/slug";
+import { teamNameToSlug } from "@vision/core/roster/slug";
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 
 afterEach(cleanup);

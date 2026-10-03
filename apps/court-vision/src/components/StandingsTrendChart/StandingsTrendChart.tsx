@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { ChartPlaceholder } from "@/components/ChartPlaceholder/ChartPlaceholder";
 import { TeamChip, type TeamAbbreviation } from "@/components/TeamChip/TeamChip";
-import { type WinsRow } from "@/lib/teams/trend";
+import { type WinsRow } from "@vision/core/series/teamTrend";
 
 import styles from "@/components/StandingsTrendChart/StandingsTrendChart.module.scss";
 

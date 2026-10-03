@@ -8,8 +8,8 @@ import {
   fetchSeasonStats,
 } from "@/lib/nba/endpoints";
 import { toGameLogInput, toPlayerInput, toSeasonStatsInput } from "@/lib/nba/transform";
-import { consoleLogger } from "@/lib/logger";
-import { isMainModule } from "@/lib/runtime";
+import { consoleLogger } from "@vision/core/util/logger";
+import { isMainModule } from "@vision/core/util/runtime";
 
 export async function syncNba(deps: NbaClientDeps = {}): Promise<SyncSummary> {
   const playerRows = await fetchPlayerIndex(deps);

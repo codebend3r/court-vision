@@ -14,7 +14,7 @@ import {
   type TooltipPayload,
 } from "recharts";
 
-import { isMetricPoint, type MetricPoint } from "@/lib/stats/metricPoint";
+import { isMetricPoint, type MetricPoint } from "@vision/core/series/metricPoint";
 import { useTheme } from "@/lib/theme/ThemeProvider";
 import { getChartChrome } from "@/components/PlayerStatChart/statMeta";
 import { TeamMatchup } from "@/components/TeamMatchup/TeamMatchup";

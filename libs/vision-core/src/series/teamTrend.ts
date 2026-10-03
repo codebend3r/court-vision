@@ -1,4 +1,13 @@
-import { type TeamGameResult } from "@/lib/teams/stats";
+// One team's result in one game, the unit standings and win trends are built
+// from.
+export type TeamGameResult = {
+  teamAbbr: string;
+  gameId: string;
+  teamScore: number | null;
+  opponentScore: number | null;
+  winLoss: string | null;
+  gameDate: Date;
+};
 
 export type WinsRow = { game: number } & Partial<Record<string, number>>;
 

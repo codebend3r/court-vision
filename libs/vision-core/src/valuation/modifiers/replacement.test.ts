@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { replacementLevel } from "@/lib/valuation/modifiers/replacement";
+import { replacementLevel } from "#core/valuation/modifiers/replacement";
 
 const totals = [
   { playerId: 1, total: 10 },

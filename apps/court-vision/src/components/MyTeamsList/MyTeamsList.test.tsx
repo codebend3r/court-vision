@@ -16,7 +16,7 @@ vi.mock("next/navigation", () => ({
 
 import { MyTeamsList } from "@/components/MyTeamsList/MyTeamsList";
 import { buildSlots, DEFAULT_SLOT_COUNTS } from "@/lib/fantasyTeams/slots";
-import { teamNameToSlug } from "@/lib/fantasyTeams/slug";
+import { teamNameToSlug } from "@vision/core/roster/slug";
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 
 beforeEach(() => {

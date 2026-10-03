@@ -13,7 +13,7 @@ import {
 import { getTeamStats } from "@/lib/teams/loader";
 import { loadTeamsSearchParams, TEAMS_VIEWS, type TeamsView } from "@/lib/teams/searchParams";
 import { type TeamSeasonStats } from "@/lib/teams/stats";
-import { buildCumulativeWins } from "@/lib/teams/trend";
+import { buildCumulativeWins } from "@vision/core/series/teamTrend";
 
 import styles from "@/app/teams/page.module.scss";
 

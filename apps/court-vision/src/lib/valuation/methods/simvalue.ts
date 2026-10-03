@@ -1,3 +1,5 @@
+import { createPrng } from "@vision/core/util/prng";
+
 import { categoryValue } from "@/lib/valuation/categories";
 import { buildLeague, type SyntheticLeague } from "@/lib/valuation/rosters";
 import {
@@ -18,18 +20,6 @@ export const SIM_ITERATIONS = 400;
 // Fixed seed: the simulated season must not change between renders, and a
 // Math.random-based column could not be tested.
 const SIM_SEED = 0x5eed;
-
-// Deterministic PRNG (mulberry32).
-const mulberry32 = ({ seed }: { seed: number }) => {
-  let state = seed >>> 0;
-  return (): number => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-};
 
 // Box-Muller: opponents' weekly category totals are modelled as normal around
 // the league's average team, spread by how far apart teams actually finish.
@@ -89,7 +79,7 @@ export const scoreSimValue = ({
   // One simulated season, drawn once and faced by every player. Re-rolling
   // opponents per player would cost 600× the draws and, worse, would rank
   // players against different luck; this way the column is a paired comparison.
-  const random = mulberry32({ seed: SIM_SEED });
+  const random = createPrng(SIM_SEED);
   const opponents = config.categories.reduce<Partial<Record<Category, number[]>>>(
     (acc, category) => {
       const { mean, sd } = spread[category] ?? { mean: 0, sd: 0 };

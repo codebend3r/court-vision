@@ -15,7 +15,7 @@ import { getChartChrome } from "@/components/PlayerStatChart/statMeta";
 import { NBA_TEAMS, type TeamAbbreviation } from "@/components/TeamChip/TeamChip";
 import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
 import { useTheme, type Theme } from "@/lib/theme/ThemeProvider";
-import { type WinsRow } from "@/lib/teams/trend";
+import { type WinsRow } from "@vision/core/series/teamTrend";
 
 import styles from "@/components/StandingsTrendChart/StandingsTrendChart.module.scss";
 
