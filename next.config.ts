@@ -31,6 +31,16 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  // Crawlers and password managers probe these conventional root paths without
+  // reading the page's <link> tags; unanswered, they 404 and the host's default
+  // icon stands in. Next serves the app/apple-icon.png convention at
+  // /apple-icon.png, so alias the legacy names to it rather than ship a copy.
+  async rewrites() {
+    return [
+      { source: "/apple-touch-icon.png", destination: "/apple-icon.png" },
+      { source: "/apple-touch-icon-precomposed.png", destination: "/apple-icon.png" },
+    ];
+  },
 };
 
 export default nextConfig;
