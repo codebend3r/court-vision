@@ -1,5 +1,15 @@
+# The Netlify site deploys Court Vision from the repo root (its base
+# directory), so this file lives here rather than in apps/court-vision. These
+# two settings override the Netlify UI: build only Court Vision, not every
+# app in the workspace, and publish its .next directory. The Next runtime
+# reads `relativeAppDir` from that directory's required-server-files.json to
+# find the app inside the monorepo, so the site needs no package directory.
+[build]
+command = "bun run --cwd apps/court-vision build"
+publish = "apps/court-vision/.next"
+
 # Netlify Image CDN: allow transforming remote NBA headshots requested by
-# the next/image loader in src/lib/images/netlifyLoader.ts.
+# the next/image loader in apps/court-vision/src/lib/images/netlifyLoader.ts.
 [images]
 remote_images = ["https://cdn\\.nba\\.com/.*"]
 
@@ -24,7 +34,7 @@ SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_SUPAB
 # build — the key appears in 0 files under `.next` once `cache/` is excluded.
 #
 # Every spelling is listed because the value is matched against repo-root
-# relative paths, the cache is written to one and copied to the other, and this
-# app lives in the apps/court-vision package directory of the monorepo (the
-# plugin may stage its copy at either the package or the repo root).
-SECRETS_SCAN_OMIT_PATHS = "apps/court-vision/.next/cache/,apps/court-vision/.netlify/.next/cache/,.netlify/.next/cache/"
+# relative paths, and the cache is written to the app's .next and mirrored into
+# a .netlify directory: the root one today, or apps/court-vision/.netlify if
+# the site ever sets a package directory.
+SECRETS_SCAN_OMIT_PATHS = "apps/court-vision/.next/cache/,.netlify/.next/cache/,apps/court-vision/.netlify/.next/cache/"
