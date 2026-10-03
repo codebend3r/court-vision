@@ -8,18 +8,18 @@ import "@/styles/globals.scss";
 
 // Preview-only wrappers (excluded from the component list via cfg.componentSrcMap).
 export { PreviewProvider } from "./provider";
-export { ThemeProvider } from "@/lib/theme/ThemeProvider";
+export { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 
 export { AccountMenu } from "@/components/AccountMenu/AccountMenu";
 export { AdvancedStatsLegend } from "@/components/AdvancedStatsLegend/AdvancedStatsLegend";
 export { ChartPaletteSwatches } from "@/components/ChartPaletteSwatches/ChartPaletteSwatches";
-export { ComingSoonPanel } from "@/components/ComingSoonPanel/ComingSoonPanel";
+export { ComingSoonPanel } from "@vision/ui/components/ComingSoonPanel/ComingSoonPanel";
 export { FantasyControls } from "@/components/FantasyControls/FantasyControls";
 export { FantasyPager } from "@/components/FantasyPager/FantasyPager";
 export { FantasyValueLegend } from "@/components/FantasyValueLegend/FantasyValueLegend";
 export { FantasyValueTable } from "@/components/FantasyValueTable/FantasyValueTable";
 export { FantasyValueView } from "@/components/FantasyValueView/FantasyValueView";
-export { InfoTip } from "@/components/InfoTip/InfoTip";
+export { InfoTip } from "@vision/ui/components/InfoTip/InfoTip";
 export { MyTeamsList } from "@/components/MyTeamsList/MyTeamsList";
 export { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 export { PlayerGameLogTable } from "@/components/PlayerGameLogTable/PlayerGameLogTable";
@@ -34,10 +34,10 @@ export { SeasonSelect } from "@/components/SeasonSelect/SeasonSelect";
 export { SeasonStatCard } from "@/components/SeasonStatCard/SeasonStatCard";
 export { SideNav } from "@/components/SideNav/SideNav";
 export { SiteFooter } from "@/components/SiteFooter/SiteFooter";
-export { Switch } from "@/components/Switch/Switch";
+export { Switch } from "@vision/ui/components/Switch/Switch";
 export { TeamBuilder } from "@/components/TeamBuilder/TeamBuilder";
 export { TeamChip } from "@/components/TeamChip/TeamChip";
 export { TeamEditor } from "@/components/TeamEditor/TeamEditor";
 export { TeamMatchup } from "@/components/TeamMatchup/TeamMatchup";
-export { ThemeToggle } from "@/components/ThemeToggle/ThemeToggle";
-export { TokenSwatch } from "@/components/TokenSwatch/TokenSwatch";
+export { ThemeSwatches } from "@vision/ui/components/ThemeSwatches/ThemeSwatches";
+export { TokenSwatch } from "@vision/ui/components/TokenSwatch/TokenSwatch";

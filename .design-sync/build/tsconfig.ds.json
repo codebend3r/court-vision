@@ -1,5 +1,5 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../../apps/court-vision/tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
     "declaration": true,
@@ -8,15 +8,19 @@
     "skipLibCheck": true,
     "incremental": false,
     "composite": false,
-    "baseUrl": "../..",
     "paths": {
-      "@/*": ["src/*"],
-      "@generated/*": ["generated/*"],
-      "@public/*": ["public/*"]
+      "@/*": ["../../apps/court-vision/src/*"],
+      "@generated/*": ["../../apps/court-vision/generated/*"],
+      "@public/*": ["../../apps/court-vision/public/*"]
     },
     "rootDir": "../..",
     "outDir": "../../types"
   },
-  "include": ["../../next-env.d.ts", "entry.ts", "provider.tsx"],
-  "exclude": ["../../node_modules"]
+  "include": [
+    "../../apps/court-vision/next-env.d.ts",
+    "entry.ts",
+    "provider.tsx",
+    "../../libs/vision-ui/src/components/*/*.tsx"
+  ],
+  "exclude": ["../../node_modules", "../../libs/**/*.test.tsx"]
 }

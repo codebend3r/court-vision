@@ -8,13 +8,14 @@
     "builtin": true
   },
   "ignorePatterns": [
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-    "generated/**",
-    "public/meta.js",
-    "public/meta.d.ts",
+    "**/.next/**",
+    "apps/*/out/**",
+    "apps/*/build/**",
+    "**/next-env.d.ts",
+    "apps/*/generated/**",
+    "apps/*/public/meta.js",
+    "apps/*/public/meta.d.ts",
+    ".nx/**",
     ".design-sync/**",
     ".ds-sync/**",
     "ds-dist/**",
@@ -32,8 +33,8 @@
       {
         "patterns": [
           {
-            "group": ["../*"],
-            "message": "Use the @/ (src), @public/, or @generated/ import alias instead of parent-relative paths."
+            "group": ["../*", "../**"],
+            "message": "Use an import alias (an app's @/, @public/, @generated/; a lib's #<name>/; or a workspace package's @vision/<name>/ entry) instead of parent-relative paths."
           }
         ]
       }
@@ -131,15 +132,167 @@
       }
     },
     {
-      "files": ["src/**/*.{ts,tsx,mts,cts}", "src/**/*.{js,jsx,mjs}"],
+      "files": ["apps/*/src/**/*.{ts,tsx,mts,cts}", "apps/*/src/**/*.{js,jsx,mjs}"],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
             "patterns": [
               {
-                "group": ["../*", "./*"],
-                "message": "Use the @/ (src), @public/, or @generated/ import alias instead of relative paths. Sibling and co-located files are imported by their full alias path too."
+                "group": ["../*", "../**", "./*", "./**"],
+                "message": "Relative paths are banned, including co-located siblings. In an app use @/ (its src), @public/, or @generated/; in a lib use its own #<name>/ subpath alias; across packages use a @vision/<name>/ entry point."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["libs/*/src/**/*.{ts,tsx,mts,cts}", "libs/*/src/**/*.{js,jsx,mjs}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["../*", "../**", "./*", "./**"],
+                "message": "Relative paths are banned, including co-located siblings. In an app use @/ (its src), @public/, or @generated/; in a lib use its own #<name>/ subpath alias; across packages use a @vision/<name>/ entry point."
+              },
+              {
+                "group": ["@/*", "@/**"],
+                "message": "@/ belongs to an app's src. Inside a lib, import siblings through the lib's own #<name>/ alias (package.json \"imports\")."
+              },
+              {
+                "group": [
+                  "@prisma/*",
+                  "@prisma/**",
+                  "@generated/*",
+                  "@generated/**",
+                  "@supabase/*",
+                  "@supabase/**"
+                ],
+                "message": "Libs never touch the database or auth; that stays in the app that owns them."
+              },
+              {
+                "group": ["@vision/sport-*"],
+                "message": "Only apps pick a sport. Shared libs stay sport-agnostic; take the descriptor as a parameter."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "libs/vision-core/src/**/*.{ts,tsx,mts,cts}",
+        "libs/vision-core/src/**/*.{js,jsx,mjs}"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["../*", "../**", "./*", "./**"],
+                "message": "Relative paths are banned, including co-located siblings. In an app use @/ (its src), @public/, or @generated/; in a lib use its own #<name>/ subpath alias; across packages use a @vision/<name>/ entry point."
+              },
+              {
+                "group": ["@/*", "@/**"],
+                "message": "@/ belongs to an app's src. Inside a lib, import siblings through the lib's own #<name>/ alias (package.json \"imports\")."
+              },
+              {
+                "group": [
+                  "@prisma/*",
+                  "@prisma/**",
+                  "@generated/*",
+                  "@generated/**",
+                  "@supabase/*",
+                  "@supabase/**"
+                ],
+                "message": "@vision/core is framework-free: no database or auth clients."
+              },
+              {
+                "group": [
+                  "next",
+                  "next/*",
+                  "next/**",
+                  "react",
+                  "react/*",
+                  "react/**",
+                  "react-dom",
+                  "react-dom/*",
+                  "react-dom/**",
+                  "nuqs",
+                  "nuqs/*",
+                  "nuqs/**",
+                  "zustand",
+                  "zustand/*",
+                  "zustand/**",
+                  "recharts",
+                  "lucide-react"
+                ],
+                "message": "@vision/core is framework-free: no React, Next, nuqs, zustand, or UI libraries. Put UI in @vision/ui and wiring in the app."
+              },
+              {
+                "group": ["@vision/*", "@vision/**"],
+                "message": "@vision/core depends on nothing else in the workspace. Import its own modules through #core/."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["libs/sport-*/src/**/*.{ts,tsx,mts,cts}", "libs/sport-*/src/**/*.{js,jsx,mjs}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["../*", "../**", "./*", "./**"],
+                "message": "Relative paths are banned, including co-located siblings. In an app use @/ (its src), @public/, or @generated/; in a lib use its own #<name>/ subpath alias; across packages use a @vision/<name>/ entry point."
+              },
+              {
+                "group": ["@/*", "@/**"],
+                "message": "@/ belongs to an app's src. Inside a lib, import siblings through the lib's own #<name>/ alias (package.json \"imports\")."
+              },
+              {
+                "group": [
+                  "@prisma/*",
+                  "@prisma/**",
+                  "@generated/*",
+                  "@generated/**",
+                  "@supabase/*",
+                  "@supabase/**"
+                ],
+                "message": "Sport descriptors are pure data: no database or auth clients."
+              },
+              {
+                "group": [
+                  "next",
+                  "next/*",
+                  "next/**",
+                  "react",
+                  "react/*",
+                  "react/**",
+                  "react-dom",
+                  "react-dom/*",
+                  "react-dom/**",
+                  "nuqs",
+                  "nuqs/*",
+                  "nuqs/**",
+                  "zustand",
+                  "zustand/*",
+                  "zustand/**",
+                  "recharts",
+                  "lucide-react"
+                ],
+                "message": "Sport descriptors are pure data: no React, Next, nuqs, zustand, or UI libraries."
+              },
+              {
+                "group": ["@vision/ui", "@vision/ui/*", "@vision/ui/**", "@vision/sport-*"],
+                "message": "A sport lib depends only on @vision/core."
               }
             ]
           }

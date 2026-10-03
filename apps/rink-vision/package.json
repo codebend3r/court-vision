@@ -1,0 +1,28 @@
+{
+  "name": "rink-vision",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 46645",
+    "build": "next build",
+    "start": "next start --port 46645",
+    "typecheck": "next typegen && tsgo --noEmit",
+    "test": "bun test --parallel --dots",
+    "test:watch": "bun test --isolate --watch"
+  },
+  "dependencies": {
+    "@vision/core": "workspace:*",
+    "@vision/sport-hockey": "workspace:*",
+    "@vision/ui": "workspace:*",
+    "next": "16.3.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@testing-library/react": "16.3.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vision/testing": "workspace:*",
+    "sass": "1.105.1"
+  }
+}

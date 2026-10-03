@@ -1,0 +1,7 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["bun", "node", "next"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "../vision-testing/src/matchers.d.ts"]
+}

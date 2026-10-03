@@ -10,7 +10,7 @@ Inputs live in `.design-sync/build/` (committed):
 - **`vite.config.mts`** — Vite library build → `ds-dist/index.mjs` (browser ESM,
   React externalized, SCSS modules + `globals.scss` tokens compiled) + `ds-dist/style.css`
   (the converter's `cssEntry`; it becomes `_ds_bundle.css`). Key settings:
-  - `resolve.alias` maps `@/` → `src/`, and `next/link` / `next/navigation` /
+  - `resolve.alias` maps `@/` → `apps/court-vision/src/`, and `next/link` / `next/navigation` /
     `next/image` → browser shims in `shims/`.
   - `commonjsOptions.esmExternals: true` **plus** shims for `use-sync-external-store/*`
     (CJS, `require("react")`) → without both, the IIFE throws

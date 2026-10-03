@@ -1,0 +1,4 @@
+// The shared design-system mixins (keycap, retro-extrude, panel-shell,
+// data-table, …), forwarded so this app's modules keep their
+// `@use "@/styles/mixins" as *` line.
+@forward "@vision/ui/styles/mixins";

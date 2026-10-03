@@ -3,22 +3,22 @@
   "known": [
     {
       "rule": "secret-module-unguarded",
-      "file": "src/lib/prisma.ts",
+      "file": "apps/court-vision/src/lib/prisma.ts",
       "reason": "Reads DATABASE_URL with no server-only guard. Not reachable from any client component today; the guard is hardening, and adding the server-only package is a separate change."
     },
     {
       "rule": "secret-reaches-client",
-      "file": "src/lib/balldontlie/constants.ts",
+      "file": "apps/court-vision/src/lib/balldontlie/constants.ts",
       "reason": "getApiKey() sits beside client-safe season constants, so PlayerStatFilters/SeasonSelect pull the module in via lib/stats/searchParams. Next.js only inlines NEXT_PUBLIC_ vars, and the built bundle was checked: neither the key nor the name appears in .next/static, so nothing leaks today. Fix is to move getApiKey into client.ts, which relocates its tests too and belongs in its own PR."
     },
     {
       "rule": "server-action-unauthenticated",
-      "file": "src/lib/auth/signup.ts",
+      "file": "apps/court-vision/src/lib/auth/signup.ts",
       "reason": "isUsernameTaken backs the signup form and must work signed out, so the missing session check is correct. It does need rate limiting, tracked separately as a username-enumeration finding."
     },
     {
       "rule": "server-action-unauthenticated",
-      "file": "src/lib/valuation/actions.ts",
+      "file": "apps/court-vision/src/lib/valuation/actions.ts",
       "reason": "loadFantasyTrendLogs is an intentionally public, read-only action for the signed-out Players Fantasy tab. It selects only NBA box-score fields, never reads account data or writes, validates positive integer player ids, caps requests at one page (100 players), and caches results for 300 seconds. Session gating would break public rolling charts. Re-review this exception before adding exports, private data, or writes to this module."
     }
   ]

@@ -1,0 +1,20 @@
+{
+  "name": "@vision/sport-baseball",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "scripts": {
+    "test": "bun test --parallel --dots",
+    "typecheck": "tsgo --noEmit"
+  },
+  "imports": {
+    "#baseball/*": "./src/*.ts"
+  },
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@vision/core": "workspace:*"
+  }
+}
