@@ -10,7 +10,7 @@ import packageJson from "./package.json";
 const workspaceRoot = resolve(import.meta.dirname, "../..");
 
 // Workspace libs ship TypeScript source, not a build, so Next compiles them.
-const workspacePackages = ["@vision/core", "@vision/sport-basketball"];
+const workspacePackages = ["@vision/core", "@vision/sport-basketball", "@vision/ui"];
 
 // App-wide security headers. CSP here is limited to `frame-ancestors` (the
 // modern, header-independent clickjacking guard); a full script/style CSP needs

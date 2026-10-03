@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 
 import { StandingsTrendChart } from "@/components/StandingsTrendChart/StandingsTrendChart";
 import { type TeamAbbreviation } from "@/components/TeamChip/TeamChip";
-import { ThemeProvider } from "@/lib/theme/ThemeProvider";
+import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 
 const teams = [
   { abbr: "BOS", name: "Boston Celtics" },

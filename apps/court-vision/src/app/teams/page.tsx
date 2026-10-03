@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { PageHeader } from "@/components/PageHeader/PageHeader";
+import { PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { StandingsTrendChart } from "@/components/StandingsTrendChart/StandingsTrendChart";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import {

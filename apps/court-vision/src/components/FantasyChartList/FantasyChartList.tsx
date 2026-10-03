@@ -10,10 +10,10 @@ import {
   METHOD_LABELS,
   type MethodKey,
 } from "@/components/PlayerFantasyChart/labels";
-import { getSeriesPalette } from "@/components/PlayerStatChart/statMeta";
+import { getSeriesPalette } from "@vision/ui/charts/palette";
 import { StarButton } from "@/components/StarButton/StarButton";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
-import { useTheme } from "@/lib/theme/ThemeProvider";
+import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 import { type FantasySortKey } from "@/lib/valuation/searchParams";
 
 import styles from "@/components/FantasyChartList/FantasyChartList.module.scss";

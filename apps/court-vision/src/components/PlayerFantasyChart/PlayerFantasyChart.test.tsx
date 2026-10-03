@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it } from "bun:test";
 
-import { ThemeProvider } from "@/lib/theme/ThemeProvider";
+import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 import { type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
 import { type FantasyTrendPoint } from "@vision/core/valuation/playerValue";
 

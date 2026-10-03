@@ -72,6 +72,7 @@ An [Nx](https://nx.dev/) monorepo on Bun workspaces:
 apps/court-vision/     the Court Vision Next.js app (UI, server actions, Prisma, auth, sync jobs)
 libs/vision-core/      @vision/core: sport-agnostic, framework-free logic driven by a sport descriptor
 libs/sport-basketball/ @vision/sport-basketball: the basketball descriptor and the engine bound to it
+libs/vision-ui/        @vision/ui: design tokens, mixins, themes, and sport-neutral components
 libs/vision-testing/   @vision/testing: the shared bun:test preload and helpers
 ```
 

@@ -1,0 +1,30 @@
+@use "@vision/ui/styles/mixins" as *;
+
+.panel {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.badge {
+  @include micro-label;
+  // Bold so the glyphs hold their own against the long-shadow extrusion.
+  font-weight: var(--font-weight-bold);
+  color: var(--color-highlight);
+  text-shadow: long-text-shadow(var(--color-retro-shadow), 5);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.description {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}

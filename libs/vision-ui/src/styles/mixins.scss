@@ -1,0 +1,423 @@
+@use "sass:list";
+
+// Retro long-shadow lettering: stacked $step-offset copies so the shadow reads
+// as one solid diagonal extrusion rather than a blurred drop shadow. Pass an
+// em-based $step to scale the extrusion with the element's font size; keep
+// each step at or below ~1px at the rendered size so the extrusion stays solid.
+@function long-text-shadow($color, $length, $step: 1px) {
+  $shadow: ();
+  @for $i from 1 through $length {
+    $shadow: list.append($shadow, #{$i * $step} #{$i * $step} $color, comma);
+  }
+  @return $shadow;
+}
+
+// The retro text extrusion, opt-in by role. Reserved for page titles, the
+// wordmark, and large readout numbers (the stat figures on dashboard and
+// detail cards) — never applied to a heading just for being a heading. Reads
+// the shared --extrude constant so every theme extrudes with identical
+// geometry and only the color changes.
+@mixin retro-extrude {
+  text-shadow: var(--extrude);
+}
+
+// The keycap: the one interactive mechanic every pressable control shares —
+// stat-view tabs, page actions, filter toggles, pagination, theme cards,
+// font-size options, formula options, nav rail caps, the sign-in button. At
+// rest it sits on a 1px extrusion; engaged it lifts off its own shadow;
+// primary actions press INTO it (keycap-press). Focus uses an outline rather
+// than control-focus-ring so the ring never fights the shadow mechanic.
+@mixin keycap {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  cursor: pointer;
+  box-shadow: var(--retro-1);
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+
+  &:hover:not(:disabled) {
+    transform: translate(-1px, -1px);
+    box-shadow: var(--retro-2);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus-ring);
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    transform: none;
+    box-shadow: none;
+    opacity: var(--control-disabled-opacity);
+    cursor: not-allowed;
+  }
+}
+
+// Engaged (selected/active) keycap: the key lifts off its own extrusion.
+// Consumers pick the selector (`[aria-pressed="true"]`, `[data-active]`, …).
+@mixin keycap-engaged {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-bg);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--retro-4);
+}
+
+// Danger variant (destructive actions): dashed, flat, never extruded.
+@mixin keycap-danger {
+  border: 1px dashed var(--color-loss);
+  background: transparent;
+  color: var(--color-loss);
+  box-shadow: none;
+
+  &:hover:not(:disabled) {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+// Active-press for primary actions (sign-in and friends): presses into the
+// shadow instead of lifting further.
+@mixin keycap-press {
+  transform: translate(2px, 2px);
+  box-shadow: var(--retro-2);
+}
+
+// The route container every screen's `.page` declares: a single grid column
+// the page stacks into. Defaults are the common case; a route that wants more
+// air passes its own tokens. Route skeletons (`loading.tsx`) include the same
+// mixin through their own segment's module, so the placeholder box and the
+// arriving page cannot drift apart.
+@mixin page-shell($gap: var(--space-4), $padding: var(--space-6)) {
+  display: grid;
+  gap: $gap;
+  padding: $padding;
+}
+
+// Dashboard panel shell (spec §10): every home panel and chart card share it.
+@mixin panel-shell {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+// Panel header title: uppercase display-weight sm over the 1px separator.
+// Pair with a muted xs count/action in the same row (grid 1fr auto).
+@mixin panel-title {
+  margin: 0;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+// The one table pattern (spec §7): players table, game log, and starred all
+// share it. Apply to the <table>; pair with `table-wrapper` on the box around
+// the scroller.
+@mixin data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: var(--row-y) var(--row-x);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--tracking-wide);
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+
+    &[data-sort-active="true"] {
+      color: var(--color-accent);
+      box-shadow: inset 0 -3px 0 var(--color-accent);
+    }
+  }
+
+  td {
+    padding: var(--row-y) var(--row-x);
+    border-top: 1px solid var(--color-border);
+
+    &[data-sort-active="true"] {
+      background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+      color: var(--color-text);
+      font-weight: var(--font-weight-semibold);
+    }
+  }
+}
+
+// Numeric table cells: mono, right-aligned, never wrapping.
+@mixin numeric-cell {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  text-align: right;
+  white-space: nowrap;
+}
+
+// The box the table lives in. `overflow: hidden` keeps the rounded corners;
+// the inner scroller (`overflow-x: auto`) owns horizontal scrolling.
+@mixin table-wrapper {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+@mixin micro-label {
+  text-transform: uppercase;
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-muted);
+  // Eyebrow labels are never extruded — the shadow smears 12px uppercase
+  // glyphs below AA legibility. Only h1 still carries it by tag, so this is a
+  // guard for the case where an eyebrow is marked up as the page title.
+  text-shadow: none;
+}
+
+// Shared tooltip bubble box: InfoTip's floating hint and the players table's
+// header tips must stay visually identical. Positioning/reveal stays local.
+@mixin tooltip-bubble {
+  display: grid;
+  gap: var(--space-2);
+  width: max-content;
+  max-width: 17rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+}
+
+@mixin control-focus-ring {
+  outline: none;
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--color-focus-ring);
+}
+
+// The failure callout every form and list reports errors in. Was byte-identical
+// across seven modules; change the treatment here, not in each one.
+@mixin error-callout {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-loss);
+  border-radius: var(--radius-sm);
+  color: var(--color-loss);
+  font-size: var(--font-size-sm);
+}
+
+// Off-screen for sighted users, still read by assistive tech. `clip-path` on a
+// 1px box is the pattern that survives every engine; `nowrap` stops a long
+// string reflowing into a tall invisible block that can be scrolled into.
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Accent border shared by every selected control state (active filters, stat
+// chips, sorted columns). Flat by design: no glow effects.
+@mixin selected-accent {
+  border-color: var(--color-control-accent);
+}
+
+// Emits the keyframes the animated-gradient-border animation drives. Call once
+// per CSS module that uses `animated-gradient-border`: CSS Modules scopes both
+// the @keyframes name and the animation reference to that module, so a global
+// keyframes would never match the scoped reference.
+@mixin cv-border-spin-keyframes {
+  @keyframes cv-border-spin {
+    to {
+      --cv-border-angle: 360deg;
+    }
+  }
+}
+
+// Rotating blue→purple→pink conic-gradient border for hover/focus states.
+// Requires the global `--cv-border-angle` @property (globals.scss) and the
+// `cv-border-spin-keyframes` mixin included once in the same module. Uses the
+// double-background trick (surface via padding-box, gradient via border-box)
+// so rounded corners survive; apply to an element that already has a 1px
+// border.
+@mixin animated-gradient-border {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    conic-gradient(
+        from var(--cv-border-angle),
+        var(--color-accent),
+        var(--color-accent-purple),
+        var(--color-accent-strong),
+        var(--color-accent-purple),
+        var(--color-accent)
+      )
+      border-box;
+  animation: cv-border-spin 2.5s linear infinite;
+}
+
+// Text-like fields: text/email/password/date/etc. inputs and selects.
+@mixin control-field {
+  height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--control-radius);
+  background: var(--color-control-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+
+  &::placeholder {
+    color: var(--color-control-placeholder);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+    border-color: var(--color-control-accent);
+  }
+
+  &:disabled {
+    opacity: var(--control-disabled-opacity);
+    cursor: not-allowed;
+  }
+}
+
+@mixin control-toggle {
+  appearance: none;
+  display: grid;
+  place-content: center;
+  width: var(--control-size);
+  height: var(--control-size);
+  border: 1px solid var(--color-control-border);
+  background: var(--color-control-bg);
+  cursor: pointer;
+
+  &::before {
+    content: "";
+    transform: scale(0);
+    background: var(--color-surface);
+  }
+
+  &:checked {
+    border-color: var(--color-control-accent);
+    background: var(--color-control-accent);
+
+    &::before {
+      transform: scale(1);
+    }
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+  }
+
+  &:disabled {
+    opacity: var(--control-disabled-opacity);
+    cursor: not-allowed;
+  }
+}
+
+@mixin control-checkbox {
+  @include control-toggle;
+  border-radius: var(--radius-sm);
+
+  &::before {
+    width: var(--space-3);
+    height: var(--space-3);
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+  }
+}
+
+@mixin control-radio {
+  @include control-toggle;
+  border-radius: var(--radius-full);
+
+  &::before {
+    width: var(--space-2);
+    height: var(--space-2);
+    border-radius: var(--radius-full);
+  }
+}
+
+@mixin control-range {
+  appearance: none;
+  width: 100%;
+  height: var(--control-size);
+  background: transparent;
+  cursor: pointer;
+
+  &::-webkit-slider-runnable-track {
+    height: var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--color-control-border);
+  }
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: var(--space-4);
+    height: var(--space-4);
+    margin-top: calc((var(--space-1) - var(--space-4)) / 2);
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--color-control-accent);
+  }
+
+  &::-moz-range-track {
+    height: var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--color-control-border);
+  }
+
+  &::-moz-range-thumb {
+    width: var(--space-4);
+    height: var(--space-4);
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--color-control-accent);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+    border-radius: var(--radius-full);
+  }
+
+  &:disabled {
+    opacity: var(--control-disabled-opacity);
+    cursor: not-allowed;
+  }
+}

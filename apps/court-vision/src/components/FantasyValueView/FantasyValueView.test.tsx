@@ -8,7 +8,7 @@ const loadFantasyTrendLogs = vi.fn();
 vi.mock("@/lib/valuation/actions", () => ({ loadFantasyTrendLogs }));
 
 import { FantasyValueView } from "@/components/FantasyValueView/FantasyValueView";
-import { ThemeProvider } from "@/lib/theme/ThemeProvider";
+import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 import { makeStatLine, type FixtureOverrides } from "@/lib/valuation/fixtures";
 import { type FantasyStatLine } from "@/lib/valuation/types";
 

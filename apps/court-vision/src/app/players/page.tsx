@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { AdvancedStatsLegend } from "@/components/AdvancedStatsLegend/AdvancedStatsLegend";
 import { FantasyValueView } from "@/components/FantasyValueView/FantasyValueView";
-import { PageHeader } from "@/components/PageHeader/PageHeader";
+import { PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { PlayersPager } from "@/components/PlayersPager/PlayersPager";
 import { PlayersSearchControls } from "@/components/PlayersSearchControls/PlayersSearchControls";
 import { PlayersTable } from "@/components/PlayersTable/PlayersTable";

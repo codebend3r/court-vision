@@ -16,7 +16,8 @@ import { fallbackActiveLeagueId, getLeagues } from "@/lib/leagues/queries";
 import { fontScaleOf } from "@/lib/settings/guards";
 import { resolveSiteOrigin } from "@/lib/siteUrl";
 import { getWatchlistPlayerIds } from "@/lib/watchlist/queries";
-import { ThemeProvider } from "@/lib/theme/ThemeProvider";
+import { ThemeInitScript } from "@vision/ui/components/ThemeInitScript/ThemeInitScript";
+import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 
 import "@/styles/globals.scss";
 
@@ -70,10 +71,6 @@ export const metadata: Metadata = {
   },
 };
 
-// Kept in sync with THEMES in lib/theme/themes.ts — inline so the first paint
-// is already themed. Unknown/absent values fall back to prefers-color-scheme.
-const themeInitScript = `(function(){try{var t=localStorage.getItem("theme");var ok=["dark","light","high-contrast","colorblind-safe","amber-crt","team-accent"];if(ok.indexOf(t)===-1){t=window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";}document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="dark";}})();`;
-
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -103,7 +100,7 @@ export default async function RootLayout({
       className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <ThemeInitScript />
       </head>
       <body>
         {/* Build provenance on window["build-meta"] (version, build date,

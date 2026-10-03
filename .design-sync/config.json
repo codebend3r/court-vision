@@ -7,9 +7,13 @@
   "buildCmd": "node .design-sync/build/build.mjs",
   "readmeHeader": ".design-sync/conventions.md",
   "cssEntry": "ds-dist/style.css",
-  "provider": { "component": "PreviewProvider" },
+  "provider": {
+    "component": "PreviewProvider"
+  },
   "overrides": {
-    "FantasyValueTable": { "cardMode": "column" }
+    "FantasyValueTable": {
+      "cardMode": "column"
+    }
   },
   "componentSrcMap": {
     "PreviewProvider": null,
@@ -17,13 +21,13 @@
     "AccountMenu": "apps/court-vision/src/components/AccountMenu/AccountMenu.tsx",
     "AdvancedStatsLegend": "apps/court-vision/src/components/AdvancedStatsLegend/AdvancedStatsLegend.tsx",
     "ChartPaletteSwatches": "apps/court-vision/src/components/ChartPaletteSwatches/ChartPaletteSwatches.tsx",
-    "ComingSoonPanel": "apps/court-vision/src/components/ComingSoonPanel/ComingSoonPanel.tsx",
+    "ComingSoonPanel": "libs/vision-ui/src/components/ComingSoonPanel/ComingSoonPanel.tsx",
     "FantasyControls": "apps/court-vision/src/components/FantasyControls/FantasyControls.tsx",
     "FantasyPager": "apps/court-vision/src/components/FantasyPager/FantasyPager.tsx",
     "FantasyValueLegend": "apps/court-vision/src/components/FantasyValueLegend/FantasyValueLegend.tsx",
     "FantasyValueTable": "apps/court-vision/src/components/FantasyValueTable/FantasyValueTable.tsx",
     "FantasyValueView": "apps/court-vision/src/components/FantasyValueView/FantasyValueView.tsx",
-    "InfoTip": "apps/court-vision/src/components/InfoTip/InfoTip.tsx",
+    "InfoTip": "libs/vision-ui/src/components/InfoTip/InfoTip.tsx",
     "MyTeamsList": "apps/court-vision/src/components/MyTeamsList/MyTeamsList.tsx",
     "PlayerAvatar": "apps/court-vision/src/components/PlayerAvatar/PlayerAvatar.tsx",
     "PlayerGameLogTable": "apps/court-vision/src/components/PlayerGameLogTable/PlayerGameLogTable.tsx",
@@ -38,12 +42,12 @@
     "SeasonStatCard": "apps/court-vision/src/components/SeasonStatCard/SeasonStatCard.tsx",
     "SideNav": "apps/court-vision/src/components/SideNav/SideNav.tsx",
     "SiteFooter": "apps/court-vision/src/components/SiteFooter/SiteFooter.tsx",
-    "Switch": "apps/court-vision/src/components/Switch/Switch.tsx",
+    "Switch": "libs/vision-ui/src/components/Switch/Switch.tsx",
     "TeamBuilder": "apps/court-vision/src/components/TeamBuilder/TeamBuilder.tsx",
     "TeamChip": "apps/court-vision/src/components/TeamChip/TeamChip.tsx",
     "TeamEditor": "apps/court-vision/src/components/TeamEditor/TeamEditor.tsx",
     "TeamMatchup": "apps/court-vision/src/components/TeamMatchup/TeamMatchup.tsx",
     "ThemeToggle": "apps/court-vision/src/components/ThemeToggle/ThemeToggle.tsx",
-    "TokenSwatch": "apps/court-vision/src/components/TokenSwatch/TokenSwatch.tsx"
+    "TokenSwatch": "libs/vision-ui/src/components/TokenSwatch/TokenSwatch.tsx"
   }
 }

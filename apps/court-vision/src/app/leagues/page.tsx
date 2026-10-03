@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { LeagueList } from "@/components/LeagueList/LeagueList";
-import { PageHeader } from "@/components/PageHeader/PageHeader";
+import { PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { getProfile } from "@/lib/auth/session";
 import { fallbackActiveLeagueId, getLeagues } from "@/lib/leagues/queries";
 

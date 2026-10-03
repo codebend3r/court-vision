@@ -2,9 +2,9 @@ import Link from "next/link";
 
 import { formatOrdinal } from "@vision/core/util/format";
 
-import { PageAction, PageHeader } from "@/components/PageHeader/PageHeader";
+import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
-import { ReadoutCard, ReadoutRow } from "@/components/ReadoutCard/ReadoutCard";
+import { ReadoutCard, ReadoutRow } from "@vision/ui/components/ReadoutCard/ReadoutCard";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { getTeamRoster, getTeamStats } from "@/lib/teams/loader";
 import { teamBySlug } from "@/lib/teams/meta";

@@ -16,7 +16,7 @@ import {
   type FantasyTableRow,
 } from "@/components/FantasyValueTable/FantasyValueTable";
 import type { FantasyTrendRow } from "@/components/FantasyValueTrends/FantasyValueTrends";
-import { Preloader } from "@/components/Preloader/Preloader";
+import { Preloader } from "@vision/ui/components/Preloader/Preloader";
 import { type FantasySeed } from "@/lib/leagues/fantasyDefaults";
 import { gamesForRange, type PlayerGameRange } from "@/lib/players/searchParams";
 import { loadFantasyTrendLogs } from "@/lib/valuation/actions";

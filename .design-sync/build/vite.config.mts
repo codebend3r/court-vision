@@ -15,6 +15,7 @@ import { defineConfig } from "vite";
 const repoRoot = resolve(import.meta.dirname, "..", "..");
 const appDir = join(repoRoot, "apps", "court-vision");
 const srcDir = join(appDir, "src");
+const uiStylesDir = join(repoRoot, "libs", "vision-ui", "src", "styles");
 const buildDir = import.meta.dirname;
 
 const isReact = (id: string): boolean =>
@@ -67,6 +68,9 @@ export default defineConfig({
             findFileUrl(url: string) {
               if (url.startsWith("@/")) {
                 return pathToFileURL(join(srcDir, url.slice(2)));
+              }
+              if (url.startsWith("@vision/ui/styles/")) {
+                return pathToFileURL(join(uiStylesDir, `${url.slice("@vision/ui/styles/".length)}.scss`));
               }
               return null;
             },

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { LeagueForm } from "@/components/LeagueForm/LeagueForm";
-import { PageAction, PageHeader } from "@/components/PageHeader/PageHeader";
+import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { getProfile } from "@/lib/auth/session";
 
 import styles from "@/app/leagues/leagues.module.scss";

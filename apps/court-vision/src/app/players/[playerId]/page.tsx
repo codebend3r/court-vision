@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { SearchParams } from "nuqs/server";
 
-import { PageHeader } from "@/components/PageHeader/PageHeader";
+import { PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayerGameLogTable } from "@/components/PlayerGameLogTable/PlayerGameLogTable";
 import { PlayerViewTabs } from "@/components/PlayerViewTabs/PlayerViewTabs";

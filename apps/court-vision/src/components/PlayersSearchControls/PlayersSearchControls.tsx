@@ -16,7 +16,7 @@ import {
   type SortDirection,
 } from "@/lib/players/searchParams";
 
-import { InfoTip } from "@/components/InfoTip/InfoTip";
+import { InfoTip } from "@vision/ui/components/InfoTip/InfoTip";
 
 import styles from "@/components/PlayersSearchControls/PlayersSearchControls.module.scss";
 

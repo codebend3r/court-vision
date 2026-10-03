@@ -11,7 +11,8 @@ Court Vision is a fantasy-basketball stats app: Next.js App Router, React 19, Pr
 - `apps/court-vision/` is the Next app. It holds the UI, server actions, the Prisma schema and generated client, Supabase auth, and the Balldontlie sync CLIs. It stays one full-stack app with no separate backend.
 - `libs/vision-core/` (`@vision/core`) holds sport-agnostic logic: the valuation engine, roster slots, running stat series, leaderboards, and league scoring. Each function takes a `SportDescriptor` (`sport/types.ts`), the one place a sport's categories, positions, slots, pools and season format are defined. It is framework-free: no React, Next, Prisma, Supabase, nuqs or zustand, and no other `@vision/*` lib. Import a module by path (`@vision/core/util/logger`); there are no barrel files.
 - `libs/sport-basketball/` (`@vision/sport-basketball`) holds basketball's descriptor (`descriptor`), its type aliases (`types`), and `engine`, which is the core engine bound to basketball under Court Vision's names. App code imports engine functions from `@vision/sport-basketball/engine` and never threads a descriptor itself. A new sport is a new `libs/sport-*` lib with a descriptor and its own `engine` binding.
-- Dependency rules, enforced by oxlint: core imports no other workspace lib, sport libs import only core, and no lib imports an app.
+- Dependency rules, enforced by oxlint: core imports no other workspace lib, sport libs import only core, `@vision/ui` imports no sport lib, and no lib imports an app.
+- `libs/vision-ui/` (`@vision/ui`) is the shared design system: tokens (`styles/globals.scss`), mixins (`styles/mixins.scss`), the theme registry (`theme/themes.ts`), `ThemeProvider`/`ThemeInitScript`, the chart palette, and the sport-neutral components (`PageHeader`, `ReadoutCard`, `Switch`, `Wordmark`, …). It may use React and Next but never data, auth, or a sport lib. An app's `styles/mixins.scss` forwards the shared mixins, so `@use "@/styles/mixins" as *` still works; its `styles/globals.scss` uses the shared globals and adds sport-only tokens.
 - `libs/vision-testing/` (`@vision/testing`) holds the bun:test preload, env stubs and jest-dom matcher types.
 - Libs ship TypeScript source: `exports` in their `package.json` point at `./src/**.ts`, and apps compile them through `transpilePackages`. Libs have no build step.
 - This Next.js version differs from older ones. Read the relevant guide in `node_modules/next/dist/docs/` before writing Next code.
@@ -54,11 +55,11 @@ Court Vision is a fantasy-basketball stats app: Next.js App Router, React 19, Pr
 ## SCSS/CSS
 
 - Use SCSS modules (`*.module.scss`) for component styles.
-- Use the global stylesheet (`styles/globals.scss`) only for design tokens and true typographic primitives.
+- Use the global stylesheets (`@vision/ui`'s `styles/globals.scss`, and an app's own `styles/globals.scss` for sport-only tokens) only for design tokens and true typographic primitives.
 - Layout is container-driven. The container sets width and height and positions its children, so a child moved to a different container can lay out differently there.
 - Prefer CSS grid with `gap` for spacing. Avoid margins for spacing. Flex is the second choice.
 - Avoid plain divs, meaning divs with no class or id.
-- Always use the token values from `styles/globals.scss` for font sizes, colors, padding, margin, gap and border radius.
+- Always use the token values from `@vision/ui`'s `styles/globals.scss` for font sizes, colors, padding, margin, gap and border radius.
 
 ## Code style
 
@@ -80,7 +81,7 @@ Court Vision is a fantasy-basketball stats app: Next.js App Router, React 19, Pr
   - icon-only buttons get an `aria-label`;
   - decorative icons get `aria-hidden="true"`, and decorative images `alt=""`.
 - Announce async changes (toasts, status, form errors) with `aria-live` or `role="alert"`.
-- Text needs at least 4.5:1 contrast, and large text and UI elements 3:1, measured against the `globals.scss` tokens. Never signal meaning by color alone.
+- Text needs at least 4.5:1 contrast, and large text and UI elements 3:1, measured against the shared `globals.scss` tokens. Never signal meaning by color alone.
 - Respect `prefers-reduced-motion` and size with `rem`. Each page has one `h1` with no skipped heading levels, and the document sets `lang`.
 
 ## Data sources
@@ -92,11 +93,11 @@ Court Vision is a fantasy-basketball stats app: Next.js App Router, React 19, Pr
 
 These come from the 2026-08 redesign; the spec is `docs/superpowers/specs/redesign-2026-08.md`.
 
-- Every pressable control uses the keycap mixins (`keycap`, `keycap-engaged`, `keycap-danger`, `keycap-press` in `styles/mixins.scss`). Never invent a new button treatment.
+- Every pressable control uses the keycap mixins (`keycap`, `keycap-engaged`, `keycap-danger`, `keycap-press` in `@vision/ui`'s `styles/mixins.scss`). Never invent a new button treatment.
 - The retro extrusion (`retro-extrude`) is opt-in by role: page titles (`h1`), the wordmark, and large readout numbers. Never apply it to headings wholesale, and never add glows.
 - Tables share one pattern: `table-wrapper` + `data-table` + `numeric-cell`. Cell padding is `var(--row-y) var(--row-x)`, never hardcoded.
 - Dashboard panels use `panel-shell` + `panel-title`.
-- There are six themes, set on `data-theme` and registered in `lib/theme/themes.ts`.
+- There are six themes, set on `data-theme` and registered in `@vision/ui`'s `theme/themes.ts`.
   - A theme may only redefine color tokens. Spacing, radii, type and shadow geometry are shared constants.
   - Team identity colors (`TeamChip`) never borrow theme tokens.
 - Every screen opens with `PageHeader` (eyebrow, title, description, actions, rule). Page actions use `PageAction`.

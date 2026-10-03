@@ -1,7 +1,7 @@
 "use client";
 
 import { getStatMeta } from "@/components/PlayerStatChart/statMeta";
-import { useTheme } from "@/lib/theme/ThemeProvider";
+import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 
 import styles from "@/components/ChartPaletteSwatches/ChartPaletteSwatches.module.scss";
 

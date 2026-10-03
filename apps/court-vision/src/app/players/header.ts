@@ -1,4 +1,4 @@
-import type { PageHeaderProps } from "@/components/PageHeader/PageHeader";
+import type { PageHeaderProps } from "@vision/ui/components/PageHeader/PageHeader";
 
 // The /players heading, shared by the page and its loading skeleton. The
 // skeleton exists to make the swap jump-free, which only holds while the two

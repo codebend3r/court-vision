@@ -4,7 +4,7 @@ import { withNuqsTestingAdapter, type UrlUpdateEvent } from "nuqs/adapters/testi
 import { afterEach, describe, expect, it } from "bun:test";
 
 import type { CumulativePoint } from "@/lib/stats/cumulative";
-import { ThemeProvider } from "@/lib/theme/ThemeProvider";
+import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 
 import { PlayerStatChart } from "@/components/PlayerStatChart/PlayerStatChart";
 

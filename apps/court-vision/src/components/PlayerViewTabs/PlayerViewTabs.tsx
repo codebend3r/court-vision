@@ -3,7 +3,7 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { createSerializer } from "nuqs";
 
-import { StatViewTabs } from "@/components/StatViewTabs/StatViewTabs";
+import { StatViewTabs } from "@vision/ui/components/StatViewTabs/StatViewTabs";
 import { statFilterParsers, type PlayerView } from "@/lib/stats/searchParams";
 
 const VIEW_ENTRIES: ReadonlyArray<{ view: PlayerView; label: string }> = [

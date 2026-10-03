@@ -1,0 +1,49 @@
+@use "@vision/ui/styles/mixins" as *;
+
+.tabs {
+  display: grid;
+}
+
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  // Breathing room below so the lifted key's extrusion never clips against
+  // the content that follows the tab strip.
+  padding: 0 0 var(--space-1);
+  list-style: none;
+}
+
+.item {
+  display: grid;
+}
+
+.link {
+  @include keycap;
+  color: var(--color-text-muted);
+
+  &:hover {
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  &[data-active="true"] {
+    @include keycap-engaged;
+  }
+}
+
+.spinner {
+  width: var(--font-size-sm);
+  height: var(--font-size-sm);
+  border: 2px solid color-mix(in srgb, var(--color-accent) 35%, transparent);
+  border-top-color: var(--color-accent);
+  border-radius: var(--radius-full);
+  animation: tab-spin 0.6s linear infinite;
+}
+
+@keyframes tab-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

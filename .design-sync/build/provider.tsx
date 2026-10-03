@@ -5,7 +5,7 @@
 import { type CSSProperties, type ReactNode } from "react";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 
-import { ThemeProvider } from "@/lib/theme/ThemeProvider";
+import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 
 // Court Vision is a dark-first design system: the app body is painted with
 // --color-bg and text with --color-text. Preview cards render on a white

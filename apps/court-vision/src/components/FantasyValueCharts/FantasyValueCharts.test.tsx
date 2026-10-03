@@ -10,7 +10,7 @@ import {
 import { type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
 import { CATEGORY_META } from "@vision/sport-basketball/engine";
 import { makeStatLine } from "@/lib/valuation/fixtures";
-import { ThemeProvider } from "@/lib/theme/ThemeProvider";
+import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 
 afterEach(cleanup);
 

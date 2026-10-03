@@ -18,7 +18,7 @@ seams, the ordering rules, and the environment traps.
 Every Nx project with tests has a `test` script of
 `bun test --parallel --dots`, and the root `bun run test` runs it in every
 project through `nx run-many -t test`. Projects whose tests render React or
-use jest-dom matchers (the apps) also have a `bunfig.toml`
+use jest-dom matchers (the apps, `@vision/ui`) also have a `bunfig.toml`
 that preloads `@vision/testing/setup`. Framework-free libs such as
 `@vision/core` need no preload and have no bunfig.
 
@@ -135,7 +135,7 @@ Canonical example: `apps/court-vision/src/components/StarButton/StarButton.test.
 
 - Reads search params (`nuqs`): pass `withNuqsTestingAdapter` from
   `nuqs/adapters/testing` as the render `wrapper`.
-- Consumes theme: wrap in `ThemeProvider` from `@/lib/theme/ThemeProvider`.
+- Consumes theme: wrap in `ThemeProvider` from `@vision/ui/components/ThemeProvider/ThemeProvider`.
 
 ## Fixtures and env
 

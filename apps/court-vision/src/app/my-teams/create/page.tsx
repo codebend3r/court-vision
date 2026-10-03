@@ -2,7 +2,7 @@ import { buildPlayerInsights, DEFAULT_VALUATION_CONFIG } from "@vision/sport-bas
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { PageAction, PageHeader } from "@/components/PageHeader/PageHeader";
+import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { TeamBuilder } from "@/components/TeamBuilder/TeamBuilder";
 import { getProfile } from "@/lib/auth/session";
 import { fantasyPlayersFromPool } from "@/lib/fantasyTeams/players";

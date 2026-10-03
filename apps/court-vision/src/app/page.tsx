@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { HomeStandingsPanel } from "@/components/HomeStandingsPanel/HomeStandingsPanel";
-import { PageAction, PageHeader } from "@/components/PageHeader/PageHeader";
-import { ReadoutCard, ReadoutRow } from "@/components/ReadoutCard/ReadoutCard";
+import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
+import { ReadoutCard, ReadoutRow } from "@vision/ui/components/ReadoutCard/ReadoutCard";
 import { HomeStarredPanel } from "@/components/HomeStarredPanel/HomeStarredPanel";
 import { HomeTeamPanel } from "@/components/HomeTeamPanel/HomeTeamPanel";
 import { WatchlistTrendChart } from "@/components/WatchlistTrendChart/WatchlistTrendChart";

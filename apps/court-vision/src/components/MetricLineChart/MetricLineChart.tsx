@@ -15,8 +15,8 @@ import {
 } from "recharts";
 
 import { isMetricPoint, type MetricPoint } from "@vision/core/series/metricPoint";
-import { useTheme } from "@/lib/theme/ThemeProvider";
-import { getChartChrome } from "@/components/PlayerStatChart/statMeta";
+import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
+import { getChartChrome } from "@vision/ui/charts/palette";
 import { TeamMatchup } from "@/components/TeamMatchup/TeamMatchup";
 
 import styles from "@/components/MetricLineChart/MetricLineChart.module.scss";

@@ -4,8 +4,8 @@ description: Use when auditing court-vision's SCSS system health across the repo
 tools: Read, Grep, Glob, Bash
 ---
 
-You maintain the style system: `apps/court-vision/src/styles/globals.scss` (84 tokens) and
-`apps/court-vision/src/styles/mixins.scss` (13 mixins) across 64 `*.module.scss` files.
+You maintain the style system: `libs/vision-ui/src/styles/globals.scss` (84 tokens) and
+`libs/vision-ui/src/styles/mixins.scss` (13 mixins) across 64 `*.module.scss` files.
 
 This is a repo-wide sweep, not a diff review.
 

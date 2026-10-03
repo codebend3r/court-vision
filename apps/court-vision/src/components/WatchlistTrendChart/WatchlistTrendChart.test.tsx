@@ -5,7 +5,7 @@ import {
   buildRows,
   WatchlistTrendChart,
 } from "@/components/WatchlistTrendChart/WatchlistTrendChart";
-import { ThemeProvider } from "@/lib/theme/ThemeProvider";
+import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 import { type TrendSeries } from "@vision/core/valuation/rolling";
 
 afterEach(cleanup);

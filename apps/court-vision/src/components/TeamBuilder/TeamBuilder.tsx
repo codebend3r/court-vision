@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChangeEvent, DragEvent, useMemo, useRef, useState } from "react";
 
-import { useFocusTrap } from "@/lib/a11y/focusTrap";
+import { useFocusTrap } from "@vision/ui/a11y/focusTrap";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayerInsightPanel } from "@/components/PlayerInsightPanel/PlayerInsightPanel";

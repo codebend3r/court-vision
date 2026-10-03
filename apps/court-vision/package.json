@@ -28,6 +28,7 @@
     "@supabase/supabase-js": "2.117.2",
     "@vision/core": "workspace:*",
     "@vision/sport-basketball": "workspace:*",
+    "@vision/ui": "workspace:*",
     "lucide-react": "1.50.0",
     "next": "16.3.8",
     "nuqs": "2.10.1",

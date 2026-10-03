@@ -30,6 +30,7 @@
         "@supabase/supabase-js": "2.117.2",
         "@vision/core": "workspace:*",
         "@vision/sport-basketball": "workspace:*",
+        "@vision/ui": "workspace:*",
         "lucide-react": "1.50.0",
         "next": "16.3.8",
         "nuqs": "2.10.1",
@@ -71,6 +72,21 @@
       "dependencies": {
         "@happy-dom/global-registrator": "20.14.5",
         "@testing-library/jest-dom": "7.0.1",
+      },
+    },
+    "libs/vision-ui": {
+      "name": "@vision/ui",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@testing-library/react": "16.3.3",
+        "@testing-library/user-event": "14.6.7",
+        "@types/react": "19.3.0",
+        "@vision/testing": "workspace:*",
+      },
+      "peerDependencies": {
+        "next": "16.3.8",
+        "react": "19.3.0",
+        "react-dom": "19.3.0",
       },
     },
   },
@@ -532,6 +548,8 @@
     "@vision/sport-basketball": ["@vision/sport-basketball@workspace:libs/sport-basketball"],
 
     "@vision/testing": ["@vision/testing@workspace:libs/vision-testing"],
+
+    "@vision/ui": ["@vision/ui@workspace:libs/vision-ui"],
 
     "@visx/curve": ["@visx/curve@4.0.1-alpha.0", "", { "dependencies": { "@visx/vendor": "4.0.0-alpha.0" } }, "sha512-jRu61Uz274pV1zyioXmboyrLutYbnKsgjj4njSGCnhdXj5GkZvZbg+ThDb6oOzoAnJOBRLz4rzPlWvNJOzuVMg=="],
 

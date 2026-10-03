@@ -12,7 +12,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { useTheme } from "@/lib/theme/ThemeProvider";
+import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 import { type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
 import { type FantasyTrendPoint } from "@vision/core/valuation/playerValue";
 import { ROLLING_WINDOW_GAMES } from "@vision/core/valuation/rolling";
@@ -23,8 +23,8 @@ import {
   METHOD_LABELS,
   type MethodKey,
 } from "@/components/PlayerFantasyChart/labels";
-import { getChartChrome, getSeriesPalette } from "@/components/PlayerStatChart/statMeta";
-import { Switch } from "@/components/Switch/Switch";
+import { getChartChrome, getSeriesPalette } from "@vision/ui/charts/palette";
+import { Switch } from "@vision/ui/components/Switch/Switch";
 
 import styles from "@/components/PlayerFantasyChart/PlayerFantasyChart.module.scss";
 
