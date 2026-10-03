@@ -5,7 +5,7 @@ description: Use when a court-vision page feels slow, when a branch touches page
 
 # Load-time budgets in court-vision
 
-`perf-budget.json` at the repo root is the acceptable-threshold contract:
+`apps/court-vision/perf-budget.json` is the acceptable-threshold contract:
 per-route TTFB and total-response ceilings in milliseconds, enforced at a
 percentile over several runs. `bun run perf:budget` measures a running server
 against it and exits 1 on a breach. It is a local and pre-release check: CI's
@@ -64,7 +64,7 @@ Work down; stop at the first rung that clears the budget:
   a product decision: it needs its own commit, a one-line justification in
   the body, and must be called out plainly in the report or PR. Same for
   deleting a route entry or flipping `warmupRuns`/`percentile`.
-- **New page, new entry.** Any new route under `src/app` gets a row in
+- **New page, new entry.** Any new route under `apps/court-vision/src/app` gets a row in
   `perf-budget.json` in the same change. Signed-out-reachable routes get
   shell budgets (600/1500); database-backed routes get data budgets
   (1200/2500) unless there is a reason to differ.
@@ -79,12 +79,13 @@ Work down; stop at the first rung that clears the budget:
   connection error means no server, not a breach.
 - `bun run perf:budget -- --skip-db` (note the `--`) is how flags pass
   through the package script.
-- Budget math lives in `lib/perf/budget.ts` with unit tests; the runner is
-  `scripts/perf-budget.ts`, outside `src/` so the security scan's env-read
-  rule does not apply to its `DATABASE_URL` sniff. Change the math in the
-  lib, never inline in the runner, and do not move the runner back into
-  `src/`.
-- CI runs Lighthouse only (`lighthouserc.json`), auditing the database-free
+- Budget math lives in `apps/court-vision/src/lib/perf/budget.ts` with unit
+  tests; the runner is `apps/court-vision/scripts/perf-budget.ts`, outside the
+  app's `src/` so the security scan's env-read rule does not apply to its
+  `DATABASE_URL` sniff. Change the math in the lib, never inline in the
+  runner, and do not move the runner back into `src/`. The root
+  `bun run perf:budget` forwards to the app's script.
+- CI runs Lighthouse only (`apps/court-vision/lighthouserc.json`), auditing the database-free
   routes. `perf:budget` is deliberately NOT in CI: without a `DATABASE_URL` it
   skips its database-backed routes and measures the same three routes
   Lighthouse already covers, with a weaker signal, so it would read as coverage

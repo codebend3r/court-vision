@@ -12,15 +12,15 @@ Router, Prisma, Supabase auth, and the Balldontlie API.
 1. **Secret exposure.** `BALLDONTLIE_API_KEY` or a Supabase service key
    reachable from a client component, imported into a module that a
    `"use client"` file pulls in, or exposed through a `NEXT_PUBLIC_` prefix.
-2. **Unauthenticated mutations.** Route handlers under `src/app/api/**` and
+2. **Unauthenticated mutations.** Route handlers under `apps/court-vision/src/app/api/**` and
    server actions with no session check before a write.
-3. **Missing ownership checks.** User-scoped data in `src/lib/leagues`,
-   `src/lib/fantasyTeams`, and `src/lib/watchlist`. A user id taken from the
+3. **Missing ownership checks.** User-scoped data in `apps/court-vision/src/lib/leagues`,
+   `apps/court-vision/src/lib/fantasyTeams`, and `apps/court-vision/src/lib/watchlist`. A user id taken from the
    request body or a form field instead of the session is an IDOR, not a
    style problem.
 4. **Raw Prisma.** `$queryRaw` or `$executeRaw` with interpolated input.
 5. **Injection and leakage.** `dangerouslySetInnerHTML`, secrets committed
-   to `.env`, sensitive values reaching `src/lib/logger.ts`.
+   to `.env`, sensitive values reaching `apps/court-vision/src/lib/logger.ts`.
 
 ## Output
 

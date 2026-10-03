@@ -14,7 +14,7 @@ filterable views for fantasy decisions.
   - **Advanced Stats** — 15 per-game advanced metrics (TS%, PIE, usage, …)
     with explain-in-place header tooltips and a legend.
   - **Fantasy Value** — the multi-method valuation engine
-    (`PRD/PRD-valuation-engine.md`): one sortable column per method —
+    ([`docs/prd/valuation-engine.md`](docs/prd/valuation-engine.md)): one sortable column per method —
     **Z-Score**, **G-Score** (game-to-game volatility aware), **Points**
     (points-league scoring), **VORP**, and **Pos VORP** (positional
     scarcity), plus a placeholder for SGP. Punt or weight categories,
@@ -64,21 +64,38 @@ previews, and sync notes live in `.design-sync/`; usage conventions for anyone
 (or anything) composing with the components are in
 `.design-sync/conventions.md`.
 
+## Repository layout
+
+An [Nx](https://nx.dev/) monorepo on Bun workspaces:
+
+```
+apps/court-vision/     the Court Vision Next.js app (UI, server actions, Prisma, auth, sync jobs)
+libs/vision-testing/   @vision/testing: the shared bun:test preload and helpers
+```
+
+Shared `@vision/*` libraries hold the sport-agnostic logic so sibling apps
+for other sports can reuse it. They ship TypeScript source, and apps compile
+them directly; there is no library build step.
+
 ## Getting started
 
 You'll need [Bun](https://bun.sh/) installed.
 
 ```bash
-bun install                 # install dependencies
-cp .env.example .env        # fill in the values you need
-bun dev                     # http://localhost:46644
+bun install                                                # install every workspace
+cp apps/court-vision/.env.example apps/court-vision/.env   # fill in the values you need
+bun dev                                                    # http://localhost:46644
 ```
 
 Then open [http://localhost:46644](http://localhost:46644) in your browser.
 
-Useful scripts: `bun run test`, `bun run test:a11y`, `bun run lint`,
-`bun run typecheck`, `bun run build`, and the sync jobs (`bun run sync:bdl`,
-`bun run sync:players`) for refreshing stats. Install Chromium once with
+Root scripts run across the whole workspace: `bun run test`, `bun run typecheck`
+and `bun run build` fan out with `nx run-many`, and `bun run lint` and
+`bun run format` cover every project. App-specific scripts are forwarded from
+the root too: `bun run test:a11y`, `bun run perf:budget`, `bun run db:migrate`,
+and the sync jobs (`bun run sync:bdl`, then `bun run sync:players`) for
+refreshing stats. To target one project, use `bunx nx run <project>:<target>`
+(e.g. `bunx nx run court-vision:test`). Install Chromium once with
 `bunx playwright install chromium` before running the accessibility suite locally.
 Conventions live in `CLAUDE.md`; design specs and plans under `docs/superpowers/`.
 

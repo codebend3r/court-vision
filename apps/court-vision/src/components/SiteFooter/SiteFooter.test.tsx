@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
-import { restoreEnv, stubEnv } from "@/lib/testing/env";
+import { restoreEnv, stubEnv } from "@vision/testing/env";
 
 import { SiteFooter } from "@/components/SiteFooter/SiteFooter";
 

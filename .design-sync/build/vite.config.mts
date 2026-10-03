@@ -13,7 +13,8 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 const repoRoot = resolve(import.meta.dirname, "..", "..");
-const srcDir = join(repoRoot, "src");
+const appDir = join(repoRoot, "apps", "court-vision");
+const srcDir = join(appDir, "src");
 const buildDir = import.meta.dirname;
 
 const isReact = (id: string): boolean =>
@@ -51,8 +52,8 @@ export default defineConfig({
       { find: /^next\/link$/, replacement: join(buildDir, "shims", "next-link.tsx") },
       { find: /^next\/navigation$/, replacement: join(buildDir, "shims", "next-navigation.ts") },
       { find: /^next\/image$/, replacement: join(buildDir, "shims", "next-image.tsx") },
-      { find: /^@generated\/(.*)/, replacement: join(repoRoot, "generated", "$1") },
-      { find: /^@public\/(.*)/, replacement: join(repoRoot, "public", "$1") },
+      { find: /^@generated\/(.*)/, replacement: join(appDir, "generated", "$1") },
+      { find: /^@public\/(.*)/, replacement: join(appDir, "public", "$1") },
       { find: /^@\/(.*)/, replacement: join(srcDir, "$1") },
     ],
   },

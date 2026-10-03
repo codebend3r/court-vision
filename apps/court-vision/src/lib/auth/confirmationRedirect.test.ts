@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
-import { restoreEnv, stubEnv } from "@/lib/testing/env";
+import { restoreEnv, stubEnv } from "@vision/testing/env";
 
 const getHeader = vi.fn();
 

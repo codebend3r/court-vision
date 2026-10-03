@@ -1,6 +1,16 @@
+import { resolve } from "node:path";
+
 import type { NextConfig } from "next";
 
 import packageJson from "./package.json";
+
+// The monorepo root. Turbopack only compiles files under its root, and the
+// workspace libs (libs/*) live beside this app, not inside it; file tracing
+// must agree with Turbopack or Next warns and picks one itself.
+const workspaceRoot = resolve(import.meta.dirname, "../..");
+
+// Workspace libs ship TypeScript source, not a build, so Next compiles them.
+const workspacePackages: string[] = [];
 
 // App-wide security headers. CSP here is limited to `frame-ancestors` (the
 // modern, header-independent clickjacking guard); a full script/style CSP needs
@@ -19,9 +29,16 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  turbopack: { root: workspaceRoot },
+  outputFileTracingRoot: workspaceRoot,
+  transpilePackages: workspacePackages,
+  // `next dev` otherwise writes its own AGENTS.md/CLAUDE.md into this folder
+  // whenever an AI agent starts it; the repo's root CLAUDE.md carries the one
+  // pointer that block adds (Next's bundled docs).
+  agentRules: false,
   env: {
-    // Surfaces the package.json version to the SiteFooter; source imports
-    // cannot reach the repo root (parent-relative imports are lint-banned).
+    // Surfaces the app's package.json version to the SiteFooter; source imports
+    // cannot reach it (parent-relative imports are lint-banned).
     NEXT_PUBLIC_APP_VERSION: packageJson.version,
   },
   images: {

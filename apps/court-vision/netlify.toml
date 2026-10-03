@@ -23,6 +23,8 @@ SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_SUPAB
 # every byte that actually ships is still scanned. Verified against a production
 # build — the key appears in 0 files under `.next` once `cache/` is excluded.
 #
-# Both spellings are listed because the value is matched against repo-root
-# relative paths, and the cache is written to one and copied to the other.
-SECRETS_SCAN_OMIT_PATHS = ".next/cache/,.netlify/.next/cache/"
+# Every spelling is listed because the value is matched against repo-root
+# relative paths, the cache is written to one and copied to the other, and this
+# app lives in the apps/court-vision package directory of the monorepo (the
+# plugin may stage its copy at either the package or the repo root).
+SECRETS_SCAN_OMIT_PATHS = "apps/court-vision/.next/cache/,apps/court-vision/.netlify/.next/cache/,.netlify/.next/cache/"

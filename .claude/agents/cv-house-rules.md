@@ -24,7 +24,7 @@ component structure.
 - optional chaining with no `??` fallback
 - functions taking three or more positional parameters instead of one
   options object
-- `src/lib/**` modules and `src/components/*/` with no co-located test; a
+- `apps/court-vision/src/lib/**` modules and `apps/court-vision/src/components/*/` with no co-located test; a
   type guard with no test is the highest-severity item in this category
 - interactive behavior on a non-semantic element, icon-only controls with
   no `aria-label`, a form control with no associated `label`, ARIA that

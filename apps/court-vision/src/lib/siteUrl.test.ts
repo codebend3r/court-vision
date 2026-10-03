@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
 
-import { restoreEnv, stubEnv } from "@/lib/testing/env";
+import { restoreEnv, stubEnv } from "@vision/testing/env";
 
 import { resolveSiteOrigin, siteOriginFromEnv } from "@/lib/siteUrl";
 

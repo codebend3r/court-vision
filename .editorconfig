@@ -25,6 +25,6 @@ trim_trailing_whitespace = false
 insert_final_newline = false
 trim_trailing_whitespace = false
 
-[{generated,prisma/migrations}/**]
+[apps/*/{generated,prisma/migrations}/**]
 insert_final_newline = false
 trim_trailing_whitespace = false
