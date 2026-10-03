@@ -9,12 +9,12 @@ vi.mock("@/lib/valuation/actions", () => ({ loadFantasyTrendLogs }));
 
 import { FantasyValueView } from "@/components/FantasyValueView/FantasyValueView";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
-import { makeStatLine } from "@/lib/valuation/fixtures";
+import { makeStatLine, type FixtureOverrides } from "@/lib/valuation/fixtures";
 import { type FantasyStatLine } from "@/lib/valuation/types";
 
 afterEach(cleanup);
 
-const line = (overrides: Partial<FantasyStatLine> & { playerId: number }): FantasyStatLine =>
+const line = (overrides: FixtureOverrides): FantasyStatLine =>
   makeStatLine({
     firstName: `First${overrides.playerId}`,
     lastName: `Last${overrides.playerId}`,

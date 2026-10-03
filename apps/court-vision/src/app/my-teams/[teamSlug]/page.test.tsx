@@ -1,7 +1,8 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
-import { buildSlots, DEFAULT_SLOT_COUNTS } from "@/lib/fantasyTeams/slots";
+import { buildSlots, DEFAULT_SLOT_COUNTS } from "@vision/sport-basketball/engine";
+import { type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
 import { type LeagueSummary } from "@/lib/leagues/types";
 import { makeStatLine } from "@/lib/valuation/fixtures";
 
@@ -83,7 +84,7 @@ describe("EditTeamPage", () => {
       id: "team-1",
       name: "Bench Mob",
       createdAt: "2026-07-23T00:00:00.000Z",
-      slots: buildSlots({ counts: DEFAULT_SLOT_COUNTS }),
+      slots: buildSlots<FantasyTeamPlayer>({ counts: DEFAULT_SLOT_COUNTS }),
     });
 
     render(await EditTeamPage({ params: Promise.resolve({ teamSlug: "bench-mob" }) }));

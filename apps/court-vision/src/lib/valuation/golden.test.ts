@@ -2,15 +2,35 @@ import { describe, expect, it } from "bun:test";
 
 import { type TeamGameResult } from "@vision/core/series/teamTrend";
 import { createPrng, gaussian } from "@vision/core/util/prng";
-
-import { buildPlayerInsights } from "@/lib/fantasyTeams/insights";
 import {
+  aggregateWindowLogs,
   autoAssignSlotId,
+  buildCategoryBreakdown,
+  buildFantasyGameValues,
+  buildFantasyTrend,
+  buildLeague,
+  buildPlayerFantasyProfile,
+  buildPlayerInsights,
+  buildRollingGSeries,
+  buildRollingZSeries,
   buildSlots,
+  CATEGORY_KEYS,
+  CATEGORY_META,
+  computePoolStats,
+  DEFAULT_POINTS_SCORING,
   DEFAULT_SLOT_COUNTS,
+  DEFAULT_VALUATION_CONFIG,
   eligibleForSlot,
+  FANTASY_METHODS,
+  leagueRates,
+  parseEligibleGroups,
+  positionalValues,
   SLOT_META,
-} from "@/lib/fantasyTeams/slots";
+  standingsGainDenominators,
+  valuePlayers,
+} from "@vision/sport-basketball/engine";
+import { type FantasyProfileLog } from "@vision/sport-basketball/types";
+
 import { type FantasyTeamPlayer, type RosterSlot } from "@/lib/fantasyTeams/types";
 import {
   aggregateCareerTotals,
@@ -21,19 +41,6 @@ import {
 import { buildStatSeries, type CumulativeSourceLog } from "@/lib/stats/cumulative";
 import { type StatMode } from "@/lib/stats/searchParams";
 import { buildTeamStats, rankTeams, type TeamBoxTotals } from "@/lib/teams/stats";
-import { aggregateWindowLogs } from "@/lib/valuation/aggregate";
-import { buildCategoryBreakdown } from "@/lib/valuation/breakdown";
-import { CATEGORY_KEYS, CATEGORY_META } from "@/lib/valuation/categories";
-import { buildFantasyGameValues } from "@/lib/valuation/gameValues";
-import { valuePlayers } from "@/lib/valuation/index";
-import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
-import { standingsGainDenominators } from "@/lib/valuation/methods/sgp";
-import { parseEligibleGroups, positionalValues } from "@/lib/valuation/modifiers/positional";
-import { buildPlayerFantasyProfile, type FantasyProfileLog } from "@/lib/valuation/playerValue";
-import { attemptWeightedPcts, computePoolStats } from "@/lib/valuation/pool";
-import { FANTASY_METHODS } from "@/lib/valuation/registry";
-import { buildLeague } from "@/lib/valuation/rosters";
-import { buildFantasyTrend } from "@/lib/valuation/trend";
 import {
   type Category,
   type FantasyStatLine,
@@ -41,7 +48,6 @@ import {
   type PoolStats,
   type ValuationConfig,
 } from "@/lib/valuation/types";
-import { buildRollingGSeries, buildRollingZSeries } from "@/lib/watchlist/trend";
 
 // Golden master for the sport-descriptor refactor of the valuation engine.
 //
@@ -223,19 +229,23 @@ const PLAYERS = Array.from({ length: PLAYER_COUNT }, (_, index) => syntheticPlay
 type WindowRange = "all" | "last10";
 
 const toWindowLog = (log: FlatLog) => ({
-  minutes: log.minutes,
-  pts: log.pts,
-  reb: log.reb,
-  ast: log.ast,
-  stl: log.stl,
-  blk: log.blk,
-  fg3m: log.fg3m,
-  tov: log.tov,
-  fgm: log.fgm,
-  fga: log.fga,
-  ftm: log.ftm,
-  fta: log.fta,
+  playingTime: log.minutes,
+  stats: {
+    pts: log.pts,
+    reb: log.reb,
+    ast: log.ast,
+    stl: log.stl,
+    blk: log.blk,
+    fg3m: log.fg3m,
+    tov: log.tov,
+    fgm: log.fgm,
+    fga: log.fga,
+    ftm: log.ftm,
+    fta: log.fta,
+  },
 });
+
+const windowGamesFor = (range: WindowRange): number | null => (range === "all" ? null : 10);
 
 const toDatedLog = (log: FlatLog) => ({ ...toWindowLog(log), gameDate: log.gameDate });
 
@@ -259,28 +269,16 @@ const toLine = (player: SyntheticPlayer): FantasyStatLine => ({
 
 const projectPool = (poolStats: PoolStats) => ({
   poolSize: poolStats.poolSize,
-  leagueFgPct: poolStats.leagueFgPct,
-  leagueFtPct: poolStats.leagueFtPct,
+  leagueFgPct: poolStats.leagueRate.fg,
+  leagueFtPct: poolStats.leagueRate.ft,
   byCategory: poolStats.byCategory,
 });
 
 const projectLine = (line: FantasyStatLine) => ({
   playerId: line.playerId,
   gamesPlayed: line.gamesPlayed,
-  minutes: line.minutes,
-  stats: {
-    pts: line.pts,
-    reb: line.reb,
-    ast: line.ast,
-    stl: line.stl,
-    blk: line.blk,
-    fg3m: line.fg3m,
-    tov: line.tov,
-    fgm: line.fgm,
-    fga: line.fga,
-    ftm: line.ftm,
-    fta: line.fta,
-  },
+  minutes: line.playingTime,
+  stats: line.stats,
   sq: line.sq,
   cross: line.cross,
 });
@@ -296,7 +294,12 @@ const runValuePlayers = ({
   methodWeights: MethodWeights;
   range: WindowRange;
 }) => {
-  const { values, poolStats } = valuePlayers({ lines, config, methodWeights, range });
+  const { values, poolStats } = valuePlayers({
+    lines,
+    config,
+    methodWeights,
+    windowGames: windowGamesFor(range),
+  });
   return { values, poolStats: projectPool(poolStats) };
 };
 
@@ -310,10 +313,12 @@ const runPoolStats = ({
   basis: ValuationConfig["basis"];
   poolSize: number;
   range: WindowRange;
-}) => computePoolStats({ lines, basis, poolSize, range });
+}) => computePoolStats({ lines, basis, poolSize, windowGames: windowGamesFor(range) });
 
-const runLeaguePcts = ({ lines }: { lines: readonly FantasyStatLine[] }) =>
-  attemptWeightedPcts({ lines });
+const runLeaguePcts = ({ lines }: { lines: readonly FantasyStatLine[] }) => {
+  const rates = leagueRates({ lines });
+  return { leagueFgPct: rates.fg, leagueFtPct: rates.ft };
+};
 
 // ---------------------------------------------------------------------------
 // Fixed inputs
@@ -512,7 +517,7 @@ describe("valuation golden master", () => {
         playerId,
         config: baseConfig(),
         methodWeights: { sgp: { stl: 2 } },
-        range: "all",
+        poolWindowGames: null,
         logs: (player?.logs ?? []).map(toProfileLog),
         windowGames: 20,
       });
@@ -521,7 +526,9 @@ describe("valuation golden master", () => {
   });
 
   it("builds the same team-builder insights", () => {
-    const value = buildPlayerInsights({ lines: LINES });
+    const value = buildPlayerInsights({ lines: LINES, config: DEFAULT_VALUATION_CONFIG }).map(
+      ({ playingTimePerGame, ...insight }) => ({ ...insight, minutesPerGame: playingTimePerGame }),
+    );
     expect(golden({ value, sample: value.slice(0, 2) })).toMatchSnapshot();
   });
 
@@ -553,7 +560,7 @@ describe("valuation golden master", () => {
       position,
       nbaPersonId: null,
     });
-    const slots = buildSlots({ counts: DEFAULT_SLOT_COUNTS });
+    const slots = buildSlots<FantasyTeamPlayer>({ counts: DEFAULT_SLOT_COUNTS });
     const filled: RosterSlot[] = slots.map((slot) =>
       slot.type === "PG" ? { ...slot, player: player(99, "G") } : slot,
     );

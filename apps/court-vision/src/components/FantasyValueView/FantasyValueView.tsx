@@ -20,9 +20,14 @@ import { Preloader } from "@/components/Preloader/Preloader";
 import { type FantasySeed } from "@/lib/leagues/fantasyDefaults";
 import { gamesForRange, type PlayerGameRange } from "@/lib/players/searchParams";
 import { loadFantasyTrendLogs } from "@/lib/valuation/actions";
-import { buildCategoryBreakdown } from "@/lib/valuation/breakdown";
-import { CATEGORY_KEYS, CATEGORY_META } from "@/lib/valuation/categories";
-import { valuePlayers } from "@/lib/valuation/index";
+import {
+  buildCategoryBreakdown,
+  buildFantasyTrend,
+  CATEGORY_KEYS,
+  CATEGORY_META,
+  valuePlayers,
+} from "@vision/sport-basketball/engine";
+import { DEFAULT_TREND_GAMES } from "@vision/core/valuation/trend";
 import {
   FANTASY_LAYOUTS,
   fantasyParsers,
@@ -31,7 +36,6 @@ import {
   type FantasyLayout,
   type FantasySortKey,
 } from "@/lib/valuation/searchParams";
-import { buildFantasyTrend, DEFAULT_TREND_GAMES } from "@/lib/valuation/trend";
 import {
   isFantasyTrendLogsResult,
   toDatedLogs,
@@ -228,7 +232,13 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
   );
 
   const { values, poolStats } = useMemo(
-    () => valuePlayers({ lines, config, methodWeights: params.w, range: params.range }),
+    () =>
+      valuePlayers({
+        lines,
+        config,
+        methodWeights: params.w,
+        windowGames: gamesForRange({ range: params.range }),
+      }),
     [lines, config, params.w, params.range],
   );
 

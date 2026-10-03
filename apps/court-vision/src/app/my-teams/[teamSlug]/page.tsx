@@ -1,10 +1,10 @@
+import { buildPlayerInsights, DEFAULT_VALUATION_CONFIG } from "@vision/sport-basketball/engine";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { PageAction, PageHeader } from "@/components/PageHeader/PageHeader";
 import { TeamEditor } from "@/components/TeamEditor/TeamEditor";
 import { getProfile } from "@/lib/auth/session";
-import { buildPlayerInsights } from "@/lib/fantasyTeams/insights";
 import { fantasyPlayersFromPool } from "@/lib/fantasyTeams/players";
 import { getActiveLeague } from "@/lib/leagues/queries";
 import { getLeagueTeamBySlug } from "@/lib/leagues/teamQueries";
@@ -46,7 +46,7 @@ export default async function EditTeamPage({ params }: { params: Promise<{ teamS
   if (team === null) notFound();
 
   const players = fantasyPlayersFromPool({ lines });
-  const insights = buildPlayerInsights({ lines });
+  const insights = buildPlayerInsights({ lines, config: DEFAULT_VALUATION_CONFIG });
 
   return (
     <main className={styles.page}>

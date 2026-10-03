@@ -1,17 +1,18 @@
+import { type LeagueScoringType } from "@vision/core/league/scoring";
+import { type LeagueScoringConfig } from "@vision/sport-basketball/types";
+
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
-import { type Category, type ScoringSettings } from "@/lib/valuation/types";
 
-export type LeagueScoringType = "h2h_categories" | "h2h_points" | "roto";
-
-// Per-type scoring payloads stored in League.scoringConfig (Json column).
-// Discriminated externally by League.scoringType, validated by lib/leagues/guards.
-export type H2hCategoriesConfig = {
-  categories: Category[];
-  weights?: Partial<Record<Category, number>>;
-};
-export type H2hPointsConfig = { scoring: ScoringSettings };
-export type RotoConfig = { categories: Category[] };
-export type LeagueScoringConfig = H2hCategoriesConfig | H2hPointsConfig | RotoConfig;
+// Scoring payloads stored in League.scoringConfig (Json column), discriminated
+// externally by League.scoringType and validated by lib/leagues/guards. The
+// shapes are the shared engine's, bound to basketball.
+export { type LeagueScoringType } from "@vision/core/league/scoring";
+export {
+  type H2hCategoriesConfig,
+  type H2hPointsConfig,
+  type LeagueScoringConfig,
+  type RotoConfig,
+} from "@vision/sport-basketball/types";
 
 // Serializable league shape crossing the RSC boundary (dates as ISO strings).
 export type LeagueSummary = {

@@ -2,7 +2,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
 import { PlayerInsightPanel } from "@/components/PlayerInsightPanel/PlayerInsightPanel";
-import { type PlayerInsight } from "@/lib/fantasyTeams/insights";
+import { type PlayerInsight } from "@vision/sport-basketball/types";
 import { type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
 
 afterEach(cleanup);
@@ -20,7 +20,7 @@ const player: FantasyTeamPlayer = {
 const insight: PlayerInsight = {
   playerId: 1,
   gamesPlayed: 68,
-  minutesPerGame: 35.4,
+  playingTimePerGame: 35.4,
   z: 2.1,
   overallRank: 12,
   overallOf: 512,

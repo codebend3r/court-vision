@@ -1,4 +1,4 @@
-import { FANTASY_METHODS } from "@/lib/valuation/registry";
+import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
 import { type Basis } from "@/lib/valuation/types";
 
 import styles from "@/components/FantasyValueLegend/FantasyValueLegend.module.scss";

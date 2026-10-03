@@ -29,6 +29,7 @@
         "@supabase/ssr": "0.12.7",
         "@supabase/supabase-js": "2.117.2",
         "@vision/core": "workspace:*",
+        "@vision/sport-basketball": "workspace:*",
         "lucide-react": "1.50.0",
         "next": "16.3.8",
         "nuqs": "2.10.1",
@@ -51,6 +52,13 @@
         "dotenv": "18.0.5",
         "prisma": "7.10.0",
         "sass": "1.105.1",
+      },
+    },
+    "libs/sport-basketball": {
+      "name": "@vision/sport-basketball",
+      "version": "0.0.0",
+      "dependencies": {
+        "@vision/core": "workspace:*",
       },
     },
     "libs/vision-core": {
@@ -520,6 +528,8 @@
     "@typescript/typescript-win32-x64": ["@typescript/typescript-win32-x64@7.0.2", "", { "os": "win32", "cpu": "x64" }, "sha512-0BQ3HkAHHlKLSp1qRvf3SUhGpGsDuhB/jgFw75guyqbxJqEaS0Cw/VFO8i2nHglJUzQCRtMMR/IBAKE3ETMC4g=="],
 
     "@vision/core": ["@vision/core@workspace:libs/vision-core"],
+
+    "@vision/sport-basketball": ["@vision/sport-basketball@workspace:libs/sport-basketball"],
 
     "@vision/testing": ["@vision/testing@workspace:libs/vision-testing"],
 

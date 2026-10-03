@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { TeamBuilder } from "@/components/TeamBuilder/TeamBuilder";
-import { buildSlots, DEFAULT_SLOT_COUNTS } from "@/lib/fantasyTeams/slots";
+import { buildSlots, DEFAULT_SLOT_COUNTS } from "@vision/sport-basketball/engine";
 import { type FantasyTeamPlayer, type RosterSlot } from "@/lib/fantasyTeams/types";
 
 const saveLeagueTeamMock = vi.fn();
@@ -170,7 +170,7 @@ describe("TeamBuilder", () => {
       name: "Bench Mob",
       slug: "bench-mob",
       createdAt: "2026-07-23T00:00:00.000Z",
-      slots: buildSlots({ counts: DEFAULT_SLOT_COUNTS }).map((slot) =>
+      slots: buildSlots<FantasyTeamPlayer>({ counts: DEFAULT_SLOT_COUNTS }).map((slot) =>
         slot.id === "PG-1" ? { ...slot, player: players[0] ?? null } : slot,
       ),
     };

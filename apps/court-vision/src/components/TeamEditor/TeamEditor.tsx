@@ -1,5 +1,5 @@
 import { TeamBuilder } from "@/components/TeamBuilder/TeamBuilder";
-import { type PlayerInsight } from "@/lib/fantasyTeams/insights";
+import { type PlayerInsight } from "@vision/sport-basketball/types";
 import { type FantasyTeam, type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
 
 export type TeamEditorProps = {

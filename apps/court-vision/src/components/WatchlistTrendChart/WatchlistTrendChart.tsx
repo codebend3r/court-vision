@@ -6,7 +6,7 @@ import { ChartPlaceholder } from "@/components/ChartPlaceholder/ChartPlaceholder
 import { getChartChrome } from "@/components/PlayerStatChart/statMeta";
 import type { WatchlistTrendLine } from "@/components/WatchlistTrendChart/WatchlistTrendPlot";
 import { useTheme, type Theme } from "@/lib/theme/ThemeProvider";
-import { ROLLING_WINDOW_GAMES, type TrendSeries } from "@/lib/watchlist/trend";
+import { ROLLING_WINDOW_GAMES, type TrendSeries } from "@vision/core/valuation/rolling";
 
 import styles from "@/components/WatchlistTrendChart/WatchlistTrendChart.module.scss";
 

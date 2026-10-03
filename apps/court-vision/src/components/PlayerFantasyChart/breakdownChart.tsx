@@ -8,7 +8,7 @@ import {
   METHOD_LABELS,
   type MethodKey,
 } from "@/components/PlayerFantasyChart/labels";
-import type { FantasyCategoryBreakdown } from "@/lib/valuation/breakdown";
+import { type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
 
 import styles from "@/components/PlayerFantasyChart/PlayerFantasyChart.module.scss";
 

@@ -3,8 +3,8 @@ import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it } from "bun:test";
 
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
-import type { FantasyCategoryBreakdown } from "@/lib/valuation/breakdown";
-import type { FantasyTrendPoint } from "@/lib/valuation/playerValue";
+import { type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
+import { type FantasyTrendPoint } from "@vision/core/valuation/playerValue";
 
 import { PlayerFantasyChart } from "@/components/PlayerFantasyChart/PlayerFantasyChart";
 

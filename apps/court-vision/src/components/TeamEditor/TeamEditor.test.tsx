@@ -16,7 +16,7 @@ vi.mock("@/components/TeamBuilder/TeamBuilder", () => ({
 }));
 
 import { TeamEditor } from "@/components/TeamEditor/TeamEditor";
-import { buildSlots, DEFAULT_SLOT_COUNTS } from "@/lib/fantasyTeams/slots";
+import { buildSlots, DEFAULT_SLOT_COUNTS } from "@vision/sport-basketball/engine";
 import { type FantasyTeam, type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
 
 afterEach(cleanup);
@@ -26,7 +26,7 @@ const team: FantasyTeam = {
   name: "Bench Mob",
   slug: "bench-mob",
   createdAt: "2026-07-23T00:00:00.000Z",
-  slots: buildSlots({ counts: DEFAULT_SLOT_COUNTS }),
+  slots: buildSlots<FantasyTeamPlayer>({ counts: DEFAULT_SLOT_COUNTS }),
 };
 
 const players: FantasyTeamPlayer[] = [

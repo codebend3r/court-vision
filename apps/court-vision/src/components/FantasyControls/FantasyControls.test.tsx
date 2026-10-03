@@ -6,7 +6,7 @@ import {
   FantasyControls,
   type FantasyControlsProps,
 } from "@/components/FantasyControls/FantasyControls";
-import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
+import { DEFAULT_POINTS_SCORING } from "@vision/sport-basketball/engine";
 
 afterEach(cleanup);
 

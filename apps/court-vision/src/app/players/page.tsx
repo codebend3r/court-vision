@@ -14,7 +14,7 @@ import { getActiveLeague } from "@/lib/leagues/queries";
 import { searchPlayers, searchPlayersAdvanced } from "@/lib/players/searchCached";
 import { parsePlayersSearchParams, type PlayersSearchParams } from "@/lib/players/searchParams";
 import { getFantasyPool } from "@/lib/valuation/loader";
-import { ENABLED_METHODS } from "@/lib/valuation/registry";
+import { ENABLED_METHODS } from "@vision/sport-basketball/engine";
 import { loadFantasySearchParams } from "@/lib/valuation/searchParams";
 
 import { PLAYERS_PAGE_HEADER } from "@/app/players/header";

@@ -1,3 +1,10 @@
+import {
+  buildRunningSeries,
+  type CountingSpec,
+  type RatioSpec,
+  type RunningMode,
+} from "@vision/core/series/running";
+
 import type { StatMode } from "@/lib/stats/searchParams";
 
 export type CumulativeSourceLog = {
@@ -19,6 +26,9 @@ export type CumulativeSourceLog = {
   pts: number;
 };
 
+type CountingKey = "pts" | "reb" | "ast" | "stl" | "blk" | "tov";
+type RatioKey = "fgPct" | "fg3Pct" | "ftPct";
+
 export type CumulativePoint = {
   gameIndex: number;
   gameDate: string;
@@ -37,129 +47,51 @@ export type CumulativePoint = {
   ftPct: number | null;
 };
 
-// game: individual-game value; avg: running mean; totals: running sum; per36:
-// running sum scaled to a 36-minute pace (null until any minutes accrue).
+const COUNTING: readonly CountingSpec<CumulativeSourceLog, CountingKey>[] = [
+  { key: "pts", value: (log) => log.pts },
+  { key: "reb", value: (log) => log.reb },
+  { key: "ast", value: (log) => log.ast },
+  { key: "stl", value: (log) => log.stl },
+  { key: "blk", value: (log) => log.blk },
+  { key: "tov", value: (log) => log.tov },
+];
+
 // Shooting percentages are ratio-of-sums in every mode, but the game chart
 // deliberately omits them because it focuses on raw counting stats.
-const countingValue = (args: {
-  currentValue: number;
-  total: number;
-  gameIndex: number;
-  minutesTotal: number;
-  mode: StatMode;
-}): number | null => {
-  if (args.mode === "game") {
-    return args.currentValue;
-  }
-  if (args.mode === "avg") {
-    return args.total / args.gameIndex;
-  }
-  if (args.mode === "totals") {
-    return args.total;
-  }
-  return args.minutesTotal === 0 ? null : (args.total / args.minutesTotal) * 36;
+const RATIOS: readonly RatioSpec<CumulativeSourceLog, RatioKey>[] = [
+  { key: "fgPct", made: (log) => log.fgm, attempted: (log) => log.fga, scale: 100 },
+  { key: "fg3Pct", made: (log) => log.fg3m, attempted: (log) => log.fg3a, scale: 100 },
+  { key: "ftPct", made: (log) => log.ftm, attempted: (log) => log.fta, scale: 100 },
+];
+
+const RUNNING_MODE: Record<StatMode, RunningMode> = {
+  game: "game",
+  avg: "avg",
+  totals: "totals",
+  per36: "pace",
 };
 
+// The shared running series over basketball's box score. per36 is the pace
+// mode at 36 minutes; min carries the running minutes total in both totals
+// and per36 modes (per-36 minutes would be the constant 36).
 export const buildStatSeries = (args: {
   logs: CumulativeSourceLog[];
   mode: StatMode;
-}): CumulativePoint[] => {
-  type Accumulator = {
-    points: CumulativePoint[];
-    totals: {
-      minutes: number;
-      pts: number;
-      reb: number;
-      ast: number;
-      stl: number;
-      blk: number;
-      tov: number;
-      fgm: number;
-      fga: number;
-      fg3m: number;
-      fg3a: number;
-      ftm: number;
-      fta: number;
-    };
-  };
-
-  const initial: Accumulator = {
-    points: [],
-    totals: {
-      minutes: 0,
-      pts: 0,
-      reb: 0,
-      ast: 0,
-      stl: 0,
-      blk: 0,
-      tov: 0,
-      fgm: 0,
-      fga: 0,
-      fg3m: 0,
-      fg3a: 0,
-      ftm: 0,
-      fta: 0,
-    },
-  };
-
-  const { points } = args.logs.reduce((acc, log, index) => {
-    const gameIndex = index + 1;
-
-    const newTotals = {
-      minutes: acc.totals.minutes + log.minutes,
-      pts: acc.totals.pts + log.pts,
-      reb: acc.totals.reb + log.reb,
-      ast: acc.totals.ast + log.ast,
-      stl: acc.totals.stl + log.stl,
-      blk: acc.totals.blk + log.blk,
-      tov: acc.totals.tov + log.tov,
-      fgm: acc.totals.fgm + log.fgm,
-      fga: acc.totals.fga + log.fga,
-      fg3m: acc.totals.fg3m + log.fg3m,
-      fg3a: acc.totals.fg3a + log.fg3a,
-      ftm: acc.totals.ftm + log.ftm,
-      fta: acc.totals.fta + log.fta,
-    };
-
-    const counting = (total: number, currentValue: number): number | null =>
-      countingValue({
-        currentValue,
-        total,
-        gameIndex,
-        minutesTotal: newTotals.minutes,
-        mode: args.mode,
-      });
-
-    const point: CumulativePoint = {
-      gameIndex,
-      gameDate: log.gameDate.toISOString(),
-      matchup: log.matchup,
-      winLoss: log.winLoss,
-      dnp: log.minutes === 0,
-      // per36 minutes would be the constant 36, so min carries the running
-      // minutes total in both totals and per36 modes.
-      min:
-        args.mode === "game"
-          ? log.minutes
-          : args.mode === "avg"
-            ? newTotals.minutes / gameIndex
-            : newTotals.minutes,
-      pts: counting(newTotals.pts, log.pts),
-      reb: counting(newTotals.reb, log.reb),
-      ast: counting(newTotals.ast, log.ast),
-      stl: counting(newTotals.stl, log.stl),
-      blk: counting(newTotals.blk, log.blk),
-      tov: counting(newTotals.tov, log.tov),
-      fgPct: newTotals.fga === 0 ? null : (100 * newTotals.fgm) / newTotals.fga,
-      fg3Pct: newTotals.fg3a === 0 ? null : (100 * newTotals.fg3m) / newTotals.fg3a,
-      ftPct: newTotals.fta === 0 ? null : (100 * newTotals.ftm) / newTotals.fta,
-    };
-
-    return {
-      points: [...acc.points, point],
-      totals: newTotals,
-    };
-  }, initial);
-
-  return points;
-};
+}): CumulativePoint[] =>
+  buildRunningSeries({
+    logs: args.logs,
+    mode: RUNNING_MODE[args.mode],
+    playingTime: (log) => log.minutes,
+    perUnit: 36,
+    counting: COUNTING,
+    ratios: RATIOS,
+  }).map((point): CumulativePoint => ({
+    gameIndex: point.gameIndex,
+    gameDate: point.gameDate,
+    matchup: point.matchup,
+    winLoss: point.winLoss,
+    dnp: point.dnp,
+    min: point.playingTime,
+    ...point.counting,
+    ...point.ratios,
+  }));

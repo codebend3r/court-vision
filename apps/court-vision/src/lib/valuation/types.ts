@@ -1,108 +1,36 @@
-export type CountingCategory = "pts" | "reb" | "ast" | "stl" | "blk" | "tpm" | "tov";
-export type RatioCategory = "fg" | "ft";
-export type Category = CountingCategory | RatioCategory;
-export type Basis = "perGame" | "total";
+import { type BasketballLine } from "@vision/sport-basketball/types";
 
-export type StatKey =
-  | "pts"
-  | "reb"
-  | "ast"
-  | "stl"
-  | "blk"
-  | "fg3m"
-  | "tov"
-  | "fgm"
-  | "fga"
-  | "ftm"
-  | "fta";
+// Court Vision's valuation vocabulary: the shared engine's types bound to
+// basketball (re-exported under the names the app has always used), plus the
+// app's own stat line.
+export {
+  type Basis,
+  type CategoryContribution,
+  type FantasyMethodKey,
+  type FantasyPlayerValues,
+  type WeightedMethodKey,
+} from "@vision/core/valuation/types";
+export {
+  type Category,
+  type CategoryWeights,
+  type CountingCategory,
+  type MethodWeights,
+  type PlayerValue,
+  type PoolStats,
+  type RatioCategory,
+  type ScoringSettings,
+  type ScoringStatKey,
+  type StatKey,
+  type ValuationConfig,
+} from "@vision/sport-basketball/types";
 
-// One player's stat totals over the active window (full season or lastN),
-// plus the identity fields the table renders and the second moments G-Score
-// needs for within-player variance. Produced by lib/valuation/loader.
-export type FantasyStatLine = {
-  playerId: number;
+// One player's stat totals over the active window (full season or lastN): the
+// engine's line plus the identity fields the tables render. Produced by
+// lib/valuation/loader.
+export type FantasyStatLine = BasketballLine & {
   firstName: string;
   lastName: string;
   fullName: string;
   teamAbbr: string | null;
-  position: string | null;
   nbaPersonId: number | null;
-  gamesPlayed: number; // appearances (minutes > 0) in the window
-  minutes: number; // total minutes in the window
-  pts: number;
-  reb: number;
-  ast: number;
-  stl: number;
-  blk: number;
-  fg3m: number;
-  tov: number;
-  fgm: number;
-  fga: number;
-  ftm: number;
-  fta: number;
-  sq: Record<StatKey, number>; // per-game sums of squares (Σ x_g²)
-  cross: { fg: number; ft: number }; // Σ fgm_g·fga_g and Σ ftm_g·fta_g
-};
-
-export type CategoryContribution = {
-  raw: number; // unweighted primitive (z or g), sign-corrected so higher is better
-  weighted: number; // raw * weight; sums to total
-};
-
-export type PlayerValue = {
-  playerId: number;
-  total: number;
-  breakdown: Partial<Record<Category, CategoryContribution>>;
-};
-
-// One row of the Fantasy Value table: every method's score for one player
-// (PRD §9.3 — Z-Score, G-Score, PL Linear, VORP, Positional, SGP, Sim Value).
-export type FantasyPlayerValues = {
-  playerId: number;
-  z: number;
-  g: number;
-  points: number;
-  vorp: number;
-  positional: number;
-  sgp: number;
-  sim: number;
-};
-
-export type PoolStats = {
-  poolSize: number; // actual pool membership after trimming
-  leagueFgPct: number; // attempt-weighted, over the pool
-  leagueFtPct: number;
-  byCategory: Record<
-    Category,
-    {
-      mu: number;
-      sigma: number; // between-player spread (Z-Score denominator)
-      sigmaWithin: number; // typical game-level volatility (G-Score's extra term)
-    }
-  >;
-};
-
-// Points-league scoring table: how many fantasy points each stat pays. Keyed
-// by the raw stat, not by category, because a points league scores the box
-// score rather than winning categories.
-export type ScoringStatKey = "pts" | "reb" | "ast" | "stl" | "blk" | "fg3m" | "tov";
-export type ScoringSettings = Record<ScoringStatKey, number>;
-
-// The six weighted method columns, keyed by their sort keys. PL Linear is
-// absent on purpose: it prices the box score with the Scoring table and never
-// reads category weights.
-export type WeightedMethodKey = "z" | "g" | "vorp" | "pos" | "sgp" | "sim";
-
-// One independent weight set per method column. The Weights panel edits the
-// set belonging to whichever method column the table is sorted by, so a punt
-// tuned for Z-Score never leaks into G-Score's ranking.
-export type MethodWeights = Partial<Record<WeightedMethodKey, Partial<Record<Category, number>>>>;
-
-export type ValuationConfig = {
-  categories: Category[]; // included categories; excluded ones are absent
-  weights: Partial<Record<Category, number>>; // absent key = 1
-  basis: Basis;
-  teams: number;
-  rosterSlots: number;
-  scoring: ScoringSettings; // PL Linear only; the category methods ignore it
 };

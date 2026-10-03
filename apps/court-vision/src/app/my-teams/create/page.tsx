@@ -1,10 +1,10 @@
+import { buildPlayerInsights, DEFAULT_VALUATION_CONFIG } from "@vision/sport-basketball/engine";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { PageAction, PageHeader } from "@/components/PageHeader/PageHeader";
 import { TeamBuilder } from "@/components/TeamBuilder/TeamBuilder";
 import { getProfile } from "@/lib/auth/session";
-import { buildPlayerInsights } from "@/lib/fantasyTeams/insights";
 import { fantasyPlayersFromPool } from "@/lib/fantasyTeams/players";
 import { getActiveLeague } from "@/lib/leagues/queries";
 import { getFantasyPool } from "@/lib/valuation/loader";
@@ -39,7 +39,7 @@ export default async function CreateTeamPage() {
   // identity, position, and team for every active player this season.
   const lines = await getFantasyPool({ range: "all" });
   const players = fantasyPlayersFromPool({ lines });
-  const insights = buildPlayerInsights({ lines });
+  const insights = buildPlayerInsights({ lines, config: DEFAULT_VALUATION_CONFIG });
 
   return (
     <main className={styles.page}>

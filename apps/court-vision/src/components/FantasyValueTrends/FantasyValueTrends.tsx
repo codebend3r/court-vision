@@ -22,8 +22,8 @@ import {
 import { getChartChrome, getSeriesPalette } from "@/components/PlayerStatChart/statMeta";
 import { useTheme } from "@/lib/theme/ThemeProvider";
 import { type FantasySortKey } from "@/lib/valuation/searchParams";
-import { type FantasyTrendValue } from "@/lib/valuation/trend";
-import { ROLLING_WINDOW_GAMES } from "@/lib/watchlist/trend";
+import { type FantasyTrendValue } from "@vision/core/valuation/trend";
+import { ROLLING_WINDOW_GAMES } from "@vision/core/valuation/rolling";
 
 import tooltipStyles from "@/components/MetricLineChart/MetricLineChart.module.scss";
 import styles from "@/components/FantasyValueTrends/FantasyValueTrends.module.scss";

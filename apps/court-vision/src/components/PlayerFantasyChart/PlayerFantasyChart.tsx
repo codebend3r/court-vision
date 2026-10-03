@@ -13,9 +13,9 @@ import {
 } from "recharts";
 
 import { useTheme } from "@/lib/theme/ThemeProvider";
-import type { FantasyCategoryBreakdown } from "@/lib/valuation/breakdown";
-import type { FantasyTrendPoint } from "@/lib/valuation/playerValue";
-import { ROLLING_WINDOW_GAMES } from "@/lib/watchlist/trend";
+import { type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
+import { type FantasyTrendPoint } from "@vision/core/valuation/playerValue";
+import { ROLLING_WINDOW_GAMES } from "@vision/core/valuation/rolling";
 import { MetricLineChart, type MetricMeta } from "@/components/MetricLineChart/MetricLineChart";
 import { BreakdownTooltip, SignedBar } from "@/components/PlayerFantasyChart/breakdownChart";
 import {

@@ -12,8 +12,7 @@ import {
 } from "@/components/PlayerFantasyChart/labels";
 import { getChartChrome, getSeriesPalette } from "@/components/PlayerStatChart/statMeta";
 import { useTheme } from "@/lib/theme/ThemeProvider";
-import { type FantasyCategoryBreakdown } from "@/lib/valuation/breakdown";
-import { type CategoryMeta } from "@/lib/valuation/categories";
+import { type CategoryMeta, type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
 import { type FantasySortKey } from "@/lib/valuation/searchParams";
 
 import styles from "@/components/FantasyValueCharts/FantasyValueCharts.module.scss";

@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { SettingsFantasy } from "@/components/SettingsFantasy/SettingsFantasy";
-import { ENABLED_METHODS } from "@/lib/valuation/registry";
+import { ENABLED_METHODS } from "@vision/sport-basketball/engine";
 
 const updatePreferencesMock = vi.fn();
 

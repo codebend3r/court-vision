@@ -2,9 +2,9 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
 import { HomeTeamPanel } from "@/components/HomeTeamPanel/HomeTeamPanel";
-import { buildSlots, DEFAULT_SLOT_COUNTS } from "@/lib/fantasyTeams/slots";
+import { buildSlots, DEFAULT_SLOT_COUNTS } from "@vision/sport-basketball/engine";
 import { teamNameToSlug } from "@vision/core/roster/slug";
-import { type FantasyTeam } from "@/lib/fantasyTeams/types";
+import { type FantasyTeam, type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
 
 afterEach(cleanup);
 
@@ -23,7 +23,7 @@ const team = ({
   name,
   slug: slug ?? teamNameToSlug(name),
   createdAt,
-  slots: buildSlots({ counts: DEFAULT_SLOT_COUNTS }).map((slot) =>
+  slots: buildSlots<FantasyTeamPlayer>({ counts: DEFAULT_SLOT_COUNTS }).map((slot) =>
     slot.id === "PG-1"
       ? {
           ...slot,

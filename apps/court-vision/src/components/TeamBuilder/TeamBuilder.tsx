@@ -10,7 +10,7 @@ import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayerInsightPanel } from "@/components/PlayerInsightPanel/PlayerInsightPanel";
 import { PositionTag } from "@/components/PositionTag/PositionTag";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
-import { type PlayerInsight } from "@/lib/fantasyTeams/insights";
+import { type PlayerInsight } from "@vision/sport-basketball/types";
 import {
   autoAssignSlotId,
   buildSlots,
@@ -19,12 +19,12 @@ import {
   DEFAULT_SLOT_COUNTS,
   eligibleForSlot,
   resizeSlots,
-  rosteredIds,
   rosterSize,
   SLOT_META,
   slotMeta,
-  type SlotKind,
-} from "@/lib/fantasyTeams/slots";
+} from "@vision/sport-basketball/engine";
+import { rosteredIds } from "@vision/core/roster/slots";
+import { type SlotKind } from "@vision/core/sport/types";
 import {
   type FantasyTeam,
   type FantasyTeamPlayer,
@@ -251,7 +251,7 @@ export function TeamBuilder({ leagueId, players, team = null, insights }: TeamBu
       <section className={styles.columns}>
         <section className={styles.rosterColumn} aria-label="Roster">
           {(["starter", "bench", "injured"] as const).map((kind) => {
-            const kindSlots = slots.filter((slot) => slotMeta(slot.type).kind === kind);
+            const kindSlots = slots.filter((slot) => slotMeta({ type: slot.type }).kind === kind);
             if (kindSlots.length === 0) return null;
             return (
               <section key={kind} className={styles.slotGroup}>
@@ -279,7 +279,9 @@ export function TeamBuilder({ leagueId, players, team = null, insights }: TeamBu
                         }}
                         onDrop={onDrop({ slot })}
                       >
-                        <span className={styles.slotType}>{slotMeta(slot.type).label}</span>
+                        <span className={styles.slotType}>
+                          {slotMeta({ type: slot.type }).label}
+                        </span>
                         {slot.player === null ? (
                           <span className={styles.slotEmpty}>Empty</span>
                         ) : (
@@ -458,9 +460,9 @@ export function TeamBuilder({ leagueId, players, team = null, insights }: TeamBu
             </h2>
             <p className={styles.modalBody}>
               They&apos;ll come off the{" "}
-              {slotMeta(
-                slots.find((slot) => slot.id === pendingRemoval.slotId)?.type ?? "UTIL",
-              ).fullName.toLowerCase()}{" "}
+              {slotMeta({
+                type: slots.find((slot) => slot.id === pendingRemoval.slotId)?.type ?? "UTIL",
+              }).fullName.toLowerCase()}{" "}
               slot. You can add them back any time.
             </p>
             <span className={styles.modalActions}>

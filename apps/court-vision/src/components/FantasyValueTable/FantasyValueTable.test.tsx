@@ -7,7 +7,7 @@ import {
   type FantasyTableRow,
 } from "@/components/FantasyValueTable/FantasyValueTable";
 import { makeStatLine } from "@/lib/valuation/fixtures";
-import { FANTASY_METHODS } from "@/lib/valuation/registry";
+import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
 
 afterEach(cleanup);
 

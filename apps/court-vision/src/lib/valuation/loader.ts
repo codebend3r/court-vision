@@ -46,6 +46,26 @@ const windowLineSchema = z.object({
 });
 
 const toStatLine = ({
+  playerId,
+  firstName,
+  lastName,
+  fullName,
+  teamAbbr,
+  position,
+  nbaPersonId,
+  gamesPlayed,
+  minutes,
+  pts,
+  reb,
+  ast,
+  stl,
+  blk,
+  fg3m,
+  tov,
+  fgm,
+  fga,
+  ftm,
+  fta,
   sqPts,
   sqReb,
   sqAst,
@@ -59,9 +79,17 @@ const toStatLine = ({
   sqFta,
   crossFg,
   crossFt,
-  ...line
 }: z.infer<typeof windowLineSchema>): FantasyStatLine => ({
-  ...line,
+  playerId,
+  firstName,
+  lastName,
+  fullName,
+  teamAbbr,
+  position,
+  nbaPersonId,
+  gamesPlayed,
+  playingTime: minutes,
+  stats: { pts, reb, ast, stl, blk, fg3m, tov, fgm, fga, ftm, fta },
   sq: {
     pts: sqPts,
     reb: sqReb,
@@ -147,7 +175,9 @@ const fetchPool = async ({
 // the other players caches so one sync invalidation busts every surface.
 const cachedPool = unstable_cache(
   (range: PlayerGameRange, season: string | null) => fetchPool({ range, season }),
-  ["fantasy:pool"],
+  // v2: lines carry nested `stats`/`playingTime`; a cached flat line from
+  // before the sport-engine refactor must never be read as the new shape.
+  ["fantasy:pool:v2"],
   { revalidate: 300, tags: ["players"] },
 );
 

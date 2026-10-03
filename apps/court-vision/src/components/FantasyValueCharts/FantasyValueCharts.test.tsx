@@ -7,8 +7,8 @@ import {
   FantasyValueCharts,
   type FantasyChartRow,
 } from "@/components/FantasyValueCharts/FantasyValueCharts";
-import { type FantasyCategoryBreakdown } from "@/lib/valuation/breakdown";
-import { CATEGORY_META } from "@/lib/valuation/categories";
+import { type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
+import { CATEGORY_META } from "@vision/sport-basketball/engine";
 import { makeStatLine } from "@/lib/valuation/fixtures";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 

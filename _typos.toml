@@ -28,3 +28,5 @@ ist_stage = "ist_stage"
 nd = "nd"
 # Deliberate spelling used across the Balldontlie adapter and its tests.
 unparseable = "unparseable"
+# Hockey's "time on ice", the sport's playing-time stat (rink-vision).
+toi = "toi"

@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
-import { slotMeta } from "@/lib/fantasyTeams/slots";
+import { slotMeta } from "@vision/sport-basketball/engine";
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 
 import styles from "@/components/HomeTeamPanel/HomeTeamPanel.module.scss";
@@ -35,7 +35,7 @@ export function HomeTeamPanel({ teams, className }: HomeTeamPanelProps) {
   }
 
   const filled = latest.slots.filter((slot) => slot.player !== null).length;
-  const starters = latest.slots.filter((slot) => slotMeta(slot.type).kind === "starter");
+  const starters = latest.slots.filter((slot) => slotMeta({ type: slot.type }).kind === "starter");
 
   return (
     <section className={panelClass} aria-labelledby="home-team-title">
@@ -51,7 +51,7 @@ export function HomeTeamPanel({ teams, className }: HomeTeamPanelProps) {
       <ul className={styles.slotList}>
         {starters.map((slot) => (
           <li key={slot.id} className={styles.slot}>
-            <span className={styles.slotType}>{slotMeta(slot.type).label}</span>
+            <span className={styles.slotType}>{slotMeta({ type: slot.type }).label}</span>
             {slot.player === null ? (
               <span className={styles.emptySlot}>Empty</span>
             ) : (

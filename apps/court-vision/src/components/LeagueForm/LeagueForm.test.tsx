@@ -5,8 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import { LeagueForm } from "@/components/LeagueForm/LeagueForm";
 import { useLeaguesStore } from "@/lib/leagues/store";
 import { type LeagueSummary } from "@/lib/leagues/types";
-import { CATEGORY_KEYS } from "@/lib/valuation/categories";
-import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
+import { CATEGORY_KEYS, DEFAULT_POINTS_SCORING } from "@vision/sport-basketball/engine";
 
 const createLeagueMock = vi.fn();
 const updateLeagueMock = vi.fn();

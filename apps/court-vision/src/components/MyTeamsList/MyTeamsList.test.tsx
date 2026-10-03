@@ -15,9 +15,9 @@ vi.mock("next/navigation", () => ({
 }));
 
 import { MyTeamsList } from "@/components/MyTeamsList/MyTeamsList";
-import { buildSlots, DEFAULT_SLOT_COUNTS } from "@/lib/fantasyTeams/slots";
+import { buildSlots, DEFAULT_SLOT_COUNTS } from "@vision/sport-basketball/engine";
 import { teamNameToSlug } from "@vision/core/roster/slug";
-import { type FantasyTeam } from "@/lib/fantasyTeams/types";
+import { type FantasyTeam, type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
 
 beforeEach(() => {
   deleteLeagueTeamMock.mockReset().mockResolvedValue({ status: "ok-deleted" });
@@ -32,7 +32,7 @@ const team = ({ id, name, slug }: { id: string; name: string; slug?: string }): 
   name,
   slug: slug ?? teamNameToSlug(name),
   createdAt: "2026-07-23T00:00:00.000Z",
-  slots: buildSlots({ counts: DEFAULT_SLOT_COUNTS }).map((slot) =>
+  slots: buildSlots<FantasyTeamPlayer>({ counts: DEFAULT_SLOT_COUNTS }).map((slot) =>
     slot.id === "PG-1"
       ? {
           ...slot,

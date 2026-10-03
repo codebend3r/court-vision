@@ -139,8 +139,17 @@ Canonical example: `apps/court-vision/src/components/StarButton/StarButton.test.
 
 ## Fixtures and env
 
-- Build stat lines with `makeStatLine` from `@/lib/valuation/fixtures`.
-  Do not hand-roll a `FantasyStatLine`.
+- Build stat lines with `makeStatLine` from `@/lib/valuation/fixtures` in the
+  app, or from `#core/testing/basketball` inside `@vision/core`. Both take flat
+  overrides (`{ playerId: 1, pts: 900, minutes: 300 }`) and nest them. Do not
+  hand-roll a `FantasyStatLine`. Core's game logs come from `makeLog` /
+  `makeDatedLog` in the same harness.
+- Core's tests use `#core/testing/basketball`: a copy of the basketball
+  descriptor plus the engine bound to it. Core may not import a sport lib, and
+  `@vision/sport-basketball`'s drift test fails if the copy ever diverges.
+- The valuation engine is pinned by `apps/court-vision/src/lib/valuation/golden.test.ts`.
+  Never update its snapshots to make a change pass; a diff there means the
+  numbers moved.
 - Environment: `stubEnv` / `restoreEnv` from `@vision/testing/env`, called in
   `beforeEach` / `afterEach`. `vi.stubEnv` does not exist in `bun:test`.
 

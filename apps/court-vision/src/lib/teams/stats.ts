@@ -2,6 +2,7 @@
 // distinct (team, game) for the record and scores, plus box-score totals
 // aggregated per team. Pure math — the prisma reads live in loader.ts.
 
+import { rankByKeys } from "@vision/core/series/ranking";
 import { type TeamGameResult } from "@vision/core/series/teamTrend";
 
 export type TeamBoxTotals = {
@@ -130,66 +131,35 @@ export const buildTeamStats = ({
     };
   });
 
+const TEAM_RANK_KEYS: readonly TeamStatKey[] = [
+  "games",
+  "wins",
+  "losses",
+  "winPct",
+  "ppg",
+  "oppPpg",
+  "diff",
+  "rpg",
+  "apg",
+  "spg",
+  "bpg",
+  "topg",
+  "tpmPg",
+  "fgPct",
+  "ftPct",
+];
+
 // Standard competition ranking (ties share the better rank) per stat across
 // the supplied teams; oppPpg and topg rank ascending.
 export const rankTeams = ({
   stats,
 }: {
   stats: readonly TeamSeasonStats[];
-}): Map<string, Record<TeamStatKey, number>> => {
-  const keys: readonly TeamStatKey[] = [
-    "games",
-    "wins",
-    "losses",
-    "winPct",
-    "ppg",
-    "oppPpg",
-    "diff",
-    "rpg",
-    "apg",
-    "spg",
-    "bpg",
-    "topg",
-    "tpmPg",
-    "fgPct",
-    "ftPct",
-  ];
-  const rankFor = (key: TeamStatKey): Map<string, number> => {
-    const lowerIsBetter = !!TEAM_STAT_META.find((meta) => meta.key === key)?.lowerIsBetter;
-    const sorted = [...stats].sort((a, b) => (lowerIsBetter ? a[key] - b[key] : b[key] - a[key]));
-    return sorted.reduce<Map<string, number>>((acc, team, index) => {
-      const previous = sorted[index - 1];
-      const rank =
-        previous !== undefined && previous[key] === team[key]
-          ? (acc.get(previous.abbr) ?? index + 1)
-          : index + 1;
-      return acc.set(team.abbr, rank);
-    }, new Map());
-  };
-  const byKey = new Map(keys.map((key) => [key, rankFor(key)]));
-  return new Map(
-    stats.map((team) => [
-      team.abbr,
-      keys.reduce<Record<TeamStatKey, number>>(
-        (acc, key) => ({ ...acc, [key]: byKey.get(key)?.get(team.abbr) ?? 0 }),
-        {
-          games: 0,
-          wins: 0,
-          losses: 0,
-          winPct: 0,
-          ppg: 0,
-          oppPpg: 0,
-          diff: 0,
-          rpg: 0,
-          apg: 0,
-          spg: 0,
-          bpg: 0,
-          topg: 0,
-          tpmPg: 0,
-          fgPct: 0,
-          ftPct: 0,
-        },
-      ),
-    ]),
-  );
-};
+}): Map<string, Record<TeamStatKey, number>> =>
+  rankByKeys({
+    items: stats,
+    keys: TEAM_RANK_KEYS,
+    idOf: (team) => team.abbr,
+    valueOf: ({ item, key }) => item[key],
+    lowerIsBetter: (key) => !!TEAM_STAT_META.find((meta) => meta.key === key)?.lowerIsBetter,
+  });
