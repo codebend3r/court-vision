@@ -134,8 +134,10 @@ const projectOf = (file: string): Project | undefined =>
   PROJECTS.find((project) => file.startsWith(`${project.root}/`));
 
 /**
- * Match `specifier` against a package.json `imports`/`exports` map, honoring a
- * single `*` wildcard per key the way Node's subpath patterns do.
+ * Match `specifier` against a package.json `imports`/`exports` map the way
+ * Node does: an exact key wins; otherwise, among `*` patterns that fit, the
+ * longest prefix wins, then the longest key. Every `*` in the target takes
+ * the matched part.
  */
 const matchSubpath = ({
   map,
@@ -146,22 +148,24 @@ const matchSubpath = ({
   specifier: string;
   root: string;
 }): string | null => {
-  const hit = Object.entries(map)
-    .map(([key, target]) => {
+  const exact = map[specifier];
+  if (exact !== undefined) return resolve(root, exact);
+  const best = Object.entries(map)
+    .flatMap(([key, target]) => {
       const star = key.indexOf("*");
-      if (star === -1) return key === specifier ? target : null;
+      if (star === -1) return [];
       const prefix = key.slice(0, star);
       const suffix = key.slice(star + 1);
       const fits =
         specifier.startsWith(prefix) &&
         specifier.endsWith(suffix) &&
         specifier.length >= prefix.length + suffix.length;
-      return fits
-        ? target.replace("*", specifier.slice(prefix.length, specifier.length - suffix.length))
-        : null;
+      if (!fits) return [];
+      const matched = specifier.slice(prefix.length, specifier.length - suffix.length);
+      return [{ prefix, key, target: target.replaceAll("*", matched) }];
     })
-    .find((target) => target !== null);
-  return hit === undefined || hit === null ? null : resolve(root, hit);
+    .sort((a, b) => b.prefix.length - a.prefix.length || b.key.length - a.key.length)[0];
+  return best === undefined ? null : resolve(root, best.target);
 };
 
 /** Resolve an import specifier to its target path base, or null if external. */
