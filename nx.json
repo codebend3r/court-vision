@@ -28,7 +28,8 @@
       "inputs": ["default", "^production"]
     },
     "build": {
-      "cache": false
+      "cache": false,
+      "parallelism": false
     },
     "dev": {
       "continuous": true
