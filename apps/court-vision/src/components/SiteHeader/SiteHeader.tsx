@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AccountMenu } from "@/components/AccountMenu/AccountMenu";
 import { LeagueSwitcher } from "@/components/LeagueSwitcher/LeagueSwitcher";
 import { LogoLockup } from "@/components/Logo/Logo";
-import { ThemeSwatches } from "@/components/ThemeSwatches/ThemeSwatches";
+import { ThemeSwatches } from "@vision/ui/components/ThemeSwatches/ThemeSwatches";
 import { getProfile } from "@/lib/auth/session";
 
 import styles from "@/components/SiteHeader/SiteHeader.module.scss";

@@ -4,7 +4,8 @@ import { useId, useState } from "react";
 
 import styles from "@/components/SettingsFantasy/SettingsFantasy.module.scss";
 import { updatePreferences } from "@/lib/settings/actions";
-import { ENABLED_METHODS, type FantasyMethodKey } from "@/lib/valuation/registry";
+import { ENABLED_METHODS } from "@vision/sport-basketball/engine";
+import { type FantasyMethodKey } from "@vision/core/valuation/types";
 
 export type SettingsFantasyProps = {
   preferredFormula: FantasyMethodKey | null;
