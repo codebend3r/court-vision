@@ -10,7 +10,7 @@
  */
 
 import { Glob } from "bun";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 
 type Violation = {
@@ -29,7 +29,55 @@ type SourceFile = {
   readonly isServerAction: boolean;
 };
 
-const SRC = resolve(import.meta.dir, "..", "src");
+const ROOT = resolve(import.meta.dir, "..");
+
+/**
+ * A workspace project with source to scan: every app and lib. Its package.json
+ * `imports` (lib-private `#name/` aliases) and `exports` (public `@vision/*`
+ * entry points) are read so the import graph can follow edges across package
+ * boundaries; otherwise a secret reached through a lib would be invisible.
+ */
+type Project = {
+  readonly root: string;
+  readonly src: string;
+  readonly name: string;
+  readonly imports: Readonly<Record<string, string>>;
+  readonly exports: Readonly<Record<string, string>>;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+// Only plain string targets are source files; conditional objects (e.g. a
+// types-only entry) carry no runtime code for the scan to follow.
+const stringEntries = (value: unknown): Readonly<Record<string, string>> =>
+  isRecord(value)
+    ? Object.fromEntries(
+        Object.entries(value).filter(
+          (entry): entry is [string, string] => typeof entry[1] === "string",
+        ),
+      )
+    : {};
+
+const readProject = (manifest: string): Project => {
+  const root = dirname(manifest);
+  const parsed: unknown = JSON.parse(readFileSync(manifest, "utf8"));
+  const pkg = isRecord(parsed) ? parsed : {};
+  return {
+    root,
+    src: join(root, "src"),
+    name: typeof pkg.name === "string" ? pkg.name : "",
+    imports: stringEntries(pkg.imports),
+    exports: stringEntries(pkg.exports),
+  };
+};
+
+const PROJECTS: readonly Project[] = [
+  ...new Glob("{apps,libs}/*/package.json").scanSync({ cwd: ROOT, absolute: true }),
+].map(readProject);
+
+/** Repo-relative path, the form violations and the baseline are keyed by. */
+const repoPath = (path: string): string => relative(ROOT, path);
 
 /** Env vars that must never reach the browser bundle. */
 const SERVER_ONLY_ENV = ["BALLDONTLIE_API_KEY", "DATABASE_URL", "DIRECT_URL"] as const;
@@ -41,12 +89,14 @@ const SECRET_NAME_HINTS = ["SERVICE_ROLE", "SECRET", "PRIVATE", "PASSWORD", "SER
  * Helpers that establish an authenticated session, read from the session
  * module's own exports so the list cannot drift out of sync with the code.
  */
-const sessionGuards = (): readonly string[] => {
-  const text = readFileSync(join(SRC, "lib", "auth", "session.ts"), "utf8");
-  return [...text.matchAll(/export\s+(?:async\s+)?(?:function|const)\s+(\w+)/g)].map(
-    (match) => match[1] ?? "",
-  );
-};
+const sessionGuards = (): readonly string[] =>
+  PROJECTS.map((project) => join(project.src, "lib", "auth", "session.ts"))
+    .filter((path) => existsSync(path))
+    .flatMap((path) =>
+      [
+        ...readFileSync(path, "utf8").matchAll(/export\s+(?:async\s+)?(?:function|const)\s+(\w+)/g),
+      ].map((match) => match[1] ?? ""),
+    );
 
 const SESSION_GUARDS = sessionGuards();
 
@@ -66,9 +116,84 @@ const readSource = (path: string): SourceFile => {
 };
 
 const collectSources = (): readonly SourceFile[] =>
-  [...new Glob("**/*.{ts,tsx}").scanSync({ cwd: SRC, absolute: true })]
-    .filter((path) => !/\.(test|spec)\.tsx?$/.test(path) && !path.includes("/testing/"))
+  PROJECTS.flatMap((project) =>
+    existsSync(project.src)
+      ? [...new Glob("**/*.{ts,tsx}").scanSync({ cwd: project.src, absolute: true })]
+      : [],
+  )
+    .filter(
+      (path) =>
+        !/\.(test|spec)\.tsx?$/.test(path) &&
+        !path.includes("/testing/") &&
+        !path.includes("/libs/vision-testing/"),
+    )
     .map(readSource);
+
+/** The project whose directory holds `file` (projects never nest). */
+const projectOf = (file: string): Project | undefined =>
+  PROJECTS.find((project) => file.startsWith(`${project.root}/`));
+
+/**
+ * Match `specifier` against a package.json `imports`/`exports` map the way
+ * Node does: an exact key wins; otherwise, among `*` patterns that fit, the
+ * longest prefix wins, then the longest key. Every `*` in the target takes
+ * the matched part.
+ */
+const matchSubpath = ({
+  map,
+  specifier,
+  root,
+}: {
+  map: Readonly<Record<string, string>>;
+  specifier: string;
+  root: string;
+}): string | null => {
+  const exact = map[specifier];
+  if (exact !== undefined) return resolve(root, exact);
+  const best = Object.entries(map)
+    .flatMap(([key, target]) => {
+      const star = key.indexOf("*");
+      if (star === -1) return [];
+      const prefix = key.slice(0, star);
+      const suffix = key.slice(star + 1);
+      const fits =
+        specifier.startsWith(prefix) &&
+        specifier.endsWith(suffix) &&
+        specifier.length >= prefix.length + suffix.length;
+      if (!fits) return [];
+      const matched = specifier.slice(prefix.length, specifier.length - suffix.length);
+      return [{ prefix, key, target: target.replaceAll("*", matched) }];
+    })
+    .sort((a, b) => b.prefix.length - a.prefix.length || b.key.length - a.key.length)[0];
+  return best === undefined ? null : resolve(root, best.target);
+};
+
+/** Resolve an import specifier to its target path base, or null if external. */
+const specifierBase = ({
+  specifier,
+  fromFile,
+}: {
+  specifier: string;
+  fromFile: string;
+}): string | null => {
+  const owner = projectOf(fromFile);
+  if (specifier.startsWith(".")) return resolve(dirname(fromFile), specifier);
+  if (specifier.startsWith("@/"))
+    return owner === undefined ? null : join(owner.src, specifier.slice(2));
+  if (specifier.startsWith("#")) {
+    return owner === undefined
+      ? null
+      : matchSubpath({ map: owner.imports, specifier, root: owner.root });
+  }
+  const target = PROJECTS.find(
+    (project) =>
+      project.name !== "" &&
+      (specifier === project.name || specifier.startsWith(`${project.name}/`)),
+  );
+  if (target === undefined) return null;
+  const subpath = specifier === target.name ? "." : `.${specifier.slice(target.name.length)}`;
+  return matchSubpath({ map: target.exports, specifier: subpath, root: target.root });
+};
 
 /** Resolve an import specifier to an absolute file path, or null if external. */
 const resolveImport = ({
@@ -80,11 +205,7 @@ const resolveImport = ({
   fromFile: string;
   known: ReadonlySet<string>;
 }): string | null => {
-  const base = specifier.startsWith("@/")
-    ? join(SRC, specifier.slice(2))
-    : specifier.startsWith(".")
-      ? resolve(dirname(fromFile), specifier)
-      : null;
+  const base = specifierBase({ specifier, fromFile });
 
   if (base === null) return null;
 
@@ -142,17 +263,17 @@ const checkSecretBoundary = (sources: readonly SourceFile[]): readonly Violation
       const index = file.text.indexOf(`process.env.${name}`);
       if (index === -1) return [];
 
-      const rel = relative(SRC, file.path);
+      const rel = repoPath(file.path);
       const guarded = /import\s+["']server-only["']/.test(file.text);
 
       if (reachable.has(file.path)) {
         return [
           {
             rule: "secret-reaches-client",
-            file: `src/${rel}`,
+            file: rel,
             line: lineOf({ text: file.text, index }),
             detail: `reads ${name} and is transitively imported by a "use client" module, so it is a candidate for the browser bundle`,
-            fix: `add \`import "server-only"\` at the top of src/${rel}, then break the client import chain`,
+            fix: `add \`import "server-only"\` at the top of ${rel}, then break the client import chain`,
           },
         ];
       }
@@ -162,10 +283,10 @@ const checkSecretBoundary = (sources: readonly SourceFile[]): readonly Violation
         : [
             {
               rule: "secret-module-unguarded",
-              file: `src/${rel}`,
+              file: rel,
               line: lineOf({ text: file.text, index }),
               detail: `reads ${name} but has no \`server-only\` guard, so nothing prevents a future client import from bundling it`,
-              fix: `add \`import "server-only"\` as the first import in src/${rel}`,
+              fix: `add \`import "server-only"\` as the first import in ${rel}`,
             },
           ];
     }),
@@ -179,7 +300,7 @@ const checkPublicEnvNames = (sources: readonly SourceFile[]): readonly Violation
       .filter((match) => SECRET_NAME_HINTS.some((hint) => (match[1] ?? "").includes(hint)))
       .map((match) => ({
         rule: "public-env-looks-secret",
-        file: `src/${relative(SRC, file.path)}`,
+        file: repoPath(file.path),
         line: lineOf({ text: file.text, index: match.index ?? 0 }),
         detail: `${match[1]} is exposed to the browser by the NEXT_PUBLIC_ prefix but is named like a secret`,
         fix: "drop the NEXT_PUBLIC_ prefix and read it server-side only",
@@ -202,7 +323,7 @@ const checkRawPrisma = (sources: readonly SourceFile[]): readonly Violation[] =>
   sources.flatMap((file) => {
     const violation = ({ index, detail }: { index: number; detail: string }): Violation => ({
       rule: "raw-prisma-interpolation",
-      file: `src/${relative(SRC, file.path)}`,
+      file: repoPath(file.path),
       line: lineOf({ text: file.text, index }),
       detail,
       fix: "use a tagged $queryRaw template with bare-identifier placeholders, or the typed client",
@@ -249,7 +370,7 @@ const checkServerActionAuth = (sources: readonly SourceFile[]): readonly Violati
         : [
             {
               rule: "server-action-unauthenticated",
-              file: `src/${relative(SRC, file.path)}`,
+              file: repoPath(file.path),
               line: lineOf({ text: file.text, index: match.index }),
               detail: `"use server" module exports ${match[1]} but calls no session helper (${SESSION_GUARDS.join(", ")})`,
               fix: "resolve the user from the session and fail closed before any write",
