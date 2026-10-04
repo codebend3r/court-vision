@@ -1,6 +1,6 @@
 "use client";
 
-import { StatViewTabs } from "@/components/StatViewTabs/StatViewTabs";
+import { StatViewTabs } from "@vision/ui/components/StatViewTabs/StatViewTabs";
 import {
   buildPlayersHref,
   DEFAULT_ADVANCED_SORT_KEY,

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { type ReactNode } from "react";
 
-import { LinkPending } from "@/components/LinkPending/LinkPending";
+import { LinkPending } from "@vision/ui/components/LinkPending/LinkPending";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PositionTag } from "@/components/PositionTag/PositionTag";
 import { StarButton } from "@/components/StarButton/StarButton";
