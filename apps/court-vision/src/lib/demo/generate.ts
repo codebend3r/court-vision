@@ -3,7 +3,7 @@ import { BdlGame } from "@/lib/balldontlie/schemas";
 import { deriveGameContext } from "@/lib/balldontlie/transform";
 import { GameLogInput } from "@/lib/stats/inputs";
 
-import { createPrng, gaussian } from "@/lib/demo/prng";
+import { createPrng, gaussian } from "@vision/core/util/prng";
 import { DemoProfile, MeanSpread } from "@/lib/demo/profiles";
 
 const nonNegInt = (args: { rng: () => number; meanSpread: MeanSpread }): number => {
