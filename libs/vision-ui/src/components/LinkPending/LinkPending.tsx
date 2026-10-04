@@ -2,7 +2,7 @@
 
 import { useLinkStatus } from "next/link";
 
-import styles from "@/components/LinkPending/LinkPending.module.scss";
+import styles from "#ui/components/LinkPending/LinkPending.module.scss";
 
 export type LinkPendingProps = {
   // Read to screen readers while the enclosing link's navigation is in flight.

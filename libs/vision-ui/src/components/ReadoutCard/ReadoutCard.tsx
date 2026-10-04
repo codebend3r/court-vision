@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 
-import styles from "@/components/ReadoutCard/ReadoutCard.module.scss";
+import styles from "#ui/components/ReadoutCard/ReadoutCard.module.scss";
 
 export type ReadoutSentiment = "up" | "down" | "neutral";
 

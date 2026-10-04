@@ -1,4 +1,4 @@
-import styles from "@/components/Preloader/Preloader.module.scss";
+import styles from "#ui/components/Preloader/Preloader.module.scss";
 
 export type PreloaderProps = {
   label?: string;

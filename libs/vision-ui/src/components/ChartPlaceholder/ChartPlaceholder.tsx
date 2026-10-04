@@ -1,4 +1,4 @@
-import styles from "@/components/ChartPlaceholder/ChartPlaceholder.module.scss";
+import styles from "#ui/components/ChartPlaceholder/ChartPlaceholder.module.scss";
 
 // Fills a deferred chart's plot box while its client-only chunk loads. It
 // takes the size of whatever container it sits in, so the container (not

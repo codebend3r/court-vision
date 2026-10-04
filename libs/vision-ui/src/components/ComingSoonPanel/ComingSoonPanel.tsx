@@ -1,4 +1,4 @@
-import styles from "@/components/ComingSoonPanel/ComingSoonPanel.module.scss";
+import styles from "#ui/components/ComingSoonPanel/ComingSoonPanel.module.scss";
 
 export type ComingSoonPanelProps = {
   title: string;

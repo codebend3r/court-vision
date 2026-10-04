@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { type ReactNode } from "react";
 
-import styles from "@/components/PageHeader/PageHeader.module.scss";
+import styles from "#ui/components/PageHeader/PageHeader.module.scss";
 
 // Keycap-styled link for the actions slot, so every page action shares one
 // look without each page redeclaring it.

@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
-import { ReadoutCard, ReadoutRow } from "@/components/ReadoutCard/ReadoutCard";
+import { ReadoutCard, ReadoutRow } from "#ui/components/ReadoutCard/ReadoutCard";
 
 afterEach(cleanup);
 

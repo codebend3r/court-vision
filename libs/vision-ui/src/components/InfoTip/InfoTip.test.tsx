@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
-import { InfoTip } from "@/components/InfoTip/InfoTip";
+import { InfoTip } from "#ui/components/InfoTip/InfoTip";
 
 afterEach(cleanup);
 

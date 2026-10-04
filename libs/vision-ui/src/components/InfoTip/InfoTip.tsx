@@ -2,7 +2,7 @@
 
 import { useId, type ReactNode } from "react";
 
-import styles from "@/components/InfoTip/InfoTip.module.scss";
+import styles from "#ui/components/InfoTip/InfoTip.module.scss";
 
 export type InfoTipProps = {
   // Describes what the icon reveals, for screen readers and the pointer label.

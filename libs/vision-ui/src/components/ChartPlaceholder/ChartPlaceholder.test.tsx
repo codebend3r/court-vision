@@ -1,7 +1,7 @@
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
-import { ChartPlaceholder } from "@/components/ChartPlaceholder/ChartPlaceholder";
+import { ChartPlaceholder } from "#ui/components/ChartPlaceholder/ChartPlaceholder";
 
 afterEach(cleanup);
 

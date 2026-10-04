@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
-import { LinkPending } from "@/components/LinkPending/LinkPending";
+import { LinkPending } from "#ui/components/LinkPending/LinkPending";
 
 const linkStatus = vi.fn(() => ({ pending: false }));
 

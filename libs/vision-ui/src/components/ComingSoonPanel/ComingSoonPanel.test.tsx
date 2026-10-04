@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
-import { ComingSoonPanel } from "@/components/ComingSoonPanel/ComingSoonPanel";
+import { ComingSoonPanel } from "#ui/components/ComingSoonPanel/ComingSoonPanel";
 
 afterEach(cleanup);
 

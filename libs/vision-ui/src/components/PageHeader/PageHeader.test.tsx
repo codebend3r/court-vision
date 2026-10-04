@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
-import { PageAction, PageHeader } from "@/components/PageHeader/PageHeader";
+import { PageAction, PageHeader } from "#ui/components/PageHeader/PageHeader";
 
 afterEach(cleanup);
 
