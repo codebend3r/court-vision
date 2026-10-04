@@ -13,8 +13,8 @@ import {
 } from "@/lib/perf/budget";
 import { parseCheckOptions, type CheckOptions } from "@/lib/perf/options";
 import { skipLine, summaryLine, verdictLines } from "@/lib/perf/report";
-import { isMainModule } from "@/lib/runtime";
-import { sequentially } from "@/lib/sequentially";
+import { isMainModule } from "@vision/core/util/runtime";
+import { sequentially } from "@vision/core/util/sequentially";
 
 /**
  * Load-time budget check.

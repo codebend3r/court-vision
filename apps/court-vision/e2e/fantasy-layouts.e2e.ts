@@ -12,8 +12,16 @@ const compileStyles = ({ paths }: { paths: string[] }): string =>
         compile(resolve(path), {
           importers: [
             {
-              findFileUrl: (url) =>
-                url.startsWith("@/") ? pathToFileURL(resolve("src", url.slice(2))) : null,
+              // The two aliases Next resolves for SCSS: this app's `@/` and the
+              // shared design system's `@vision/ui/styles/` package export.
+              findFileUrl: (url) => {
+                if (url.startsWith("@/")) return pathToFileURL(resolve("src", url.slice(2)));
+                if (url.startsWith("@vision/ui/styles/")) {
+                  const name = url.slice("@vision/ui/styles/".length);
+                  return pathToFileURL(resolve("../../libs/vision-ui/src/styles", `${name}.scss`));
+                }
+                return null;
+              },
             },
           ],
         }).css,
