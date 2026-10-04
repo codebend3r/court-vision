@@ -5,12 +5,13 @@ import {
   CATEGORY_META,
   categoryPerGame,
   categoryValue,
+  type FantasyStatLine,
   isCategory,
-} from "@/lib/valuation/categories";
-import { makeStatLine } from "@/lib/valuation/fixtures";
-import { type FantasyStatLine } from "@/lib/valuation/types";
+  makeStatLine,
+  type FixtureOverrides,
+} from "#core/testing/basketball";
 
-const line = (overrides: Partial<FantasyStatLine> = {}): FantasyStatLine =>
+const line = (overrides: Partial<FixtureOverrides> = {}): FantasyStatLine =>
   makeStatLine({
     playerId: 1,
     gamesPlayed: 10,
@@ -65,7 +66,7 @@ describe("isCategory", () => {
 });
 
 describe("categoryValue", () => {
-  const league = { leagueFgPct: 0.47, leagueFtPct: 0.78 };
+  const league = { leagueRate: { fg: 0.47, ft: 0.78 } };
 
   it("returns counting totals under the total basis", () => {
     expect(categoryValue({ line: line(), category: "pts", basis: "total", ...league })).toBe(200);

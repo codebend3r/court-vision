@@ -1,30 +1,36 @@
 import { describe, expect, it } from "bun:test";
 
-import { aggregateWindowLogs, type WindowLog, type WindowTotals } from "@/lib/valuation/aggregate";
-import { type StatKey } from "@/lib/valuation/types";
+import {
+  aggregateWindowLogs,
+  makeLog,
+  type StatKey,
+  type WindowLog,
+  type WindowTotals,
+} from "#core/testing/basketball";
 
-const log = (overrides: Partial<WindowLog> = {}): WindowLog => ({
-  minutes: 30,
-  pts: 20,
-  reb: 5,
-  ast: 4,
-  stl: 1,
-  blk: 1,
-  fg3m: 2,
-  tov: 3,
-  fgm: 8,
-  fga: 16,
-  ftm: 2,
-  fta: 3,
-  ...overrides,
-});
+const log = (overrides: Partial<Record<StatKey | "minutes", number>> = {}): WindowLog =>
+  makeLog({
+    minutes: 30,
+    pts: 20,
+    reb: 5,
+    ast: 4,
+    stl: 1,
+    blk: 1,
+    fg3m: 2,
+    tov: 3,
+    fgm: 8,
+    fga: 16,
+    ftm: 2,
+    fta: 3,
+    ...overrides,
+  });
 
 describe("aggregateWindowLogs", () => {
   it("sums stat totals across the window", () => {
     const totals = aggregateWindowLogs({ logs: [log(), log({ pts: 30, fga: 20 })] });
-    expect(totals.pts).toBe(50);
-    expect(totals.fga).toBe(36);
-    expect(totals.minutes).toBe(60);
+    expect(totals.stats.pts).toBe(50);
+    expect(totals.stats.fga).toBe(36);
+    expect(totals.playingTime).toBe(60);
     expect(totals.gamesPlayed).toBe(2);
   });
 
@@ -36,24 +42,25 @@ describe("aggregateWindowLogs", () => {
     expect(totals.cross.ft).toBe(2 * 3 + 2 * 3);
   });
 
-  it("does not count DNPs (0 minutes) as appearances but keeps their zeros", () => {
+  it("does not count DNPs (no playing time) as appearances but keeps their zeros", () => {
     const totals = aggregateWindowLogs({
       logs: [log(), log({ minutes: 0, pts: 0, fgm: 0, fga: 0 })],
     });
     expect(totals.gamesPlayed).toBe(1);
-    expect(totals.pts).toBe(20);
+    expect(totals.stats.pts).toBe(20);
   });
 
   it("returns a zeroed line for an empty window", () => {
     const totals = aggregateWindowLogs({ logs: [] });
     expect(totals.gamesPlayed).toBe(0);
-    expect(totals.pts).toBe(0);
-    expect(totals.fta).toBe(0);
+    expect(totals.stats.pts).toBe(0);
+    expect(totals.stats.fta).toBe(0);
   });
 });
 
-// The nested-spread implementation the one-object-per-game version replaced,
-// kept verbatim so the faster one is held to exactly its output.
+// A deliberately naive version (a fresh spread per stat key per game, the shape
+// the hot-path version replaced), so the faster one is held to exactly its
+// output.
 const STAT_KEYS: readonly StatKey[] = [
   "pts",
   "reb",
@@ -85,25 +92,24 @@ const ZERO_STATS: Record<StatKey, number> = {
 const referenceAggregateWindowLogs = ({ logs }: { logs: readonly WindowLog[] }): WindowTotals =>
   logs.reduce<WindowTotals>(
     (totals, game) => ({
-      ...STAT_KEYS.reduce<WindowTotals>(
+      ...STAT_KEYS.reduce<Pick<WindowTotals, "stats" | "sq">>(
         (acc, key) => ({
-          ...acc,
-          [key]: acc[key] + game[key],
-          sq: { ...acc.sq, [key]: acc.sq[key] + game[key] * game[key] },
+          stats: { ...acc.stats, [key]: acc.stats[key] + game.stats[key] },
+          sq: { ...acc.sq, [key]: acc.sq[key] + game.stats[key] * game.stats[key] },
         }),
-        totals,
+        { stats: totals.stats, sq: totals.sq },
       ),
-      gamesPlayed: totals.gamesPlayed + (game.minutes > 0 ? 1 : 0),
-      minutes: totals.minutes + game.minutes,
+      gamesPlayed: totals.gamesPlayed + (game.playingTime > 0 ? 1 : 0),
+      playingTime: totals.playingTime + game.playingTime,
       cross: {
-        fg: totals.cross.fg + game.fgm * game.fga,
-        ft: totals.cross.ft + game.ftm * game.fta,
+        fg: totals.cross.fg + game.stats.fgm * game.stats.fga,
+        ft: totals.cross.ft + game.stats.ftm * game.stats.fta,
       },
     }),
     {
-      ...ZERO_STATS,
       gamesPlayed: 0,
-      minutes: 0,
+      playingTime: 0,
+      stats: { ...ZERO_STATS },
       sq: { ...ZERO_STATS },
       cross: { fg: 0, ft: 0 },
     },
@@ -121,7 +127,7 @@ const seeded = ({ seed }: { seed: number }) => {
   };
 };
 
-describe("aggregateWindowLogs against the nested-spread reference", () => {
+describe("aggregateWindowLogs against the naive reference", () => {
   const random = seeded({ seed: 0xa66 });
   const between = (low: number, high: number): number =>
     Math.floor(low + random() * (high - low + 1));

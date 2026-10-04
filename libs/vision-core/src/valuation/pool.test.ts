@@ -1,13 +1,13 @@
 import { describe, expect, it } from "bun:test";
 
-import { makeStatLine } from "@/lib/valuation/fixtures";
 import {
-  attemptWeightedPcts,
+  basketballFixture,
   computePoolStats,
-  meanSigma,
-  MIN_AVG_MINUTES,
-} from "@/lib/valuation/pool";
-import { type FantasyStatLine } from "@/lib/valuation/types";
+  type FantasyStatLine,
+  leagueRates,
+  makeStatLine,
+} from "#core/testing/basketball";
+import { meanSigma } from "#core/valuation/pool";
 
 const line = makeStatLine;
 
@@ -28,20 +28,20 @@ describe("meanSigma", () => {
   });
 });
 
-describe("attemptWeightedPcts", () => {
+describe("leagueRates", () => {
   it("weights by attempts instead of averaging per-player percentages", () => {
     const lines = [
       line({ playerId: 1, fgm: 9, fga: 10, ftm: 0, fta: 0 }), // 90% on 10
       line({ playerId: 2, fgm: 100, fga: 250, ftm: 0, fta: 0 }), // 40% on 250
     ];
-    const { leagueFgPct } = attemptWeightedPcts({ lines });
+    const { fg: leagueFgPct } = leagueRates({ lines });
     // (9 + 100) / (10 + 250) ≈ 0.419, not the naive mean 0.65
     expect(leagueFgPct).toBeCloseTo(109 / 260, 10);
   });
 
   it("returns 0 when there are no attempts", () => {
     const lines = [line({ playerId: 1, fgm: 0, fga: 0, ftm: 0, fta: 0 })];
-    expect(attemptWeightedPcts({ lines })).toEqual({ leagueFgPct: 0, leagueFtPct: 0 });
+    expect(leagueRates({ lines })).toEqual({ fg: 0, ft: 0 });
   });
 });
 
@@ -54,9 +54,13 @@ describe("computePoolStats", () => {
       scorer({ playerId: 1, pts: 900 }),
       scorer({ playerId: 2, pts: 800 }),
       line({ playerId: 3, pts: 2000, gamesPlayed: 10, minutes: 300 }), // 10 GP < 25 for full season
-      line({ playerId: 4, pts: 2000, minutes: 50 * (MIN_AVG_MINUTES - 1) }), // low minutes
+      line({
+        playerId: 4,
+        pts: 2000,
+        minutes: 50 * (basketballFixture.pools[0].minPlayingTimePerGame - 1),
+      }), // low minutes
     ];
-    const stats = computePoolStats({ lines, basis: "perGame", poolSize: 150, range: "all" });
+    const stats = computePoolStats({ lines, basis: "perGame", poolSize: 150, windowGames: null });
     expect(stats.poolSize).toBe(2);
     // Pool mean reflects only the two qualifying players: 18 and 16 pts/game.
     expect(stats.byCategory.pts.mu).toBeCloseTo(17, 10);
@@ -68,7 +72,7 @@ describe("computePoolStats", () => {
       line({ playerId: 2, gamesPlayed: 4, minutes: 4 * 30, pts: 300 }),
     ];
     // last10 window: ceil(10 * 0.3) = 3 games required; both qualify.
-    const stats = computePoolStats({ lines, basis: "perGame", poolSize: 150, range: "last10" });
+    const stats = computePoolStats({ lines, basis: "perGame", poolSize: 150, windowGames: 10 });
     expect(stats.poolSize).toBe(2);
   });
 
@@ -80,8 +84,8 @@ describe("computePoolStats", () => {
       scorer({ playerId: 4, pts: 500 }),
       scorer({ playerId: 5, pts: 100 }),
     ];
-    const trimmed = computePoolStats({ lines, basis: "total", poolSize: 3, range: "all" });
-    const untrimmed = computePoolStats({ lines, basis: "total", poolSize: 150, range: "all" });
+    const trimmed = computePoolStats({ lines, basis: "total", poolSize: 3, windowGames: null });
+    const untrimmed = computePoolStats({ lines, basis: "total", poolSize: 150, windowGames: null });
     expect(trimmed.poolSize).toBe(3);
     expect(untrimmed.poolSize).toBe(5);
     // Top three by points: 2500, 2000, 1500 → mean 2000.
@@ -92,7 +96,7 @@ describe("computePoolStats", () => {
 
   it("returns neutral stats when fewer than two players qualify", () => {
     const lines = [line({ playerId: 1 }), line({ playerId: 2, gamesPlayed: 1, minutes: 30 })];
-    const stats = computePoolStats({ lines, basis: "perGame", poolSize: 150, range: "all" });
+    const stats = computePoolStats({ lines, basis: "perGame", poolSize: 150, windowGames: null });
     expect(stats.poolSize).toBe(1);
     expect(stats.byCategory.pts.sigma).toBe(0);
   });
@@ -111,7 +115,7 @@ describe("computePoolStats", () => {
       lines: [volatile, steady],
       basis: "perGame",
       poolSize: 150,
-      range: "last5",
+      windowGames: 5,
     });
     expect(stats.byCategory.pts.sigmaWithin).toBeCloseTo(Math.sqrt(12.5), 10);
     expect(stats.byCategory.reb.sigmaWithin).toBeCloseTo(0, 10);
@@ -123,7 +127,7 @@ describe("computePoolStats", () => {
       scorer({ playerId: 2, pts: 800 }),
       scorer({ playerId: 3, pts: 700 }),
     ];
-    const stats = computePoolStats({ lines, basis: "total", poolSize: 150, range: "all" });
+    const stats = computePoolStats({ lines, basis: "total", poolSize: 150, windowGames: null });
     expect(stats.byCategory.reb.sigma).toBe(0); // identical rebounds everywhere
     expect(stats.byCategory.pts.sigma).toBeGreaterThan(0);
   });

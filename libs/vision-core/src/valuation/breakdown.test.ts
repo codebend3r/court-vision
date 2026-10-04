@@ -1,11 +1,14 @@
 import { describe, expect, it } from "bun:test";
 
-import { buildCategoryBreakdown } from "@/lib/valuation/breakdown";
-import { CATEGORY_KEYS } from "@/lib/valuation/categories";
-import { makeStatLine } from "@/lib/valuation/fixtures";
-import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
-import { computePoolStats } from "@/lib/valuation/pool";
-import { type Category, type ValuationConfig } from "@/lib/valuation/types";
+import {
+  buildCategoryBreakdown,
+  type Category,
+  CATEGORY_KEYS,
+  computePoolStats,
+  DEFAULT_POINTS_SCORING,
+  makeStatLine,
+  type ValuationConfig,
+} from "#core/testing/basketball";
 
 // A pool spread out in every category so each sigma is honestly non-zero.
 const poolLine = (index: number) =>
@@ -41,7 +44,7 @@ const star = makeStatLine({
 });
 
 const lines = [star, ...Array.from({ length: 20 }, (_, index) => poolLine(index))];
-const poolStats = computePoolStats({ lines, basis: "perGame", poolSize: 150, range: "all" });
+const poolStats = computePoolStats({ lines, basis: "perGame", poolSize: 150, windowGames: null });
 const config: ValuationConfig = {
   categories: [...CATEGORY_KEYS],
   weights: {},
