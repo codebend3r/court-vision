@@ -1,3 +1,13 @@
+import {
+  buildLeaderLine,
+  buildUnrankedLine,
+  type LeaderDef,
+  type LeaderStat,
+  type RankTone,
+  percentage,
+  perGame,
+} from "@vision/core/series/leaders";
+
 export type SeasonStatTotals = {
   playerId: number;
   gamesPlayed: number;
@@ -16,18 +26,8 @@ export type SeasonStatTotals = {
   pts: number;
 };
 
-// Leaderboard rank tone: "leader" ranks are achievements worth highlighting;
-// "neutral" ones (turnovers, where 1st means most committed) stay uncolored.
-export type RankTone = "leader" | "neutral";
-
-export type SeasonAverageStat = {
-  key: string;
-  label: string;
-  value: string;
-  rank: number | null;
-  rankTone: RankTone;
-  eligibleCount: number;
-};
+export type { RankTone } from "@vision/core/series/leaders";
+export type SeasonAverageStat = LeaderStat;
 
 // NBA-style statistical minimums so tiny samples cannot top a leaderboard:
 // per-game averages need a floor of games played, percentages need made
@@ -37,23 +37,10 @@ const MIN_FGM = 300;
 const MIN_FG3M = 82;
 const MIN_FTM = 125;
 
-const perGame = ({ total, gamesPlayed }: { total: number; gamesPlayed: number }): number | null =>
-  gamesPlayed > 0 ? total / gamesPlayed : null;
-
-const percentage = ({ made, attempted }: { made: number; attempted: number }): number | null =>
-  attempted > 0 ? (made / attempted) * 100 : null;
-
 const formatAverage = (value: number): string => value.toFixed(1);
 const formatPercent = (value: number): string => `${value.toFixed(1)}%`;
 
-type StatDef = {
-  key: string;
-  label: string;
-  rankTone: RankTone;
-  valueOf: (row: SeasonStatTotals) => number | null;
-  qualifies: (row: SeasonStatTotals) => boolean;
-  format: (value: number) => string;
-};
+type StatDef = LeaderDef<SeasonStatTotals>;
 
 const perGameDef = ({
   key,
@@ -108,46 +95,13 @@ const STAT_DEFS: readonly StatDef[] = [
   },
 ];
 
-// Standard competition ranking against the qualified pool: rank is 1 plus the
-// number of qualified players strictly ahead, so ties share a rank. The viewed
-// player is always ranked (even below the qualifying floor) but only counts
-// toward eligibleCount when they qualify themselves. With applyMinimums off,
-// every player with a computable value is in the pool.
+// The NBA leaderboard line for one player (see buildLeaderLine for the
+// ranking rules).
 export const buildSeasonAverageLine = (args: {
   rows: SeasonStatTotals[];
   playerId: number;
   applyMinimums?: boolean;
-}): SeasonAverageStat[] | null => {
-  const { rows, playerId, applyMinimums = true } = args;
-  const playerRow = rows.find((row) => row.playerId === playerId);
-  if (!playerRow) {
-    return null;
-  }
-
-  const isPresent = (stat: SeasonAverageStat | null): stat is SeasonAverageStat => stat !== null;
-
-  return STAT_DEFS.map((def): SeasonAverageStat | null => {
-    const value = def.valueOf(playerRow);
-    if (value === null) {
-      return null;
-    }
-    const qualifies = (row: SeasonStatTotals): boolean =>
-      applyMinimums ? def.qualifies(row) : def.valueOf(row) !== null;
-    const qualifiedOthers = rows.filter((row) => row.playerId !== playerId && qualifies(row));
-    const ahead = qualifiedOthers.reduce((count, row) => {
-      const other = def.valueOf(row);
-      return other !== null && other > value ? count + 1 : count;
-    }, 0);
-    return {
-      key: def.key,
-      label: def.label,
-      value: def.format(value),
-      rank: ahead + 1,
-      rankTone: def.rankTone,
-      eligibleCount: qualifiedOthers.length + (qualifies(playerRow) ? 1 : 0),
-    };
-  }).filter(isPresent);
-};
+}): SeasonAverageStat[] | null => buildLeaderLine({ defs: STAT_DEFS, ...args });
 
 // Sum a player's per-season totals into one career row. Percentages and
 // per-game averages are always ratios of these summed totals, so career values
@@ -202,20 +156,5 @@ export const aggregateCareerTotals = (args: {
 // every other player's career would need the whole pool aggregated, so career
 // stats show values without a leaderboard rank (rank stays null, which the card
 // renders as a plain value).
-export const buildCareerAverageLine = (args: { totals: SeasonStatTotals }): SeasonAverageStat[] => {
-  const isPresent = (stat: SeasonAverageStat | null): stat is SeasonAverageStat => stat !== null;
-  return STAT_DEFS.map((def): SeasonAverageStat | null => {
-    const value = def.valueOf(args.totals);
-    if (value === null) {
-      return null;
-    }
-    return {
-      key: def.key,
-      label: def.label,
-      value: def.format(value),
-      rank: null,
-      rankTone: def.rankTone,
-      eligibleCount: 0,
-    };
-  }).filter(isPresent);
-};
+export const buildCareerAverageLine = (args: { totals: SeasonStatTotals }): SeasonAverageStat[] =>
+  buildUnrankedLine({ defs: STAT_DEFS, row: args.totals });
