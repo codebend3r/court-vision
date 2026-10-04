@@ -1,7 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { makeStatLine } from "@/lib/valuation/fixtures";
-import { DEFAULT_POINTS_SCORING, scorePoints } from "@/lib/valuation/methods/points";
+import { DEFAULT_POINTS_SCORING, makeStatLine, scorePoints } from "#core/testing/basketball";
 
 describe("scorePoints", () => {
   const line = makeStatLine({

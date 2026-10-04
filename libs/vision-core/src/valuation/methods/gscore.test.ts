@@ -1,11 +1,13 @@
-import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
+import {
+  CATEGORY_KEYS,
+  computePoolStats,
+  DEFAULT_POINTS_SCORING,
+  type FantasyStatLine,
+  makeStatLine,
+  scoreGScore,
+  type ValuationConfig,
+} from "#core/testing/basketball";
 import { describe, expect, it } from "bun:test";
-
-import { CATEGORY_KEYS } from "@/lib/valuation/categories";
-import { makeStatLine } from "@/lib/valuation/fixtures";
-import { scoreGScore } from "@/lib/valuation/methods/gscore";
-import { computePoolStats } from "@/lib/valuation/pool";
-import { type FantasyStatLine, type ValuationConfig } from "@/lib/valuation/types";
 
 // Per-game points 2, 4, 6, 8 across the pool (n = 50 games). Every player
 // carries a game-level points variance of 100, injected via sq:
@@ -35,7 +37,7 @@ const config: ValuationConfig = {
   scoring: DEFAULT_POINTS_SCORING,
 };
 
-const poolStats = computePoolStats({ lines, basis: "perGame", poolSize: 150, range: "all" });
+const poolStats = computePoolStats({ lines, basis: "perGame", poolSize: 150, windowGames: null });
 
 describe("scoreGScore", () => {
   it("compresses edges by game-level volatility: g = (x − μ) / √(σb² + σw²)", () => {

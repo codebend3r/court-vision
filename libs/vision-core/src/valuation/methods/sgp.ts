@@ -1,13 +1,13 @@
-import { categoryValue } from "@/lib/valuation/categories";
-import { buildLeague, type SyntheticLeague } from "@/lib/valuation/rosters";
+import { type Category, type SportDescriptor, type SportKeys } from "#core/sport/types";
+import { categoryValue } from "#core/valuation/categories";
+import { buildLeague, type SyntheticLeague } from "#core/valuation/rosters";
 import {
-  type Category,
   type CategoryContribution,
-  type FantasyStatLine,
   type PlayerValue,
   type PoolStats,
   type ValuationConfig,
-} from "@/lib/valuation/types";
+  type ValuationLine,
+} from "#core/valuation/types";
 
 // Standings Gain Points: a player's production divided by how much of that
 // category separates two adjacent places in the standings. The answer is in
@@ -20,47 +20,51 @@ import {
 // between adjacent teams in each category, (max − min) ÷ (teams − 1). That is
 // the same quantity a history table would hold, measured on the player pool the
 // league would actually draft from rather than on last year's results.
-export const standingsGainDenominators = ({
+export const standingsGainDenominators = <K extends SportKeys>({
+  sport,
   lines,
   poolStats,
   config,
   league,
 }: {
-  lines: readonly FantasyStatLine[];
-  poolStats: PoolStats;
-  config: ValuationConfig;
-  league?: SyntheticLeague;
-}): Partial<Record<Category, number>> => {
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+  poolStats: PoolStats<K>;
+  config: ValuationConfig<K>;
+  league?: SyntheticLeague<K>;
+}): Partial<Record<Category<K>, number>> => {
   if (config.teams < 2) return {};
-  const { spread } = league ?? buildLeague({ lines, poolStats, config });
-  return config.categories.reduce<Partial<Record<Category, number>>>((acc, category) => {
+  const { spread } = league ?? buildLeague({ sport, lines, poolStats, config });
+  return config.categories.reduce<Partial<Record<Category<K>, number>>>((acc, category) => {
     const { min, max } = spread[category] ?? { min: 0, max: 0 };
     return { ...acc, [category]: (max - min) / (config.teams - 1) };
   }, {});
 };
 
-export const scoreSGP = ({
+export const scoreSGP = <K extends SportKeys>({
+  sport,
   lines,
   poolStats,
   config,
   league,
 }: {
-  lines: readonly FantasyStatLine[];
-  poolStats: PoolStats;
-  config: ValuationConfig;
-  league?: SyntheticLeague;
-}): PlayerValue[] => {
-  const denominators = standingsGainDenominators({ lines, poolStats, config, league });
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+  poolStats: PoolStats<K>;
+  config: ValuationConfig<K>;
+  league?: SyntheticLeague<K>;
+}): PlayerValue<K>[] => {
+  const denominators = standingsGainDenominators({ sport, lines, poolStats, config, league });
   return lines.map((line) => {
-    const breakdown = config.categories.reduce<Partial<Record<Category, CategoryContribution>>>(
+    const breakdown = config.categories.reduce<Partial<Record<Category<K>, CategoryContribution>>>(
       (acc, category) => {
         const denominator = denominators[category] ?? 0;
         const value = categoryValue({
+          sport,
           line,
           category,
           basis: config.basis,
-          leagueFgPct: poolStats.leagueFgPct,
-          leagueFtPct: poolStats.leagueFtPct,
+          leagueRate: poolStats.leagueRate,
         });
         // A category every team ties in cannot move you in the standings, so it
         // carries no signal — same rule Z-Score applies to a zero sigma.

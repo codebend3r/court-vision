@@ -1,11 +1,12 @@
-import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
+import {
+  CATEGORY_KEYS,
+  computePoolStats,
+  DEFAULT_POINTS_SCORING,
+  makeStatLine,
+  scoreZScore,
+  type ValuationConfig,
+} from "#core/testing/basketball";
 import { describe, expect, it } from "bun:test";
-
-import { computePoolStats } from "@/lib/valuation/pool";
-import { scoreZScore } from "@/lib/valuation/methods/zscore";
-import { CATEGORY_KEYS } from "@/lib/valuation/categories";
-import { makeStatLine } from "@/lib/valuation/fixtures";
-import { type ValuationConfig } from "@/lib/valuation/types";
 
 const line = makeStatLine;
 
@@ -29,7 +30,7 @@ const config = (overrides: Partial<ValuationConfig> = {}): ValuationConfig => ({
   ...overrides,
 });
 
-const poolStats = computePoolStats({ lines, basis: "total", poolSize: 150, range: "all" });
+const poolStats = computePoolStats({ lines, basis: "total", poolSize: 150, windowGames: null });
 
 describe("scoreZScore", () => {
   it("matches the hand-computed golden fixture", () => {

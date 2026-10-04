@@ -1,13 +1,14 @@
-import { categoryValue } from "@/lib/valuation/categories";
-import { buildLeague, type SyntheticLeague } from "@/lib/valuation/rosters";
+import { type Category, type SportDescriptor, type SportKeys } from "#core/sport/types";
+import { createPrng } from "#core/util/prng";
+import { categoryValue } from "#core/valuation/categories";
+import { buildLeague, type SyntheticLeague } from "#core/valuation/rosters";
 import {
-  type Category,
   type CategoryContribution,
-  type FantasyStatLine,
   type PlayerValue,
   type PoolStats,
   type ValuationConfig,
-} from "@/lib/valuation/types";
+  type ValuationLine,
+} from "#core/valuation/types";
 
 // Enough draws that a one-decimal display is stable. Variance is already low
 // because each iteration scores with and without the player against the *same*
@@ -18,18 +19,6 @@ export const SIM_ITERATIONS = 400;
 // Fixed seed: the simulated season must not change between renders, and a
 // Math.random-based column could not be tested.
 const SIM_SEED = 0x5eed;
-
-// Deterministic PRNG (mulberry32).
-const mulberry32 = ({ seed }: { seed: number }) => {
-  let state = seed >>> 0;
-  return (): number => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-};
 
 // Box-Muller: opponents' weekly category totals are modelled as normal around
 // the league's average team, spread by how far apart teams actually finish.
@@ -71,26 +60,28 @@ const weeksWon = ({
 // The baseline roster is the league-average team rather than the signed-in
 // user's, so the column stays comparable across every row; valuing against
 // your own roster is the natural next step.
-export const scoreSimValue = ({
+export const scoreSimValue = <K extends SportKeys>({
+  sport,
   lines,
   poolStats,
   config,
   league,
   iterations = SIM_ITERATIONS,
 }: {
-  lines: readonly FantasyStatLine[];
-  poolStats: PoolStats;
-  config: ValuationConfig;
-  league?: SyntheticLeague;
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+  poolStats: PoolStats<K>;
+  config: ValuationConfig<K>;
+  league?: SyntheticLeague<K>;
   iterations?: number;
-}): PlayerValue[] => {
-  const { replacement, spread } = league ?? buildLeague({ lines, poolStats, config });
+}): PlayerValue<K>[] => {
+  const { replacement, spread } = league ?? buildLeague({ sport, lines, poolStats, config });
 
   // One simulated season, drawn once and faced by every player. Re-rolling
   // opponents per player would cost 600× the draws and, worse, would rank
   // players against different luck; this way the column is a paired comparison.
-  const random = mulberry32({ seed: SIM_SEED });
-  const opponents = config.categories.reduce<Partial<Record<Category, number[]>>>(
+  const random = createPrng(SIM_SEED);
+  const opponents = config.categories.reduce<Partial<Record<Category<K>, number[]>>>(
     (acc, category) => {
       const { mean, sd } = spread[category] ?? { mean: 0, sd: 0 };
       return {
@@ -121,14 +112,14 @@ export const scoreSimValue = ({
   });
 
   return lines.map((line) => {
-    const breakdown = seasons.reduce<Partial<Record<Category, CategoryContribution>>>(
+    const breakdown = seasons.reduce<Partial<Record<Category<K>, CategoryContribution>>>(
       (acc, { category, mean, sorted, baselineWins, freeAgent }) => {
         const value = categoryValue({
+          sport,
           line,
           category,
           basis: config.basis,
-          leagueFgPct: poolStats.leagueFgPct,
-          leagueFtPct: poolStats.leagueFtPct,
+          leagueRate: poolStats.leagueRate,
         });
         const withPlayer = mean + (value - freeAgent);
         // Common random numbers: the same weeks are scored with and without

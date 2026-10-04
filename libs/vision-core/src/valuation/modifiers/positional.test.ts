@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { parseEligibleGroups, positionalValues } from "@/lib/valuation/modifiers/positional";
+import { parseEligibleGroups, positionalValues } from "#core/testing/basketball";
 
 describe("parseEligibleGroups", () => {
   it("parses single and hyphenated Balldontlie positions", () => {

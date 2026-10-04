@@ -1,10 +1,14 @@
 import { describe, expect, it } from "bun:test";
 
-import { makeStatLine } from "@/lib/valuation/fixtures";
-import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
-import { scoreSGP, standingsGainDenominators } from "@/lib/valuation/methods/sgp";
-import { computePoolStats } from "@/lib/valuation/pool";
-import { type FantasyStatLine, type ValuationConfig } from "@/lib/valuation/types";
+import {
+  computePoolStats,
+  DEFAULT_POINTS_SCORING,
+  type FantasyStatLine,
+  makeStatLine,
+  scoreSGP,
+  standingsGainDenominators,
+  type ValuationConfig,
+} from "#core/testing/basketball";
 
 const config = (overrides: Partial<ValuationConfig> = {}): ValuationConfig => ({
   categories: ["pts", "reb"],
@@ -29,7 +33,7 @@ const poolStats = computePoolStats({
   lines,
   basis: "perGame",
   poolSize: 4,
-  range: "all",
+  windowGames: null,
 });
 
 describe("standingsGainDenominators", () => {

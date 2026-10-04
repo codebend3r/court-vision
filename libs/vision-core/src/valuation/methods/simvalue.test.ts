@@ -1,19 +1,22 @@
 import { describe, expect, it } from "bun:test";
 
-import { CATEGORY_KEYS, categoryValue } from "@/lib/valuation/categories";
-import { makeStatLine } from "@/lib/valuation/fixtures";
-import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
-import { SIM_ITERATIONS, scoreSimValue } from "@/lib/valuation/methods/simvalue";
-import { computePoolStats } from "@/lib/valuation/pool";
-import { buildLeague, type SyntheticLeague } from "@/lib/valuation/rosters";
 import {
+  buildLeague,
   type Category,
-  type CategoryContribution,
+  CATEGORY_KEYS,
+  categoryValue,
+  computePoolStats,
+  DEFAULT_POINTS_SCORING,
   type FantasyStatLine,
+  makeStatLine,
   type PlayerValue,
   type PoolStats,
+  scoreSimValue,
+  type SyntheticLeague,
   type ValuationConfig,
-} from "@/lib/valuation/types";
+} from "#core/testing/basketball";
+import { SIM_ITERATIONS } from "#core/valuation/methods/simvalue";
+import { type CategoryContribution } from "#core/valuation/types";
 
 const config = (overrides: Partial<ValuationConfig> = {}): ValuationConfig => ({
   categories: ["pts", "reb"],
@@ -36,7 +39,7 @@ const lines: FantasyStatLine[] = [
   makeStatLine({ playerId: 6, gamesPlayed: 10, pts: 90, reb: 50 }),
 ];
 
-const poolStats = computePoolStats({ lines, basis: "perGame", poolSize: 6, range: "all" });
+const poolStats = computePoolStats({ lines, basis: "perGame", poolSize: 6, windowGames: null });
 
 describe("scoreSimValue", () => {
   it("is deterministic — the same player always simulates the same weeks", () => {
@@ -167,8 +170,7 @@ const referenceScoreSimValue = ({
           line,
           category,
           basis: config.basis,
-          leagueFgPct: poolStats.leagueFgPct,
-          leagueFtPct: poolStats.leagueFtPct,
+          leagueRate: poolStats.leagueRate,
         });
         const withPlayer = mean + (value - (replacement[category] ?? 0));
         const gained = weeks.reduce(
@@ -257,7 +259,7 @@ describe("scoreSimValue against the per-week reference", () => {
         lines: caseLines,
         basis: caseConfig.basis,
         poolSize: 150,
-        range: "all",
+        windowGames: null,
       });
       const args = { lines: caseLines, poolStats, config: caseConfig, iterations };
       expect(scoreSimValue(args)).toStrictEqual(referenceScoreSimValue(args));
@@ -269,7 +271,7 @@ describe("scoreSimValue against the per-week reference", () => {
       lines: pool,
       basis: "perGame",
       poolSize: 150,
-      range: "all",
+      windowGames: null,
     });
     const league = buildLeague({ lines: pool, poolStats, config: allCategories });
     const args = { lines: pool, poolStats, config: allCategories, league };
