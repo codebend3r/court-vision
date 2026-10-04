@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { teamNameToSlug, teamSlugToName } from "@/lib/fantasyTeams/slug";
+import { teamNameToSlug, teamSlugToName } from "#core/roster/slug";
 
 describe("teamNameToSlug", () => {
   it("converts a team name to a hyphenated lowercase slug", () => {

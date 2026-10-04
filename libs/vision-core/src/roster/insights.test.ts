@@ -1,7 +1,16 @@
 import { describe, expect, it } from "bun:test";
 
-import { buildPlayerInsights } from "@/lib/fantasyTeams/insights";
-import { type FantasyStatLine, type StatKey } from "@/lib/valuation/types";
+import {
+  buildPlayerInsights as buildWithConfig,
+  DEFAULT_VALUATION_CONFIG,
+  type FantasyStatLine,
+  type FixtureOverrides,
+  makeStatLine,
+  type StatKey,
+} from "#core/testing/basketball";
+
+const buildPlayerInsights = ({ lines }: { lines: readonly FantasyStatLine[] }) =>
+  buildWithConfig({ lines, config: DEFAULT_VALUATION_CONFIG });
 
 const ZERO_SQ: Record<StatKey, number> = {
   pts: 0,
@@ -17,31 +26,29 @@ const ZERO_SQ: Record<StatKey, number> = {
   fta: 0,
 };
 
-const line = (overrides: Partial<FantasyStatLine> & { playerId: number }): FantasyStatLine => ({
-  firstName: "Test",
-  lastName: `P${overrides.playerId}`,
-  fullName: `Test P${overrides.playerId}`,
-  teamAbbr: "NYK",
-  position: "G",
-  nbaPersonId: null,
-  // Clears the pool's qualification floor (>=25 GP over a full season, >=15 MPG).
-  gamesPlayed: 25,
-  minutes: 750,
-  pts: 200,
-  reb: 50,
-  ast: 40,
-  stl: 10,
-  blk: 5,
-  fg3m: 20,
-  tov: 15,
-  fgm: 80,
-  fga: 160,
-  ftm: 40,
-  fta: 50,
-  sq: ZERO_SQ,
-  cross: { fg: 0, ft: 0 },
-  ...overrides,
-});
+const line = (overrides: FixtureOverrides): FantasyStatLine =>
+  makeStatLine({
+    lastName: `P${overrides.playerId}`,
+    fullName: `Test P${overrides.playerId}`,
+    teamAbbr: "NYK",
+    // Clears the pool's qualification floor (>=25 GP over a full season, >=15 MPG).
+    gamesPlayed: 25,
+    minutes: 750,
+    pts: 200,
+    reb: 50,
+    ast: 40,
+    stl: 10,
+    blk: 5,
+    fg3m: 20,
+    tov: 15,
+    fgm: 80,
+    fga: 160,
+    ftm: 40,
+    fta: 50,
+    sq: ZERO_SQ,
+    cross: { fg: 0, ft: 0 },
+    ...overrides,
+  });
 
 describe("buildPlayerInsights", () => {
   it("derives per-game counting stats and make-rate ratios", () => {
@@ -51,7 +58,7 @@ describe("buildPlayerInsights", () => {
     expect(byKey.get("reb")?.perGame).toBeCloseTo(2); // 50 / 25
     expect(byKey.get("fg")?.perGame).toBeCloseTo(0.5); // 80 / 160
     expect(byKey.get("ft")?.perGame).toBeCloseTo(0.8); // 40 / 50
-    expect(insight?.minutesPerGame).toBeCloseTo(30); // 750 / 25
+    expect(insight?.playingTimePerGame).toBeCloseTo(30); // 750 / 25
   });
 
   it("exposes all nine categories with their labels", () => {

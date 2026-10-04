@@ -7,12 +7,13 @@ import {
   countsFromSlots,
   DEFAULT_SLOT_COUNTS,
   eligibleForSlot,
+  type FantasyTeamPlayer,
   resizeSlots,
   rosterSize,
-  rosteredIds,
   SLOT_TYPES,
-} from "@/lib/fantasyTeams/slots";
-import { type FantasyTeamPlayer, type SlotCounts } from "@/lib/fantasyTeams/types";
+  type SlotCounts,
+} from "#core/testing/basketball";
+import { rosteredIds } from "#core/roster/slots";
 
 const player = (
   overrides: Partial<FantasyTeamPlayer> & { playerId: number },
