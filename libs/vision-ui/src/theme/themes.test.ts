@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { THEMES, THEME_META, isTheme } from "@/lib/theme/themes";
+import { THEMES, THEME_META, isTheme } from "#ui/theme/themes";
 
 describe("isTheme", () => {
   it("accepts every registered theme", () => {

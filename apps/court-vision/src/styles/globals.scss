@@ -1,0 +1,43 @@
+// Court Vision's global stylesheet: the shared design-system tokens and
+// typographic primitives, plus the tokens only basketball needs.
+@use "@vision/ui/styles/globals";
+
+// Player eligibility positions — one hue per group so G / F / C are
+// distinguishable at a glance (hyphenated combos color each segment). Same
+// selectors as the theme blocks in the shared globals, so each theme keeps
+// its own trio.
+:root {
+  --color-position-g: #4fd1c5; // guard — teal
+  --color-position-f: #f2b872; // forward — amber
+  --color-position-c: #c58bf2; // center — violet
+}
+
+:root[data-theme="light"] {
+  --color-position-g: #0c7560; // guard — teal
+  --color-position-f: #9a5b00; // forward — amber
+  --color-position-c: #7b3fb0; // center — violet
+}
+
+:root[data-theme="high-contrast"] {
+  --color-position-g: #6fe3ff;
+  --color-position-f: #ffc978;
+  --color-position-c: #cbb2ff;
+}
+
+:root[data-theme="colorblind-safe"] {
+  --color-position-g: #5aa9ff;
+  --color-position-f: #ffb02e;
+  --color-position-c: #c9cede;
+}
+
+:root[data-theme="amber-crt"] {
+  --color-position-g: #ffd95e;
+  --color-position-f: #ff9040;
+  --color-position-c: #d7b06a;
+}
+
+:root[data-theme="team-accent"] {
+  --color-position-g: #7fb8ff;
+  --color-position-f: #ffd166;
+  --color-position-c: #c9a4ff;
+}

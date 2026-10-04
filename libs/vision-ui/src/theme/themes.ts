@@ -1,6 +1,6 @@
 // The six-theme registry. A theme may only redefine color tokens (see
 // globals.scss); this module is the single list the swatch strip, the settings
-// cards, and the init script all draw from.
+// cards, and ThemeInitScript all draw from.
 export const THEMES = [
   "dark",
   "light",
@@ -13,7 +13,7 @@ export const THEMES = [
 export type Theme = (typeof THEMES)[number];
 
 export const isTheme = (value: unknown): value is Theme =>
-  typeof value === "string" && (THEMES as readonly string[]).includes(value);
+  typeof value === "string" && THEMES.some((theme) => theme === value);
 
 export type ThemeMeta = {
   id: Theme;
@@ -33,7 +33,7 @@ export const THEME_META: readonly ThemeMeta[] = [
   {
     id: "dark",
     label: "Dark",
-    note: "The original navy court, tuned for evening research.",
+    note: "The original navy palette, tuned for evening research.",
     bg: "#131629",
     surface: "#1c2138",
     accent: "#3fc3e8",
@@ -43,7 +43,7 @@ export const THEME_META: readonly ThemeMeta[] = [
   {
     id: "light",
     label: "Light",
-    note: "Bright rooms and daytime box-score reading.",
+    note: "Bright rooms and daytime stat reading.",
     bg: "#f7f8fc",
     surface: "#ffffff",
     accent: "#0b749a",

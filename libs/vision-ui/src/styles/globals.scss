@@ -1,7 +1,7 @@
 // Global stylesheet: design tokens and true typographic primitives only.
 // Component styles live in co-located *.module.scss files and must reference
 // these tokens (see CLAUDE.md CSS rules).
-@use "@/styles/mixins" as *;
+@use "@vision/ui/styles/mixins" as *;
 
 :root {
   // Color
@@ -15,11 +15,6 @@
   --color-highlight: #ff9f3c;
   --color-win: #3dd68c;
   --color-loss: #ff5c6a;
-  // Player eligibility positions — one hue per group so G / F / C are
-  // distinguishable at a glance (hyphenated combos color each segment).
-  --color-position-g: #4fd1c5; // guard — teal
-  --color-position-f: #f2b872; // forward — amber
-  --color-position-c: #c58bf2; // center — violet
   // Extrusion color for retro long-shadow lettering (see long-text-shadow in mixins).
   --color-retro-shadow: color-mix(in srgb, var(--color-accent) 55%, var(--color-bg));
   // Purple accent (animated gradient border, TeamBuilder card view).
@@ -232,9 +227,6 @@ h1 {
   --color-highlight: #b35c00;
   --color-win: #0f8a4f;
   --color-loss: #c9283e;
-  --color-position-g: #0c7560; // guard — teal
-  --color-position-f: #9a5b00; // forward — amber
-  --color-position-c: #7b3fb0; // center — violet
 
   --color-control-bg: #fff;
   --color-control-placeholder: #7c86a6;
@@ -269,9 +261,6 @@ h1 {
   --color-highlight: #ffc978;
   --color-win: #68f5b0;
   --color-loss: #ff939c;
-  --color-position-g: #6fe3ff;
-  --color-position-f: #ffc978;
-  --color-position-c: #cbb2ff;
 
   --color-control-bg: #000;
   --color-focus-ring: rgb(111 227 255 / 55%);
@@ -301,9 +290,6 @@ h1 {
   // label — under this theme the hue alone no longer carries the meaning.
   --color-win: #5aa9ff;
   --color-loss: #ff9d2e;
-  --color-position-g: #5aa9ff;
-  --color-position-f: #ffb02e;
-  --color-position-c: #c9cede;
 
   --color-control-bg: #0b0e1a;
   --color-focus-ring: rgb(90 169 255 / 34%);
@@ -327,9 +313,6 @@ h1 {
   --color-highlight: #ffd95e;
   --color-win: #bcd63f;
   --color-loss: #ff7043;
-  --color-position-g: #ffd95e;
-  --color-position-f: #ff9040;
-  --color-position-c: #d7b06a;
 
   --color-control-bg: #0b0703;
   --color-focus-ring: rgb(255 167 38 / 34%);
@@ -358,9 +341,6 @@ h1 {
   --color-highlight: #ffd166;
   --color-win: #4cc98a;
   --color-loss: #ff6b6b;
-  --color-position-g: #7fb8ff;
-  --color-position-f: #ffd166;
-  --color-position-c: #c9a4ff;
 
   --color-control-bg: #0e1015;
   --color-focus-ring: rgb(255 59 92 / 32%);

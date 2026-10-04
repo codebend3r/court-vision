@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "bun:test";
 
-import { ThemeProvider, useTheme } from "@/lib/theme/ThemeProvider";
+import { ThemeProvider, useTheme } from "#ui/components/ThemeProvider/ThemeProvider";
 
 function Probe() {
   const { theme, setTheme } = useTheme();

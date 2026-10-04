@@ -2,9 +2,9 @@
 
 import { ReactNode, createContext, useContext, useEffect, useRef, useState } from "react";
 
-import { type Theme, isTheme } from "@/lib/theme/themes";
+import { type Theme, isTheme } from "#ui/theme/themes";
 
-export type { Theme } from "@/lib/theme/themes";
+export type { Theme } from "#ui/theme/themes";
 
 export type ThemeContextValue = {
   theme: Theme;

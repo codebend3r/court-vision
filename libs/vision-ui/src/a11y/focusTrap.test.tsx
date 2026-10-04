@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "bun:test";
 import { useRef, useState } from "react";
 
-import { useFocusTrap } from "@/lib/a11y/focusTrap";
+import { useFocusTrap } from "#ui/a11y/focusTrap";
 
 const Harness = ({ onEscape = () => {} }: { onEscape?: () => void }) => {
   const [open, setOpen] = useState(false);
