@@ -86,6 +86,11 @@ Drop articles, filler words, and ceremony. One concept per bullet, ideally one l
 
 Anything that names a code artifact gets backticks, in the subject **and** body: `` `lib/balldontlie/` ``, `` `SeasonSelect` ``, `` `unstable_cache` ``, `` `NEXT_PUBLIC_SUPABASE_URL` ``, `` `bun run test` ``.
 
+### Commit granularity and PR bodies
+
+- Commit after every logical change; batch related changes into one commit.
+- Keep a PR body minimal and favour bullet points, same as a commit body.
+
 ## Quick Reference
 
 | Aspect                                                          | Rule                                                         |

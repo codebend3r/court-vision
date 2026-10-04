@@ -88,7 +88,7 @@ in your head:
 | Class                                                                              | Resolution                                                |
 | ---------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | `bun.lock`                                                                         | Take main's side, then `bun install` and stage the result |
-| `package.json` version field                                                       | Take main's side                                          |
+| `apps/court-vision/package.json` version field                                     | Take main's side                                          |
 | Both sides added different entries to the same import block, array, or export list | Union both, in the file's existing order                  |
 | Vanishes under formatting                                                          | `oxfmt --write` the file, then stage                      |
 | **≤ 20 conflicted lines across ≤ 3 files**, and both sides are legible             | Read both sides and resolve                               |

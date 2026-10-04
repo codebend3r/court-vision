@@ -16,8 +16,8 @@ on one path instead of wide over all of them. Do not return a survey.
 - **12 pages are `force-dynamic`.** That is the starting condition, not a
   finding. The useful question per page is _why_: a session read that could
   be split out from cacheable data, or genuinely per-request content.
-- **The caching pattern already exists.** `src/lib/players/searchCached.ts`
-  and `src/lib/standings/loader.ts` wrap queries in `unstable_cache` with a
+- **The caching pattern already exists.** `apps/court-vision/src/lib/players/searchCached.ts`
+  and `apps/court-vision/src/lib/standings/loader.ts` wrap queries in `unstable_cache` with a
   tag and a revalidate window. Compare against those rather than inventing
   a scheme.
 - **There is no code splitting or streaming anywhere.** Zero

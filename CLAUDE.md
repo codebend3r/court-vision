@@ -1,119 +1,108 @@
 # CLAUDE.md
 
-Operating rules for this repo.
-
-## Structure
-
-- Source lives under `src/` (`src/app`, `src/components`, `src/lib`, `src/styles`); `prisma/`, `public/`, config files (including `lefthook.yml`), and `.github/` stay at the repo root. Path references below (e.g. `styles/globals.scss`, `lib/foo.ts`) are under `src/`, and the `@/*` import alias maps to `src/*` (`@public/*` and `@generated/*` map to the root `public/` and `generated/` dirs).
-- Import via aliases, never relative paths. This covers parent-relative (`../`) _and_ same-directory siblings (`./`): a co-located style sheet, test subject, or helper is imported by its full alias path (`@/components/Foo/Foo.module.scss`, not `./Foo.module.scss`). SCSS `@use` follows the same rule (`@use "@/styles/mixins" as *`). Lint enforces this inside `src/`; root-level config files like `next.config.ts` sit outside the alias and may still use `./`.
+Court Vision is a fantasy-basketball stats app: Next.js App Router, React 19, Prisma on Supabase Postgres, Supabase auth. The repo is an Nx + Bun-workspaces monorepo. Its sport-agnostic logic lives in shared `@vision/*` libs, so that sibling apps (rink-vision, diamond-vision, field-vision) reuse the same engine and design system.
 
 ## Workflow
 
-- Do not commit anything until I tell you to.
-- Do not push anything until I tell you to.
+- Do not commit anything until I tell you to. Finishing a change is not permission to commit it.
+- Do not push anything until I tell you to. Once I have told you to commit on a branch that already tracks a remote, push it in the same step, don't ask again.
 - Do not merge anything until I tell you to.
 - Do not create a PR until I tell you to.
-- Do not create a branch until I tell you to.
+
+## Structure
+
+- `apps/court-vision/` is the Next app. It holds the UI, server actions, the Prisma schema and generated client, Supabase auth, and the Balldontlie sync CLIs. It stays one full-stack app with no separate backend.
+- `libs/vision-core/` (`@vision/core`) holds sport-agnostic logic: the valuation engine, roster slots, running stat series, leaderboards, and league scoring. Each function takes a `SportDescriptor` (`sport/types.ts`), the one place a sport's categories, positions, slots, pools and season format are defined. It is framework-free: no React, Next, Prisma, Supabase, nuqs or zustand, and no other `@vision/*` lib. Import a module by path (`@vision/core/util/logger`); there are no barrel files.
+- `libs/sport-basketball/` (`@vision/sport-basketball`) holds basketball's descriptor (`descriptor`), its type aliases (`types`), and `engine`, which is the core engine bound to basketball under Court Vision's names. App code imports engine functions from `@vision/sport-basketball/engine` and never threads a descriptor itself.
+- `libs/sport-hockey/`, `libs/sport-baseball/` and `libs/sport-football/` hold those sports' descriptors and bound engines. Each one's tests run `describeSportIssues` and value a small synthetic pool. A new sport is a new `libs/sport-*` lib with the same three files.
+- `apps/rink-vision/`, `apps/diamond-vision/` and `apps/field-vision/` are Next shells (ports 46645–46647) with no data source, database or auth yet. Each renders its sport's descriptor through `@vision/ui`'s `SportOverview`. Start one with `bun run dev:rink`, `bun run dev:diamond` or `bun run dev:field`.
+- Dependency rules, enforced by oxlint: core imports no other workspace lib, sport libs import only core, `@vision/ui` imports no sport lib, and no lib imports an app.
+- `libs/vision-ui/` (`@vision/ui`) is the shared design system: tokens (`styles/globals.scss`), mixins (`styles/mixins.scss`), the theme registry (`theme/themes.ts`), `ThemeProvider`/`ThemeInitScript`, the chart palette, and the sport-neutral components (`PageHeader`, `ReadoutCard`, `Switch`, `Wordmark`, …). It may use React and Next but never data, auth, or a sport lib. An app's `styles/mixins.scss` forwards the shared mixins, so `@use "@/styles/mixins" as *` still works; its `styles/globals.scss` uses the shared globals and adds sport-only tokens.
+- `libs/vision-testing/` (`@vision/testing`) holds the bun:test preload, env stubs and jest-dom matcher types.
+- Libs ship TypeScript source: `exports` in their `package.json` point at `./src/**.ts`, and apps compile them through `transpilePackages`. Libs have no build step.
+- This Next.js version differs from older ones. Read the relevant guide in `node_modules/next/dist/docs/` before writing Next code.
+- Nx (core only, no plugins) runs each project's `package.json` scripts.
+  - At the root, `bun run build`, `bun run test` and `bun run typecheck` fan out with `nx run-many`.
+  - For one project, use `bunx nx run <project>:<target>` or `bun run --cwd <dir> <script>`.
+- Paths below are relative to the project that owns them. Example: `styles/globals.scss` means `apps/court-vision/src/styles/globals.scss`.
+
+## Imports
+
+- Never use relative paths, not even for same-directory siblings or co-located style sheets. oxlint enforces this.
+  - **In an app:** `@/*` maps to that app's `src/`. `@generated/*` and `@public/*` map to its `generated/` and `public/` dirs.
+  - **In a lib:** use the lib's own `#<name>/*` subpath alias, declared in `package.json` `imports`. `@/` is banned in libs.
+  - **Across packages:** use a `@vision/<name>/<entry>` export.
+- SCSS `@use` follows the same rule: `@use "@/styles/mixins" as *`.
 
 ## Tooling
 
-- All scripts run through Bun: `bun install`, `bun dev`, `bun run test`, `bun run build`, `bun run lint`. Never invoke npm or yarn.
-- Pin every `package.json` dependency to an exact version, with no `^` or `~`. `exact = true` under `[install]` in `bunfig.toml` enforces this, so a plain `bun add` already writes the pin — `--exact` is redundant, not required.
-
-### Tests must run through `bun run test`
-
-Never run bare `bun test` — it reports ~27 false failures.
-
-Tests run on bun:test. Bun stores module mocks per global object, and without
-isolation every test file shares one, so a `vi.mock` in one file is still
-installed when the next file runs. `mock.restore()` does not undo it, and Bun
-has no API that does — per-file isolation is the only mechanism. `bun run test`
-passes `--parallel` (which implies `--isolate`, one worker process per file);
-`bun run test:watch` passes `--isolate`. Bare `bun test` gets neither and fails
-in whichever files happen to run downstream of a leaked mock.
-
-There is no `bunfig.toml` key for this as of Bun 1.3.14 — it is CLI-only.
+- All scripts run through Bun (`bun install`, `bun run …`). Never invoke npm or yarn.
+- Pin every dependency to an exact version, with no `^` or `~`. The root `bunfig.toml` enforces this with `exact = true`. Workspace siblings are the one exception: they use `workspace:*`.
+- Run tests with `bun run test`, never bare `bun test`. The unit-tester skill explains why.
+- Tests are co-located: `lib/foo.ts` ↔ `lib/foo.test.ts`, `components/Foo/Foo.tsx` ↔ `components/Foo/Foo.test.tsx`.
 
 ## React
 
-- Never use default exports if it can be avoided, prefer named exports
-- Always import all React methods, constants, and types from `react`, e.g. `import { useState } from 'react'`
-- Prefer using latest features in React when possible
-- Prefer using the `use` hook pattern for state management
-- Prefer using zustand always for global state management
+- Never use default exports if it can be avoided; prefer named exports.
+- Always import React methods, constants and types from `react`, e.g. `import { useState } from 'react'`.
+- Prefer the latest React features when possible.
+- Prefer the `use` hook pattern for state management.
+- Always use zustand for global state.
 
-## Typescript
+## TypeScript
 
-- Always use type aliases. Never use TypeScript interfaces anywhere, including `declare global` augmentations
-- Use type guards wherever possible.
-- Unit test all type guard functions
-- Never use `any` types; prefer type narrowing or type guards
-- Never under any circumstance cast types and never double cast: `as any as string`
-- If type can't be inferred and type narrowing is not an option, use `unknown` types
+- Always use type aliases. Never use interfaces, including in `declare global` augmentations.
+- Use type guards wherever possible, and unit test every type guard function.
+- Never use `any`. Prefer type narrowing or type guards.
+- Never cast types, and never double cast (`as any as string`).
+- If a type can't be inferred and narrowing isn't an option, use `unknown`.
 
 ## SCSS/CSS
 
-- Use SCSS modules (`*.module.scss`) for component styles
-- Only use global stylesheets (`styles/globals.scss`) for design tokens and true typographic primitives
-- Use a container driven approach, meaning the container will define the width and height and the children will be positioned within it, this means if/when the children are moved to different containers they may be laid out differently depending on what the container specifies
-- Prefer using CSS display grid for layout with the gap property for spacing between grid items; avoid using margins for spacing
-- Second preferred display value is flex
-- Avoid using plain divs; meaning divs with no class or id defined
-- Always use token values from `styles/globals.scss` when defining font sizes, colors, and other design tokens like padding, margin, gap, and border radius
+- Use SCSS modules (`*.module.scss`) for component styles.
+- Use the global stylesheets (`@vision/ui`'s `styles/globals.scss`, and an app's own `styles/globals.scss` for sport-only tokens) only for design tokens and true typographic primitives.
+- Layout is container-driven. The container sets width and height and positions its children, so a child moved to a different container can lay out differently there.
+- Prefer CSS grid with `gap` for spacing. Avoid margins for spacing. Flex is the second choice.
+- Avoid plain divs, meaning divs with no class or id.
+- Always use the token values from `@vision/ui`'s `styles/globals.scss` for font sizes, colors, padding, margin, gap and border radius.
 
 ## Code style
 
-- Always prefer immutable data structures and operations
-- Prefer `reduce` over `for` loops when possible. Never use `for/in` or `for/of` loops; reach for `Array.prototype` methods (`map`, `filter`, `reduce`, `flatMap`, etc.) when the value is an array.
+- Prefer immutable data structures and operations.
+- Prefer `reduce` over `for` loops. Never use `for/in` or `for/of`; use `Array.prototype` methods (`map`, `filter`, `reduce`, `flatMap`).
 - Prefer double-bang (`!!value`) for boolean conversion.
-- Prefer short-circuit (`&&`) over a ternary when the else branch is `null` or `undefined`, especially in React rendering. Do: `{isActive && <Badge />}`. Don't: `{isActive ? <Badge /> : null}`. Guard the condition so it is a real boolean (`!!count && ...`), never a bare number that could render `0`.
-- Prefer optional chaining (`?.`). When optional chaining is used, ALWAYS pair it with nullish coalescing (`??`) to supply a fallback.
-- Prefer a single configurable object parameter over multiple positional parameters so argument order doesn't matter. Don't: `doSomething(foo, bar, hello)`. Do: `doSomething({ foo, bar, hello })`.
+- Prefer short-circuit `&&` over a ternary whose else branch is `null` or `undefined`, especially in JSX.
+  - Do: `{isActive && <Badge />}`. Don't: `{isActive ? <Badge /> : null}`.
+  - Make the condition a real boolean (`!!count && …`) so a bare `0` never renders.
+- Prefer optional chaining (`?.`), and always pair it with nullish coalescing (`??`) to supply a fallback.
+- Prefer a single object parameter over positional ones, so argument order doesn't matter. Do: `doSomething({ foo, bar })`. Don't: `doSomething(foo, bar)`.
 
-## Accessibility
+## Accessibility (WCAG AA)
 
-- Use best practices for accessibility
-- Use semantic HTML elements (`button`, `nav`, `main`, `header`, `ul`/`li`, `label`) before reaching for a generic element with a role; a native `button` beats a `div` with `onClick`
-- Every interactive element must be reachable and operable by keyboard alone; preserve a logical tab order and never remove focus outlines without providing an equally visible `:focus-visible` style
-- Associate every form control with a `label` (via `htmlFor`/`id` or wrapping); use `aria-describedby` for hints and error text
-- Provide accessible names for icon-only controls with `aria-label`; mark purely decorative icons/images `aria-hidden="true"` and give meaningful images real `alt` text (empty `alt=""` when decorative)
-- Add ARIA only to fill gaps native semantics can't; never override a native role, and prefer no ARIA over wrong ARIA
-- Announce dynamic changes (toasts, async status, form errors) with an appropriate `aria-live` region or `role="alert"`
-- Manage focus for modals, drawers, and menus: move focus in on open, trap it while open, restore it to the trigger on close, and close on `Escape`
-- Meet WCAG AA contrast (4.5:1 body text, 3:1 large text and UI/graphical elements); verify against `styles/globals.scss` color tokens
-- Respect `prefers-reduced-motion` and gate non-essential animation/transitions behind it
-- Never convey meaning by color alone; pair it with text, an icon, or another cue
-- Use relative units (`rem`) so the UI scales with user font-size settings, and keep layouts usable at 200% zoom
-- Set a correct `lang` on the document and keep a single, ordered heading hierarchy (one `h1`, no skipped levels)
-
-## Content + tests
-
-- Tests are co-located: `lib/foo.ts` ↔ `lib/foo.test.ts`, `components/Foo/Foo.tsx` ↔ `components/Foo/Foo.test.tsx`.
+- Use semantic HTML before ARIA: a native `button`, never a clickable `div`. Add ARIA only to fill a gap, and never override a native role.
+- Everything must be operable by keyboard, with a visible `:focus-visible` style. Modals, drawers and menus move focus in, trap it, restore it to the trigger on close, and close on `Escape`.
+- Every control needs an accessible name:
+  - form fields get a `label`, with `aria-describedby` for hints and errors;
+  - icon-only buttons get an `aria-label`;
+  - decorative icons get `aria-hidden="true"`, and decorative images `alt=""`.
+- Announce async changes (toasts, status, form errors) with `aria-live` or `role="alert"`.
+- Text needs at least 4.5:1 contrast, and large text and UI elements 3:1, measured against the shared `globals.scss` tokens. Never signal meaning by color alone.
+- Respect `prefers-reduced-motion` and size with `rem`. Each page has one `h1` with no skipped heading levels, and the document sets `lang`.
 
 ## Data sources
 
-- Live NBA stats come from the [Balldontlie API](https://docs.balldontlie.io/) — always consult that endpoint reference (e.g. [Get All Players](https://docs.balldontlie.io/#get-all-players)) when touching the adapter in `lib/balldontlie/`. Auth via `BALLDONTLIE_API_KEY` in `.env`; endpoint availability is tier-gated.
+- Live NBA stats come from the [Balldontlie API](https://docs.balldontlie.io/). Consult its endpoint reference whenever you touch the adapter in `apps/court-vision/src/lib/balldontlie/`. Auth is `BALLDONTLIE_API_KEY` in `apps/court-vision/.env`, and endpoint availability depends on the plan tier.
+- Design specs and implementation plans live in `docs/superpowers/specs/` and `docs/superpowers/plans/`. Check them before extending an existing feature.
 
-## Specs
+## Redesign conventions
 
-Design specs and implementation plans live in `docs/superpowers/specs/` and `docs/superpowers/plans/`. Check them before extending an existing feature.
+These come from the 2026-08 redesign; the spec is `docs/superpowers/specs/redesign-2026-08.md`.
 
-## Commits
-
-- Create a commit after every logical change, batch if they are related.
-- Subject must start with `CV:` followed by a short title (e.g., `CV: a short title`).
-- Favor bullet points in the body. Keep it concise and easy to read.
-
-## Pull Requests
-
-- Should follow the same naming convention as commits and every PR title should start with `CV: a short title`
-- - The body of the PR should be minimal and favour bullet points
-
-### Redesign conventions (2026-08, spec in `docs/superpowers/specs/redesign-2026-08.md`)
-
-- Every pressable control uses the keycap mixins (`keycap`, `keycap-engaged`, `keycap-danger`, `keycap-press` in `styles/mixins.scss`); never invent a new button treatment
-- The retro extrusion is opt-in by role: page titles (`h1`), the wordmark, and large readout numbers via `retro-extrude`. Never re-apply it to headings wholesale, and never add glows
-- Tables share one pattern: `table-wrapper` + `data-table` + `numeric-cell`; cell padding is `var(--row-y) var(--row-x)`, never hardcoded
-- Dashboard panels use `panel-shell` + `panel-title`
-- Six themes on `data-theme`, registered in `lib/theme/themes.ts`. A theme may only redefine color tokens — spacing, radii, type, and shadow geometry are shared constants. Team identity colors (`TeamChip`) never borrow theme tokens
-- Every screen opens with `PageHeader` (eyebrow / title / description / actions / rule); page actions use `PageAction`
+- Every pressable control uses the keycap mixins (`keycap`, `keycap-engaged`, `keycap-danger`, `keycap-press` in `@vision/ui`'s `styles/mixins.scss`). Never invent a new button treatment.
+- The retro extrusion (`retro-extrude`) is opt-in by role: page titles (`h1`), the wordmark, and large readout numbers. Never apply it to headings wholesale, and never add glows.
+- Tables share one pattern: `table-wrapper` + `data-table` + `numeric-cell`. Cell padding is `var(--row-y) var(--row-x)`, never hardcoded.
+- Dashboard panels use `panel-shell` + `panel-title`.
+- There are six themes, set on `data-theme` and registered in `@vision/ui`'s `theme/themes.ts`.
+  - A theme may only redefine color tokens. Spacing, radii, type and shadow geometry are shared constants.
+  - Team identity colors (`TeamChip`) never borrow theme tokens.
+- Every screen opens with `PageHeader` (eyebrow, title, description, actions, rule). Page actions use `PageAction`.

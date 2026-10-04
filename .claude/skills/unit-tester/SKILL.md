@@ -6,12 +6,31 @@ description: Use when adding or changing a test in court-vision, when a new lib 
 # Unit testing in court-vision
 
 Runner is `bun:test` with a vitest-compatible `vi` shim. There is no vitest,
-no jest, and no `mock.module` anywhere in this repo. 134 test files pass
+no jest, and no `mock.module` anywhere in this repo. 175 test files pass
 today; match them rather than inventing a second style.
 
-`CLAUDE.md` already covers co-location, the `bun run test` rule, and the
-code style that applies to tests as much as to source. This skill covers
-what it does not: the seams, the ordering rules, and the environment traps.
+`CLAUDE.md` covers co-location and the code style that applies to tests as
+much as to source. This skill covers what it does not: how tests run, the
+seams, the ordering rules, and the environment traps.
+
+## How tests run (never bare `bun test`)
+
+Every Nx project with tests has a `test` script of
+`bun test --parallel --dots`, and the root `bun run test` runs it in every
+project through `nx run-many -t test`. Projects whose tests render React or
+use jest-dom matchers (the apps, `@vision/ui`) also have a `bunfig.toml`
+that preloads `@vision/testing/setup`. Framework-free libs such as
+`@vision/core` need no preload and have no bunfig.
+
+Never run bare `bun test`, at the root or in a project; it reports ~27 false
+failures. Bun stores module mocks per global object, and without isolation
+every test file shares one, so a `vi.mock` in one file is still installed
+when the next file runs. `mock.restore()` does not undo it, and Bun has no
+API that does: per-file isolation is the only mechanism. `--parallel`
+implies `--isolate` (one worker process per file); `test:watch` passes
+`--isolate`. There is no `bunfig.toml` key for this as of Bun 1.3.14, so it
+lives in the script. Bun also reads `bunfig.toml` from the current directory
+only, so a run from the wrong directory silently loses the preload.
 
 ## Always
 
@@ -30,7 +49,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 ## Prefer injection over mocking
 
 The house pattern for `src/lib` is a seam on the options object, not a
-module mock. `src/lib/fetchImpl.ts` exists for exactly this:
+module mock. `FetchImpl` (`@vision/core/util/fetchImpl`) exists for exactly this:
 
 ```ts
 const fetchImpl = vi.fn<FetchImpl>().mockResolvedValue(textResponse(body));
@@ -41,7 +60,7 @@ expect(fetchImpl).toHaveBeenCalledWith(NBA_DATA_PY_URL);
 ```
 
 Type the double with a generic (`vi.fn<FetchImpl>()`). Never cast.
-Canonical example: `src/lib/headshots/sources.test.ts`.
+Canonical example: `apps/court-vision/src/lib/headshots/sources.test.ts`.
 
 Reach for `vi.mock` only at a boundary you cannot inject: `@/lib/prisma`,
 `@/lib/auth/session`, `next/navigation`, and server actions imported by a
@@ -94,11 +113,11 @@ vi.mock("@/lib/prisma", () => ({
 }));
 ```
 
-Canonical example: `src/lib/watchlist/actions.test.ts`.
+Canonical example: `apps/court-vision/src/lib/watchlist/actions.test.ts`.
 
 ## Components
 
-Canonical example: `src/components/StarButton/StarButton.test.tsx`.
+Canonical example: `apps/court-vision/src/components/StarButton/StarButton.test.tsx`.
 
 - `afterEach(cleanup)` in every component file. Not optional.
 - **Query by role and accessible name.** `screen.getByRole("button", { name: "Star Jalen Brunson" })`.
@@ -116,23 +135,34 @@ Canonical example: `src/components/StarButton/StarButton.test.tsx`.
 
 - Reads search params (`nuqs`): pass `withNuqsTestingAdapter` from
   `nuqs/adapters/testing` as the render `wrapper`.
-- Consumes theme: wrap in `ThemeProvider` from `@/lib/theme/ThemeProvider`.
+- Consumes theme: wrap in `ThemeProvider` from `@vision/ui/components/ThemeProvider/ThemeProvider`.
 
 ## Fixtures and env
 
-- Build stat lines with `makeStatLine` from `@/lib/valuation/fixtures`.
-  Do not hand-roll a `FantasyStatLine`.
-- Environment: `stubEnv` / `restoreEnv` from `@/lib/testing/env`, called in
+- Build stat lines with `makeStatLine` from `@/lib/valuation/fixtures` in the
+  app, or from `#core/testing/basketball` inside `@vision/core`. Both take flat
+  overrides (`{ playerId: 1, pts: 900, minutes: 300 }`) and nest them. Do not
+  hand-roll a `FantasyStatLine`. Core's game logs come from `makeLog` /
+  `makeDatedLog` in the same harness.
+- Core's tests use `#core/testing/basketball`: a copy of the basketball
+  descriptor plus the engine bound to it. Core may not import a sport lib, and
+  `@vision/sport-basketball`'s drift test fails if the copy ever diverges.
+- The valuation engine is pinned by `apps/court-vision/src/lib/valuation/golden.test.ts`.
+  Never update its snapshots to make a change pass; a diff there means the
+  numbers moved.
+- Environment: `stubEnv` / `restoreEnv` from `@vision/testing/env`, called in
   `beforeEach` / `afterEach`. `vi.stubEnv` does not exist in `bun:test`.
 
-## What `bun.setup.ts` already does for you
+## What `@vision/testing/setup` already does for you
 
-Do not re-implement or undo any of this in a test file:
+The preload lives in `libs/vision-testing/src/setup.ts`. Do not re-implement
+or undo any of this in a test file:
 
 - Registers happy-dom on the global at `http://localhost/`, before
   `@testing-library/react` loads.
 - Extends `expect` with jest-dom matchers, so `toHaveClass` and
-  `toHaveAttribute` work. Types come from `src/lib/testing/matchers.d.ts`.
+  `toHaveAttribute` work. Types come from `libs/vision-testing/src/matchers.d.ts`,
+  which each project's `tsconfig.json` lists in `include`.
 - Loads `.scss` imports through a proxy that echoes the key back, so
   `styles.foo` is the string `"foo"` and `toHaveClass("foo")` is meaningful.
 - **Deletes `ResizeObserver`** so recharts falls back to its
@@ -142,11 +172,11 @@ Do not re-implement or undo any of this in a test file:
 ## Verify before claiming
 
 ```bash
-bun run test src/path/to/thing.test.ts   # the file you touched
-bun run test                             # full suite before you call it done
+bun run --cwd apps/court-vision test src/path/to/thing.test.ts   # the file you touched
+bun run test                                                    # every project before you call it done
 ```
 
-Never run bare `bun test`; see `CLAUDE.md` for why.
+Swap `apps/court-vision` for the project that owns the file (`libs/vision-core`, ...).
 
 ## When a failure is the environment, not your test
 
@@ -159,7 +189,7 @@ is wrong. Look for a `node_modules/.pnpm` directory or a second
 rm -rf node_modules && bun install --frozen-lockfile
 ```
 
-**"Cannot find module '@happy-dom/global-registrator' from bun.setup.ts"**
+**"Cannot find module '@happy-dom/global-registrator' from setup.ts"**
 is the same root cause. Same fix.
 
 Neither is worth debugging as a test problem. Check the tree first.
