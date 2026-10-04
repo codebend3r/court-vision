@@ -1,6 +1,6 @@
 "use server";
 
-import { isActionInt } from "@/lib/actions/argGuards";
+import { isActionInt } from "@vision/core/util/argGuards";
 import { getProfile } from "@/lib/auth/session";
 import { ensureDefaultLeague } from "@/lib/leagues/queries";
 import { prisma } from "@/lib/prisma";

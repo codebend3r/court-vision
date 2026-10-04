@@ -1,16 +1,19 @@
 import { unstable_cache } from "next/cache";
 
-import { TEAM_BUILDER_VALUATION_CONFIG } from "@/lib/fantasyTeams/insights";
+import { type TrendSeries } from "@vision/core/valuation/rolling";
+import { poolSizeFor } from "@vision/core/valuation/valuePlayers";
+import { basketball } from "@vision/sport-basketball/descriptor";
+import {
+  buildRollingGSeries,
+  buildRollingZSeries,
+  computePoolStats,
+  DEFAULT_VALUATION_CONFIG,
+} from "@vision/sport-basketball/engine";
+
 import { prisma } from "@/lib/prisma";
 import { getFantasyPool } from "@/lib/valuation/loader";
-import { computePoolStats } from "@/lib/valuation/pool";
 import { latestSeason } from "@/lib/valuation/season";
-import { buildRollingGSeries, buildRollingZSeries, type TrendSeries } from "@/lib/watchlist/trend";
-
-// Mirrors POOL_FLOOR in lib/valuation/index.ts and lib/fantasyTeams/insights.ts:
-// small leagues still standardize against a broad pool so values stay stable
-// (PRD §5.1).
-const POOL_FLOOR = 150;
+import { toWindowLog } from "@/lib/valuation/trendLogs";
 
 const logSelect = {
   gameDate: true,
@@ -52,24 +55,22 @@ const fetchSeries = async ({
   const lines = await getFantasyPool({ range: "all" });
   const poolStats = computePoolStats({
     lines,
-    basis: TEAM_BUILDER_VALUATION_CONFIG.basis,
-    poolSize: Math.max(
-      POOL_FLOOR,
-      TEAM_BUILDER_VALUATION_CONFIG.teams * TEAM_BUILDER_VALUATION_CONFIG.rosterSlots,
-    ),
-    range: "all",
+    basis: DEFAULT_VALUATION_CONFIG.basis,
+    poolSize: poolSizeFor({ pool: basketball.pools[0], config: DEFAULT_VALUATION_CONFIG }),
+    windowGames: null,
   });
-  const logs = await prisma.playerGameLog.findMany({
+  const rows = await prisma.playerGameLog.findMany({
     where: { playerId, season, seasonType: "Regular Season" },
     orderBy: { gameDate: "asc" },
     select: logSelect,
   });
+  const logs = rows.map(({ gameDate, ...row }) => ({ ...toWindowLog({ row }), gameDate }));
   return buildersByMethod[method]({
     playerId,
     fullName,
     logs,
     poolStats,
-    config: TEAM_BUILDER_VALUATION_CONFIG,
+    config: DEFAULT_VALUATION_CONFIG,
   });
 };
 
