@@ -1,0 +1,35 @@
+@use "@vision/ui/styles/mixins" as *;
+
+.overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  align-items: start;
+  gap: var(--space-6);
+}
+
+.panel {
+  @include panel-shell;
+}
+
+.title {
+  @include panel-title;
+}
+
+.tableWrapper {
+  @include table-wrapper;
+  overflow-x: auto;
+}
+
+.table {
+  @include data-table;
+  width: 100%;
+
+  tbody th {
+    font-weight: var(--font-weight-semibold);
+    text-align: left;
+  }
+}
+
+.numeric {
+  @include numeric-cell;
+}
