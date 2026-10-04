@@ -2,8 +2,15 @@
 # Every dependency is pinned to an exact version — no `^`, no `~`. Without this,
 # `bun add` writes a caret range and the next install silently drifts onto a
 # version nobody reviewed. Setting it here means the pin holds even when someone
-# forgets `--exact`.
+# forgets `--exact`. Workspace siblings are the one exception: they use
+# `workspace:*`, which always resolves to the local copy.
 exact = true
 
-[test]
-preload = ["./bun.setup.ts"]
+# A lockfile with `configVersion: 1` switches Bun to isolated installs as soon
+# as `workspaces` exists. Hoisted keeps the single flat `node_modules` that
+# Prisma generate, Turbopack, and the editor tooling all expect.
+linker = "hoisted"
+
+# Bun reads `bunfig.toml` from the current directory only, so `[test]` config
+# lives in each project's own bunfig (apps/*/bunfig.toml, libs/*/bunfig.toml),
+# where `nx run-many -t test` runs `bun test`.
