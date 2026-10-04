@@ -1,4 +1,4 @@
-import { SLOT_TYPES } from "@/lib/fantasyTeams/slots";
+import { SLOT_TYPES } from "@vision/sport-basketball/engine";
 import {
   type FantasyTeam,
   type FantasyTeamPlayer,

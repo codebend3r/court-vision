@@ -7,12 +7,12 @@ import {
   isActionId,
   isActionText,
   isOptionalActionId,
-} from "@/lib/actions/argGuards";
+} from "@vision/core/util/argGuards";
 import { getProfile } from "@/lib/auth/session";
-import { teamNameToSlug } from "@/lib/fantasyTeams/slug";
+import { teamNameToSlug } from "@vision/core/roster/slug";
 import { type FantasyTeam, type RosterSlot } from "@/lib/fantasyTeams/types";
 import { ensureDefaultLeague } from "@/lib/leagues/queries";
-import { uniqueSlug } from "@/lib/leagues/slug";
+import { uniqueSlug } from "@vision/core/league/slug";
 import { TEAM_INCLUDE, toFantasyTeam } from "@/lib/leagues/teamQueries";
 import { isFantasyTeamPlayer, isRosterSlotType, slotsToRows } from "@/lib/leagues/teams";
 import { type LeagueTeamActionResult, type LegacyTeamsImportResult } from "@/lib/leagues/types";

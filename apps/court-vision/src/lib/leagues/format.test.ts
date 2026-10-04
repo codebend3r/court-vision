@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import { formatLeagueMeta } from "@/lib/leagues/format";
 import { type LeagueSummary } from "@/lib/leagues/types";
-import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
+import { DEFAULT_POINTS_SCORING } from "@vision/sport-basketball/engine";
 import { type Category } from "@/lib/valuation/types";
 
 const NINE: Category[] = ["pts", "reb", "ast", "stl", "blk", "tpm", "tov", "fg", "ft"];

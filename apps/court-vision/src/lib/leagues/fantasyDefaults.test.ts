@@ -1,6 +1,8 @@
 import { describe, expect, it } from "bun:test";
 
-import { buildLeagueSeed, SORT_KEY_BY_METHOD } from "@/lib/leagues/fantasyDefaults";
+import { DEFAULT_POINTS_SCORING } from "@vision/sport-basketball/engine";
+
+import { buildLeagueSeed, configFromSeed, SORT_KEY_BY_METHOD } from "@/lib/leagues/fantasyDefaults";
 import { type LeagueSummary } from "@/lib/leagues/types";
 
 const base: LeagueSummary = {
@@ -72,5 +74,45 @@ describe("buildLeagueSeed", () => {
       presentKeys: new Set(),
     });
     expect(seed).toEqual({ sort: "z" });
+  });
+});
+
+describe("configFromSeed", () => {
+  it("falls back to the Fantasy tab defaults with an empty seed", () => {
+    const { config, methodWeights } = configFromSeed({ seed: {} });
+    expect(config.teams).toBe(12);
+    expect(config.rosterSlots).toBe(13);
+    expect(config.basis).toBe("perGame");
+    expect(config.categories).toEqual([
+      "pts",
+      "reb",
+      "ast",
+      "stl",
+      "blk",
+      "tpm",
+      "tov",
+      "fg",
+      "ft",
+    ]);
+    expect(config.scoring).toEqual(DEFAULT_POINTS_SCORING);
+    expect(methodWeights).toEqual({});
+  });
+
+  it("applies the active league's size, exclusions, weights, and scoring", () => {
+    const seeded = configFromSeed({
+      seed: {
+        teams: 10,
+        slots: 15,
+        x: ["ft", "tov"],
+        w: { z: { pts: 0.5 } },
+        s: { ...DEFAULT_POINTS_SCORING, reb: 2 },
+      },
+    });
+
+    expect(seeded.config.teams).toBe(10);
+    expect(seeded.config.rosterSlots).toBe(15);
+    expect(seeded.config.categories).toEqual(["pts", "reb", "ast", "stl", "blk", "tpm", "fg"]);
+    expect(seeded.config.scoring.reb).toBe(2);
+    expect(seeded.methodWeights).toEqual({ z: { pts: 0.5 } });
   });
 });

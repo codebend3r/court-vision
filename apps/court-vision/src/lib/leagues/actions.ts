@@ -1,12 +1,12 @@
 "use server";
 
-import { isActionId, isActionText } from "@/lib/actions/argGuards";
+import { isActionId, isActionText } from "@vision/core/util/argGuards";
 import { getProfile } from "@/lib/auth/session";
-import { teamNameToSlug } from "@/lib/fantasyTeams/slug";
-import { MAX_LEAGUES } from "@/lib/leagues/constants";
+import { teamNameToSlug } from "@vision/core/roster/slug";
+import { MAX_LEAGUES } from "@vision/core/league/constants";
 import { isLeagueScoringType, parseScoringConfig } from "@/lib/leagues/guards";
 import { toLeagueSummary } from "@/lib/leagues/queries";
-import { uniqueSlug } from "@/lib/leagues/slug";
+import { uniqueSlug } from "@vision/core/league/slug";
 import {
   type LeagueDeleteResult,
   type LeagueMutationResult,
