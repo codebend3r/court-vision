@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 
 import { ADVANCED_STAT_META } from "@/lib/players/advancedStatMeta";
 import type { AdvancedPoint } from "@/lib/stats/advancedSeries";
-import { ThemeProvider } from "@/lib/theme/ThemeProvider";
+import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 
 import { PlayerAdvancedChart } from "@/components/PlayerAdvancedChart/PlayerAdvancedChart";
 

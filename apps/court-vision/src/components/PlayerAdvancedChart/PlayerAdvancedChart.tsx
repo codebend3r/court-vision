@@ -9,10 +9,10 @@ import {
 } from "@/lib/players/advancedStatMeta";
 import { ADVANCED_METRIC_KEYS, type AdvancedMetricKey } from "@/lib/players/searchParams";
 import type { AdvancedPoint, AdvancedSeriesMode } from "@/lib/stats/advancedSeries";
-import { useTheme } from "@/lib/theme/ThemeProvider";
+import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 import { MetricLineChart, type MetricMeta } from "@/components/MetricLineChart/MetricLineChart";
-import { getSeriesPalette } from "@/components/PlayerStatChart/statMeta";
-import { Switch } from "@/components/Switch/Switch";
+import { getSeriesPalette } from "@vision/ui/charts/palette";
+import { Switch } from "@vision/ui/components/Switch/Switch";
 
 import { ADVANCED_PANELS } from "@/components/PlayerAdvancedChart/advancedChartMeta";
 import styles from "@/components/PlayerAdvancedChart/PlayerAdvancedChart.module.scss";

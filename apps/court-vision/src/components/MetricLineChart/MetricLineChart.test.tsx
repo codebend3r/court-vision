@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
-import { ThemeProvider } from "@/lib/theme/ThemeProvider";
+import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 
 import {
   MetricLineChart,

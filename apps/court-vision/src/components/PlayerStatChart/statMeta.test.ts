@@ -1,10 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import {
-  DEFAULT_ACTIVE_KEYS,
-  getChartChrome,
-  getStatMeta,
-} from "@/components/PlayerStatChart/statMeta";
+import { DEFAULT_ACTIVE_KEYS, getStatMeta } from "@/components/PlayerStatChart/statMeta";
 
 const DARK_COUNTING_COLORS = [
   "#3987e5",
@@ -63,24 +59,6 @@ describe("getStatMeta", () => {
     expect(dark.map((entry) => entry.key)).toEqual(light.map((entry) => entry.key));
     expect(dark.map((entry) => entry.label)).toEqual(light.map((entry) => entry.label));
     expect(dark.map((entry) => entry.panel)).toEqual(light.map((entry) => entry.panel));
-  });
-});
-
-describe("getChartChrome", () => {
-  it("returns the dark chrome palette", () => {
-    expect(getChartChrome({ theme: "dark" })).toEqual({
-      grid: "#2a3050",
-      axis: "#8b93b5",
-      endLabel: "#8b93b5",
-    });
-  });
-
-  it("returns the light chrome palette", () => {
-    expect(getChartChrome({ theme: "light" })).toEqual({
-      grid: "#dfe3f0",
-      axis: "#5a6280",
-      endLabel: "#5a6280",
-    });
   });
 });
 

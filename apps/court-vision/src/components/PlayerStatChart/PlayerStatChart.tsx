@@ -17,9 +17,9 @@ import { parseAsBoolean, parseAsString, useQueryState } from "nuqs";
 
 import type { CumulativePoint } from "@/lib/stats/cumulative";
 import type { StatMode } from "@/lib/stats/searchParams";
-import { useTheme } from "@/lib/theme/ThemeProvider";
+import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 import { MetricLineChart } from "@/components/MetricLineChart/MetricLineChart";
-import { Switch } from "@/components/Switch/Switch";
+import { Switch } from "@vision/ui/components/Switch/Switch";
 
 import styles from "@/components/PlayerStatChart/PlayerStatChart.module.scss";
 import {
