@@ -23,3 +23,9 @@ export const parseGameDate = (value: string): Date => {
   const hasTimezone = value.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(value);
   return hasTimezone ? new Date(value) : new Date(`${value}Z`);
 };
+
+// Provider strings use "" (or whitespace) for "no value"; store null instead.
+export const blankToNull = (value: string | null | undefined): string | null => {
+  const trimmed = (value ?? "").trim();
+  return trimmed === "" ? null : trimmed;
+};

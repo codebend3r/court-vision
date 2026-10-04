@@ -2,7 +2,7 @@ import { pathToFileURL } from "node:url";
 
 import { describe, expect, it } from "bun:test";
 
-import { isMainModule } from "@/lib/runtime";
+import { isMainModule } from "#core/util/runtime";
 
 describe("isMainModule", () => {
   it("returns true when the module URL matches the entry script", () => {
