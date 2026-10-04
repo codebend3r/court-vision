@@ -1,7 +1,7 @@
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PositionTag } from "@/components/PositionTag/PositionTag";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
-import { type PlayerCategoryInsight, type PlayerInsight } from "@/lib/fantasyTeams/insights";
+import { type PlayerCategoryInsight, type PlayerInsight } from "@vision/sport-basketball/types";
 import { type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
 
 import styles from "@/components/PlayerInsightPanel/PlayerInsightPanel.module.scss";
@@ -52,7 +52,7 @@ export function PlayerInsightPanel({ player, insight }: PlayerInsightPanelProps)
             {!!player.position && <PositionTag position={player.position} className={styles.pos} />}
             {player.teamAbbr !== null && <TeamChip team={player.teamAbbr} size="sm" />}
             <span className={styles.games}>
-              {insight.gamesPlayed} GP · {insight.minutesPerGame.toFixed(1)} MPG
+              {insight.gamesPlayed} GP · {insight.playingTimePerGame.toFixed(1)} MPG
             </span>
           </span>
         </span>

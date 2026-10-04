@@ -8,9 +8,9 @@ import { TeamMatchup } from "@/components/TeamMatchup/TeamMatchup";
 import { ADVANCED_STAT_META, formatAdvancedStat } from "@/lib/players/advancedStatMeta";
 import { type AdvancedMetricKey } from "@/lib/players/searchParams";
 import { type PlayerView } from "@/lib/stats/searchParams";
-import { CATEGORY_META, type CategoryMeta } from "@/lib/valuation/categories";
-import { type FantasyGameValue } from "@/lib/valuation/gameValues";
-import { ROLLING_WINDOW_GAMES } from "@/lib/watchlist/trend";
+import { CATEGORY_META } from "@vision/sport-basketball/engine";
+import { type CategoryMeta, type FantasyGameValue } from "@vision/sport-basketball/types";
+import { ROLLING_WINDOW_GAMES } from "@vision/core/valuation/rolling";
 
 import styles from "@/components/PlayerGameLogTable/PlayerGameLogTable.module.scss";
 
