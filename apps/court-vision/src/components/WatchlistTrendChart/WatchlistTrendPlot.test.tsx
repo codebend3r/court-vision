@@ -2,7 +2,7 @@ import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
 import { WatchlistTrendPlot } from "@/components/WatchlistTrendChart/WatchlistTrendPlot";
-import { ThemeProvider } from "@/lib/theme/ThemeProvider";
+import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 
 afterEach(cleanup);
 

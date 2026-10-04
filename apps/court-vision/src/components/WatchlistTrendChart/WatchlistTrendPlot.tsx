@@ -13,10 +13,10 @@ import {
   type TooltipPayloadEntry,
 } from "recharts";
 
-import { getChartChrome } from "@/components/PlayerStatChart/statMeta";
+import { getChartChrome } from "@vision/ui/charts/palette";
 import type { ChartRow } from "@/components/WatchlistTrendChart/WatchlistTrendChart";
-import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
-import { useTheme } from "@/lib/theme/ThemeProvider";
+import { usePrefersReducedMotion } from "@vision/ui/hooks/usePrefersReducedMotion";
+import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 
 import styles from "@/components/WatchlistTrendChart/WatchlistTrendChart.module.scss";
 

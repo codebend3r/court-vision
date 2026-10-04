@@ -2,11 +2,11 @@
 
 import dynamic from "next/dynamic";
 
-import { ChartPlaceholder } from "@/components/ChartPlaceholder/ChartPlaceholder";
-import { getChartChrome } from "@/components/PlayerStatChart/statMeta";
+import { ChartPlaceholder } from "@vision/ui/components/ChartPlaceholder/ChartPlaceholder";
+import { getChartChrome } from "@vision/ui/charts/palette";
 import type { WatchlistTrendLine } from "@/components/WatchlistTrendChart/WatchlistTrendPlot";
-import { useTheme, type Theme } from "@/lib/theme/ThemeProvider";
-import { ROLLING_WINDOW_GAMES, type TrendSeries } from "@/lib/watchlist/trend";
+import { useTheme, type Theme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
+import { ROLLING_WINDOW_GAMES, type TrendSeries } from "@vision/core/valuation/rolling";
 
 import styles from "@/components/WatchlistTrendChart/WatchlistTrendChart.module.scss";
 
