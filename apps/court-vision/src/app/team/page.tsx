@@ -1,13 +1,15 @@
 import Link from "next/link";
 
-import { PageAction, PageHeader } from "@/components/PageHeader/PageHeader";
+import { formatOrdinal } from "@vision/core/util/format";
+
+import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
-import { ReadoutCard, ReadoutRow } from "@/components/ReadoutCard/ReadoutCard";
+import { ReadoutCard, ReadoutRow } from "@vision/ui/components/ReadoutCard/ReadoutCard";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { getTeamRoster, getTeamStats } from "@/lib/teams/loader";
 import { teamBySlug } from "@/lib/teams/meta";
 import { loadTeamSearchParams } from "@/lib/teams/searchParams";
-import { ordinal, rankTeams, TEAM_STAT_META } from "@/lib/teams/stats";
+import { rankTeams, TEAM_STAT_META } from "@/lib/teams/stats";
 
 import styles from "@/app/team/page.module.scss";
 
@@ -145,7 +147,7 @@ export default async function TeamPage({
                                 }}
                               />
                             </span>
-                            {ordinal(rank)} of {leagueSize}
+                            {formatOrdinal({ value: rank })} of {leagueSize}
                           </span>
                         )}
                       </td>

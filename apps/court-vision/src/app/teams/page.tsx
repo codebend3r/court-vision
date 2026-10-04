@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { PageHeader } from "@/components/PageHeader/PageHeader";
+import { PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { StandingsTrendChart } from "@/components/StandingsTrendChart/StandingsTrendChart";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import {
@@ -13,7 +13,7 @@ import {
 import { getTeamStats } from "@/lib/teams/loader";
 import { loadTeamsSearchParams, TEAMS_VIEWS, type TeamsView } from "@/lib/teams/searchParams";
 import { type TeamSeasonStats } from "@/lib/teams/stats";
-import { buildCumulativeWins } from "@/lib/teams/trend";
+import { buildCumulativeWins } from "@vision/core/series/teamTrend";
 
 import styles from "@/app/teams/page.module.scss";
 

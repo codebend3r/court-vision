@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { AdvancedStatsLegend } from "@/components/AdvancedStatsLegend/AdvancedStatsLegend";
 import { FantasyValueView } from "@/components/FantasyValueView/FantasyValueView";
-import { PageHeader } from "@/components/PageHeader/PageHeader";
+import { PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { PlayersPager } from "@/components/PlayersPager/PlayersPager";
 import { PlayersSearchControls } from "@/components/PlayersSearchControls/PlayersSearchControls";
 import { PlayersTable } from "@/components/PlayersTable/PlayersTable";
@@ -14,7 +14,7 @@ import { getActiveLeague } from "@/lib/leagues/queries";
 import { searchPlayers, searchPlayersAdvanced } from "@/lib/players/searchCached";
 import { parsePlayersSearchParams, type PlayersSearchParams } from "@/lib/players/searchParams";
 import { getFantasyPool } from "@/lib/valuation/loader";
-import { ENABLED_METHODS } from "@/lib/valuation/registry";
+import { ENABLED_METHODS } from "@vision/sport-basketball/engine";
 import { loadFantasySearchParams } from "@/lib/valuation/searchParams";
 
 import { PLAYERS_PAGE_HEADER } from "@/app/players/header";

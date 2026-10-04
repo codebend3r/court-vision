@@ -14,10 +14,10 @@ import { PlayerStatFilters } from "@/components/PlayerStatFilters/PlayerStatFilt
 import { SeasonStatCard } from "@/components/SeasonStatCard/SeasonStatCard";
 import { getProfile } from "@/lib/auth/session";
 import { SEASON_TYPE } from "@/lib/balldontlie/constants";
-import { buildLeagueSeed } from "@/lib/leagues/fantasyDefaults";
 import { getActiveLeague } from "@/lib/leagues/queries";
 import { ADVANCED_STAT_META, formatAdvancedStat } from "@/lib/players/advancedStatMeta";
 import { averageAdvancedLogs } from "@/lib/players/searchAdvanced";
+import { gamesForRange } from "@/lib/players/searchParams";
 import {
   aggregateCareerTotals,
   buildCareerAverageLine,
@@ -44,8 +44,9 @@ import {
   type StatSpan,
 } from "@/lib/stats/searchParams";
 import { getFantasyPool } from "@/lib/valuation/loader";
-import { buildPlayerFantasyProfile, configFromSeed } from "@/lib/valuation/playerValue";
-import { ENABLED_METHODS } from "@/lib/valuation/registry";
+import { toWindowLog } from "@/lib/valuation/trendLogs";
+import { buildPlayerFantasyProfile, ENABLED_METHODS } from "@vision/sport-basketball/engine";
+import { buildLeagueSeed, configFromSeed } from "@/lib/leagues/fantasyDefaults";
 
 import styles from "@/app/players/[playerId]/page.module.scss";
 
@@ -197,8 +198,14 @@ const loadFantasyView = async (context: ViewContext): Promise<PlayerViewResult> 
     playerId,
     config,
     methodWeights,
-    range,
-    logs,
+    poolWindowGames: gamesForRange({ range }),
+    logs: logs.map((log) => ({
+      ...toWindowLog({ row: log }),
+      gameDate: log.gameDate,
+      gameId: log.gameId,
+      matchup: log.matchup,
+      winLoss: log.winLoss,
+    })),
     windowGames,
   });
   if (fantasy === null) {

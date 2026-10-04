@@ -1,5 +1,5 @@
-import { PageHeader } from "@/components/PageHeader/PageHeader";
-import { Preloader } from "@/components/Preloader/Preloader";
+import { PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
+import { Preloader } from "@vision/ui/components/Preloader/Preloader";
 
 import { PLAYERS_PAGE_HEADER } from "@/app/players/header";
 
