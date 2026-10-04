@@ -1,4 +1,4 @@
-import type { FetchImpl } from "@/lib/fetchImpl";
+import type { FetchImpl } from "@vision/core/util/fetchImpl";
 
 import { NBA_BASE_URL, NBA_HEADERS } from "@/lib/nba/constants";
 

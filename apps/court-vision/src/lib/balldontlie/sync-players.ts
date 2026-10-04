@@ -1,8 +1,8 @@
 import { FREE_TIER_THROTTLE_MS } from "@/lib/balldontlie/constants";
 import { BdlClientDeps, fetchAllPlayers } from "@/lib/balldontlie/endpoints";
 import { toPlayerInput } from "@/lib/balldontlie/transform";
-import { Logger, consoleLogger, silentLogger } from "@/lib/logger";
-import { isMainModule } from "@/lib/runtime";
+import { Logger, consoleLogger, silentLogger } from "@vision/core/util/logger";
+import { isMainModule } from "@vision/core/util/runtime";
 import { upsertPlayers } from "@/lib/stats/persist";
 
 export type PlayerSyncSummary = {
