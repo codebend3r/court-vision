@@ -20,7 +20,7 @@ vi.mock("@/lib/leagues/teamQueries", () => ({
 }));
 
 import Home from "@/app/page";
-import { ThemeProvider } from "@/lib/theme/ThemeProvider";
+import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 
 // The chart is a client component that reads the theme; in the app that comes
 // from the root layout, so the test supplies the same wrapper.

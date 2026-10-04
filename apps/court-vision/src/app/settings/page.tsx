@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 
-import { PageHeader } from "@/components/PageHeader/PageHeader";
+import { PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { SettingsAppearance } from "@/components/SettingsAppearance/SettingsAppearance";
 import { SettingsFantasy } from "@/components/SettingsFantasy/SettingsFantasy";
-import { SettingsTheme } from "@/components/SettingsTheme/SettingsTheme";
+import { SettingsTheme } from "@vision/ui/components/SettingsTheme/SettingsTheme";
 import { getProfile } from "@/lib/auth/session";
 import { isFontScale, isPreferredFormula } from "@/lib/settings/guards";
 

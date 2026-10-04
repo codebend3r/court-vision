@@ -1,4 +1,4 @@
-import { Preloader } from "@/components/Preloader/Preloader";
+import { Preloader } from "@vision/ui/components/Preloader/Preloader";
 
 import styles from "@/app/page.module.scss";
 
