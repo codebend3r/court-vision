@@ -10,11 +10,33 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 
 const repoRoot = resolve(import.meta.dirname, "..", "..");
-const srcDir = join(repoRoot, "src");
+const appDir = join(repoRoot, "apps", "court-vision");
+const srcDir = join(appDir, "src");
+const uiStylesDir = join(repoRoot, "libs", "vision-ui", "src", "styles");
 const buildDir = import.meta.dirname;
+
+// Next compiles a "use server" module into RPC stubs for the browser; Vite
+// would inline it, dragging Prisma and the auth session into the preview
+// bundle. Stand in for each exported action with one that rejects: previews
+// render, and an action only fails if a preview actually calls it.
+const serverActionStubs = (): Plugin => ({
+  name: "server-action-stubs",
+  enforce: "pre",
+  transform(code, id) {
+    if (!/\.tsx?$/.test(id) || !/^\s*["']use server["']/.test(code)) return null;
+    const names = [
+      ...code.matchAll(/export\s+(?:async\s+)?(?:function|const)\s+([A-Za-z_$][\w$]*)/g),
+    ].map((match) => match[1]);
+    const stubs = names.map(
+      (name) =>
+        `export const ${name} = async () => { throw new Error("${name} is a server action; design previews cannot call it."); };`,
+    );
+    return { code: stubs.join("\n"), map: null };
+  },
+});
 
 const isReact = (id: string): boolean =>
   id === "react" ||
@@ -35,7 +57,7 @@ export default defineConfig({
   // Don't copy the app's public/ dir into the dist; the converter only needs
   // the entry + stylesheet.
   publicDir: false,
-  plugins: [react()],
+  plugins: [serverActionStubs(), react()],
   resolve: {
     alias: [
       // use-sync-external-store is CJS-only and require()s react at runtime;
@@ -51,8 +73,8 @@ export default defineConfig({
       { find: /^next\/link$/, replacement: join(buildDir, "shims", "next-link.tsx") },
       { find: /^next\/navigation$/, replacement: join(buildDir, "shims", "next-navigation.ts") },
       { find: /^next\/image$/, replacement: join(buildDir, "shims", "next-image.tsx") },
-      { find: /^@generated\/(.*)/, replacement: join(repoRoot, "generated", "$1") },
-      { find: /^@public\/(.*)/, replacement: join(repoRoot, "public", "$1") },
+      { find: /^@generated\/(.*)/, replacement: join(appDir, "generated", "$1") },
+      { find: /^@public\/(.*)/, replacement: join(appDir, "public", "$1") },
       { find: /^@\/(.*)/, replacement: join(srcDir, "$1") },
     ],
   },
@@ -66,6 +88,9 @@ export default defineConfig({
             findFileUrl(url: string) {
               if (url.startsWith("@/")) {
                 return pathToFileURL(join(srcDir, url.slice(2)));
+              }
+              if (url.startsWith("@vision/ui/styles/")) {
+                return pathToFileURL(join(uiStylesDir, `${url.slice("@vision/ui/styles/".length)}.scss`));
               }
               return null;
             },

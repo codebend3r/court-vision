@@ -9,12 +9,12 @@ Never restyle a component's internals or hand-roll a lookalike.
 - **Tokens are global.** All design tokens live as CSS custom properties on
   `:root` in the shipped stylesheet, so colors, spacing, and fonts apply as soon
   as the stylesheet is loaded. No wrapper is needed for a component to look right.
-- **Dark-first.** The default `:root` is the dark theme. A light theme exists under
-  `:root[data-theme="light"]`. Set `data-theme="dark"` (or `"light"`) on the root
-  element; paint your own page shell with `background: var(--color-bg)` and
+- **Dark-first.** The default `:root` is the dark theme. Five more live under
+  `:root[data-theme="…"]`: `light`, `high-contrast`, `colorblind-safe`,
+  `amber-crt`, and `team-accent`. Set `data-theme` on the root element; paint your own page shell with `background: var(--color-bg)` and
   `color: var(--color-text)` so it matches the components.
 - **`ThemeProvider`** (exported) is only required when you use the theme-aware
-  components — `ThemeToggle`, `TokenSwatch`, `ChartPaletteSwatches`. They call a
+  components — `ThemeSwatches`, `TokenSwatch`, `ChartPaletteSwatches`. They call a
   `useTheme` hook and throw if rendered outside it. Everything else renders
   standalone.
 - Several components (`SeasonSelect`, `PlayersTabs`, `PlayerStatFilters`,
