@@ -2,10 +2,10 @@
 
 import { useId } from "react";
 
-import { useTheme } from "@/lib/theme/ThemeProvider";
-import { THEME_META } from "@/lib/theme/themes";
+import { useTheme } from "#ui/components/ThemeProvider/ThemeProvider";
+import { THEME_META } from "#ui/theme/themes";
 
-import styles from "@/components/SettingsTheme/SettingsTheme.module.scss";
+import styles from "#ui/components/SettingsTheme/SettingsTheme.module.scss";
 
 // Six theme cards (spec §10 settings): a five-swatch strip of the theme's own
 // palette, its name, and a one-line note on what it is for. Selection applies

@@ -1,8 +1,8 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
-import { ThemeSwatches } from "@/components/ThemeSwatches/ThemeSwatches";
-import { ThemeProvider } from "@/lib/theme/ThemeProvider";
+import { ThemeSwatches } from "#ui/components/ThemeSwatches/ThemeSwatches";
+import { ThemeProvider } from "#ui/components/ThemeProvider/ThemeProvider";
 
 afterEach(() => {
   cleanup();

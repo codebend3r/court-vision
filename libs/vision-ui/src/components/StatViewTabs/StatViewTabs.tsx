@@ -2,7 +2,7 @@
 
 import Link, { useLinkStatus } from "next/link";
 
-import styles from "@/components/StatViewTabs/StatViewTabs.module.scss";
+import styles from "#ui/components/StatViewTabs/StatViewTabs.module.scss";
 
 export type StatViewTabEntry = {
   key: string;

@@ -2,7 +2,7 @@
 
 import { type ChangeEvent } from "react";
 
-import styles from "@/components/Switch/Switch.module.scss";
+import styles from "#ui/components/Switch/Switch.module.scss";
 
 export type SwitchProps = {
   label: string;

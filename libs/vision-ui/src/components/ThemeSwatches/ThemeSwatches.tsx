@@ -1,9 +1,9 @@
 "use client";
 
-import { useTheme } from "@/lib/theme/ThemeProvider";
-import { THEME_META } from "@/lib/theme/themes";
+import { useTheme } from "#ui/components/ThemeProvider/ThemeProvider";
+import { THEME_META } from "#ui/theme/themes";
 
-import styles from "@/components/ThemeSwatches/ThemeSwatches.module.scss";
+import styles from "#ui/components/ThemeSwatches/ThemeSwatches.module.scss";
 
 // The header theme strip: six 20px buttons, each a 135° diagonal split of
 // that theme's background and accent, with the active one outlined. Replaces

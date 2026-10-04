@@ -1,0 +1,33 @@
+@use "@vision/ui/styles/mixins" as *;
+
+.compact,
+.hero {
+  display: inline-grid;
+  gap: var(--space-1);
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.compact {
+  font-size: var(--font-size-sm);
+}
+
+.hero {
+  justify-items: center;
+  font-size: var(--font-size-xl);
+}
+
+.lead {
+  color: var(--color-text);
+
+  @include retro-extrude;
+}
+
+.trail {
+  color: var(--color-accent);
+
+  @include retro-extrude;
+}
