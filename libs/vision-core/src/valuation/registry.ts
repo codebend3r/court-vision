@@ -1,33 +1,28 @@
 // Method registry (design spec): drives the table columns, header tooltips,
 // and legend so shipping a method is a registry entry plus its math module.
 // `available: false` entries render as placeholder columns with the reason.
+// The copy here is sport-neutral; a sport rewords any of it with examples of
+// its own through `methodCopy` on its descriptor.
 
-import { type WeightedMethodKey } from "@/lib/valuation/types";
+import { type SportDescriptor, type SportKeys } from "#core/sport/types";
+import {
+  type FantasyMethodKey,
+  type MethodCopy,
+  type WeightedMethodKey,
+} from "#core/valuation/types";
 
-export type FantasyMethodKey =
-  | "zscore"
-  | "gscore"
-  | "points"
-  | "vorp"
-  | "positional"
-  | "sgp"
-  | "simvalue";
-
-export type FantasyMethodMeta = {
+export type FantasyMethodMeta = MethodCopy & {
   key: FantasyMethodKey;
   label: string; // column header
   fullName: string;
-  description: string;
-  // Plain-language "so what": what this column is actually good for when you
-  // are setting a lineup, drafting, or weighing a trade. `description` says
-  // what the number is; this says when to look at it.
-  whyItMatters: string;
-  formula: string;
+  // `whyItMatters` is the plain-language "so what": what this column is
+  // actually good for when you are setting a lineup, drafting, or weighing a
+  // trade. `description` says what the number is; this says when to look at it.
   available: boolean;
   unavailableReason?: string;
 };
 
-export const FANTASY_METHODS: readonly FantasyMethodMeta[] = [
+const DEFAULT_METHODS: readonly FantasyMethodMeta[] = [
   {
     key: "zscore",
     label: "Z-Score",
@@ -35,7 +30,7 @@ export const FANTASY_METHODS: readonly FantasyMethodMeta[] = [
     description:
       "Distance from the average pool player in each category, scaled by how spread out the category is, then summed with your weights.",
     whyItMatters:
-      'Use this to answer "who is better?" in a category league. It puts a 25-point scorer and a shot-blocking center on one scale, so you can rank off a single number instead of squinting at seven stat columns.',
+      'Use this to answer "who is better?" in a category league. It puts every kind of contributor on one scale, so you can rank off a single number instead of squinting at a row of stat columns.',
     formula: "Σ per category: (stat − pool avg) ÷ pool std dev × weight",
     available: true,
   },
@@ -46,7 +41,7 @@ export const FANTASY_METHODS: readonly FantasyMethodMeta[] = [
     description:
       "Z-Score's edge divided by both the between-player spread and each category's game-to-game volatility, so unreliable weekly edges count for less in H2H.",
     whyItMatters:
-      "Prefer this in weekly head-to-head. A player whose steals swing between 0 and 5 wins you that category some weeks and loses it others; G-Score trusts the steady producer more, and steady is what wins matchups.",
+      "Prefer this in weekly head-to-head. A player whose production in a category swings wildly wins you that category some weeks and loses it others; G-Score trusts the steady producer more, and steady is what wins matchups.",
     formula: "Σ per category: (stat − pool avg) ÷ √(spread² + volatility²) × weight",
     available: true,
   },
@@ -55,10 +50,10 @@ export const FANTASY_METHODS: readonly FantasyMethodMeta[] = [
     label: "PL Linear",
     fullName: "Points-League Linear",
     description:
-      "The stat line priced in points-league scoring: PTS ×1, REB ×1.2, AST ×1.5, STL ×3, BLK ×3, TOV ×−1. Ignores category weights.",
+      "The stat line priced in your league's points scoring, stat by stat. Ignores category weights.",
     whyItMatters:
       "Only matters if your league adds up one score per player instead of tracking categories. If it does, this is the number that decides everything — ignore the other columns. If it doesn't, ignore this one.",
-    formula: "pts×1 + reb×1.2 + ast×1.5 + stl×3 + blk×3 − tov×1",
+    formula: "Σ per stat: total × points per unit",
     available: true,
   },
   {
@@ -77,9 +72,9 @@ export const FANTASY_METHODS: readonly FantasyMethodMeta[] = [
     label: "Pos VORP",
     fullName: "Positional Value Over Replacement",
     description:
-      "Z-Score surplus over the replacement player at the scarcest slot this player can fill (G/F/C parsed from position).",
+      "Z-Score surplus over the replacement player at the scarcest position this player can fill.",
     whyItMatters:
-      "Same question, but position-aware. Good centers run out fast while guards are everywhere, so a center's edge over the next center counts for more. Use it when choosing between two similar players at different positions.",
+      "Same question, but position-aware. When one position runs thin, a player's edge over the next-best player there counts for more. Use it when choosing between two similar players at different positions.",
     formula: "zScore(player) − min over eligible slots of zScore(slot replacement)",
     available: true,
   },
@@ -107,12 +102,23 @@ export const FANTASY_METHODS: readonly FantasyMethodMeta[] = [
   },
 ];
 
-export const ENABLED_METHODS: readonly FantasyMethodMeta[] = FANTASY_METHODS.filter(
-  (method) => method.available,
-);
+// The sport's methods in registry order, with its own wording laid over the
+// defaults.
+export const fantasyMethods = <K extends SportKeys>({
+  sport,
+}: {
+  sport: SportDescriptor<K>;
+}): FantasyMethodMeta[] =>
+  DEFAULT_METHODS.filter((method) => sport.methods.includes(method.key)).map((method) => ({
+    ...method,
+    ...sport.methodCopy[method.key],
+  }));
 
-export const methodMeta = (key: FantasyMethodKey): FantasyMethodMeta | undefined =>
-  FANTASY_METHODS.find((method) => method.key === key);
+export const enabledMethods = ({
+  methods,
+}: {
+  methods: readonly FantasyMethodMeta[];
+}): FantasyMethodMeta[] => methods.filter((method) => method.available);
 
 // Weighted-column sort keys → registry keys, so the Weights panel can name the
 // column it is editing with the same label the table header uses.

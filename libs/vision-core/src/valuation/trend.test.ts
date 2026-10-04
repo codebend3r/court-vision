@@ -1,28 +1,24 @@
 import { describe, expect, it } from "bun:test";
 
-import { aggregateWindowLogs } from "@/lib/valuation/aggregate";
-import { weightedConfig } from "@/lib/valuation/breakdown";
-import { CATEGORY_KEYS } from "@/lib/valuation/categories";
-import { makeStatLine } from "@/lib/valuation/fixtures";
-import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
-import { computePoolStats } from "@/lib/valuation/pool";
 import {
+  aggregateWindowLogs,
   buildFantasyTrend,
-  DEFAULT_TREND_GAMES,
-  type FantasyTrendValue,
-} from "@/lib/valuation/trend";
-import {
+  buildRollingGSeries,
+  buildRollingZSeries,
+  CATEGORY_KEYS,
+  computePoolStats,
+  type DatedLog,
+  DEFAULT_POINTS_SCORING,
   type FantasyStatLine,
+  makeStatLine,
   type MethodWeights,
   type PoolStats,
   type ValuationConfig,
-} from "@/lib/valuation/types";
-import {
-  buildRollingGSeries,
-  buildRollingZSeries,
-  ROLLING_WINDOW_GAMES,
-  type DatedLog,
-} from "@/lib/watchlist/trend";
+  makeDatedLog,
+} from "#core/testing/basketball";
+import { weightedConfig } from "#core/valuation/breakdown";
+import { DEFAULT_TREND_GAMES, type FantasyTrendValue } from "#core/valuation/trend";
+import { ROLLING_WINDOW_GAMES } from "#core/valuation/rolling";
 
 const log = ({
   day,
@@ -32,21 +28,22 @@ const log = ({
   day: number;
   pts?: number;
   minutes?: number;
-}): DatedLog => ({
-  gameDate: new Date(Date.UTC(2026, 0, day)),
-  minutes,
-  pts,
-  reb: 5,
-  ast: 5,
-  stl: 1,
-  blk: 1,
-  fg3m: 2,
-  tov: 2,
-  fgm: 10,
-  fga: 20,
-  ftm: 6,
-  fta: 7,
-});
+}): DatedLog =>
+  makeDatedLog({
+    gameDate: new Date(Date.UTC(2026, 0, day)),
+    minutes,
+    pts,
+    reb: 5,
+    ast: 5,
+    stl: 1,
+    blk: 1,
+    fg3m: 2,
+    tov: 2,
+    fgm: 10,
+    fga: 20,
+    ftm: 6,
+    fta: 7,
+  });
 
 // A pool spread out in every category so each sigma is honestly non-zero.
 const poolLine = (index: number) =>
@@ -67,7 +64,7 @@ const poolLine = (index: number) =>
 
 const star = makeStatLine({ playerId: 7, fullName: "Luka Doncic", pts: 1500 });
 const lines = [star, ...Array.from({ length: 20 }, (_, index) => poolLine(index))];
-const poolStats = computePoolStats({ lines, basis: "perGame", poolSize: 150, range: "all" });
+const poolStats = computePoolStats({ lines, basis: "perGame", poolSize: 150, windowGames: null });
 const config: ValuationConfig = {
   categories: [...CATEGORY_KEYS],
   weights: {},
@@ -174,7 +171,7 @@ const referenceBuildFantasyTrend = ({
     gameIndex: index + 1,
     gameNumber: index + 1,
     gameDate: log.gameDate.toISOString(),
-    dnp: log.minutes === 0,
+    dnp: log.playingTime === 0,
     z: index < lead ? null : (zPoints[index - lead]?.value ?? null),
     g: index < lead ? null : (gPoints[index - lead]?.value ?? null),
   }));
@@ -202,7 +199,7 @@ const seededSeason = ({ seed, length }: { seed: number; length: number }): Dated
     const played = random() > 0.08;
     const fga = played ? between(2, 28) : 0;
     const fta = played ? between(0, 12) : 0;
-    return {
+    return makeDatedLog({
       gameDate: new Date(Date.UTC(2025, 9, 21 + index)),
       minutes: played ? between(8, 42) : 0,
       pts: played ? between(0, 50) : 0,
@@ -216,7 +213,7 @@ const seededSeason = ({ seed, length }: { seed: number; length: number }): Dated
       fgm: Math.floor(fga * random()),
       fta,
       ftm: Math.floor(fta * random()),
-    };
+    });
   });
 };
 
@@ -232,7 +229,7 @@ describe("buildFantasyTrend against the whole-season reference", () => {
     ),
     basis: "perGame",
     poolSize: 150,
-    range: "all",
+    windowGames: null,
   });
   const methodWeights: MethodWeights = { z: { pts: 2, tov: 0 }, g: { fg: 0.5, blk: 3 } };
   // One season length scores on totals, so the basis reaches the window lines.

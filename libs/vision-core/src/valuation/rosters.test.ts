@@ -1,10 +1,15 @@
 import { describe, expect, it } from "bun:test";
 
-import { makeStatLine } from "@/lib/valuation/fixtures";
-import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
-import { computePoolStats } from "@/lib/valuation/pool";
-import { buildLeague, rankByValue, teamTotalsSpread } from "@/lib/valuation/rosters";
-import { type FantasyStatLine, type ValuationConfig } from "@/lib/valuation/types";
+import {
+  buildLeague,
+  computePoolStats,
+  DEFAULT_POINTS_SCORING,
+  type FantasyStatLine,
+  makeStatLine,
+  rankByValue,
+  type ValuationConfig,
+} from "#core/testing/basketball";
+import { teamTotalsSpread } from "#core/valuation/rosters";
 
 const config = (overrides: Partial<ValuationConfig> = {}): ValuationConfig => ({
   categories: ["pts"],
@@ -21,7 +26,7 @@ const lines: FantasyStatLine[] = [40, 30, 20, 10, 5, 1].map((perGame, index) =>
   makeStatLine({ playerId: index + 1, gamesPlayed: 10, pts: perGame * 10 }),
 );
 
-const poolStats = computePoolStats({ lines, basis: "perGame", poolSize: 6, range: "all" });
+const poolStats = computePoolStats({ lines, basis: "perGame", poolSize: 6, windowGames: null });
 
 describe("rankByValue", () => {
   it("orders players by their configured value, best first", () => {

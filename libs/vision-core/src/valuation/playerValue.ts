@@ -1,20 +1,18 @@
-import { type FantasySeed } from "@/lib/leagues/fantasyDefaults";
-import { type PlayerGameRange } from "@/lib/players/searchParams";
-import { type MetricPoint } from "@/lib/stats/metricPoint";
-import { buildCategoryBreakdown, type FantasyCategoryBreakdown } from "@/lib/valuation/breakdown";
-import { CATEGORY_KEYS } from "@/lib/valuation/categories";
-import { buildFantasyGameValues, type FantasyGameValue } from "@/lib/valuation/gameValues";
-import { valuePlayers } from "@/lib/valuation/index";
-import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
-import { FANTASY_METHODS, type FantasyMethodKey } from "@/lib/valuation/registry";
-import { type FantasyTrendValue } from "@/lib/valuation/trend";
+import { type SportDescriptor, type SportKeys } from "#core/sport/types";
+import { type MetricPoint } from "#core/series/metricPoint";
+import { isAppearance, type DatedLog } from "#core/valuation/aggregate";
+import { buildCategoryBreakdown, type FantasyCategoryBreakdown } from "#core/valuation/breakdown";
+import { buildFantasyGameValues, type FantasyGameValue } from "#core/valuation/gameValues";
+import { fantasyMethods } from "#core/valuation/registry";
+import { type FantasyTrendValue } from "#core/valuation/trend";
 import {
+  type FantasyMethodKey,
   type FantasyPlayerValues,
-  type FantasyStatLine,
   type MethodWeights,
   type ValuationConfig,
-} from "@/lib/valuation/types";
-import { type DatedLog } from "@/lib/watchlist/trend";
+  type ValuationLine,
+} from "#core/valuation/types";
+import { valuePlayers } from "#core/valuation/valuePlayers";
 
 // One method column's score for the viewed player, with their standing among
 // every player valued in the same window (competition ranking: ties share).
@@ -30,16 +28,16 @@ export type FantasyMethodReadout = {
 // nothing rather than a stub built on too few games.
 export type FantasyTrendPoint = FantasyTrendValue & Pick<MetricPoint, "matchup" | "winLoss">;
 
-export type PlayerFantasyProfile = {
+export type PlayerFantasyProfile<K extends SportKeys> = {
   readouts: FantasyMethodReadout[];
-  breakdown: FantasyCategoryBreakdown[];
+  breakdown: FantasyCategoryBreakdown<K>[];
   trend: FantasyTrendPoint[];
   // Every game in `logs`, unwindowed and aligned by index, for the game log.
-  games: FantasyGameValue[];
+  games: FantasyGameValue<K>[];
   poolSize: number;
 };
 
-export type FantasyProfileLog = DatedLog & {
+export type FantasyProfileLog<K extends SportKeys> = DatedLog<K> & {
   gameId: string;
   matchup: string;
   winLoss: string | null;
@@ -55,27 +53,6 @@ const VALUE_BY_METHOD: Record<FantasyMethodKey, (values: FantasyPlayerValues) =>
   simvalue: (values) => values.sim,
 };
 
-// The Fantasy tab's URL defaults, applied straight from the league seed: same
-// numbers as the tab shows on first load, without the tab's controls.
-export const configFromSeed = ({
-  seed,
-}: {
-  seed: FantasySeed;
-}): { config: ValuationConfig; methodWeights: MethodWeights } => {
-  const excluded = seed.x ?? [];
-  return {
-    config: {
-      categories: CATEGORY_KEYS.filter((key) => !excluded.some((entry) => entry === key)),
-      weights: {},
-      basis: "perGame",
-      teams: seed.teams ?? 12,
-      rosterSlots: seed.slots ?? 13,
-      scoring: seed.s ?? DEFAULT_POINTS_SCORING,
-    },
-    methodWeights: seed.w ?? {},
-  };
-};
-
 const rankAmong = ({
   values,
   value,
@@ -87,35 +64,44 @@ const rankAmong = ({
 }): number => values.filter((entry) => pick(entry) > value).length + 1;
 
 // Everything the fantasy view shows for one player, scored the way the Fantasy
-// Value tab scores the whole pool (lib/valuation/index) so the two agree to
-// the decimal. `logs` is the player's full season in date order; the trend
+// Value tab scores the whole pool (valuePlayers) so the two agree to the
+// decimal. `poolWindowGames` is the window the pool qualifies over (null for
+// the season); `logs` is the player's full season in date order, and the trend
 // windows to the last `windowGames` after scoring so every plotted game still
 // looks back over the ten before it.
-export const buildPlayerFantasyProfile = ({
+export const buildPlayerFantasyProfile = <K extends SportKeys>({
+  sport,
   lines,
   playerId,
   config,
   methodWeights,
-  range,
+  poolWindowGames,
   logs,
   windowGames,
 }: {
-  lines: readonly FantasyStatLine[];
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
   playerId: number;
-  config: ValuationConfig;
-  methodWeights: MethodWeights;
-  range: PlayerGameRange;
-  logs: readonly FantasyProfileLog[];
+  config: ValuationConfig<K>;
+  methodWeights: MethodWeights<K>;
+  poolWindowGames: number | null;
+  logs: readonly FantasyProfileLog<K>[];
   windowGames: number | null;
-}): PlayerFantasyProfile | null => {
+}): PlayerFantasyProfile<K> | null => {
   const line = lines.find((entry) => entry.playerId === playerId);
   if (line === undefined) return null;
 
-  const { values, poolStats } = valuePlayers({ lines, config, methodWeights, range });
+  const { values, poolStats } = valuePlayers({
+    sport,
+    lines,
+    config,
+    methodWeights,
+    windowGames: poolWindowGames,
+  });
   const own = values.find((entry) => entry.playerId === playerId);
   if (own === undefined) return null;
 
-  const readouts = FANTASY_METHODS.map((method): FantasyMethodReadout => {
+  const readouts = fantasyMethods({ sport }).map((method): FantasyMethodReadout => {
     const pick = VALUE_BY_METHOD[method.key];
     const value = pick(own);
     return {
@@ -127,18 +113,18 @@ export const buildPlayerFantasyProfile = ({
     };
   });
 
-  const breakdown = buildCategoryBreakdown({ line, poolStats, config, methodWeights });
+  const breakdown = buildCategoryBreakdown({ sport, line, poolStats, config, methodWeights });
 
   // Game values compute the full-season rolling timeline once. The chart is
   // just a window onto those same readings, with metadata from the log spine.
-  const games = buildFantasyGameValues({ line, logs, poolStats, config, methodWeights });
+  const games = buildFantasyGameValues({ sport, line, logs, poolStats, config, methodWeights });
   const points = logs.map((log, index): FantasyTrendPoint => ({
     gameIndex: index + 1,
     gameNumber: index + 1,
     gameDate: log.gameDate.toISOString(),
     matchup: log.matchup,
     winLoss: log.winLoss,
-    dnp: log.minutes === 0,
+    dnp: !isAppearance(log),
     z: games[index]?.rollingZ ?? null,
     g: games[index]?.rollingG ?? null,
   }));

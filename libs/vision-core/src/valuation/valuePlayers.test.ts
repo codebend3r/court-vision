@@ -1,10 +1,11 @@
-import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
+import {
+  CATEGORY_KEYS,
+  DEFAULT_POINTS_SCORING,
+  makeStatLine,
+  type ValuationConfig,
+  valuePlayers,
+} from "#core/testing/basketball";
 import { describe, expect, it } from "bun:test";
-
-import { CATEGORY_KEYS } from "@/lib/valuation/categories";
-import { makeStatLine } from "@/lib/valuation/fixtures";
-import { valuePlayers } from "@/lib/valuation/index";
-import { type ValuationConfig } from "@/lib/valuation/types";
 
 const line = makeStatLine;
 
@@ -31,7 +32,7 @@ describe("valuePlayers", () => {
     const { poolStats } = valuePlayers({
       lines,
       config: config({ teams: 2, rosterSlots: 2 }),
-      range: "all",
+      windowGames: null,
     });
     expect(poolStats.poolSize).toBe(5);
     expect(poolStats.byCategory.pts.mu).toBeCloseTo(500, 10);
@@ -43,7 +44,7 @@ describe("valuePlayers", () => {
       line({ playerId: 2, pts: 700 }),
       line({ playerId: 3, pts: 500, gamesPlayed: 2, minutes: 60 }), // below thresholds
     ];
-    const { values, poolStats } = valuePlayers({ lines, config: config(), range: "all" });
+    const { values, poolStats } = valuePlayers({ lines, config: config(), windowGames: null });
     expect(poolStats.poolSize).toBe(2);
     expect(values).toHaveLength(3);
     const third = values[2];
@@ -63,7 +64,7 @@ describe("valuePlayers", () => {
     const { values } = valuePlayers({
       lines,
       config: config({ teams: 2, rosterSlots: 2 }),
-      range: "all",
+      windowGames: null,
     });
     const fourth = values.find((value) => value.playerId === 4);
     expect(fourth?.vorp).toBeCloseTo(0, 10);
@@ -73,13 +74,13 @@ describe("valuePlayers", () => {
 
   it("collapses G-Score to Z-Score when within-player variance is zero", () => {
     const lines = [1, 2, 3, 4].map((playerId) => line({ playerId, pts: playerId * 100 }));
-    const { values } = valuePlayers({ lines, config: config(), range: "all" });
+    const { values } = valuePlayers({ lines, config: config(), windowGames: null });
     values.forEach((value) => expect(value.g).toBeCloseTo(value.z, 10));
   });
 
   it("keeps each column's weight set to itself", () => {
     const lines = [1, 2, 3, 4].map((playerId) => line({ playerId, pts: playerId * 100 }));
-    const neutral = valuePlayers({ lines, config: config(), range: "all" }).values;
+    const neutral = valuePlayers({ lines, config: config(), windowGames: null }).values;
     // Punt every category for the Z column only.
     const punted = valuePlayers({
       lines,
@@ -87,7 +88,7 @@ describe("valuePlayers", () => {
       methodWeights: {
         z: CATEGORY_KEYS.reduce((acc, key) => ({ ...acc, [key]: 0 }), {}),
       },
-      range: "all",
+      windowGames: null,
     }).values;
     punted.forEach((value, index) => {
       expect(value.z).toBe(0); // fully punted
@@ -105,7 +106,7 @@ describe("valuePlayers", () => {
       lines,
       config: config({ teams: 2, rosterSlots: 2 }),
       methodWeights: { vorp: puntAll },
-      range: "all",
+      windowGames: null,
     });
     // With every VORP weight punted, every player's weighted z is 0, so every
     // VORP is 0 — while plain z stays live.

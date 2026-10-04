@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { ENABLED_METHODS, FANTASY_METHODS } from "@/lib/valuation/registry";
+import { ENABLED_METHODS, FANTASY_METHODS } from "#core/testing/basketball";
 
 describe("FANTASY_METHODS", () => {
   it("registers Z-Score with complete metadata", () => {

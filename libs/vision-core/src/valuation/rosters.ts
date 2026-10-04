@@ -1,36 +1,36 @@
-import { categoryValue } from "@/lib/valuation/categories";
-import { scoreZScore } from "@/lib/valuation/methods/zscore";
-import {
-  type Category,
-  type FantasyStatLine,
-  type PoolStats,
-  type ValuationConfig,
-} from "@/lib/valuation/types";
+import { type Category, type SportDescriptor, type SportKeys } from "#core/sport/types";
+import { categoryValue } from "#core/valuation/categories";
+import { scoreZScore } from "#core/valuation/methods/zscore";
+import { type PoolStats, type ValuationConfig, type ValuationLine } from "#core/valuation/types";
 
-export type CategoryTotals = Partial<Record<Category, number>>;
+export type CategoryTotals<K extends SportKeys> = Partial<Record<Category<K>, number>>;
+
+export type CategorySpread = { min: number; max: number; mean: number; sd: number };
 
 // What SGP and the matchup simulation both need, and neither pool statistics
 // nor player values contain: what a *team* looks like, and how far apart two
 // teams finish.
-export type SyntheticLeague = {
-  rosters: CategoryTotals[];
-  replacement: CategoryTotals; // production available for free on waivers
-  spread: Partial<Record<Category, { min: number; max: number; mean: number; sd: number }>>;
+export type SyntheticLeague<K extends SportKeys> = {
+  rosters: CategoryTotals<K>[];
+  replacement: CategoryTotals<K>; // production available for free on waivers
+  spread: Partial<Record<Category<K>, CategorySpread>>;
 };
 
 // Players ordered by the user's own configuration, so the synthetic league is
 // drafted off the same valuation the table is showing.
-export const rankByValue = ({
+export const rankByValue = <K extends SportKeys, L extends ValuationLine<K>>({
+  sport,
   lines,
   poolStats,
   config,
 }: {
-  lines: readonly FantasyStatLine[];
-  poolStats: PoolStats;
-  config: ValuationConfig;
-}): FantasyStatLine[] => {
+  sport: SportDescriptor<K>;
+  lines: readonly L[];
+  poolStats: PoolStats<K>;
+  config: ValuationConfig<K>;
+}): L[] => {
   const totals = new Map(
-    scoreZScore({ lines, poolStats, config }).map((value) => [value.playerId, value.total]),
+    scoreZScore({ sport, lines, poolStats, config }).map((value) => [value.playerId, value.total]),
   );
   return [...lines].sort(
     (a, b) =>
@@ -38,40 +38,42 @@ export const rankByValue = ({
   );
 };
 
-const totalsOver = ({
+const totalsOver = <K extends SportKeys>({
+  sport,
   lines,
   poolStats,
   config,
   divideBy = 1,
 }: {
-  lines: readonly FantasyStatLine[];
-  poolStats: PoolStats;
-  config: ValuationConfig;
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+  poolStats: PoolStats<K>;
+  config: ValuationConfig<K>;
   divideBy?: number;
-}): CategoryTotals =>
-  config.categories.reduce<CategoryTotals>((totals, category) => {
+}): CategoryTotals<K> =>
+  config.categories.reduce<CategoryTotals<K>>((totals, category) => {
     const sum = lines.reduce(
       (acc, line) =>
         acc +
         categoryValue({
+          sport,
           line,
           category,
           basis: config.basis,
-          leagueFgPct: poolStats.leagueFgPct,
-          leagueFtPct: poolStats.leagueFtPct,
+          leagueRate: poolStats.leagueRate,
         }),
       0,
     );
     return { ...totals, [category]: sum / divideBy };
   }, {});
 
-const spreadOf = ({
+const spreadOf = <K extends SportKeys>({
   rosters,
   category,
 }: {
-  rosters: readonly CategoryTotals[];
-  category: Category;
-}): { min: number; max: number; mean: number; sd: number } => {
+  rosters: readonly CategoryTotals<K>[];
+  category: Category<K>;
+}): CategorySpread => {
   const totals = rosters.map((roster) => roster[category] ?? 0);
   const mean = totals.reduce((sum, total) => sum + total, 0) / (totals.length || 1);
   const variance =
@@ -88,22 +90,24 @@ export const teamTotalsSpread = spreadOf;
 //
 // Built once per valuation and shared by both consumers — each ranks the pool,
 // and ranking runs a full Z-Score pass, so doing it per method tripled the work.
-export const buildLeague = ({
+export const buildLeague = <K extends SportKeys>({
+  sport,
   lines,
   poolStats,
   config,
 }: {
-  lines: readonly FantasyStatLine[];
-  poolStats: PoolStats;
-  config: ValuationConfig;
-}): SyntheticLeague => {
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+  poolStats: PoolStats<K>;
+  config: ValuationConfig<K>;
+}): SyntheticLeague<K> => {
   const { teams, rosterSlots } = config;
-  const ranked = rankByValue({ lines, poolStats, config });
+  const ranked = rankByValue({ sport, lines, poolStats, config });
   const rostered = ranked.slice(0, teams * rosterSlots);
 
   // Group first, total second: totalling into a fresh copy of every roster on
   // each pick is O(players × teams) object churn for no benefit.
-  const squads = rostered.reduce<FantasyStatLine[][]>(
+  const squads = rostered.reduce<ValuationLine<K>[][]>(
     (acc, line, index) => {
       const round = Math.floor(index / teams);
       const seat = index % teams;
@@ -115,7 +119,7 @@ export const buildLeague = ({
     Array.from({ length: teams }, () => []),
   );
 
-  const rosters = squads.map((squad) => totalsOver({ lines: squad, poolStats, config }));
+  const rosters = squads.map((squad) => totalsOver({ sport, lines: squad, poolStats, config }));
 
   const bandStart = teams * rosterSlots;
   const band = ranked.slice(bandStart, bandStart + teams);
@@ -123,9 +127,9 @@ export const buildLeague = ({
   const replacement =
     sample.length === 0
       ? {}
-      : totalsOver({ lines: sample, poolStats, config, divideBy: sample.length });
+      : totalsOver({ sport, lines: sample, poolStats, config, divideBy: sample.length });
 
-  const spread = config.categories.reduce<SyntheticLeague["spread"]>(
+  const spread = config.categories.reduce<SyntheticLeague<K>["spread"]>(
     (acc, category) => ({ ...acc, [category]: spreadOf({ rosters, category }) }),
     {},
   );

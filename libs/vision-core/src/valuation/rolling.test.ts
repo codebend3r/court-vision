@@ -1,45 +1,49 @@
 import { describe, expect, it } from "bun:test";
 
-import { TEAM_BUILDER_VALUATION_CONFIG } from "@/lib/fantasyTeams/insights";
-import { aggregateWindowLogs } from "@/lib/valuation/aggregate";
-import { CATEGORY_KEYS } from "@/lib/valuation/categories";
-import { makeStatLine } from "@/lib/valuation/fixtures";
-import { scoreGScore } from "@/lib/valuation/methods/gscore";
-import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
-import { scoreZScore } from "@/lib/valuation/methods/zscore";
-import { computePoolStats } from "@/lib/valuation/pool";
 import {
-  type FantasyStatLine,
-  type PlayerValue,
-  type PoolStats,
-  type ValuationConfig,
-} from "@/lib/valuation/types";
-import {
+  aggregateWindowLogs,
   buildRollingGSeries,
   buildRollingZSeries,
-  ROLLING_WINDOW_GAMES,
-  rollingWindowLines,
+  CATEGORY_KEYS,
+  computePoolStats,
   type DatedLog,
+  DEFAULT_POINTS_SCORING,
+  DEFAULT_VALUATION_CONFIG,
+  type FantasyStatLine,
+  makeStatLine,
+  type PlayerValue,
+  type PoolStats,
+  rollingWindowLines,
+  scoreGScore,
+  scoreZScore,
+  type ValuationConfig,
+  makeDatedLog,
+  type BasketballKeys,
+} from "#core/testing/basketball";
+import {
+  ROLLING_WINDOW_GAMES,
   type RollingSeriesArgs,
   type TrendPoint,
   type TrendSeries,
-} from "@/lib/watchlist/trend";
+} from "#core/valuation/rolling";
+import { type ValuationLine } from "#core/valuation/types";
 
-const log = ({ day, pts }: { day: number; pts: number }): DatedLog => ({
-  gameDate: new Date(Date.UTC(2026, 0, day)),
-  minutes: 32,
-  pts,
-  reb: 5,
-  ast: 5,
-  stl: 1,
-  blk: 1,
-  fg3m: 2,
-  tov: 2,
-  fgm: 8,
-  fga: 16,
-  ftm: 4,
-  fta: 5,
-});
+const log = ({ day, pts }: { day: number; pts: number }): DatedLog =>
+  makeDatedLog({
+    gameDate: new Date(Date.UTC(2026, 0, day)),
+    minutes: 32,
+    pts,
+    reb: 5,
+    ast: 5,
+    stl: 1,
+    blk: 1,
+    fg3m: 2,
+    tov: 2,
+    fgm: 8,
+    fga: 16,
+    ftm: 4,
+    fta: 5,
+  });
 
 // A pool spread out in every category so each sigma is honestly non-zero; a
 // category with no spread divides by a float-noise sigma and produces absurd
@@ -63,9 +67,9 @@ const poolLine = (index: number) =>
 
 const poolStats = computePoolStats({
   lines: Array.from({ length: 20 }, (_, index) => poolLine(index)),
-  basis: TEAM_BUILDER_VALUATION_CONFIG.basis,
+  basis: DEFAULT_VALUATION_CONFIG.basis,
   poolSize: 150,
-  range: "all",
+  windowGames: null,
 });
 
 const series = ({ logs }: { logs: readonly DatedLog[] }) =>
@@ -74,7 +78,7 @@ const series = ({ logs }: { logs: readonly DatedLog[] }) =>
     fullName: "Jalen Brunson",
     logs,
     poolStats,
-    config: TEAM_BUILDER_VALUATION_CONFIG,
+    config: DEFAULT_VALUATION_CONFIG,
   });
 
 describe("buildRollingZSeries", () => {
@@ -157,7 +161,7 @@ describe("buildRollingGSeries", () => {
     playerId: 7,
     fullName: "Jalen Brunson",
     logs,
-    config: TEAM_BUILDER_VALUATION_CONFIG,
+    config: DEFAULT_VALUATION_CONFIG,
   };
 
   it("matches the z-series against a pool with no game-to-game volatility", () => {
@@ -177,9 +181,9 @@ describe("buildRollingGSeries", () => {
         const line = poolLine(index);
         return { ...line, sq: inflateSq(line.sq) };
       }),
-      basis: TEAM_BUILDER_VALUATION_CONFIG.basis,
+      basis: DEFAULT_VALUATION_CONFIG.basis,
       poolSize: 150,
-      range: "all",
+      windowGames: null,
     });
     const gValue = buildRollingGSeries({ ...args, poolStats: volatileStats }).points.at(-1)?.value;
     const zValue = buildRollingZSeries({ ...args, poolStats: volatileStats }).points.at(-1)?.value;
@@ -199,20 +203,13 @@ describe("buildRollingGSeries", () => {
 // It aggregates through the current aggregateWindowLogs, which its own test
 // holds to the previous aggregator's exact output.
 type TrendScorer = (args: {
-  lines: readonly FantasyStatLine[];
+  lines: readonly ValuationLine<BasketballKeys>[];
   poolStats: PoolStats;
   config: ValuationConfig;
 }) => PlayerValue[];
 
-const identity = ({ playerId, fullName }: { playerId: number; fullName: string }) => ({
-  playerId,
-  firstName: fullName.split(" ")[0] ?? fullName,
-  lastName: fullName.split(" ").slice(1).join(" "),
-  fullName,
-  teamAbbr: null,
-  position: null,
-  nbaPersonId: null,
-});
+// The rolling line carries only what the scorers read: who, and no position.
+const identity = ({ playerId }: { playerId: number }) => ({ playerId, position: null });
 
 const referenceRollingSeries = ({
   playerId,
@@ -222,15 +219,15 @@ const referenceRollingSeries = ({
   config,
   scorer,
   windowSize = ROLLING_WINDOW_GAMES,
-}: RollingSeriesArgs & { scorer: TrendScorer }): TrendSeries => {
+}: Omit<RollingSeriesArgs<BasketballKeys>, "sport"> & { scorer: TrendScorer }): TrendSeries => {
   if (logs.length < windowSize) {
     return { playerId, fullName, points: [] };
   }
   const points = logs.reduce<TrendPoint[]>((acc, log, index) => {
     if (index + 1 < windowSize) return acc;
     const window = logs.slice(index + 1 - windowSize, index + 1);
-    const line: FantasyStatLine = {
-      ...identity({ playerId, fullName }),
+    const line = {
+      ...identity({ playerId }),
       ...aggregateWindowLogs({ logs: window }),
     };
     const [value] = scorer({ lines: [line], poolStats, config });
@@ -261,7 +258,7 @@ const seededSeason = ({ seed, length }: { seed: number; length: number }): Dated
     const played = random() > 0.08;
     const fga = played ? between(2, 28) : 0;
     const fta = played ? between(0, 12) : 0;
-    return {
+    return makeDatedLog({
       gameDate: new Date(Date.UTC(2025, 9, 21 + index)),
       minutes: played ? between(8, 42) : 0,
       pts: played ? between(0, 50) : 0,
@@ -275,7 +272,7 @@ const seededSeason = ({ seed, length }: { seed: number; length: number }): Dated
       fgm: Math.floor(fga * random()),
       fta,
       ftm: Math.floor(fta * random()),
-    };
+    });
   });
 };
 
@@ -283,12 +280,12 @@ const seededSeason = ({ seed, length }: { seed: number; length: number }): Dated
 // so G-Score's within term is live rather than collapsing onto Z-Score.
 const seededPoolStats = computePoolStats({
   lines: Array.from({ length: 160 }, (_, index) => ({
-    ...identity({ playerId: index + 1000, fullName: `Pool Player ${index}` }),
+    ...identity({ playerId: index + 1000 }),
     ...aggregateWindowLogs({ logs: seededSeason({ seed: index + 1, length: 60 }) }),
   })),
   basis: "perGame",
   poolSize: 150,
-  range: "all",
+  windowGames: null,
 });
 
 const allCategories: ValuationConfig = {
@@ -333,15 +330,15 @@ describe("rolling series against the per-window reference", () => {
 
 describe("rollingWindowLines", () => {
   const logs = seededSeason({ seed: 42, length: 15 });
-  const lineEndingAt = rollingWindowLines({ playerId: 7, fullName: "Jalen Brunson", logs });
+  const lineEndingAt = rollingWindowLines({ playerId: 7, logs });
 
   it("has no line until the window fills", () => {
     expect(lineEndingAt({ index: ROLLING_WINDOW_GAMES - 2 })).toBeNull();
   });
 
-  it("collapses the game and the nine before it under the player's identity", () => {
+  it("collapses the game and the nine before it under the player's id", () => {
     expect(lineEndingAt({ index: 12 })).toEqual({
-      ...identity({ playerId: 7, fullName: "Jalen Brunson" }),
+      ...identity({ playerId: 7 }),
       ...aggregateWindowLogs({ logs: logs.slice(3, 13) }),
     });
   });

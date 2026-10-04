@@ -1,13 +1,17 @@
 import { describe, expect, it } from "bun:test";
 
-import { CATEGORY_KEYS } from "@/lib/valuation/categories";
-import { makeStatLine } from "@/lib/valuation/fixtures";
-import { buildFantasyGameValues } from "@/lib/valuation/gameValues";
-import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
-import { computePoolStats } from "@/lib/valuation/pool";
-import { buildFantasyTrend } from "@/lib/valuation/trend";
-import { type MethodWeights, type ValuationConfig } from "@/lib/valuation/types";
-import { type DatedLog } from "@/lib/watchlist/trend";
+import {
+  buildFantasyGameValues,
+  buildFantasyTrend,
+  CATEGORY_KEYS,
+  computePoolStats,
+  type DatedLog,
+  DEFAULT_POINTS_SCORING,
+  makeStatLine,
+  type MethodWeights,
+  type ValuationConfig,
+  makeDatedLog,
+} from "#core/testing/basketball";
 
 const log = ({
   day,
@@ -17,21 +21,22 @@ const log = ({
   day: number;
   pts?: number;
   minutes?: number;
-}): DatedLog => ({
-  gameDate: new Date(Date.UTC(2026, 0, day)),
-  minutes,
-  pts,
-  reb: 6,
-  ast: 5,
-  stl: 1,
-  blk: 1,
-  fg3m: 2,
-  tov: 2,
-  fgm: 9,
-  fga: 18,
-  ftm: 5,
-  fta: 6,
-});
+}): DatedLog =>
+  makeDatedLog({
+    gameDate: new Date(Date.UTC(2026, 0, day)),
+    minutes,
+    pts,
+    reb: 6,
+    ast: 5,
+    stl: 1,
+    blk: 1,
+    fg3m: 2,
+    tov: 2,
+    fgm: 9,
+    fga: 18,
+    ftm: 5,
+    fta: 6,
+  });
 
 // A pool spread out in every category so each sigma is honestly non-zero.
 const poolLine = (index: number) =>
@@ -52,7 +57,7 @@ const poolLine = (index: number) =>
 
 const star = makeStatLine({ playerId: 7, fullName: "Luka Doncic", pts: 1500 });
 const lines = [star, ...Array.from({ length: 20 }, (_, index) => poolLine(index))];
-const poolStats = computePoolStats({ lines, basis: "perGame", poolSize: 150, range: "all" });
+const poolStats = computePoolStats({ lines, basis: "perGame", poolSize: 150, windowGames: null });
 const config: ValuationConfig = {
   categories: [...CATEGORY_KEYS],
   weights: {},

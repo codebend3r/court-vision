@@ -1,14 +1,15 @@
 import { describe, expect, it, vi } from "bun:test";
 
-import { makeStatLine } from "@/lib/valuation/fixtures";
-import { DEFAULT_POINTS_SCORING } from "@/lib/valuation/methods/points";
 import {
   buildPlayerFantasyProfile,
-  configFromSeed,
+  DEFAULT_VALUATION_CONFIG,
+  FANTASY_METHODS,
   type FantasyProfileLog,
-} from "@/lib/valuation/playerValue";
-import { FANTASY_METHODS } from "@/lib/valuation/registry";
-import * as trendModule from "@/lib/valuation/trend";
+  makeDatedLog,
+  makeStatLine,
+  type MethodWeights,
+} from "#core/testing/basketball";
+import * as trendModule from "#core/valuation/trend";
 
 // A pool spread out in every category so each sigma is honestly non-zero.
 const poolLine = (index: number) =>
@@ -50,7 +51,8 @@ const star = makeStatLine({
 
 const lines = [star, ...Array.from({ length: 20 }, (_, index) => poolLine(index))];
 
-const { config, methodWeights } = configFromSeed({ seed: {} });
+const config = DEFAULT_VALUATION_CONFIG;
+const methodWeights: MethodWeights = {};
 
 const log = ({
   gameId,
@@ -63,66 +65,29 @@ const log = ({
   pts?: number;
   minutes?: number;
 }): FantasyProfileLog => ({
+  ...makeDatedLog({
+    gameDate: new Date(Date.UTC(2025, 9, day)),
+    minutes,
+    pts,
+    reb: 9,
+    ast: 9,
+    stl: 1.5,
+    blk: 0.5,
+    fg3m: 4,
+    tov: 4,
+    fgm: 10,
+    fga: 20,
+    ftm: 8,
+    fta: 10,
+  }),
   gameId,
-  gameDate: new Date(Date.UTC(2025, 9, day)),
   matchup: `LAL vs. OPP${day}`,
   winLoss: "W",
-  minutes,
-  pts,
-  reb: 9,
-  ast: 9,
-  stl: 1.5,
-  blk: 0.5,
-  fg3m: 4,
-  tov: 4,
-  fgm: 10,
-  fga: 20,
-  ftm: 8,
-  fta: 10,
 });
 
 const logs = Array.from({ length: 15 }, (_, index) =>
   log({ gameId: `g${index + 1}`, day: index + 1 }),
 );
-
-describe("configFromSeed", () => {
-  it("falls back to the Fantasy tab defaults with an empty seed", () => {
-    expect(config.teams).toBe(12);
-    expect(config.rosterSlots).toBe(13);
-    expect(config.basis).toBe("perGame");
-    expect(config.categories).toEqual([
-      "pts",
-      "reb",
-      "ast",
-      "stl",
-      "blk",
-      "tpm",
-      "tov",
-      "fg",
-      "ft",
-    ]);
-    expect(config.scoring).toEqual(DEFAULT_POINTS_SCORING);
-    expect(methodWeights).toEqual({});
-  });
-
-  it("applies the active league's size, exclusions, weights, and scoring", () => {
-    const seeded = configFromSeed({
-      seed: {
-        teams: 10,
-        slots: 15,
-        x: ["ft", "tov"],
-        w: { z: { pts: 0.5 } },
-        s: { ...DEFAULT_POINTS_SCORING, reb: 2 },
-      },
-    });
-
-    expect(seeded.config.teams).toBe(10);
-    expect(seeded.config.rosterSlots).toBe(15);
-    expect(seeded.config.categories).toEqual(["pts", "reb", "ast", "stl", "blk", "tpm", "fg"]);
-    expect(seeded.config.scoring.reb).toBe(2);
-    expect(seeded.methodWeights).toEqual({ z: { pts: 0.5 } });
-  });
-});
 
 describe("buildPlayerFantasyProfile", () => {
   const profile = buildPlayerFantasyProfile({
@@ -130,7 +95,7 @@ describe("buildPlayerFantasyProfile", () => {
     playerId: 7,
     config,
     methodWeights,
-    range: "all",
+    poolWindowGames: null,
     logs,
     windowGames: null,
   });
@@ -142,7 +107,7 @@ describe("buildPlayerFantasyProfile", () => {
         playerId: 999,
         config,
         methodWeights,
-        range: "all",
+        poolWindowGames: null,
         logs,
         windowGames: null,
       }),
@@ -179,7 +144,7 @@ describe("buildPlayerFantasyProfile", () => {
       playerId: 7,
       config: { ...config, categories: ["pts", "reb"] },
       methodWeights,
-      range: "all",
+      poolWindowGames: null,
       logs,
       windowGames: null,
     });
@@ -208,7 +173,7 @@ describe("buildPlayerFantasyProfile", () => {
       playerId: 7,
       config,
       methodWeights,
-      range: "last5",
+      poolWindowGames: 5,
       logs,
       windowGames: 5,
     });
@@ -234,7 +199,7 @@ describe("buildPlayerFantasyProfile", () => {
         playerId: 7,
         config,
         methodWeights,
-        range: "last5",
+        poolWindowGames: 5,
         logs: [...logs, log({ gameId: "dnp", day: 16, minutes: 0, pts: 0 })],
         windowGames: 5,
       });
@@ -266,7 +231,7 @@ describe("buildPlayerFantasyProfile", () => {
       playerId: 7,
       config,
       methodWeights,
-      range: "all",
+      poolWindowGames: null,
       logs: [...logs, log({ gameId: "dnp", day: 16, minutes: 0, pts: 0 })],
       windowGames: null,
     });
