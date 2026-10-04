@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { MyTeamsList } from "@/components/MyTeamsList/MyTeamsList";
-import { PageAction, PageHeader } from "@/components/PageHeader/PageHeader";
+import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { getProfile } from "@/lib/auth/session";
 import { getActiveLeague } from "@/lib/leagues/queries";
 import { getLeagueTeams } from "@/lib/leagues/teamQueries";

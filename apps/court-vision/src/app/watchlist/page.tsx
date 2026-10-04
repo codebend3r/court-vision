@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/PageHeader/PageHeader";
+import { PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { StarredPlayersView } from "@/components/StarredPlayersView/StarredPlayersView";
 import { getActiveLeague } from "@/lib/leagues/queries";
 import { parsePlayersSearchParams } from "@/lib/players/searchParams";
