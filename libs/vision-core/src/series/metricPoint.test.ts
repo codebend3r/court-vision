@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { isMetricPoint } from "@/lib/stats/metricPoint";
+import { isMetricPoint } from "#core/series/metricPoint";
 
 const point = {
   gameIndex: 3,
