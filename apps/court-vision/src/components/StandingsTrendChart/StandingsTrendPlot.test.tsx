@@ -5,7 +5,7 @@ import {
   lineColorFor,
   StandingsTrendPlot,
 } from "@/components/StandingsTrendChart/StandingsTrendPlot";
-import { ThemeProvider } from "@/lib/theme/ThemeProvider";
+import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 
 afterEach(cleanup);
 
