@@ -2,7 +2,7 @@
 
 import { unstable_cache } from "next/cache";
 
-import { isActionArray, isActionInt } from "@/lib/actions/argGuards";
+import { isActionArray, isActionInt } from "@vision/core/util/argGuards";
 import { prisma } from "@/lib/prisma";
 import { latestSeason } from "@/lib/valuation/season";
 import {

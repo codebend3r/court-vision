@@ -64,7 +64,7 @@ describe("toDatedLogs", () => {
     const [dated] = toDatedLogs({ logs: [trendLog()] });
     expect(dated?.gameDate).toBeInstanceOf(Date);
     expect(dated?.gameDate.toISOString()).toBe("2026-01-05T00:00:00.000Z");
-    expect(dated?.pts).toBe(30);
+    expect(dated?.stats.pts).toBe(30);
   });
 });
 

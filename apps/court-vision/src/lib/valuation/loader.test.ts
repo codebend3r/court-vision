@@ -55,7 +55,7 @@ describe("getFantasyPool", () => {
     findFirst.mockReset();
   });
 
-  it("nests the second moments into the stat line the scorers read", async () => {
+  it("nests the stats and second moments into the line the scorers read", async () => {
     queryRaw.mockResolvedValue([sqlLine]);
 
     const lines = await getFantasyPool({ range: "last10", season: "2025-26" });
@@ -70,18 +70,20 @@ describe("getFantasyPool", () => {
         position: "G",
         nbaPersonId: 1630169,
         gamesPlayed: 2,
-        minutes: 71.5,
-        pts: 40,
-        reb: 8,
-        ast: 20,
-        stl: 3,
-        blk: 1,
-        fg3m: 6,
-        tov: 4,
-        fgm: 14,
-        fga: 30,
-        ftm: 6,
-        fta: 7,
+        playingTime: 71.5,
+        stats: {
+          pts: 40,
+          reb: 8,
+          ast: 20,
+          stl: 3,
+          blk: 1,
+          fg3m: 6,
+          tov: 4,
+          fgm: 14,
+          fga: 30,
+          ftm: 6,
+          fta: 7,
+        },
         sq: {
           pts: 818,
           reb: 34,
