@@ -5,7 +5,8 @@ import Link from "next/link";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { StarButton } from "@/components/StarButton/StarButton";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
-import { FANTASY_METHODS, methodMeta, type FantasyMethodKey } from "@/lib/valuation/registry";
+import { FANTASY_METHODS, methodMeta } from "@vision/sport-basketball/engine";
+import { type FantasyMethodKey } from "@vision/core/valuation/types";
 import { type FantasySortKey } from "@/lib/valuation/searchParams";
 import { type FantasyPlayerValues, type FantasyStatLine } from "@/lib/valuation/types";
 

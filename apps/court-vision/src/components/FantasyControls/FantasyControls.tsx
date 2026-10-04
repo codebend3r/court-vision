@@ -9,9 +9,14 @@ import {
   type PlayerGameRange,
   type PlayerStatMode,
 } from "@/lib/players/searchParams";
-import { CATEGORY_KEYS, CATEGORY_META } from "@/lib/valuation/categories";
-import { DEFAULT_POINTS_SCORING, SCORED_KEYS } from "@/lib/valuation/methods/points";
-import { METHOD_KEY_BY_WEIGHTED, methodMeta } from "@/lib/valuation/registry";
+import {
+  CATEGORY_KEYS,
+  CATEGORY_META,
+  DEFAULT_POINTS_SCORING,
+  methodMeta,
+  SCORED_KEYS,
+} from "@vision/sport-basketball/engine";
+import { METHOD_KEY_BY_WEIGHTED } from "@vision/core/valuation/registry";
 import {
   clampScore,
   isWeightedMethodKey,

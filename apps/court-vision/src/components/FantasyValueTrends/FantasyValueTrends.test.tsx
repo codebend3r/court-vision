@@ -7,9 +7,9 @@ import {
   TrendTooltip,
   type FantasyTrendRow,
 } from "@/components/FantasyValueTrends/FantasyValueTrends";
-import { ThemeProvider } from "@/lib/theme/ThemeProvider";
+import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 import { makeStatLine } from "@/lib/valuation/fixtures";
-import { type FantasyTrendValue } from "@/lib/valuation/trend";
+import { type FantasyTrendValue } from "@vision/core/valuation/trend";
 
 afterEach(cleanup);
 

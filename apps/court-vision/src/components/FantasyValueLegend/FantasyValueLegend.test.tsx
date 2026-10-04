@@ -2,7 +2,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
 import { FantasyValueLegend } from "@/components/FantasyValueLegend/FantasyValueLegend";
-import { FANTASY_METHODS } from "@/lib/valuation/registry";
+import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
 
 afterEach(cleanup);
 

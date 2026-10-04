@@ -10,10 +10,9 @@ import {
   METHOD_LABELS,
   type MethodKey,
 } from "@/components/PlayerFantasyChart/labels";
-import { getChartChrome, getSeriesPalette } from "@/components/PlayerStatChart/statMeta";
-import { useTheme } from "@/lib/theme/ThemeProvider";
-import { type FantasyCategoryBreakdown } from "@/lib/valuation/breakdown";
-import { type CategoryMeta } from "@/lib/valuation/categories";
+import { getChartChrome, getSeriesPalette } from "@vision/ui/charts/palette";
+import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
+import { type CategoryMeta, type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
 import { type FantasySortKey } from "@/lib/valuation/searchParams";
 
 import styles from "@/components/FantasyValueCharts/FantasyValueCharts.module.scss";
