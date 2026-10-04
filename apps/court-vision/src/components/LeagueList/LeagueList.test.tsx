@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { LeagueList } from "@/components/LeagueList/LeagueList";
-import { MAX_LEAGUES } from "@/lib/leagues/constants";
+import { MAX_LEAGUES } from "@vision/core/league/constants";
 import { useLeaguesStore } from "@/lib/leagues/store";
 import { type LeagueSummary } from "@/lib/leagues/types";
 

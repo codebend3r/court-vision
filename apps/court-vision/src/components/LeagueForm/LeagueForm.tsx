@@ -18,8 +18,12 @@ import {
   type LeagueScoringType,
   type LeagueSummary,
 } from "@/lib/leagues/types";
-import { CATEGORY_KEYS, CATEGORY_META } from "@/lib/valuation/categories";
-import { DEFAULT_POINTS_SCORING, SCORED_KEYS } from "@/lib/valuation/methods/points";
+import {
+  CATEGORY_KEYS,
+  CATEGORY_META,
+  DEFAULT_POINTS_SCORING,
+  SCORED_KEYS,
+} from "@vision/sport-basketball/engine";
 import { clampScore, snapWeight } from "@/lib/valuation/searchParams";
 import { type Category, type ScoringSettings, type ScoringStatKey } from "@/lib/valuation/types";
 

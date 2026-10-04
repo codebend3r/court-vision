@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
-import { slotMeta, type SlotKind } from "@/lib/fantasyTeams/slots";
+import { slotMeta } from "@vision/sport-basketball/engine";
+import { type SlotKind } from "@vision/core/sport/types";
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 import { deleteLeagueTeam } from "@/lib/leagues/teamActions";
 
@@ -50,7 +51,9 @@ function TeamAccordion({ team, onDelete }: TeamAccordionProps) {
       </summary>
       <span className={styles.body}>
         {(["starter", "bench", "injured"] as const).map((kind) => {
-          const kindSlots = team.slots.filter((slot) => slotMeta(slot.type).kind === kind);
+          const kindSlots = team.slots.filter(
+            (slot) => slotMeta({ type: slot.type }).kind === kind,
+          );
           if (kindSlots.length === 0) return null;
           return (
             <span key={kind} className={styles.group}>
@@ -58,7 +61,7 @@ function TeamAccordion({ team, onDelete }: TeamAccordionProps) {
               <ul className={styles.slotList}>
                 {kindSlots.map((slot) => (
                   <li key={slot.id} className={styles.slot}>
-                    <span className={styles.slotType}>{slotMeta(slot.type).label}</span>
+                    <span className={styles.slotType}>{slotMeta({ type: slot.type }).label}</span>
                     {slot.player === null ? (
                       <span className={styles.empty}>Empty</span>
                     ) : (

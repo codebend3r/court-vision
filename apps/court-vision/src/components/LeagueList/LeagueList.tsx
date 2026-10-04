@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 import styles from "@/components/LeagueList/LeagueList.module.scss";
 import { deleteLeague, setActiveLeague } from "@/lib/leagues/actions";
-import { MAX_LEAGUES } from "@/lib/leagues/constants";
+import { MAX_LEAGUES } from "@vision/core/league/constants";
 import { useLeaguesStore } from "@/lib/leagues/store";
 import { type LeagueScoringType, type LeagueSummary } from "@/lib/leagues/types";
 
