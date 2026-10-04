@@ -1,5 +1,6 @@
 import { FONT_SCALES, type FontScale } from "@/lib/settings/types";
-import { ENABLED_METHODS, type FantasyMethodKey } from "@/lib/valuation/registry";
+import { ENABLED_METHODS } from "@vision/sport-basketball/engine";
+import { type FantasyMethodKey } from "@vision/core/valuation/types";
 
 export const isFontScale = (value: string): value is FontScale =>
   FONT_SCALES.some((scale) => scale === value);
