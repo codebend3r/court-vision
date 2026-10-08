@@ -5,14 +5,16 @@ description: Use when asked whether court-vision is due for a version bump, when
 
 # Version bumping in court-vision
 
-The repo is at `0.x`. Every release so far is a `bun pm version` bump: a
-`package.json` edit, a commit whose subject is the bare version (`0.1.4`),
-and an annotated tag (`v0.1.4`) whose message is also the bare version.
+The repo is at `0.x`. A release is three things: the `version` line in
+`apps/court-vision/package.json`, a commit whose subject is `vX.Y.Z`, and an
+annotated tag `vX.Y.Z` whose message is also `vX.Y.Z`. No tag ever uses the
+bare number (`0.1.4`), in its name or its message.
 
 The repo is an Nx monorepo. The `v*` tags and the version belong to the
 Court Vision app, so the version lives in `apps/court-vision/package.json`
-(the root `package.json` has none), and every `bun pm version` command below
-runs from `apps/court-vision/`.
+(the root `package.json` has none). `bun pm version` still writes the new
+number, run from `apps/court-vision/`, but from there it no longer commits or
+tags. Step 5 does both.
 
 Recommend, then wait for a yes or a no. Never bump unasked.
 
@@ -28,8 +30,7 @@ git diff --name-only "$LAST"..main | sort -u
 ```
 
 If `git status` is not clean or `main` is behind `origin/main`, stop and say
-so. `bun pm version` refuses on a dirty tree anyway, and `--force` is not
-the answer.
+so. The bump commit carries the version line and nothing else.
 
 ## 2. Decide whether a bump is warranted at all
 
@@ -103,34 +104,46 @@ Do not bump on ambiguity, silence, or "sounds good, what else". Bump on yes.
 ```bash
 cd apps/court-vision
 bun pm version patch    # or: minor
+V="v$(bun pm pkg get version | tr -d '"')"
+cd ../..
+git add apps/court-vision/package.json
+git commit -m "$V"
+git tag -a "$V" -m "$V"
 ```
 
-That single command writes `package.json`, commits, and tags. Do not hand-roll
-the commit or the tag — the format is inherited from it and drifts the moment
-you type it yourself.
+From `apps/court-vision/`, `bun pm version` rewrites `package.json` and
+nothing else: no commit, no tag. The three git lines are the release, not a
+workaround to skip. Build all three from `$V`, never a typed number, so the
+commit subject, tag name, and tag message can't drift apart.
 
-Then confirm:
+Then confirm against the previous release:
 
 ```bash
-git log --oneline -1
-git cat-file -p "v$(bun pm pkg get version | tr -d '\"')" | tail -3
+git show --stat --format=%s HEAD    # subject vX.Y.Z; one file, apps/court-vision/package.json
+git cat-file -p "$V" | tail -3      # annotated; message vX.Y.Z
+git cat-file -p "$LAST" | tail -3   # same shape
 ```
 
 ## Gotchas
 
 - **The bump commit is the one commit with no `CV:` prefix.** Its subject is
-  the bare version. `commit-format` does not apply here; do not "fix" it,
-  and do not amend it to `CV: 0.1.5`. Four tags of history say otherwise.
-- **`pre-commit` runs `lint-staged`, `typecheck`, `lint`, and the full test
-  suite** on the bump commit. It takes a while and it can fail. A failure
-  means main is broken — report that, do not `--no-verify` past it.
+  `vX.Y.Z`, the same as the tag. `commit-format` does not apply here; do not
+  "fix" it, and do not amend it to `CV: v0.1.5`. The whole tag history says
+  otherwise.
+- **`pre-commit` runs only `lint-staged`** (oxfmt on the staged
+  `package.json`), so the bump commit is quick. `pre-push` runs
+  `bun run system-check` (format, typecheck, lint, test, build) when the
+  release is eventually pushed. A failure there means main is broken —
+  report that, do not `--no-verify` past it.
+- **Leave `bun.lock` alone.** It records the app's version as of the last
+  install and goes stale after a bump, but `bun install --frozen-lockfile`
+  (CI) accepts the mismatch. Do not stage it into the bump commit.
 - **Do not push and do not push tags.** `CLAUDE.md` is explicit. The bump
   and tag sit local until told otherwise; mention that they are unpushed.
 - **`bun pm version` needs the increment word**, not the number. Bare
   `bun pm version` just prints the table.
-- **Run it from `apps/court-vision/`.** From the repo root it finds no
-  version to bump. If the confirm step shows no new commit or tag, stop and
-  report it; do not hand-roll them.
+- **Run `bun pm version` from `apps/court-vision/`.** From the repo root it
+  finds no version to bump. Run the git lines from the repo root.
 
 ## Checklist
 
@@ -140,5 +153,5 @@ git cat-file -p "v$(bun pm pkg get version | tr -d '\"')" | tail -3
 - [ ] Classified from changed paths, not subject-line prefixes
 - [ ] Pre-1.0 mapping applied; did not recommend `1.0.0`
 - [ ] Asked one yes/no question and got a yes
-- [ ] Used `bun pm version <increment>`; did not hand-write commit or tag
+- [ ] Used `bun pm version <increment>` for the number; built commit subject, tag name, and tag message from `$V`
 - [ ] Did not push
