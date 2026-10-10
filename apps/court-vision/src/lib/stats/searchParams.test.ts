@@ -73,9 +73,9 @@ describe("loadStatFilters", () => {
 
 describe("SEASON_OPTIONS", () => {
   it("lists every backfilled season newest first", () => {
-    expect(SEASON_OPTIONS[0]).toBe("2025-26");
+    expect(SEASON_OPTIONS[0]).toBe("2026-27");
     expect(SEASON_OPTIONS[SEASON_OPTIONS.length - 1]).toBe("2016-17");
-    expect(SEASON_OPTIONS).toHaveLength(10);
+    expect(SEASON_OPTIONS).toHaveLength(11);
   });
 });
 
@@ -96,7 +96,7 @@ describe("resolveSeasonSelection", () => {
   });
 
   it("falls back to the current league season when the player has none", () => {
-    expect(resolveSeasonSelection({ requested: null, playerSeasons: [] })).toBe("2025-26");
+    expect(resolveSeasonSelection({ requested: null, playerSeasons: [] })).toBe("2026-27");
   });
 });
 

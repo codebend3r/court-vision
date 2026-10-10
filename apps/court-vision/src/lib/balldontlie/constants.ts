@@ -1,7 +1,7 @@
 export const BDL_BASE_URL = "https://api.balldontlie.io/v1";
 
-// Balldontlie's season param is the season's start year: 2025-26 → "2025".
-export const SEASON_YEAR = "2025";
+// Balldontlie's season param is the season's start year: 2026-27 → "2026".
+export const SEASON_YEAR = "2026";
 
 // "2020" → "2020-21"; the label pads the end year so 1999 → "1999-00".
 export const seasonLabelFromYear = (year: number): string =>

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 import { makeStatLine } from "@/lib/valuation/fixtures";
+import { SEASON_LABEL, SEASON_YEAR } from "@/lib/balldontlie/constants";
 
 const findUniquePlayer = vi.fn();
 const findManyGameLogs = vi.fn();
@@ -277,7 +278,7 @@ describe("PlayerPage", () => {
     await renderPage({ playerId: "3547238" });
 
     // Three logs, two appearances.
-    expect(screen.getByText("2025-26 · 2 games", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText(`${SEASON_LABEL} · 2 games`, { exact: false })).toBeInTheDocument();
   });
 
   it("shows the season averages card with NBA ranks", async () => {
@@ -328,8 +329,8 @@ describe("PlayerPage", () => {
     expect(screen.getByText("Duke")).toBeInTheDocument();
     expect(screen.getByText("USA")).toBeInTheDocument();
     expect(screen.getByText("2020 · Rd 1 · Pick 5")).toBeInTheDocument();
-    // drafted 2020, so 2025-26 is their 6th season
-    expect(screen.getByText("6 seasons")).toBeInTheDocument();
+    // drafted 2020, so the current season is their (start year - 2020 + 1)th
+    expect(screen.getByText(`${Number(SEASON_YEAR) - 2020 + 1} seasons`)).toBeInTheDocument();
     // birthDate is null, so the Born fact is omitted entirely
     expect(screen.queryByText("Born")).not.toBeInTheDocument();
   });
@@ -513,7 +514,7 @@ describe("PlayerPage", () => {
     const { container } = await renderPage({ playerId: "3547238", query: { span: "10" } });
 
     // The x-axis restarts inside the window: highest game index is 10, not 15
-    expect(screen.getByText("2025-26 · 15 games", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText(`${SEASON_LABEL} · 15 games`, { exact: false })).toBeInTheDocument();
     // A monotone line through N points draws N-1 curve segments, so the
     // windowed series must produce 9 "C" commands per line, not 14.
     const firstLinePath = container.querySelector(".recharts-line-curve");
@@ -600,7 +601,7 @@ describe("PlayerPage", () => {
     });
 
     expect(findManyAdvancedLogs).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { playerId: 3547238, season: "2025-26" } }),
+      expect.objectContaining({ where: { playerId: 3547238, season: SEASON_LABEL } }),
     );
     // TS% averages the two games; PIE and pace read as a share and a rating.
     // Read inside the card: the game log prints each game's PIE and pace too.

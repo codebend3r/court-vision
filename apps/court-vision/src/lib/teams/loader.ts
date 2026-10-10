@@ -1,6 +1,5 @@
 import { unstable_cache } from "next/cache";
 
-import { SEASON_LABEL } from "@/lib/balldontlie/constants";
 import { prisma } from "@/lib/prisma";
 import { type TeamGameResult } from "@vision/core/series/teamTrend";
 
@@ -102,10 +101,15 @@ export type TeamRosterPlayer = {
 // means "has a log in any backfilled season", which silently widens every time
 // the backfill window does. When the window moved to 2016-17 it admitted 386
 // players whose last game was 2016-2019 but whose Balldontlie team still points
-// at their final club. Ordered by name for the /team roster section.
-const fetchRoster = async (abbr: string): Promise<TeamRosterPlayer[]> =>
-  prisma.player.findMany({
-    where: { teamAbbr: abbr, gameLogs: { some: { season: SEASON_LABEL } } },
+// at their final club. The season is the newest one with game logs, like the
+// teams table, rather than SEASON_LABEL: after the constant moves to a new
+// season, rosters keep showing last season's until opening night's logs land.
+// Ordered by name for the /team roster section.
+const fetchRoster = async (abbr: string): Promise<TeamRosterPlayer[]> => {
+  const season = await latestSeason();
+  if (season === null) return [];
+  return prisma.player.findMany({
+    where: { teamAbbr: abbr, gameLogs: { some: { season } } },
     select: {
       id: true,
       firstName: true,
@@ -118,6 +122,7 @@ const fetchRoster = async (abbr: string): Promise<TeamRosterPlayer[]> =>
     },
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
   });
+};
 
 const cachedRoster = unstable_cache((abbr: string) => fetchRoster(abbr), ["team:roster"], {
   revalidate: 300,

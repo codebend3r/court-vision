@@ -8,6 +8,7 @@ import {
   fetchStandings,
   fetchTeams,
 } from "@/lib/balldontlie/endpoints";
+import { SEASON_YEAR } from "@/lib/balldontlie/constants";
 
 const jsonResponse = (body: unknown): Response =>
   new Response(JSON.stringify(body), {
@@ -107,7 +108,7 @@ describe("fetchStandings", () => {
     ]);
     const url = fetchImpl.mock.calls[0]?.[0]?.toString() ?? "";
     expect(url).toContain("/standings");
-    expect(url).toContain("season=2025");
+    expect(url).toContain(`season=${SEASON_YEAR}`);
   });
 });
 
@@ -126,7 +127,7 @@ describe("fetchAllStats", () => {
     expect(sleep).toHaveBeenCalledTimes(1);
     const firstUrl = fetchImpl.mock.calls[0]?.[0]?.toString() ?? "";
     const secondUrl = fetchImpl.mock.calls[1]?.[0]?.toString() ?? "";
-    expect(firstUrl).toContain("seasons[]=2025");
+    expect(firstUrl).toContain(`seasons[]=${SEASON_YEAR}`);
     expect(firstUrl).toContain("postseason=false");
     expect(firstUrl).not.toContain("cursor=");
     expect(secondUrl).toContain("cursor=2");
@@ -217,7 +218,7 @@ describe("fetchAllAdvancedStats", () => {
     const firstUrl = fetchImpl.mock.calls[0]?.[0]?.toString() ?? "";
     const secondUrl = fetchImpl.mock.calls[1]?.[0]?.toString() ?? "";
     expect(firstUrl).toContain("/stats/advanced?");
-    expect(firstUrl).toContain("seasons[]=2025");
+    expect(firstUrl).toContain(`seasons[]=${SEASON_YEAR}`);
     expect(firstUrl).toContain("postseason=false");
     expect(firstUrl).not.toContain("cursor=");
     expect(secondUrl).toContain("cursor=2");
@@ -375,7 +376,7 @@ describe("fetchTeamGames", () => {
     expect(games).toEqual([expectedGame]);
     const url = fetchImpl.mock.calls[0][0];
     expect(url).toContain("/games?");
-    expect(url).toContain("seasons[]=2025");
+    expect(url).toContain(`seasons[]=${SEASON_YEAR}`);
     expect(url).toContain("team_ids[]=18");
     expect(url).toContain("postseason=false");
   });

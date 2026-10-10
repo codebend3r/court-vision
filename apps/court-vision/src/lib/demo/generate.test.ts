@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { SEASON_TYPE } from "@/lib/balldontlie/constants";
+import { SEASON_LABEL, SEASON_TYPE } from "@/lib/balldontlie/constants";
 import { BdlGame } from "@/lib/balldontlie/schemas";
 
 import { generateGameLogs } from "@/lib/demo/generate";
@@ -81,7 +81,7 @@ describe("generateGameLogs", () => {
         row.tov,
         row.pts,
       ].forEach((value) => expect(value).toBeGreaterThanOrEqual(0));
-      expect(row.season).toBe("2025-26");
+      expect(row.season).toBe(SEASON_LABEL);
       expect(row.seasonType).toBe(SEASON_TYPE);
       expect(["home", "away"]).toContain(row.homeAway);
       expect(row.opponentAbbr).toMatch(/^[A-Z]{3}$/);
