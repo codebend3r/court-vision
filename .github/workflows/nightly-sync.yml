@@ -1,0 +1,103 @@
+name: 🌙 Nightly stats sync
+
+# Folds last night's NBA box scores into the database at 3am Eastern: the
+# players who appeared, their game logs and advanced logs for those games, and
+# their season lines. Team stats come along for free; the teams page sums them
+# from the game logs. Rebuilding every player's stats stays a manual job
+# (`bun run sync:bdl`).
+#
+# Cron runs in UTC and has no time zone, so both 07:00 UTC (3am EDT) and
+# 08:00 UTC (3am EST) are scheduled and the gate step lets only the one that
+# matches New York's current offset through. Checking the offset rather than
+# the clock keeps a late-starting run from being skipped. The sync replaces
+# whole games, so a stray double run is harmless.
+#
+# Needs two repository secrets: BALLDONTLIE_API_KEY and DATABASE_URL (the
+# Supabase pooler URL the app uses).
+
+on:
+  schedule:
+    - cron: "0 7 * * *"
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+    inputs:
+      from:
+        description: "First game date to sync (YYYY-MM-DD). Leave blank for last night."
+        required: false
+        type: string
+      to:
+        description: "Last game date to sync (YYYY-MM-DD). Defaults to last night."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: 🏀 Sync last night's games
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 🕒 Check it is 3am in New York
+        id: gate
+        env:
+          EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          if [ "$EVENT" != "schedule" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          offset="$(TZ=America/New_York date +%z)"
+          if { [ "$SCHEDULE" = "0 7 * * *" ] && [ "$offset" = "-0400" ]; } ||
+             { [ "$SCHEDULE" = "0 8 * * *" ] && [ "$offset" = "-0500" ]; }; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "⏭️ Skipped: \`$SCHEDULE\` is not 3am in New York (offset $offset)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: 📥 Checkout
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 🥟 Set up Bun
+        if: steps.gate.outputs.run == 'true'
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+
+      - name: 📦 Install dependencies
+        if: steps.gate.outputs.run == 'true'
+        run: bun install --frozen-lockfile
+
+      - name: 🧬 Generate Prisma client
+        if: steps.gate.outputs.run == 'true'
+        run: bun run db:generate
+
+      - name: 🏀 Sync
+        if: steps.gate.outputs.run == 'true'
+        env:
+          BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          FROM: ${{ inputs.from }}
+          TO: ${{ inputs.to }}
+        run: |
+          set -o pipefail
+          args=()
+          if [ -n "$FROM" ]; then args+=(--from "$FROM"); fi
+          if [ -n "$TO" ]; then args+=(--to "$TO"); fi
+          bun run sync:nightly "${args[@]}" 2>&1 | tee sync.log
+          {
+            echo "### 🌙 Nightly stats sync"
+            echo
+            grep -E "^Nightly sync|^No regular-season" sync.log || true
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 🚨 Sync failed
+        if: failure()
+        run: echo "💥 The nightly stats sync failed; check the Sync step above." >> "$GITHUB_STEP_SUMMARY"

@@ -2,6 +2,7 @@ import {
   AdvancedGameLogInput,
   GameLogInput,
   PlayerInput,
+  SeasonAggregateLog,
   SeasonStatsInput,
 } from "@/lib/stats/inputs";
 import { blankToNull, parseGameDate, parseMinutes } from "@vision/core/util/parse";
@@ -130,7 +131,7 @@ export const toGameLogInput = (args: {
   };
 };
 
-export const aggregateSeasonStats = (logs: GameLogInput[]): SeasonStatsInput[] => {
+export const aggregateSeasonStats = (logs: SeasonAggregateLog[]): SeasonStatsInput[] => {
   // Keyed by player AND season so a multi-season backfill aggregates each
   // season separately instead of collapsing a career into one row.
   const byPlayer = logs.reduce((acc, log) => {

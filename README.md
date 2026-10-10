@@ -105,7 +105,11 @@ and `bun run build` fan out with `nx run-many`, and `bun run lint` and
 `bun run format` cover every project. App-specific scripts are forwarded from
 the root too: `bun run test:a11y`, `bun run perf:budget`, `bun run db:migrate`,
 and the sync jobs (`bun run sync:bdl`, then `bun run sync:players`) for
-refreshing stats. To target one project, use `bunx nx run <project>:<target>`
+rebuilding stats by season. `bun run sync:nightly` folds in a single night
+instead (last night by default, or `--date YYYY-MM-DD`, or
+`--from YYYY-MM-DD [--to YYYY-MM-DD]`); the `nightly-sync` workflow runs it at
+3am Eastern and needs the `BALLDONTLIE_API_KEY` and `DATABASE_URL` repository
+secrets. To target one project, use `bunx nx run <project>:<target>`
 (e.g. `bunx nx run court-vision:test`). Install Chromium once with
 `bunx playwright install chromium` before running the accessibility suite locally.
 Conventions live in `CLAUDE.md`; design specs and plans under `docs/superpowers/`.

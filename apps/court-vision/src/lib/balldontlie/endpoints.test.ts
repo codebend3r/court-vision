@@ -169,6 +169,21 @@ describe("fetchAllStats", () => {
 
     expect(fetchImpl.mock.calls[0]?.[0]?.toString() ?? "").toContain("seasons[]=2020");
   });
+
+  it("scopes the request to game dates instead of a season when dates are given", async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(jsonResponse({ data: [statRow(1, 10)], meta: {} }));
+
+    await fetchAllStats({
+      deps: { apiKey: "k", fetchImpl },
+      dates: ["2026-10-21", "2026-10-22"],
+    });
+
+    const url = fetchImpl.mock.calls[0]?.[0]?.toString() ?? "";
+    expect(url).toContain("dates[]=2026-10-21&dates[]=2026-10-22");
+    expect(url).not.toContain("seasons[]");
+  });
 });
 
 const advancedRow = (id: number, playerId: number) => ({
@@ -257,6 +272,18 @@ describe("fetchAllAdvancedStats", () => {
       .mockResolvedValue(jsonResponse({ data: [advancedRow(1, 10)] }));
 
     await expect(fetchAllAdvancedStats({ deps: { apiKey: "k", fetchImpl } })).rejects.toThrow();
+  });
+
+  it("scopes the request to game dates instead of a season when dates are given", async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(jsonResponse({ data: [advancedRow(1, 10)], meta: {} }));
+
+    await fetchAllAdvancedStats({ deps: { apiKey: "k", fetchImpl }, dates: ["2026-10-21"] });
+
+    const url = fetchImpl.mock.calls[0]?.[0]?.toString() ?? "";
+    expect(url).toContain("dates[]=2026-10-21");
+    expect(url).not.toContain("seasons[]");
   });
 
   it("requests an overridden season", async () => {

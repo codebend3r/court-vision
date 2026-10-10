@@ -95,3 +95,28 @@ export type GameLogInput = {
   pts: number;
   plusMinus: number | null;
 };
+
+// The fields a season line is summed from. Both a fresh GameLogInput and a
+// PlayerGameLog row read back from the database fit it, so the nightly sync
+// can re-aggregate a player's season from stored logs.
+export type SeasonAggregateLog = Pick<
+  GameLogInput,
+  | "playerId"
+  | "season"
+  | "seasonType"
+  | "minutes"
+  | "fgm"
+  | "fga"
+  | "fg3m"
+  | "fg3a"
+  | "ftm"
+  | "fta"
+  | "oreb"
+  | "dreb"
+  | "reb"
+  | "ast"
+  | "stl"
+  | "blk"
+  | "tov"
+  | "pts"
+>;

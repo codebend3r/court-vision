@@ -24,7 +24,7 @@ import { isMainModule } from "@vision/core/util/runtime";
 
 const emptySummary: SyncSummary = { players: 0, seasonStats: 0, gameLogs: 0, advancedGameLogs: 0 };
 
-const logPage =
+export const logPage =
   ({ label, logger }: { label: string; logger: Logger }) =>
   ({
     page,

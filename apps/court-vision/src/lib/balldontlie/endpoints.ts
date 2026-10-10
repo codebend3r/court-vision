@@ -39,6 +39,16 @@ const defaultSleep = (ms: number): Promise<void> =>
 
 const noopOnPage = (): void => {};
 
+// A stats fetch covers either a whole season or, for the nightly sync, just
+// the listed game dates (`YYYY-MM-DD`); dates win when both are given.
+const scopeParams = ({
+  season,
+  dates,
+}: {
+  season: string;
+  dates?: string[];
+}): Record<string, BdlParamValue> => (dates === undefined ? { seasons: [season] } : { dates });
+
 export const fetchTeams = async (deps: BdlClientDeps = {}): Promise<BdlTeam[]> => {
   const raw = await bdlFetch({
     endpoint: "teams",
@@ -66,9 +76,9 @@ export const fetchStandings = async (
 };
 
 export const fetchAllStats = async (
-  args: { deps?: BdlClientDeps; season?: string } = {},
+  args: { deps?: BdlClientDeps; season?: string; dates?: string[] } = {},
 ): Promise<BdlStat[]> => {
-  const { deps = {}, season = SEASON_YEAR } = args;
+  const { deps = {}, season = SEASON_YEAR, dates } = args;
   const sleep = deps.sleep ?? defaultSleep;
   const onPage = deps.onPage ?? noopOnPage;
   const pageSchema = bdlPaginatedPage(bdlStatSchema);
@@ -83,7 +93,7 @@ export const fetchAllStats = async (
     const raw = await bdlFetch({
       endpoint: "stats",
       params: {
-        seasons: [season],
+        ...scopeParams({ season, dates }),
         postseason: "false",
         per_page: PER_PAGE,
         ...cursorParam,
@@ -113,9 +123,9 @@ export const fetchAllStats = async (
 };
 
 export const fetchAllAdvancedStats = async (
-  args: { deps?: BdlClientDeps; season?: string } = {},
+  args: { deps?: BdlClientDeps; season?: string; dates?: string[] } = {},
 ): Promise<BdlAdvancedStat[]> => {
-  const { deps = {}, season = SEASON_YEAR } = args;
+  const { deps = {}, season = SEASON_YEAR, dates } = args;
   const sleep = deps.sleep ?? defaultSleep;
   const onPage = deps.onPage ?? noopOnPage;
   const pageSchema = bdlPaginatedPage(bdlAdvancedStatSchema);
@@ -130,7 +140,7 @@ export const fetchAllAdvancedStats = async (
     const raw = await bdlFetch({
       endpoint: "stats/advanced",
       params: {
-        seasons: [season],
+        ...scopeParams({ season, dates }),
         postseason: "false",
         per_page: PER_PAGE,
         ...cursorParam,

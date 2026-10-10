@@ -7,6 +7,9 @@ import {
   SeasonStatsInput,
 } from "@/lib/stats/inputs";
 import {
+  findSeasonAggregateLogs,
+  replaceAdvancedGameLogsForGames,
+  replaceGameLogsForGames,
   upsertAdvancedGameLogs,
   upsertGameLogs,
   upsertPlayers,
@@ -22,6 +25,7 @@ const client = {
   playerGameLog: {
     deleteMany: vi.fn(() => Promise.resolve({ count: 0 })),
     createMany: vi.fn(() => Promise.resolve({ count: 0 })),
+    findMany: vi.fn(() => Promise.resolve([])),
   },
   playerAdvancedGameLog: {
     deleteMany: vi.fn(() => Promise.resolve({ count: 0 })),
@@ -76,6 +80,31 @@ const baseGameLog: GameLogInput = {
   tov: 3,
   pts: 29,
   plusMinus: 12,
+};
+
+const baseAdvancedLog: AdvancedGameLogInput = {
+  playerId: 201939,
+  gameId: "base",
+  gameDate: new Date("2020-12-22T00:00:00Z"),
+  season: "2020-21",
+  seasonType: "Regular Season",
+  teamId: 1610612744,
+  teamAbbr: "GSW",
+  pie: 0.152,
+  pace: 98.4,
+  assistPercentage: 21.3,
+  assistRatio: 18.9,
+  assistToTurnover: 2.1,
+  defensiveRating: 108.2,
+  defensiveReboundPercentage: 14.5,
+  effectiveFieldGoalPercentage: 0.556,
+  netRating: 6.4,
+  offensiveRating: 114.6,
+  offensiveReboundPercentage: 3.1,
+  reboundPercentage: 8.8,
+  trueShootingPercentage: 0.612,
+  turnoverRatio: 9.2,
+  usagePercentage: 28.7,
 };
 
 beforeEach(() => {
@@ -194,31 +223,6 @@ describe("upsertGameLogs", () => {
 });
 
 describe("upsertAdvancedGameLogs", () => {
-  const baseAdvancedLog: AdvancedGameLogInput = {
-    playerId: 201939,
-    gameId: "base",
-    gameDate: new Date("2020-12-22T00:00:00Z"),
-    season: "2020-21",
-    seasonType: "Regular Season",
-    teamId: 1610612744,
-    teamAbbr: "GSW",
-    pie: 0.152,
-    pace: 98.4,
-    assistPercentage: 21.3,
-    assistRatio: 18.9,
-    assistToTurnover: 2.1,
-    defensiveRating: 108.2,
-    defensiveReboundPercentage: 14.5,
-    effectiveFieldGoalPercentage: 0.556,
-    netRating: 6.4,
-    offensiveRating: 114.6,
-    offensiveReboundPercentage: 3.1,
-    reboundPercentage: 8.8,
-    trueShootingPercentage: 0.612,
-    turnoverRatio: 9.2,
-    usagePercentage: 28.7,
-  };
-
   it("replaces a season's advanced logs with chunked inserts in one transaction", async () => {
     const logs = Array.from({ length: 1500 }, (_, index) => ({
       ...baseAdvancedLog,
@@ -240,6 +244,86 @@ describe("upsertAdvancedGameLogs", () => {
     const count = await upsertAdvancedGameLogs([]);
     expect(count).toBe(0);
     expect(client.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe("replaceGameLogsForGames", () => {
+  it("replaces only the fetched games' logs in one transaction", async () => {
+    const logs = [
+      { ...baseGameLog, gameId: "g1", playerId: 1 },
+      { ...baseGameLog, gameId: "g1", playerId: 2 },
+      { ...baseGameLog, gameId: "g2", playerId: 3 },
+    ];
+
+    const count = await replaceGameLogsForGames(logs);
+
+    expect(count).toBe(3);
+    expect(client.$transaction).toHaveBeenCalledTimes(1);
+    expect(client.playerGameLog.deleteMany).toHaveBeenCalledWith({
+      where: { gameId: { in: ["g1", "g2"] } },
+    });
+    expect(client.playerGameLog.createMany).toHaveBeenCalledWith({ data: logs });
+  });
+
+  it("does no work when there are no rows", async () => {
+    const count = await replaceGameLogsForGames([]);
+    expect(count).toBe(0);
+    expect(client.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe("replaceAdvancedGameLogsForGames", () => {
+  it("replaces only the fetched games' advanced logs in one transaction", async () => {
+    const logs = [
+      { ...baseAdvancedLog, gameId: "g1", playerId: 1 },
+      { ...baseAdvancedLog, gameId: "g2", playerId: 2 },
+    ];
+
+    const count = await replaceAdvancedGameLogsForGames(logs);
+
+    expect(count).toBe(2);
+    expect(client.$transaction).toHaveBeenCalledTimes(1);
+    expect(client.playerAdvancedGameLog.deleteMany).toHaveBeenCalledWith({
+      where: { gameId: { in: ["g1", "g2"] } },
+    });
+    expect(client.playerAdvancedGameLog.createMany).toHaveBeenCalledWith({ data: logs });
+  });
+
+  it("does no work when there are no rows", async () => {
+    const count = await replaceAdvancedGameLogsForGames([]);
+    expect(count).toBe(0);
+    expect(client.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe("findSeasonAggregateLogs", () => {
+  it("reads the listed players' logs for the listed seasons", async () => {
+    await findSeasonAggregateLogs({
+      playerIds: [1, 2],
+      seasons: ["2026-27"],
+      seasonType: "Regular Season",
+    });
+
+    expect(client.playerGameLog.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          playerId: { in: [1, 2] },
+          season: { in: ["2026-27"] },
+          seasonType: "Regular Season",
+        },
+      }),
+    );
+  });
+
+  it("skips the query when there are no players to read", async () => {
+    const logs = await findSeasonAggregateLogs({
+      playerIds: [],
+      seasons: ["2026-27"],
+      seasonType: "Regular Season",
+    });
+
+    expect(logs).toEqual([]);
+    expect(client.playerGameLog.findMany).not.toHaveBeenCalled();
   });
 });
 

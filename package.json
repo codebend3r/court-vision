@@ -36,6 +36,7 @@
     "sync:nba": "bun run --cwd apps/court-vision sync:nba",
     "sync:bdl": "bun run --cwd apps/court-vision sync:bdl",
     "sync:players": "bun run --cwd apps/court-vision sync:players",
+    "sync:nightly": "bun run --cwd apps/court-vision sync:nightly",
     "seed:demo": "bun run --cwd apps/court-vision seed:demo",
     "map:headshots": "bun run --cwd apps/court-vision map:headshots",
     "system-check": "bun run --sequential format:check typecheck lint test build"
