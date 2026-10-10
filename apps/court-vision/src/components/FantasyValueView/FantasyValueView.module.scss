@@ -62,3 +62,10 @@
   color: var(--color-text);
   font-size: var(--font-size-sm);
 }
+
+// While the worker revalues the pool, the previous results stay on screen
+// dimmed, so they read as "being replaced" rather than current. Matches the
+// /players pending dim.
+.results[aria-busy="true"] {
+  opacity: 0.6;
+}
