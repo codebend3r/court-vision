@@ -1,3 +1,4 @@
+import { isRecord } from "@vision/core/util/record";
 import { type DatedLog, type WindowLog } from "@vision/sport-basketball/types";
 
 import { PAGE_SIZES } from "@/lib/players/searchParams";
@@ -51,9 +52,6 @@ const LOG_NUMBER_KEYS: readonly (StatKey | "minutes")[] = [
   "ftm",
   "fta",
 ];
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
 
 const isFantasyTrendLog = (value: unknown): value is FantasyTrendLog =>
   isRecord(value) &&

@@ -7,21 +7,23 @@ import {
   isMethodWeights,
   isPoolStats,
   isValuationConfig,
-  isValuationInputs,
+  isValuationJob,
   isValuationLine,
-  isValuationRequest,
   isValuationResponse,
-  sameValuationJob,
-  type ValuationInputs,
+  respondToValuation,
+  type ValuationJob,
 } from "@/lib/valuation/workerProtocol";
 
-const lines = [1, 2, 3].map((playerId) => makeStatLine({ playerId, pts: 400 + playerId * 100 }));
-const inputs: ValuationInputs = {
+const lines = [1, 2, 3, 4].map((playerId) =>
+  makeStatLine({ playerId, pts: 300 + playerId * 150, ftm: 40 * playerId, fta: 200 }),
+);
+const job: ValuationJob = {
+  lines,
   config: DEFAULT_VALUATION_CONFIG,
   methodWeights: { z: { ft: 0 } },
   windowGames: null,
 };
-const { values, poolStats } = valuePlayers({ lines, ...inputs });
+const { values, poolStats } = valuePlayers(job);
 
 describe("isCategoryWeights", () => {
   it("accepts numeric weights keyed by category", () => {
@@ -76,29 +78,16 @@ describe("isValuationConfig", () => {
   });
 });
 
-describe("isValuationInputs", () => {
-  it("accepts a whole-season or windowed request", () => {
-    expect(isValuationInputs(inputs)).toBe(true);
-    expect(isValuationInputs({ ...inputs, windowGames: 10 })).toBe(true);
+describe("isValuationJob", () => {
+  it("accepts a whole-season or windowed job", () => {
+    expect(isValuationJob(job)).toBe(true);
+    expect(isValuationJob({ ...job, windowGames: 10 })).toBe(true);
   });
 
-  it("rejects a missing window or malformed weights", () => {
-    expect(isValuationInputs({ ...inputs, windowGames: undefined })).toBe(false);
-    expect(isValuationInputs({ ...inputs, methodWeights: { z: 1 } })).toBe(false);
-  });
-});
-
-describe("isValuationRequest", () => {
-  it("accepts a pool message and a value message", () => {
-    expect(isValuationRequest({ type: "lines", linesId: 1, lines })).toBe(true);
-    expect(isValuationRequest({ type: "value", requestId: 1, linesId: 1, inputs })).toBe(true);
-  });
-
-  it("rejects a pool holding a malformed line or an unknown message", () => {
-    expect(isValuationRequest({ type: "lines", linesId: 1, lines: [{ playerId: 1 }] })).toBe(false);
-    expect(isValuationRequest({ type: "value", requestId: 1, inputs })).toBe(false);
-    expect(isValuationRequest({ type: "reset" })).toBe(false);
-    expect(isValuationRequest("value")).toBe(false);
+  it("rejects a malformed line, missing window, or malformed weights", () => {
+    expect(isValuationJob({ ...job, lines: [{ playerId: 1 }] })).toBe(false);
+    expect(isValuationJob({ ...job, windowGames: undefined })).toBe(false);
+    expect(isValuationJob({ ...job, methodWeights: { z: 1 } })).toBe(false);
   });
 });
 
@@ -107,7 +96,7 @@ describe("isPoolStats", () => {
     expect(isPoolStats(poolStats)).toBe(true);
   });
 
-  it("rejects pool stats missing a category", () => {
+  it("rejects pool stats missing a category or a league rate", () => {
     const { pts: _pts, ...byCategory } = poolStats.byCategory;
     expect(isPoolStats({ ...poolStats, byCategory })).toBe(false);
     expect(isPoolStats({ ...poolStats, leagueRate: { fg: 0.5 } })).toBe(false);
@@ -131,23 +120,25 @@ describe("isValuationResponse", () => {
   });
 });
 
-describe("sameValuationJob", () => {
-  it("matches equal inputs held in fresh objects over the same pool", () => {
-    const copy: ValuationInputs = {
-      config: { ...inputs.config },
-      methodWeights: { z: { ft: 0 } },
-      windowGames: null,
-    };
-    expect(sameValuationJob({ a: { lines, inputs }, b: { lines, inputs: copy } })).toBe(true);
+describe("respondToValuation", () => {
+  it("values the job exactly as the main thread would", () => {
+    expect(respondToValuation({ requestId: 7, job })).toEqual({
+      type: "result",
+      requestId: 7,
+      values,
+      poolStats,
+    });
   });
 
-  it("tells apart a changed input or a new pool with the same numbers", () => {
-    const reweighted = { ...inputs, methodWeights: { z: { ft: 0.5 } } };
-    expect(sameValuationJob({ a: { lines, inputs }, b: { lines, inputs: reweighted } })).toBe(
-      false,
-    );
-    expect(sameValuationJob({ a: { lines, inputs }, b: { lines: [...lines], inputs } })).toBe(
-      false,
-    );
+  it("errors on a malformed job it can still answer", () => {
+    expect(respondToValuation({ requestId: 4, job: { ...job, config: {} } })).toEqual({
+      type: "error",
+      requestId: 4,
+    });
+  });
+
+  it("ignores noise with no request to answer", () => {
+    expect(respondToValuation({ hello: "worker" })).toBeNull();
+    expect(respondToValuation(null)).toBeNull();
   });
 });

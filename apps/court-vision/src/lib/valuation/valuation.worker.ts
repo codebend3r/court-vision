@@ -1,10 +1,8 @@
-import { createValuationResponder } from "@/lib/valuation/workerResponder";
+import { respondToValuation } from "@/lib/valuation/workerProtocol";
 
 // Entry point of the Fantasy tab's valuation worker: scores every method for
-// the whole pool off the main thread. The logic lives in workerResponder.
-const respond = createValuationResponder();
-
+// the whole pool off the main thread. The logic is respondToValuation.
 addEventListener("message", (event: MessageEvent<unknown>) => {
-  const response = respond(event.data);
+  const response = respondToValuation(event.data);
   if (response !== null) postMessage(response);
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { hasEveryKey, isKeyOf, recordFromKeys } from "#core/util/record";
+import { hasEveryKey, isKeyOf, isRecord, recordFromKeys } from "#core/util/record";
 
 describe("recordFromKeys", () => {
   it("builds one entry per key from the value function", () => {
@@ -12,6 +12,20 @@ describe("recordFromKeys", () => {
 
   it("builds an empty record from no keys", () => {
     expect(recordFromKeys({ keys: [], value: () => 0 })).toEqual({});
+  });
+});
+
+describe("isRecord", () => {
+  it("accepts objects and arrays", () => {
+    expect(isRecord({})).toBe(true);
+    expect(isRecord([])).toBe(true);
+  });
+
+  it("rejects null and primitives", () => {
+    expect(isRecord(null)).toBe(false);
+    expect(isRecord(undefined)).toBe(false);
+    expect(isRecord("record")).toBe(false);
+    expect(isRecord(1)).toBe(false);
   });
 });
 

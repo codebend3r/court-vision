@@ -1,55 +1,46 @@
-import { BASKETBALL_VALUED_STATS } from "@vision/sport-basketball/descriptor";
-import { CATEGORY_KEYS, isCategory, SCORED_KEYS } from "@vision/sport-basketball/engine";
+import { isKeyOf, isRecord } from "@vision/core/util/record";
+import { isWeightedMethodKey } from "@vision/core/valuation/registry";
+import { basketball, BASKETBALL_VALUED_STATS } from "@vision/sport-basketball/descriptor";
+import {
+  CATEGORY_KEYS,
+  isCategory,
+  SCORED_KEYS,
+  valuePlayers,
+} from "@vision/sport-basketball/engine";
 import { type BasketballLine } from "@vision/sport-basketball/types";
-import { isKeyOf } from "@vision/core/util/record";
 import {
   type CategoryWeights,
   type FantasyPlayerValues,
+  type FantasyStatLine,
   type MethodWeights,
   type PoolStats,
-  type RatioCategory,
   type ValuationConfig,
-  type WeightedMethodKey,
 } from "@/lib/valuation/types";
 
-// The messages the Fantasy tab and its valuation worker trade. Lines travel
-// once per pool (they are the bulk of the payload); every config change after
-// that sends only the small inputs and names the pool it applies to.
+// The Fantasy tab's valuation worker is stateless: each request carries the
+// whole job and gets back every method's score for it. Cloning the pool per
+// request costs a couple of milliseconds against a valuation many times that,
+// so the worker holds nothing between messages.
 
-// Everything valuePlayers reads besides the lines themselves.
-export type ValuationInputs = {
+// Exactly valuePlayers' arguments, so a job goes to the engine as is.
+export type ValuationJob = {
+  lines: readonly BasketballLine[];
   config: ValuationConfig;
   methodWeights: MethodWeights;
   windowGames: number | null;
 };
 
-// One valuation the view asks for: a pool plus the inputs to score it with.
-export type ValuationJob<L extends BasketballLine> = {
-  lines: readonly L[];
-  inputs: ValuationInputs;
+// The view's jobs carry its full stat lines, so the rows it renders from a
+// settled result are the very lines that result was computed from.
+export type FantasyValuationJob = Omit<ValuationJob, "lines"> & {
+  lines: readonly FantasyStatLine[];
 };
 
-export type ValuationRequest =
-  | { type: "lines"; linesId: number; lines: readonly BasketballLine[] }
-  | { type: "value"; requestId: number; linesId: number; inputs: ValuationInputs };
+export type ValuationRequest = { requestId: number; job: ValuationJob };
 
 export type ValuationResponse =
   | { type: "result"; requestId: number; values: FantasyPlayerValues[]; poolStats: PoolStats }
   | { type: "error"; requestId: number };
-
-// Keyed records, so a key added to the union fails to compile here rather than
-// slipping past the guards below.
-const RATIO_CATEGORIES: Record<RatioCategory, true> = { fg: true, ft: true };
-const WEIGHTED_METHODS: Record<WeightedMethodKey, true> = {
-  z: true,
-  g: true,
-  vorp: true,
-  pos: true,
-  sgp: true,
-  sim: true,
-};
-const RATIO_KEYS = CATEGORY_KEYS.filter(isKeyOf({ record: RATIO_CATEGORIES }));
-const isWeightedMethod = isKeyOf({ record: WEIGHTED_METHODS });
 
 const VALUE_KEYS: readonly (keyof FantasyPlayerValues)[] = [
   "playerId",
@@ -61,9 +52,7 @@ const VALUE_KEYS: readonly (keyof FantasyPlayerValues)[] = [
   "sgp",
   "sim",
 ];
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+const RATIO_KEYS = CATEGORY_KEYS.filter(isKeyOf({ record: basketball.ratio }));
 
 const isNumbersFor =
   <K extends string>({ keys }: { keys: readonly K[] }) =>
@@ -73,6 +62,8 @@ const isNumbersFor =
 const isStatNumbers = isNumbersFor({ keys: BASKETBALL_VALUED_STATS });
 const isRatioNumbers = isNumbersFor({ keys: RATIO_KEYS });
 const isScoringNumbers = isNumbersFor({ keys: SCORED_KEYS });
+const isFantasyPlayerValues = isNumbersFor({ keys: VALUE_KEYS });
+const isCategoryPoolStats = isNumbersFor({ keys: ["mu", "sigma", "sigmaWithin"] });
 
 export const isCategoryWeights = (value: unknown): value is CategoryWeights =>
   isRecord(value) &&
@@ -81,7 +72,7 @@ export const isCategoryWeights = (value: unknown): value is CategoryWeights =>
 export const isMethodWeights = (value: unknown): value is MethodWeights =>
   isRecord(value) &&
   Object.entries(value).every(
-    ([key, weights]) => isWeightedMethod(key) && isCategoryWeights(weights),
+    ([key, weights]) => isWeightedMethodKey(key) && isCategoryWeights(weights),
   );
 
 export const isValuationLine = (value: unknown): value is BasketballLine =>
@@ -104,34 +95,15 @@ export const isValuationConfig = (value: unknown): value is ValuationConfig =>
   typeof value.rosterSlots === "number" &&
   isScoringNumbers(value.scoring);
 
-export const isValuationInputs = (value: unknown): value is ValuationInputs =>
+// The worker reads whatever lands on its port, so it checks the job before
+// handing it to the engine.
+export const isValuationJob = (value: unknown): value is ValuationJob =>
   isRecord(value) &&
+  Array.isArray(value.lines) &&
+  value.lines.every(isValuationLine) &&
   isValuationConfig(value.config) &&
   isMethodWeights(value.methodWeights) &&
   (value.windowGames === null || typeof value.windowGames === "number");
-
-// The worker reads whatever lands on its port, so it checks the shape before
-// handing anything to the engine.
-export const isValuationRequest = (value: unknown): value is ValuationRequest => {
-  if (!isRecord(value)) return false;
-  if (value.type === "lines") {
-    return (
-      typeof value.linesId === "number" &&
-      Array.isArray(value.lines) &&
-      value.lines.every(isValuationLine)
-    );
-  }
-  return (
-    value.type === "value" &&
-    typeof value.requestId === "number" &&
-    typeof value.linesId === "number" &&
-    isValuationInputs(value.inputs)
-  );
-};
-
-const isFantasyPlayerValues = isNumbersFor({ keys: VALUE_KEYS });
-
-const isCategoryPoolStats = isNumbersFor({ keys: ["mu", "sigma", "sigmaWithin"] });
 
 export const isPoolStats = (value: unknown): value is PoolStats =>
   isRecord(value) &&
@@ -154,16 +126,16 @@ export const isValuationResponse = (value: unknown): value is ValuationResponse 
   );
 };
 
-// The URL parsers may hand back fresh objects for unchanged params, so inputs
-// compare by value. The pool compares by identity: a new server payload is a
-// new pool even if it happens to hold the same numbers.
-const inputsKey = ({ config, methodWeights, windowGames }: ValuationInputs): string =>
-  JSON.stringify([config, methodWeights, windowGames]);
-
-export const sameValuationJob = <L extends BasketballLine>({
-  a,
-  b,
-}: {
-  a: ValuationJob<L>;
-  b: ValuationJob<L>;
-}): boolean => a.lines === b.lines && inputsKey(a.inputs) === inputsKey(b.inputs);
+// The worker's whole job. Anything carrying a request id gets an answer, even
+// a malformed job, so the view never waits on a reply that is not coming.
+// Null means noise with no request to answer.
+export const respondToValuation = (data: unknown): ValuationResponse | null => {
+  if (!isRecord(data) || typeof data.requestId !== "number") return null;
+  const { requestId, job } = data;
+  if (!isValuationJob(job)) return { type: "error", requestId };
+  try {
+    return { type: "result", requestId, ...valuePlayers(job) };
+  } catch {
+    return { type: "error", requestId };
+  }
+};

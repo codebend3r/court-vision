@@ -27,12 +27,11 @@ import {
   CATEGORY_KEYS,
   CATEGORY_META,
 } from "@vision/sport-basketball/engine";
+import { isWeightedMethodKey, WEIGHTED_METHOD_KEYS } from "@vision/core/valuation/registry";
 import { DEFAULT_TREND_GAMES } from "@vision/core/valuation/trend";
 import {
   FANTASY_LAYOUTS,
   fantasyParsers,
-  isWeightedMethodKey,
-  WEIGHTED_METHOD_KEYS,
   type FantasyLayout,
   type FantasySortKey,
 } from "@/lib/valuation/searchParams";
@@ -219,7 +218,7 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
   );
   const basis = params.mode === "total" ? "total" : "perGame";
 
-  const config = useMemo(
+  const requestedConfig = useMemo(
     (): ValuationConfig => ({
       categories: [...included],
       weights: {},
@@ -231,28 +230,24 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
     [included, basis, params.teams, params.slots, params.s],
   );
 
-  // Scored in a worker. Until it answers for the current inputs, everything
-  // below renders from the last settled pool and inputs (`valued`), so rows,
-  // breakdowns and trends always agree with the values on screen.
-  const {
-    job: valued,
-    values,
-    poolStats,
-    isPending,
-  } = useValuation({
+  // Scored in a worker. Until it answers for the requested inputs, everything
+  // below renders from the lines, config and weights the values on screen were
+  // computed from (`valuation.*`), so rows, breakdowns and trends always agree.
+  const valuation = useValuation({
     lines,
-    config,
+    config: requestedConfig,
     methodWeights: params.w,
     windowGames: gamesForRange({ range: params.range }),
   });
+  const { values, poolStats } = valuation;
 
   const scored = useMemo(() => {
     const byId = new Map(values.map((value) => [value.playerId, value]));
-    return valued.lines.map((line) => ({
+    return valuation.lines.map((line) => ({
       line,
       values: byId.get(line.playerId) ?? NEUTRAL_VALUES(line.playerId),
     }));
-  }, [valued.lines, values]);
+  }, [valuation.lines, values]);
 
   const visible = useMemo(() => {
     const query = params.q.trim().toLowerCase();
@@ -314,15 +309,15 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
     promise: Promise<FantasyTrendLogsResult>;
   } | null>(null);
   const requestMatches =
-    logsRequest !== null && logsRequest.idsKey === idsKey && logsRequest.lines === valued.lines;
+    logsRequest !== null && logsRequest.idsKey === idsKey && logsRequest.lines === valuation.lines;
   useEffect(() => {
     if (params.layout !== "rolling" || idsKey === "" || requestMatches) return;
     setLogsRequest({
       idsKey,
-      lines: valued.lines,
+      lines: valuation.lines,
       promise: loadFantasyTrendLogs({ playerIds: idsKey.split(",").map(Number) }),
     });
-  }, [params.layout, idsKey, valued.lines, requestMatches]);
+  }, [params.layout, idsKey, valuation.lines, requestMatches]);
   const logsPromise = requestMatches && logsRequest !== null ? logsRequest.promise : null;
   // The rolling charts follow a Games window the filter names, and fall back
   // to recent form (not the whole season) when the filter is on All games.
@@ -337,13 +332,13 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
           breakdown: buildCategoryBreakdown({
             line: row,
             poolStats,
-            config: valued.inputs.config,
-            methodWeights: valued.inputs.methodWeights,
+            config: valuation.config,
+            methodWeights: valuation.methodWeights,
           }),
         }))
       : [];
   const chartCategories = CATEGORY_META.filter((meta) =>
-    valued.inputs.config.categories.some((key) => key === meta.key),
+    valuation.config.categories.some((key) => key === meta.key),
   );
 
   const onControlsChange = ({ w, ...rest }: FantasyControlsChange) => {
@@ -391,7 +386,7 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
         slots={params.slots}
         onChange={onControlsChange}
       />
-      {!!valued.lines.length && poolStats.poolSize < 2 && (
+      {!!valuation.lines.length && poolStats.poolSize < 2 && (
         <p className={styles.notice}>
           The player pool is too small to standardize against, so Z-Score and G-Score are neutral.
           Try a wider game range.
@@ -405,7 +400,7 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
       )}
       <section
         className={styles.results}
-        aria-busy={isPending}
+        aria-busy={valuation.isPending}
         key={`${params.sort}:${params.dir}:${params.range}:${params.mode}:${page}:${params.layout}`}
       >
         <header className={styles.summaryRow}>
@@ -474,8 +469,8 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
                     logsPromise={logsPromise}
                     rows={pageRows}
                     poolStats={poolStats}
-                    config={valued.inputs.config}
-                    methodWeights={valued.inputs.methodWeights}
+                    config={valuation.config}
+                    methodWeights={valuation.methodWeights}
                     windowGames={windowGames}
                     isSignedIn={isSignedIn}
                     sort={params.sort}

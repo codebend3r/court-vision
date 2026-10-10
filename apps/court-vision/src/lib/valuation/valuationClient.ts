@@ -1,8 +1,6 @@
-import { type BasketballLine } from "@vision/sport-basketball/types";
 import {
   isValuationResponse,
-  sameValuationJob,
-  type ValuationJob,
+  type FantasyValuationJob,
   type ValuationRequest,
 } from "@/lib/valuation/workerProtocol";
 import { type FantasyPlayerValues, type PoolStats } from "@/lib/valuation/types";
@@ -15,48 +13,40 @@ export type ValuationPort = {
   terminate: () => void;
 };
 
-export type SettledValuation<L extends BasketballLine> = {
-  job: ValuationJob<L>;
+// A finished valuation, kept with the job that produced it.
+export type SettledValuation = {
+  job: FantasyValuationJob;
   values: FantasyPlayerValues[];
   poolStats: PoolStats;
 };
 
-export type ValuationClient<L extends BasketballLine> = {
-  request: (job: ValuationJob<L>) => void;
+export type ValuationClient = {
+  request: (job: FantasyValuationJob) => void;
   dispose: () => void;
 };
 
 // One job in flight at a time. A job requested meanwhile waits, and a newer
 // one replaces it, so dragging a weight queues at most one valuation behind
-// the running one instead of one per step. Each settled result carries the
-// job that produced it, so the view never pairs values with inputs they were
-// not computed from. Any worker failure ends the client: the view falls back
-// to valuing on the main thread.
-export const createValuationClient = <L extends BasketballLine>({
+// the running one instead of one per step. Any worker failure ends the
+// client: the view falls back to valuing on the main thread.
+export const createValuationClient = ({
   port,
   onSettle,
   onFailure,
 }: {
   port: ValuationPort;
-  onSettle: (settled: SettledValuation<L>) => void;
+  onSettle: (settled: SettledValuation) => void;
   onFailure: () => void;
-}): ValuationClient<L> => {
-  let sentLines: readonly L[] | null = null;
-  let linesId = 0;
+}): ValuationClient => {
   let requestId = 0;
-  let inFlight: { requestId: number; job: ValuationJob<L> } | null = null;
-  let queued: ValuationJob<L> | null = null;
+  let inFlight: { requestId: number; job: FantasyValuationJob } | null = null;
+  let queued: FantasyValuationJob | null = null;
   let failed = false;
 
-  const send = (job: ValuationJob<L>) => {
-    if (job.lines !== sentLines) {
-      linesId += 1;
-      sentLines = job.lines;
-      port.post({ type: "lines", linesId, lines: job.lines });
-    }
+  const send = (job: FantasyValuationJob) => {
     requestId += 1;
     inFlight = { requestId, job };
-    port.post({ type: "value", requestId, linesId, inputs: job.inputs });
+    port.post({ requestId, job });
   };
 
   const stopListening = port.listen({
@@ -94,10 +84,6 @@ export const createValuationClient = <L extends BasketballLine>({
   return {
     request: (job) => {
       if (failed) return;
-      if (inFlight !== null && sameValuationJob({ a: inFlight.job, b: job })) {
-        queued = null;
-        return;
-      }
       if (inFlight !== null) {
         queued = job;
         return;
