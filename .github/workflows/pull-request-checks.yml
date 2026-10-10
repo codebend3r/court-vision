@@ -80,12 +80,25 @@ jobs:
 
       # Signed out, the audited routes touch neither Supabase nor the database,
       # so no env is needed: the same property the a11y job relies on.
+      #
+      # 46644 sits inside Linux's ephemeral port range (32768-60999), so a socket
+      # the build left behind can briefly hold it and `next start` dies with
+      # EADDRINUSE. A server that exits is retried after a pause instead of
+      # being polled for a minute; one that is up but never answers still fails.
       - name: 🚀 Start server
         run: |
-          bun run start --port 46644 &
-          for _ in $(seq 1 60); do
-            curl -sf http://localhost:46644/login > /dev/null && exit 0
-            sleep 1
+          for attempt in 1 2 3; do
+            bun run start --port 46644 &
+            server=$!
+            for _ in $(seq 1 60); do
+              curl -sf http://localhost:46644/login > /dev/null && exit 0
+              kill -0 "$server" 2> /dev/null || break
+              sleep 1
+            done
+            kill -0 "$server" 2> /dev/null && echo "Server never answered" && exit 1
+            echo "Server exited (attempt $attempt); sockets on 46644:"
+            ss -tanp "sport = :46644" || true
+            sleep 5
           done
           echo "Server never came up" && exit 1
 

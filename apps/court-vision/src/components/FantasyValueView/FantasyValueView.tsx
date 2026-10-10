@@ -16,6 +16,7 @@ import {
   type FantasyTableRow,
 } from "@/components/FantasyValueTable/FantasyValueTable";
 import type { FantasyTrendRow } from "@/components/FantasyValueTrends/FantasyValueTrends";
+import { useValuation } from "@/components/FantasyValueView/useValuation";
 import { Preloader } from "@vision/ui/components/Preloader/Preloader";
 import { type FantasySeed } from "@/lib/leagues/fantasyDefaults";
 import { gamesForRange, type PlayerGameRange } from "@/lib/players/searchParams";
@@ -25,14 +26,12 @@ import {
   buildFantasyTrend,
   CATEGORY_KEYS,
   CATEGORY_META,
-  valuePlayers,
 } from "@vision/sport-basketball/engine";
+import { isWeightedMethodKey, WEIGHTED_METHOD_KEYS } from "@vision/core/valuation/registry";
 import { DEFAULT_TREND_GAMES } from "@vision/core/valuation/trend";
 import {
   FANTASY_LAYOUTS,
   fantasyParsers,
-  isWeightedMethodKey,
-  WEIGHTED_METHOD_KEYS,
   type FantasyLayout,
   type FantasySortKey,
 } from "@/lib/valuation/searchParams";
@@ -219,7 +218,7 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
   );
   const basis = params.mode === "total" ? "total" : "perGame";
 
-  const config = useMemo(
+  const requestedConfig = useMemo(
     (): ValuationConfig => ({
       categories: [...included],
       weights: {},
@@ -231,24 +230,24 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
     [included, basis, params.teams, params.slots, params.s],
   );
 
-  const { values, poolStats } = useMemo(
-    () =>
-      valuePlayers({
-        lines,
-        config,
-        methodWeights: params.w,
-        windowGames: gamesForRange({ range: params.range }),
-      }),
-    [lines, config, params.w, params.range],
-  );
+  // Scored in a worker. Until it answers for the requested inputs, everything
+  // below renders from the lines, config and weights the values on screen were
+  // computed from (`valuation.*`), so rows, breakdowns and trends always agree.
+  const valuation = useValuation({
+    lines,
+    config: requestedConfig,
+    methodWeights: params.w,
+    windowGames: gamesForRange({ range: params.range }),
+  });
+  const { values, poolStats } = valuation;
 
   const scored = useMemo(() => {
     const byId = new Map(values.map((value) => [value.playerId, value]));
-    return lines.map((line) => ({
+    return valuation.lines.map((line) => ({
       line,
       values: byId.get(line.playerId) ?? NEUTRAL_VALUES(line.playerId),
     }));
-  }, [lines, values]);
+  }, [valuation.lines, values]);
 
   const visible = useMemo(() => {
     const query = params.q.trim().toLowerCase();
@@ -298,8 +297,8 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
   // trips React's update-while-rendering check and has no server to call
   // during SSR), and read with `use` inside Suspense below. The promise is
   // keyed by the unordered player set, not the freshly scored row objects:
-  // sorting and weight changes reuse it. A new server pool invalidates it so
-  // a refreshed season/range never reads logs from the previous payload.
+  // sorting and weight changes reuse it. A newly valued pool invalidates it
+  // so a refreshed season/range never reads logs from the previous payload.
   const idsKey = pageRows
     .map((row) => row.playerId)
     .sort((a, b) => a - b)
@@ -310,15 +309,15 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
     promise: Promise<FantasyTrendLogsResult>;
   } | null>(null);
   const requestMatches =
-    logsRequest !== null && logsRequest.idsKey === idsKey && logsRequest.lines === lines;
+    logsRequest !== null && logsRequest.idsKey === idsKey && logsRequest.lines === valuation.lines;
   useEffect(() => {
     if (params.layout !== "rolling" || idsKey === "" || requestMatches) return;
     setLogsRequest({
       idsKey,
-      lines,
+      lines: valuation.lines,
       promise: loadFantasyTrendLogs({ playerIds: idsKey.split(",").map(Number) }),
     });
-  }, [params.layout, idsKey, lines, requestMatches]);
+  }, [params.layout, idsKey, valuation.lines, requestMatches]);
   const logsPromise = requestMatches && logsRequest !== null ? logsRequest.promise : null;
   // The rolling charts follow a Games window the filter names, and fall back
   // to recent form (not the whole season) when the filter is on All games.
@@ -333,12 +332,14 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
           breakdown: buildCategoryBreakdown({
             line: row,
             poolStats,
-            config,
-            methodWeights: params.w,
+            config: valuation.config,
+            methodWeights: valuation.methodWeights,
           }),
         }))
       : [];
-  const chartCategories = CATEGORY_META.filter((meta) => included.some((key) => key === meta.key));
+  const chartCategories = CATEGORY_META.filter((meta) =>
+    valuation.config.categories.some((key) => key === meta.key),
+  );
 
   const onControlsChange = ({ w, ...rest }: FantasyControlsChange) => {
     // The controls edit a flat weight map; it lands under the sorted column's
@@ -385,7 +386,7 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
         slots={params.slots}
         onChange={onControlsChange}
       />
-      {!!lines.length && poolStats.poolSize < 2 && (
+      {!!valuation.lines.length && poolStats.poolSize < 2 && (
         <p className={styles.notice}>
           The player pool is too small to standardize against, so Z-Score and G-Score are neutral.
           Try a wider game range.
@@ -399,6 +400,7 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
       )}
       <section
         className={styles.results}
+        aria-busy={valuation.isPending}
         key={`${params.sort}:${params.dir}:${params.range}:${params.mode}:${page}:${params.layout}`}
       >
         <header className={styles.summaryRow}>
@@ -467,8 +469,8 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
                     logsPromise={logsPromise}
                     rows={pageRows}
                     poolStats={poolStats}
-                    config={config}
-                    methodWeights={params.w}
+                    config={valuation.config}
+                    methodWeights={valuation.methodWeights}
                     windowGames={windowGames}
                     isSignedIn={isSignedIn}
                     sort={params.sort}

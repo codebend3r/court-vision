@@ -6,6 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 const loadFantasyTrendLogs = vi.fn();
 
 vi.mock("@/lib/valuation/actions", () => ({ loadFantasyTrendLogs }));
+// No worker under test: the view values on the main thread, synchronously
+// enough for each interaction to settle inside its act(). useValuation's own
+// tests cover the worker path.
+vi.mock("@/lib/valuation/valuationPort", () => ({ createValuationPort: () => null }));
 
 import { FantasyValueView } from "@/components/FantasyValueView/FantasyValueView";
 import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";

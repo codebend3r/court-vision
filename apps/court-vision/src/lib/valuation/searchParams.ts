@@ -15,11 +15,11 @@ import {
   isCategory,
   SCORED_KEYS,
 } from "@vision/sport-basketball/engine";
+import { isWeightedMethodKey, WEIGHTED_METHOD_KEYS } from "@vision/core/valuation/registry";
 import {
   type MethodWeights,
   type ScoringSettings,
   type ScoringStatKey,
-  type WeightedMethodKey,
 } from "@/lib/valuation/types";
 
 // One sort key per method column plus the name sorts.
@@ -60,19 +60,6 @@ export const snapWeight = (value: number): number => {
   if (Number.isNaN(value)) return 1;
   return Math.round(Math.min(2, Math.max(0, value)) * 4) / 4;
 };
-
-// Every weight set belongs to one method column (spec: per-column weights).
-export const WEIGHTED_METHOD_KEYS: readonly WeightedMethodKey[] = [
-  "z",
-  "g",
-  "vorp",
-  "pos",
-  "sgp",
-  "sim",
-];
-
-export const isWeightedMethodKey = (value: string | undefined): value is WeightedMethodKey =>
-  WEIGHTED_METHOD_KEYS.some((key) => key === value);
 
 // "z.ft:0,g.tov:0.5" ↔ { z: { ft: 0 }, g: { tov: 0.5 } }: each entry is scoped
 // to the method column it tunes. Weight-1 entries are dropped in both

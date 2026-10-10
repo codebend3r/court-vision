@@ -2,6 +2,10 @@
 // build `Record<K, V>` from a generic key list on its own, so the one
 // construction below is checked at runtime instead of cast.
 
+// Any non-null object, so its properties can be read and checked one by one.
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
 export const hasEveryKey =
   <K extends string>({ keys }: { keys: readonly K[] }) =>
   <V>(record: Record<string, V>): record is Record<K, V> =>

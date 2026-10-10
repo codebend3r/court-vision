@@ -120,6 +120,19 @@ export const enabledMethods = ({
   methods: readonly FantasyMethodMeta[];
 }): FantasyMethodMeta[] => methods.filter((method) => method.available);
 
+// Every weight set belongs to one method column (spec: per-column weights).
+export const WEIGHTED_METHOD_KEYS: readonly WeightedMethodKey[] = [
+  "z",
+  "g",
+  "vorp",
+  "pos",
+  "sgp",
+  "sim",
+];
+
+export const isWeightedMethodKey = (value: string | undefined): value is WeightedMethodKey =>
+  WEIGHTED_METHOD_KEYS.some((key) => key === value);
+
 // Weighted-column sort keys → registry keys, so the Weights panel can name the
 // column it is editing with the same label the table header uses.
 export const METHOD_KEY_BY_WEIGHTED: Record<WeightedMethodKey, FantasyMethodKey> = {

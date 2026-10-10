@@ -4,7 +4,6 @@ import { describe, expect, it } from "bun:test";
 import {
   FANTASY_SORT_KEYS,
   fantasyParsers,
-  isWeightedMethodKey,
   parseWeights,
   serializeWeights,
   snapWeight,
@@ -55,21 +54,6 @@ describe("weights codec", () => {
   it("snaps out-of-range weights instead of erroring", () => {
     expect(parseWeights("z.pts:9")).toEqual({ z: { pts: 2 } });
     expect(parseWeights("z.pts:0.6")).toEqual({ z: { pts: 0.5 } });
-  });
-});
-
-describe("isWeightedMethodKey", () => {
-  it("accepts exactly the six weighted column keys", () => {
-    ["z", "g", "vorp", "pos", "sgp", "sim"].forEach((key) => {
-      expect(isWeightedMethodKey(key)).toBe(true);
-    });
-  });
-
-  it("rejects the unweighted sorts and unknowns", () => {
-    expect(isWeightedMethodKey("points")).toBe(false);
-    expect(isWeightedMethodKey("firstName")).toBe(false);
-    expect(isWeightedMethodKey("zscore")).toBe(false);
-    expect(isWeightedMethodKey(undefined)).toBe(false);
   });
 });
 

@@ -16,13 +16,8 @@ import {
   methodMeta,
   SCORED_KEYS,
 } from "@vision/sport-basketball/engine";
-import { METHOD_KEY_BY_WEIGHTED } from "@vision/core/valuation/registry";
-import {
-  clampScore,
-  isWeightedMethodKey,
-  snapWeight,
-  type FantasySortKey,
-} from "@/lib/valuation/searchParams";
+import { isWeightedMethodKey, METHOD_KEY_BY_WEIGHTED } from "@vision/core/valuation/registry";
+import { clampScore, snapWeight, type FantasySortKey } from "@/lib/valuation/searchParams";
 import { type Category, type ScoringSettings, type ScoringStatKey } from "@/lib/valuation/types";
 
 import styles from "@/components/FantasyControls/FantasyControls.module.scss";
