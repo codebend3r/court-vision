@@ -1,0 +1,11 @@
+# The rink-vision Netlify site (rink-vision.netlify.app) builds from the repo
+# root as its base directory, with apps/rink-vision as its package directory.
+# Netlify reads the package directory's netlify.toml before the root one, which
+# builds Court Vision. Every path here is relative to the base directory.
+[build]
+command = "bun run --cwd apps/rink-vision build"
+publish = "apps/rink-vision/.next"
+# Build only when this app, a lib it compiles, or the workspace's install and
+# compiler setup changed; exit 0 skips the build. When both refs match (a first
+# build or a retried deploy) the test fails and the build runs.
+ignore = "[ \"$CACHED_COMMIT_REF\" != \"$COMMIT_REF\" ] && git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- apps/rink-vision libs/vision-core libs/vision-ui libs/sport-hockey package.json bun.lock bunfig.toml tsconfig.base.json"
