@@ -40,6 +40,26 @@ describe("PlayerInsightPanel", () => {
     expect(screen.getByText(/hover a player/i)).toBeInTheDocument();
   });
 
+  it("names a hovered player with no stat line and says they have yet to play", () => {
+    const rookie: FantasyTeamPlayer = {
+      ...player,
+      playerId: 1057262817,
+      firstName: "AJ",
+      lastName: "Dybantsa",
+      fullName: "AJ Dybantsa",
+      teamAbbr: "WAS",
+      position: "F",
+    };
+    render(<PlayerInsightPanel player={rookie} insight={null} />);
+
+    const panel = screen.getByRole("complementary", { name: "AJ Dybantsa quick stats" });
+    expect(within(panel).getByText("AJ Dybantsa")).toBeInTheDocument();
+    expect(within(panel).getByText("0 GP")).toBeInTheDocument();
+    expect(within(panel).getByText(/no games played yet/i)).toBeInTheDocument();
+    expect(within(panel).queryByText(/hover a player/i)).toBeNull();
+    expect(within(panel).queryByRole("table")).toBeNull();
+  });
+
   it("shows the total z-score and overall + positional ranks", () => {
     render(<PlayerInsightPanel player={player} insight={insight} />);
     expect(screen.getByText("Jalen Brunson")).toBeInTheDocument();

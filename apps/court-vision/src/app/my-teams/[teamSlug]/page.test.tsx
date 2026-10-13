@@ -10,6 +10,7 @@ const getProfile = vi.fn();
 const getActiveLeague = vi.fn();
 const getLeagueTeamBySlug = vi.fn();
 const getFantasyPool = vi.fn();
+const getActiveRosterPlayers = vi.fn();
 const saveLeagueTeam = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({ getProfile: () => getProfile() }));
@@ -18,6 +19,7 @@ vi.mock("@/lib/leagues/teamQueries", () => ({
   getLeagueTeamBySlug: (args: { leagueId: string; slug: string }) => getLeagueTeamBySlug(args),
 }));
 vi.mock("@/lib/valuation/loader", () => ({ getFantasyPool }));
+vi.mock("@/lib/fantasyTeams/loader", () => ({ getActiveRosterPlayers }));
 vi.mock("@/lib/leagues/teamActions", () => ({ saveLeagueTeam }));
 
 vi.mock("next/navigation", () => ({
@@ -54,6 +56,7 @@ beforeEach(() => {
   getProfile.mockResolvedValue({ id: "profile-1" });
   getActiveLeague.mockResolvedValue(league({ id: "league-1", name: "Bench Mob League" }));
   getFantasyPool.mockResolvedValue([makeStatLine({ playerId: 1 })]);
+  getActiveRosterPlayers.mockResolvedValue([]);
 });
 
 afterEach(cleanup);
