@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
 
-import { createPrng, gaussian } from "#core/util/prng";
+import { createPrng, gaussian, standardNormal } from "#core/util/prng";
 
 const draw = ({ seed, count }: { seed: number; count: number }): number[] => {
-  const rng = createPrng(seed);
+  const rng = createPrng({ seed });
   return Array.from({ length: count }, () => rng());
 };
 
@@ -25,5 +25,21 @@ describe("gaussian", () => {
   it("returns the mean when the angle term is zero", () => {
     // u2 = 0.25 puts cos(2π·u2) at 0, so the spread contributes nothing.
     expect(gaussian({ rng: () => 0.25, mean: 10, spread: 3 })).toBeCloseTo(10, 12);
+  });
+});
+
+describe("standardNormal", () => {
+  it("returns 0 when the angle term is zero", () => {
+    expect(standardNormal({ random: () => 0.25 })).toBeCloseTo(0, 12);
+  });
+
+  it("reads a draw of e^(-1/2) at angle 0 as exactly one standard deviation", () => {
+    const draws = [Math.exp(-0.5), 0].values();
+    const random = () => draws.next().value ?? 0;
+    expect(standardNormal({ random })).toBeCloseTo(1, 12);
+  });
+
+  it("stays finite when the first draw is exactly 0", () => {
+    expect(Number.isFinite(standardNormal({ random: () => 0 }))).toBe(true);
   });
 });

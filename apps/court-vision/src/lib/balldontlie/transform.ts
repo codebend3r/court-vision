@@ -58,7 +58,7 @@ export const deriveGameContext = (args: {
     teamScore: played ? teamScore : null,
     opponentScore: played ? opponentScore : null,
     matchup: `${teamAbbr} ${separator} ${opponentAbbr ?? ""}`.trim(),
-    gameDate: parseGameDate(game.date),
+    gameDate: parseGameDate({ value: game.date }),
   };
 };
 
@@ -77,8 +77,8 @@ export const toPlayerInputs = (
       fullName: `${player.first_name} ${player.last_name}`,
       teamId,
       teamAbbr: teamId === null ? null : (teamAbbrById.get(teamId) ?? null),
-      position: blankToNull(player.position),
-      jerseyNumber: blankToNull(player.jersey_number),
+      position: blankToNull({ value: player.position }),
+      jerseyNumber: blankToNull({ value: player.jersey_number }),
     });
     return acc;
   }, new Map<number, PlayerInput>());
@@ -111,7 +111,7 @@ export const toGameLogInput = (args: {
     // the league did not track the category); 0 matches how 2022-23+ DNP rows
     // are already stored. `aggregateSeasonStats` gates gamesPlayed on
     // minutes > 0, so these rows never inflate a season line.
-    minutes: parseMinutes(stat.min ?? 0),
+    minutes: parseMinutes({ value: stat.min ?? 0 }),
     fgm: stat.fgm ?? 0,
     fga: stat.fga ?? 0,
     fg3m: stat.fg3m ?? 0,
@@ -189,7 +189,7 @@ export const toAdvancedGameLogInput = (args: { stat: BdlAdvancedStat }): Advance
   return {
     playerId: stat.player.id,
     gameId: String(game.id),
-    gameDate: parseGameDate(game.date),
+    gameDate: parseGameDate({ value: game.date }),
     season: seasonLabelFromYear(game.season),
     seasonType: SEASON_TYPE,
     teamId: team.id,
@@ -221,12 +221,12 @@ export const toPlayerInput = (args: { player: BdlPlayer }): PlayerInput => {
     fullName: `${player.first_name} ${player.last_name}`,
     teamId: player.team?.id ?? null,
     teamAbbr: player.team?.abbreviation ?? null,
-    position: blankToNull(player.position),
-    jerseyNumber: blankToNull(player.jersey_number),
+    position: blankToNull({ value: player.position }),
+    jerseyNumber: blankToNull({ value: player.jersey_number }),
     heightInches: parseHeightInches(player.height),
     weightLbs: parseWeightLbs(player.weight),
-    college: blankToNull(player.college),
-    country: blankToNull(player.country),
+    college: blankToNull({ value: player.college }),
+    country: blankToNull({ value: player.country }),
     draftYear: player.draft_year ?? null,
     draftRound: player.draft_round ?? null,
     draftNumber: player.draft_number ?? null,

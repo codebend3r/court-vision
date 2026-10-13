@@ -6,7 +6,7 @@ import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { RosteredMarker } from "@/components/RosteredMarker/RosteredMarker";
 import { StarButton } from "@/components/StarButton/StarButton";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
-import { FANTASY_METHODS, methodMeta } from "@vision/sport-basketball/engine";
+import { methodMeta } from "@vision/sport-basketball/engine";
 import { type FantasyMethodKey } from "@vision/core/valuation/types";
 import { type FantasySortKey } from "@/lib/valuation/searchParams";
 import { type FantasyPlayerValues, type FantasyStatLine } from "@/lib/valuation/types";
@@ -30,8 +30,7 @@ type MethodColumn = {
   signed: boolean;
 };
 
-// One sortable column per available method (PRD §9.3). Methods without math
-// yet render as blocked placeholder columns after these.
+// One sortable column per method (PRD §9.3).
 const METHOD_COLUMNS: readonly MethodColumn[] = [
   { sortKey: "z", methodKey: "zscore", value: (values) => values.z, signed: true },
   { sortKey: "g", methodKey: "gscore", value: (values) => values.g, signed: true },
@@ -44,10 +43,6 @@ const METHOD_COLUMNS: readonly MethodColumn[] = [
 
 const formatScore = ({ value, signed }: { value: number; signed: boolean }): string =>
   signed && value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
-
-// Every registry method that has no math behind it yet renders as one blocked
-// column, so registering a new one is enough to surface it here.
-const BLOCKED_METHODS = FANTASY_METHODS.filter((method) => !method.available);
 
 export function FantasyValueTable({ rows, sort, dir, isSignedIn, onSort }: FantasyValueTableProps) {
   const isStatSort = sort !== "firstName" && sort !== "lastName";
@@ -122,7 +117,7 @@ export function FantasyValueTable({ rows, sort, dir, isSignedIn, onSort }: Fanta
             <th>Team</th>
             <th>Position</th>
             {METHOD_COLUMNS.map((column) => {
-              const meta = methodMeta(column.methodKey);
+              const meta = methodMeta({ key: column.methodKey });
               return header({
                 label: meta?.label ?? column.methodKey,
                 sortKey: column.sortKey,
@@ -135,27 +130,6 @@ export function FantasyValueTable({ rows, sort, dir, isSignedIn, onSort }: Fanta
                 },
               });
             })}
-            {BLOCKED_METHODS.map((method) => (
-              <th key={method.key} className={`${styles.numeric} ${styles.blockedHeader}`}>
-                <span aria-describedby={`fantasy-tip-${method.key}`}>{method.label}</span>
-                <span
-                  role="tooltip"
-                  id={`fantasy-tip-${method.key}`}
-                  className={styles.headerTip}
-                  hidden
-                >
-                  <span className={styles.headerTipName}>
-                    {method.label} — {method.fullName}
-                  </span>
-                  <span>{method.description}</span>
-                  <span className={styles.headerTipWhy}>
-                    <span className={styles.headerTipWhyLabel}>Why it matters</span>
-                    {method.whyItMatters}
-                  </span>
-                  <span>{method.unavailableReason ?? ""}</span>
-                </span>
-              </th>
-            ))}
           </tr>
         </thead>
         <tbody>
@@ -197,11 +171,6 @@ export function FantasyValueTable({ rows, sort, dir, isSignedIn, onSort }: Fanta
                   </td>
                 );
               })}
-              {BLOCKED_METHODS.map((method) => (
-                <td key={method.key} className={`${styles.numeric} ${styles.blockedCell}`}>
-                  —
-                </td>
-              ))}
             </tr>
           ))}
         </tbody>

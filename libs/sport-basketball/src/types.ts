@@ -13,16 +13,11 @@ import { type Category as CoreCategory } from "@vision/core/sport/types";
 import {
   type DatedLog as CoreDatedLog,
   type WindowLog as CoreWindowLog,
-  type WindowTotals as CoreWindowTotals,
 } from "@vision/core/valuation/aggregate";
 import { type FantasyCategoryBreakdown as CoreFantasyCategoryBreakdown } from "@vision/core/valuation/breakdown";
 import { type CategoryMeta as CoreCategoryMeta } from "@vision/core/valuation/categories";
 import { type FantasyGameValue as CoreFantasyGameValue } from "@vision/core/valuation/gameValues";
-import {
-  type FantasyProfileLog as CoreFantasyProfileLog,
-  type PlayerFantasyProfile as CorePlayerFantasyProfile,
-} from "@vision/core/valuation/playerValue";
-import { type SyntheticLeague as CoreSyntheticLeague } from "@vision/core/valuation/rosters";
+import { type FantasyProfileLog as CoreFantasyProfileLog } from "@vision/core/valuation/playerValue";
 import {
   type CategoryWeights as CoreCategoryWeights,
   type MethodWeights as CoreMethodWeights,
@@ -41,7 +36,6 @@ export type RatioCategory = BasketballKeys["ratio"];
 export type Category = CoreCategory<BasketballKeys>;
 export type StatKey = BasketballKeys["valued"];
 export type ScoringStatKey = BasketballKeys["scoring"];
-export type PositionGroup = BasketballKeys["group"];
 export type RosterSlotType = BasketballKeys["slot"];
 
 export type BasketballLine = CoreValuationLine<BasketballKeys>;
@@ -55,11 +49,8 @@ export type CategoryMeta = CoreCategoryMeta<BasketballKeys>;
 export type FantasyCategoryBreakdown = CoreFantasyCategoryBreakdown<BasketballKeys>;
 export type FantasyGameValue = CoreFantasyGameValue<BasketballKeys>;
 export type FantasyProfileLog = CoreFantasyProfileLog<BasketballKeys>;
-export type PlayerFantasyProfile = CorePlayerFantasyProfile<BasketballKeys>;
-export type SyntheticLeague = CoreSyntheticLeague<BasketballKeys>;
 export type WindowLog = CoreWindowLog<BasketballKeys>;
 export type DatedLog = CoreDatedLog<BasketballKeys>;
-export type WindowTotals = CoreWindowTotals<BasketballKeys>;
 export type SlotCounts = CoreSlotCounts<BasketballKeys>;
 export type PlayerInsight = CorePlayerInsight<BasketballKeys>;
 export type PlayerCategoryInsight = CorePlayerCategoryInsight<BasketballKeys>;

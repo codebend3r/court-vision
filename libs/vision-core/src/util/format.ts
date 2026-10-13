@@ -66,3 +66,21 @@ export const formatDraft = (args: {
     .filter(isDraftPart)
     .join(" · ");
 };
+
+// A fixed-precision number with an explicit "+" on gains: "+1.4" / "-2.1".
+// Zero is unsigned ("0.0") unless `signZero` asks for "+0.00", the reading a
+// z-score panel wants, where zero means "exactly average" rather than "none".
+export const formatSigned = (args: {
+  value: number;
+  digits: number;
+  signZero?: boolean;
+}): string => {
+  const { value, digits, signZero = false } = args;
+  const isPlus = signZero ? value >= 0 : value > 0;
+  return `${isPlus ? "+" : ""}${value.toFixed(digits)}`;
+};
+
+// A make rate the way box scores print it, to three places with the leading
+// zero dropped: 0.48 reads ".480". A perfect 1 keeps its digit ("1.000").
+export const formatRate = (args: { value: number }): string =>
+  args.value.toFixed(3).replace(/^0(?=\.)/, "");

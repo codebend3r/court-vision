@@ -11,6 +11,7 @@ import {
   countsFromSlots,
   defaultSlotCounts,
   eligibleForSlot,
+  groupSlotsByKind,
   resizeSlots,
   rosterSize,
   slotMeta,
@@ -36,13 +37,9 @@ import { scoreSimValue } from "#core/valuation/methods/simvalue";
 import { scoreZScore } from "#core/valuation/methods/zscore";
 import { positionalValues } from "#core/valuation/modifiers/positional";
 import { buildPlayerFantasyProfile } from "#core/valuation/playerValue";
-import { computePoolStats, leagueRates } from "#core/valuation/pool";
-import { enabledMethods, fantasyMethods } from "#core/valuation/registry";
-import {
-  buildRollingGSeries,
-  buildRollingZSeries,
-  rollingWindowLines,
-} from "#core/valuation/rolling";
+import { computePoolStats, leagueRates, poolStatsFor } from "#core/valuation/pool";
+import { fantasyMethods } from "#core/valuation/registry";
+import { buildRollingSeries, rollingWindowLines } from "#core/valuation/rolling";
 import { buildLeague, rankByValue } from "#core/valuation/rosters";
 import { buildFantasyTrend } from "#core/valuation/trend";
 import { type ValuationLine } from "#core/valuation/types";
@@ -60,14 +57,12 @@ export const createSportEngine = <K extends SportKeys>({
 }: {
   sport: SportDescriptor<K>;
 }) => {
-  const methods = fantasyMethods({ sport });
   return {
     sport,
     categoryMeta: categoryMeta({ sport }),
     categoryKeys: sport.categoryOrder,
     isCategory: categoryGuard({ sport }),
-    fantasyMethods: methods,
-    enabledMethods: enabledMethods({ methods }),
+    fantasyMethods: fantasyMethods({ sport }),
     slotTypes: slotTypes({ sport }),
     defaultSlotCounts: defaultSlotCounts({ sport }),
     defaultValuationConfig: defaultValuationConfig({ sport }),
@@ -83,6 +78,8 @@ export const createSportEngine = <K extends SportKeys>({
       leagueRates<K>({ ...args, sport }),
     computePoolStats: (args: WithoutSport<Parameters<typeof computePoolStats<K>>[0]>) =>
       computePoolStats<K>({ ...args, sport }),
+    poolStatsFor: (args: WithoutSport<Parameters<typeof poolStatsFor<K>>[0]>) =>
+      poolStatsFor<K>({ ...args, sport }),
     aggregateWindowLogs: (args: WithoutSport<Parameters<typeof aggregateWindowLogs<K>>[0]>) =>
       aggregateWindowLogs<K>({ ...args, sport }),
     scoreZScore: (args: WithoutSport<Parameters<typeof scoreZScore<K>>[0]>) =>
@@ -115,10 +112,8 @@ export const createSportEngine = <K extends SportKeys>({
       buildFantasyTrend<K>({ ...args, sport }),
     rollingWindowLines: (args: WithoutSport<Parameters<typeof rollingWindowLines<K>>[0]>) =>
       rollingWindowLines<K>({ ...args, sport }),
-    buildRollingZSeries: (args: WithoutSport<Parameters<typeof buildRollingZSeries<K>>[0]>) =>
-      buildRollingZSeries<K>({ ...args, sport }),
-    buildRollingGSeries: (args: WithoutSport<Parameters<typeof buildRollingGSeries<K>>[0]>) =>
-      buildRollingGSeries<K>({ ...args, sport }),
+    buildRollingSeries: (args: WithoutSport<Parameters<typeof buildRollingSeries<K>>[0]>) =>
+      buildRollingSeries<K>({ ...args, sport }),
     buildPlayerFantasyProfile: (
       args: WithoutSport<Parameters<typeof buildPlayerFantasyProfile<K>>[0]>,
     ) => buildPlayerFantasyProfile<K>({ ...args, sport }),
@@ -148,10 +143,11 @@ export const createSportEngine = <K extends SportKeys>({
     countsFromSlots: <P extends RosterPlayer>(
       args: WithoutSport<Parameters<typeof countsFromSlots<K, P>>[0]>,
     ) => countsFromSlots<K, P>({ ...args, sport }),
+    groupSlotsByKind: <P extends RosterPlayer>(
+      args: WithoutSport<Parameters<typeof groupSlotsByKind<K, P>>[0]>,
+    ) => groupSlotsByKind<K, P>({ ...args, sport }),
     autoAssignSlotId: <P extends RosterPlayer>(
       args: WithoutSport<Parameters<typeof autoAssignSlotId<K, P>>[0]>,
     ) => autoAssignSlotId<K, P>({ ...args, sport }),
   };
 };
-
-export type SportEngine<K extends SportKeys> = ReturnType<typeof createSportEngine<K>>;

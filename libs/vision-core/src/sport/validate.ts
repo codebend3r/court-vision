@@ -1,4 +1,6 @@
 import { type SportDescriptor, type SportKeys } from "#core/sport/types";
+import { isKeyOf } from "#core/util/record";
+import { methodNeedsCategories } from "#core/valuation/registry";
 
 const duplicates = (values: readonly string[]): string[] =>
   values.filter((value, index) => values.indexOf(value) !== index);
@@ -15,14 +17,14 @@ export const describeSportIssues = <K extends SportKeys>({
   const ordered: readonly string[] = sport.categoryOrder;
   const valued: readonly string[] = sport.valuedStats;
   const groups: readonly string[] = sport.positions.groups;
-  const statsRead = [
-    ...Object.values(sport.counting).flatMap((def) =>
-      typeof def === "object" && def !== null && "stat" in def ? [String(def.stat)] : [],
+  const isCounting = isKeyOf({ record: sport.counting });
+  const isRatio = isKeyOf({ record: sport.ratio });
+  const statsRead: readonly string[] = [
+    ...Object.keys(sport.counting).flatMap((key) =>
+      isCounting(key) ? [sport.counting[key].stat] : [],
     ),
-    ...Object.values(sport.ratio).flatMap((def) =>
-      typeof def === "object" && def !== null && "numerator" in def && "denominator" in def
-        ? [String(def.numerator), String(def.denominator)]
-        : [],
+    ...Object.keys(sport.ratio).flatMap((key) =>
+      isRatio(key) ? [sport.ratio[key].numerator, sport.ratio[key].denominator] : [],
     ),
     ...sport.points.keys,
   ];
@@ -58,7 +60,7 @@ export const describeSportIssues = <K extends SportKeys>({
       : []),
     ...(sport.categoryOrder.length === 0
       ? sport.methods
-          .filter((method) => method !== "points" && method !== "vorp" && method !== "positional")
+          .filter((method) => methodNeedsCategories({ key: method }))
           .map((method) => `method "${method}" needs categories, and this sport has none`)
       : []),
     ...sport.slots.flatMap((slot) =>

@@ -67,14 +67,6 @@ describe("FantasyValueTable", () => {
     expect(screen.getByText("+1.8")).toBeInTheDocument(); // g
   });
 
-  it("renders a blocked placeholder column per unimplemented method", () => {
-    render(<FantasyValueTable isSignedIn={false} {...defaultProps} rows={rows} />);
-    const blocked = FANTASY_METHODS.filter((method) => !method.available);
-    // Every registered method is implemented today; the placeholder machinery
-    // stays covered so the next blocked method renders correctly.
-    expect(screen.queryAllByText("—")).toHaveLength(rows.length * blocked.length);
-  });
-
   it("does not render per-category columns", () => {
     render(<FantasyValueTable isSignedIn={false} {...defaultProps} rows={rows} />);
     expect(screen.queryByRole("columnheader", { name: "PTS" })).not.toBeInTheDocument();

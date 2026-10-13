@@ -58,7 +58,7 @@ export const createLeague = async ({
           profileId: profile.id,
           name: trimmed,
           slug: uniqueSlug({
-            base: teamNameToSlug(trimmed),
+            base: teamNameToSlug({ name: trimmed }),
             taken: existing.map((row) => row.slug),
           }),
           scoringType,

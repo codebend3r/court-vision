@@ -1,13 +1,11 @@
 import { describe, expect, it } from "bun:test";
 
-import { recordFromKeys } from "@vision/core/util/record";
-import { type ValuationLine } from "@vision/core/valuation/types";
+import { makeLine } from "@vision/core/testing/lines";
 
-import { baseball, BASEBALL_VALUED_STATS, type BaseballKeys } from "#baseball/descriptor";
+import { baseball, type BaseballKeys } from "#baseball/descriptor";
 import { baseballEngine } from "#baseball/engine";
 
-type Stats = Partial<Record<BaseballKeys["valued"], number>>;
-
+// Thirty appearances, each counted as one unit of playing time.
 const line = ({
   playerId,
   position,
@@ -15,23 +13,8 @@ const line = ({
 }: {
   playerId: number;
   position: string;
-  stats: Stats;
-}): ValuationLine<BaseballKeys> => {
-  const gamesPlayed = 30;
-  const totals = recordFromKeys({ keys: BASEBALL_VALUED_STATS, value: (key) => stats[key] ?? 0 });
-  return {
-    playerId,
-    position,
-    gamesPlayed,
-    playingTime: gamesPlayed,
-    stats: totals,
-    sq: recordFromKeys({
-      keys: BASEBALL_VALUED_STATS,
-      value: (key) => (totals[key] * totals[key]) / gamesPlayed,
-    }),
-    cross: { avg: 0, era: 0, whip: 0 },
-  };
-};
+  stats: Partial<Record<BaseballKeys["valued"], number>>;
+}) => makeLine({ sport: baseball, playerId, position, gamesPlayed: 30, playingTime: 30, stats });
 
 const pitchers = baseball.pools[1];
 

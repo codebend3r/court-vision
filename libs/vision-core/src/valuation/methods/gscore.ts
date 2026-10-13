@@ -1,12 +1,6 @@
-import { type Category, type SportDescriptor, type SportKeys } from "#core/sport/types";
-import { categoryValue } from "#core/valuation/categories";
-import {
-  type CategoryContribution,
-  type PlayerValue,
-  type PoolStats,
-  type ValuationConfig,
-  type ValuationLine,
-} from "#core/valuation/types";
+import { type SportDescriptor, type SportKeys } from "#core/sport/types";
+import { scorePerCategory, type CategoryScoringConfig } from "#core/valuation/methods/perCategory";
+import { type PlayerValue, type PoolStats, type ValuationLine } from "#core/valuation/types";
 
 // G-Score (PRD §6.2 sketch): the Z-Score numerator over a denominator that
 // adds the pool's typical game-level volatility to the between-player spread,
@@ -24,28 +18,16 @@ export const scoreGScore = <K extends SportKeys>({
   sport: SportDescriptor<K>;
   lines: readonly ValuationLine<K>[];
   poolStats: PoolStats<K>;
-  config: ValuationConfig<K>;
+  config: CategoryScoringConfig<K>;
 }): PlayerValue<K>[] =>
-  lines.map((line) => {
-    const breakdown = config.categories.reduce<Partial<Record<Category<K>, CategoryContribution>>>(
-      (acc, category) => {
-        const { mu, sigma, sigmaWithin } = poolStats.byCategory[category];
-        const denominator = Math.sqrt(sigma ** 2 + sigmaWithin ** 2);
-        const value = categoryValue({
-          sport,
-          line,
-          category,
-          basis: config.basis,
-          leagueRate: poolStats.leagueRate,
-        });
-        const raw = denominator === 0 ? 0 : (value - mu) / denominator;
-        return { ...acc, [category]: { raw, weighted: raw * (config.weights[category] ?? 1) } };
-      },
-      {},
-    );
-    const total = config.categories.reduce(
-      (sum, category) => sum + (breakdown[category]?.weighted ?? 0),
-      0,
-    );
-    return { playerId: line.playerId, total, breakdown };
+  scorePerCategory({
+    sport,
+    lines,
+    poolStats,
+    config,
+    raw: ({ category, value }) => {
+      const { mu, sigma, sigmaWithin } = poolStats.byCategory[category];
+      const denominator = Math.sqrt(sigma ** 2 + sigmaWithin ** 2);
+      return denominator === 0 ? 0 : (value - mu) / denominator;
+    },
   });

@@ -1,3 +1,4 @@
+import { countingCategory } from "@vision/core/sport/categories";
 import { memberOf, parsePositionGroups } from "@vision/core/sport/positions";
 import { singleYearSeasonLabel } from "@vision/core/sport/season";
 import { type SportDescriptor } from "@vision/core/sport/types";
@@ -49,18 +50,7 @@ export const parseBaseballPosition = parsePositionGroups({
   isGroup: memberOf({ values: BASEBALL_POSITION_GROUPS }),
 });
 
-const counting = <C extends BaseballKeys["counting"]>(args: {
-  key: C;
-  label: string;
-  fullName: string;
-  description: string;
-}) => ({
-  ...args,
-  kind: "counting" as const,
-  stat: args.key,
-  direction: "higher" as const,
-  formula: `(${args.label} − pool avg) ÷ pool std dev × weight`,
-});
+const counting = countingCategory<BaseballKeys>();
 
 const HITTER_CATEGORIES = ["r", "hr", "rbi", "sb", "avg"] as const;
 const PITCHER_CATEGORIES = ["w", "sv", "k", "era", "whip"] as const;

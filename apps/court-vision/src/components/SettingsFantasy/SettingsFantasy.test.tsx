@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { SettingsFantasy } from "@/components/SettingsFantasy/SettingsFantasy";
-import { ENABLED_METHODS } from "@vision/sport-basketball/engine";
+import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
 
 const updatePreferencesMock = vi.fn();
 
@@ -18,10 +18,10 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("SettingsFantasy", () => {
-  it("renders one radio per ENABLED_METHODS entry plus an App default radio", () => {
+  it("renders one radio per FANTASY_METHODS entry plus an App default radio", () => {
     render(<SettingsFantasy preferredFormula={null} />);
     expect(screen.getByRole("radio", { name: "App default" })).toBeInTheDocument();
-    ENABLED_METHODS.forEach((method) => {
+    FANTASY_METHODS.forEach((method) => {
       expect(screen.getByRole("radio", { name: method.fullName })).toBeInTheDocument();
     });
   });

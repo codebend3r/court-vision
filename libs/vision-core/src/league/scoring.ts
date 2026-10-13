@@ -1,4 +1,5 @@
 import { type Category, type SportDescriptor, type SportKeys } from "#core/sport/types";
+import { isRecord } from "#core/util/record";
 import { categoryGuard } from "#core/valuation/categories";
 import { type ScoringSettings } from "#core/valuation/types";
 
@@ -17,16 +18,10 @@ export type LeagueScoringConfig<K extends SportKeys> =
   | H2hPointsConfig<K>
   | RotoConfig<K>;
 
-export const LEAGUE_SCORING_TYPES: readonly LeagueScoringType[] = [
-  "h2h_categories",
-  "h2h_points",
-  "roto",
-];
+const LEAGUE_SCORING_TYPES: readonly LeagueScoringType[] = ["h2h_categories", "h2h_points", "roto"];
 
 export const isLeagueScoringType = (value: string): value is LeagueScoringType =>
   LEAGUE_SCORING_TYPES.some((type) => type === value);
-
-const isObject = (value: unknown): value is object => typeof value === "object" && value !== null;
 
 // Stored configs come back as untyped JSON, so each shape is checked against
 // the sport's own categories and scoring keys before it is trusted.
@@ -43,34 +38,28 @@ export const scoringConfigGuards = <K extends SportKeys>({
     value.every((entry) => typeof entry === "string" && isCategory(entry));
 
   const isWeightRecord = (value: unknown): boolean =>
-    isObject(value) &&
+    isRecord(value) &&
     Object.entries(value).every(
       ([key, weight]) => isCategory(key) && typeof weight === "number" && Number.isFinite(weight),
     );
 
   const isH2hCategoriesConfig = (value: unknown): value is H2hCategoriesConfig<K> => {
-    if (!isObject(value)) return false;
-    const record: Record<string, unknown> = { ...value };
-    if (!isCategoryList(record.categories)) return false;
-    return record.weights === undefined || isWeightRecord(record.weights);
+    if (!isRecord(value)) return false;
+    if (!isCategoryList(value.categories)) return false;
+    return value.weights === undefined || isWeightRecord(value.weights);
   };
 
   const isH2hPointsConfig = (value: unknown): value is H2hPointsConfig<K> => {
-    if (!isObject(value)) return false;
-    const record: Record<string, unknown> = { ...value };
-    const scoring = record.scoring;
-    if (!isObject(scoring)) return false;
-    const scoringRecord: Record<string, unknown> = { ...scoring };
+    if (!isRecord(value)) return false;
+    const scoring = value.scoring;
+    if (!isRecord(scoring)) return false;
     return sport.points.keys.every(
-      (key) => typeof scoringRecord[key] === "number" && Number.isFinite(scoringRecord[key]),
+      (key) => typeof scoring[key] === "number" && Number.isFinite(scoring[key]),
     );
   };
 
-  const isRotoConfig = (value: unknown): value is RotoConfig<K> => {
-    if (!isObject(value)) return false;
-    const record: Record<string, unknown> = { ...value };
-    return isCategoryList(record.categories) && record.weights === undefined;
-  };
+  const isRotoConfig = (value: unknown): value is RotoConfig<K> =>
+    isRecord(value) && isCategoryList(value.categories) && value.weights === undefined;
 
   return { isH2hCategoriesConfig, isH2hPointsConfig, isRotoConfig };
 };

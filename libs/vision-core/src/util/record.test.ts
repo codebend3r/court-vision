@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { hasEveryKey, isKeyOf, isRecord, recordFromKeys } from "#core/util/record";
+import { hasEveryKey, isKeyOf, isRecord, recordFromItems, recordFromKeys } from "#core/util/record";
 
 describe("recordFromKeys", () => {
   it("builds one entry per key from the value function", () => {
@@ -12,6 +12,23 @@ describe("recordFromKeys", () => {
 
   it("builds an empty record from no keys", () => {
     expect(recordFromKeys({ keys: [], value: () => 0 })).toEqual({});
+  });
+});
+
+describe("recordFromItems", () => {
+  it("keys each item's value by the item's own key", () => {
+    const specs = [
+      { key: "fg", scale: 100 },
+      { key: "ft", scale: 1 },
+    ];
+    expect(recordFromItems({ items: specs, value: (spec) => spec.scale })).toEqual({
+      fg: 100,
+      ft: 1,
+    });
+  });
+
+  it("builds an empty record from no items", () => {
+    expect(recordFromItems({ items: [], value: () => 0 })).toEqual({});
   });
 });
 

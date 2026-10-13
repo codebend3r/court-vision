@@ -1,9 +1,9 @@
 import { type Category, type SportDescriptor, type SportKeys } from "#core/sport/types";
 import { aggregateWindowLogs, isAppearance, type DatedLog } from "#core/valuation/aggregate";
-import { weightedConfig } from "#core/valuation/breakdown";
+import { weightedConfig } from "#core/valuation/config";
 import { scoreGScore } from "#core/valuation/methods/gscore";
 import { scoreZScore } from "#core/valuation/methods/zscore";
-import { buildFantasyTrend } from "#core/valuation/trend";
+import { type FantasyTrendValue } from "#core/valuation/trend";
 import {
   type MethodWeights,
   type PoolStats,
@@ -26,11 +26,14 @@ export type FantasyGameValue<K extends SportKeys> = {
 // Every game in `logs` (the player's season, in date order), aligned by
 // index, measured against a pool the caller holds fixed. Each game scores as
 // a one-game line on the same per-game basis the season card uses, so a
-// game's Z reads on the same scale as the player's season Z.
+// game's Z reads on the same scale as the player's season Z. `season` is the
+// player's unwindowed trend over the same logs (buildFantasyTrend with no
+// window), computed once by the caller and read here for the rolling values.
 export const buildFantasyGameValues = <K extends SportKeys>({
   sport,
   line,
   logs,
+  season,
   poolStats,
   config,
   methodWeights,
@@ -38,24 +41,16 @@ export const buildFantasyGameValues = <K extends SportKeys>({
   sport: SportDescriptor<K>;
   line: ValuationLine<K>;
   logs: readonly DatedLog<K>[];
+  season: readonly FantasyTrendValue[];
   poolStats: PoolStats<K>;
   config: ValuationConfig<K>;
   methodWeights: MethodWeights<K>;
 }): FantasyGameValue<K>[] => {
   const zConfig = weightedConfig({ config, methodWeights, method: "z" });
   const gConfig = weightedConfig({ config, methodWeights, method: "g" });
-  const trend = buildFantasyTrend({
-    sport,
-    line,
-    logs,
-    poolStats,
-    config,
-    methodWeights,
-    windowGames: null,
-  });
   return logs.map((log, index): FantasyGameValue<K> => {
-    const rollingZ = trend[index]?.z ?? null;
-    const rollingG = trend[index]?.g ?? null;
+    const rollingZ = season[index]?.z ?? null;
+    const rollingG = season[index]?.g ?? null;
     if (!isAppearance(log)) {
       return { z: null, g: null, rollingZ, rollingG, categories: {} };
     }

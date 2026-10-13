@@ -95,7 +95,7 @@ export function FantasyControls({
   // Weights are per column: the panel edits the sorted method's set, and it is
   // disabled entirely on columns that never read weights (PL Linear, names).
   const weightTarget = isWeightedMethodKey(sort)
-    ? methodMeta(METHOD_KEY_BY_WEIGHTED[sort])
+    ? methodMeta({ key: METHOD_KEY_BY_WEIGHTED[sort] })
     : undefined;
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestQ = useRef(q);

@@ -18,8 +18,7 @@ export const {
   buildLeague,
   buildPlayerFantasyProfile,
   buildPlayerInsights,
-  buildRollingGSeries,
-  buildRollingZSeries,
+  buildRollingSeries,
   buildSlots,
   categoryPerGame,
   categoryValue,
@@ -28,6 +27,7 @@ export const {
   countsFromSlots,
   defaultScoringConfig,
   eligibleForSlot,
+  groupSlotsByKind,
   isCategory,
   isH2hCategoriesConfig,
   isH2hPointsConfig,
@@ -35,6 +35,7 @@ export const {
   leagueRates,
   positionalValues,
   parseScoringConfig,
+  poolStatsFor,
   rankByValue,
   resizeSlots,
   rollingWindowLines,
@@ -54,13 +55,11 @@ export const CATEGORY_KEYS = basketballEngine.categoryKeys;
 export const DEFAULT_POINTS_SCORING = basketball.points.defaults;
 export const SCORED_KEYS = basketball.points.keys;
 export const FANTASY_METHODS = basketballEngine.fantasyMethods;
-export const ENABLED_METHODS = basketballEngine.enabledMethods;
 export const SLOT_META = basketball.slots;
 export const SLOT_TYPES = basketballEngine.slotTypes;
 export const DEFAULT_SLOT_COUNTS = basketballEngine.defaultSlotCounts;
 export const DEFAULT_VALUATION_CONFIG = basketballEngine.defaultValuationConfig;
-export const POSITION_GROUPS = basketball.positions.groups;
 export const parseEligibleGroups = parseBasketballPosition;
 
-export const methodMeta = (key: FantasyMethodKey): FantasyMethodMeta | undefined =>
+export const methodMeta = ({ key }: { key: FantasyMethodKey }): FantasyMethodMeta | undefined =>
   FANTASY_METHODS.find((method) => method.key === key);

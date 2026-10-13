@@ -13,18 +13,18 @@ const line = makeStatLine;
 
 describe("meanSigma", () => {
   it("computes population mean and standard deviation", () => {
-    const { mu, sigma } = meanSigma([2, 4, 4, 4, 5, 5, 7, 9]);
+    const { mu, sigma } = meanSigma({ values: [2, 4, 4, 4, 5, 5, 7, 9] });
     expect(mu).toBe(5);
     expect(sigma).toBe(2);
   });
 
   it("returns sigma 0 for fewer than two values", () => {
-    expect(meanSigma([])).toEqual({ mu: 0, sigma: 0 });
-    expect(meanSigma([3])).toEqual({ mu: 3, sigma: 0 });
+    expect(meanSigma({ values: [] })).toEqual({ mu: 0, sigma: 0 });
+    expect(meanSigma({ values: [3] })).toEqual({ mu: 3, sigma: 0 });
   });
 
   it("returns sigma 0 when every value is identical", () => {
-    expect(meanSigma([4, 4, 4])).toEqual({ mu: 4, sigma: 0 });
+    expect(meanSigma({ values: [4, 4, 4] })).toEqual({ mu: 4, sigma: 0 });
   });
 });
 

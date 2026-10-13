@@ -1,9 +1,8 @@
 import { type Category, type SportDescriptor, type SportKeys } from "#core/sport/types";
-import { createPrng } from "#core/util/prng";
-import { categoryValue } from "#core/valuation/categories";
-import { buildLeague, type SyntheticLeague } from "#core/valuation/rosters";
+import { createPrng, standardNormal } from "#core/util/prng";
+import { scorePerCategory } from "#core/valuation/methods/perCategory";
+import { buildLeague } from "#core/valuation/rosters";
 import {
-  type CategoryContribution,
   type PlayerValue,
   type PoolStats,
   type ValuationConfig,
@@ -14,19 +13,11 @@ import {
 // because each iteration scores with and without the player against the *same*
 // opponent (common random numbers), so everything except the categories near
 // the win threshold cancels out.
-export const SIM_ITERATIONS = 400;
+const SIM_ITERATIONS = 400;
 
 // Fixed seed: the simulated season must not change between renders, and a
 // Math.random-based column could not be tested.
 const SIM_SEED = 0x5eed;
-
-// Box-Muller: opponents' weekly category totals are modelled as normal around
-// the league's average team, spread by how far apart teams actually finish.
-const standardNormal = ({ random }: { random: () => number }): number => {
-  const u = Math.max(random(), Number.MIN_VALUE);
-  const v = random();
-  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
-};
 
 // Weeks a team finishing on `total` wins: the opponents strictly below it, by
 // binary search over the ascending draws. A NaN total beats nobody, and a NaN
@@ -65,22 +56,22 @@ export const scoreSimValue = <K extends SportKeys>({
   lines,
   poolStats,
   config,
-  league,
   iterations = SIM_ITERATIONS,
 }: {
   sport: SportDescriptor<K>;
   lines: readonly ValuationLine<K>[];
   poolStats: PoolStats<K>;
   config: ValuationConfig<K>;
-  league?: SyntheticLeague<K>;
   iterations?: number;
 }): PlayerValue<K>[] => {
-  const { replacement, spread } = league ?? buildLeague({ sport, lines, poolStats, config });
+  const { replacement, spread } = buildLeague({ sport, lines, poolStats, config });
 
   // One simulated season, drawn once and faced by every player. Re-rolling
   // opponents per player would cost 600× the draws and, worse, would rank
   // players against different luck; this way the column is a paired comparison.
-  const random = createPrng(SIM_SEED);
+  // Opponents' weekly category totals are modelled as normal around the
+  // league's average team, spread by how far apart teams actually finish.
+  const random = createPrng({ seed: SIM_SEED });
   const opponents = config.categories.reduce<Partial<Record<Category<K>, number[]>>>(
     (acc, category) => {
       const { mean, sd } = spread[category] ?? { mean: 0, sd: 0 };
@@ -99,43 +90,35 @@ export const scoreSimValue = <K extends SportKeys>({
   // it. Scoring a player is then one binary search (nine comparisons) rather
   // than a pass over every simulated week (eight hundred): the same whole-week
   // count, across a 600-player pool.
-  const seasons = config.categories.map((category) => {
-    const sorted = Float64Array.from(opponents[category] ?? []).sort();
-    const { mean } = spread[category] ?? { mean: 0 };
-    return {
-      category,
-      mean,
-      sorted,
-      baselineWins: weeksWon({ sorted, total: mean }),
-      freeAgent: replacement[category] ?? 0,
-    };
-  });
+  const seasons = new Map(
+    config.categories.map((category) => {
+      const sorted = Float64Array.from(opponents[category] ?? []).sort();
+      const { mean } = spread[category] ?? { mean: 0 };
+      const season = {
+        mean,
+        sorted,
+        baselineWins: weeksWon({ sorted, total: mean }),
+        freeAgent: replacement[category] ?? 0,
+      };
+      return [category, season];
+    }),
+  );
 
-  return lines.map((line) => {
-    const breakdown = seasons.reduce<Partial<Record<Category<K>, CategoryContribution>>>(
-      (acc, { category, mean, sorted, baselineWins, freeAgent }) => {
-        const value = categoryValue({
-          sport,
-          line,
-          category,
-          basis: config.basis,
-          leagueRate: poolStats.leagueRate,
-        });
-        const withPlayer = mean + (value - freeAgent);
-        // Common random numbers: the same weeks are scored with and without
-        // the player, so every week that is not close to the threshold cancels
-        // instead of adding noise.
-        const gained = weeksWon({ sorted, total: withPlayer }) - baselineWins;
-        const raw = sorted.length === 0 ? 0 : gained / sorted.length;
-        return { ...acc, [category]: { raw, weighted: raw * (config.weights[category] ?? 1) } };
-      },
-      {},
-    );
-
-    const total = config.categories.reduce(
-      (sum, category) => sum + (breakdown[category]?.weighted ?? 0),
-      0,
-    );
-    return { playerId: line.playerId, total, breakdown };
+  return scorePerCategory({
+    sport,
+    lines,
+    poolStats,
+    config,
+    raw: ({ category, value }) => {
+      const season = seasons.get(category);
+      if (season === undefined || season.sorted.length === 0) return 0;
+      const { mean, sorted, baselineWins, freeAgent } = season;
+      const withPlayer = mean + (value - freeAgent);
+      // Common random numbers: the same weeks are scored with and without the
+      // player, so every week that is not close to the threshold cancels
+      // instead of adding noise.
+      const gained = weeksWon({ sorted, total: withPlayer }) - baselineWins;
+      return gained / sorted.length;
+    },
   });
 };
