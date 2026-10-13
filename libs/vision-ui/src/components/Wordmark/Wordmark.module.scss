@@ -1,33 +1,24 @@
 @use "@vision/ui/styles/mixins" as *;
 
-.compact,
-.hero {
+// The wordmark is one of the roles the extrusion is reserved for; both words
+// inherit it from here.
+.wordmark {
+  @include retro-extrude;
+
   display: inline-grid;
   gap: var(--space-1);
   font-family: var(--font-display);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   line-height: 1;
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
 }
 
-.compact {
-  font-size: var(--font-size-sm);
-}
-
-.hero {
-  justify-items: center;
-  font-size: var(--font-size-xl);
-}
-
 .lead {
   color: var(--color-text);
-
-  @include retro-extrude;
 }
 
 .trail {
   color: var(--color-accent);
-
-  @include retro-extrude;
 }

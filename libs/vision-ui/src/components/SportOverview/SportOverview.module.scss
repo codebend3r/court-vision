@@ -22,12 +22,6 @@
 
 .table {
   @include data-table;
-  width: 100%;
-
-  tbody th {
-    font-weight: var(--font-weight-semibold);
-    text-align: left;
-  }
 }
 
 .numeric {

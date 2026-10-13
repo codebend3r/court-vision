@@ -1,0 +1,56 @@
+@use "@vision/ui/styles/mixins" as *;
+
+// The backdrop covers the page and centres the dialog; clicking it cancels.
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--color-bg) 70%, transparent);
+}
+
+.dialog {
+  display: grid;
+  gap: var(--space-3);
+  width: min(24rem, calc(100vw - var(--space-8)));
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.body {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.actions {
+  display: grid;
+  grid-auto-flow: column;
+  justify-content: end;
+  gap: var(--space-2);
+}
+
+.cancel {
+  @include keycap;
+}
+
+// A destructive confirm stays flat (keycap-danger); any other presses in.
+.confirm {
+  @include keycap;
+
+  &[data-destructive] {
+    @include keycap-danger;
+  }
+
+  &:not([data-destructive]):active:not(:disabled) {
+    @include keycap-press;
+  }
+}

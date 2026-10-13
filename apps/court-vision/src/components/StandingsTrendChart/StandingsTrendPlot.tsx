@@ -11,7 +11,7 @@ import {
   type TooltipPayloadEntry,
 } from "recharts";
 
-import { getChartChrome } from "@vision/ui/charts/palette";
+import { CHART_CHROME } from "@vision/ui/charts/palette";
 import { NBA_TEAMS, type TeamAbbreviation } from "@/components/TeamChip/TeamChip";
 import { usePrefersReducedMotion } from "@vision/ui/hooks/usePrefersReducedMotion";
 import { useTheme, type Theme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
@@ -98,7 +98,7 @@ function ChartTooltip({ highlighted, active, label, payload }: ChartTooltipProps
 // sizes, the same box the loading placeholder holds.
 export function StandingsTrendPlot({ teams, rows, active, onHover }: StandingsTrendPlotProps) {
   const { theme } = useTheme();
-  const chrome = getChartChrome({ theme });
+  const chrome = CHART_CHROME;
   const prefersReducedMotion = usePrefersReducedMotion();
 
   return (

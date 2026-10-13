@@ -23,7 +23,7 @@ import {
   METHOD_LABELS,
   type MethodKey,
 } from "@/components/PlayerFantasyChart/labels";
-import { getChartChrome, getSeriesPalette } from "@vision/ui/charts/palette";
+import { CHART_CHROME, getSeriesPalette } from "@vision/ui/charts/palette";
 import { Switch } from "@vision/ui/components/Switch/Switch";
 
 import styles from "@/components/PlayerFantasyChart/PlayerFantasyChart.module.scss";
@@ -39,7 +39,7 @@ export type PlayerFantasyChartProps = {
 // the legend above.
 export function PlayerFantasyChart({ breakdown, trend }: PlayerFantasyChartProps) {
   const { theme } = useTheme();
-  const chrome = getChartChrome({ theme });
+  const chrome = CHART_CHROME;
   const palette = getSeriesPalette({ theme });
   const colors: Record<MethodKey, string> = { z: palette[0], g: palette[1] };
   const [showDnp, setShowDnp] = useQueryState("dnp", parseAsBoolean.withDefault(false));

@@ -26,11 +26,9 @@ describe("THEME_META", () => {
     expect(THEME_META.map((meta) => meta.id)).toEqual([...THEMES]);
   });
 
-  it("holds six-digit hex samples so swatches render without the token layer", () => {
-    THEME_META.map((meta) =>
-      [meta.bg, meta.surface, meta.accent, meta.accentStrong, meta.text].map((color) =>
-        expect(color).toMatch(/^#[0-9a-f]{6}$/),
-      ),
-    );
+  it("tones only the light theme light, matching each block's color-scheme", () => {
+    expect(THEME_META.filter((meta) => meta.tone === "light").map((meta) => meta.id)).toEqual([
+      "light",
+    ]);
   });
 });

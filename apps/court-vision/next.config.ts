@@ -2,6 +2,8 @@ import { resolve } from "node:path";
 
 import type { NextConfig } from "next";
 
+import { SECURITY_HEADERS } from "@vision/ui/next/securityHeaders";
+
 import packageJson from "./package.json";
 
 // The monorepo root. Turbopack only compiles files under its root, and the
@@ -11,22 +13,6 @@ const workspaceRoot = resolve(import.meta.dirname, "../..");
 
 // Workspace libs ship TypeScript source, not a build, so Next compiles them.
 const workspacePackages = ["@vision/core", "@vision/sport-basketball", "@vision/ui"];
-
-// App-wide security headers. CSP here is limited to `frame-ancestors` (the
-// modern, header-independent clickjacking guard); a full script/style CSP needs
-// per-request nonces (Next injects inline bootstrap + theme scripts) and is left
-// as a follow-up so this change can't silently break rendering.
-const securityHeaders = [
-  { key: "X-Frame-Options", value: "DENY" },
-  { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-  {
-    key: "Strict-Transport-Security",
-    value: "max-age=63072000; includeSubDomains; preload",
-  },
-  { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
-];
 
 const nextConfig: NextConfig = {
   turbopack: { root: workspaceRoot },
@@ -46,7 +32,7 @@ const nextConfig: NextConfig = {
     loaderFile: "./src/lib/images/netlifyLoader.ts",
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [{ source: "/:path*", headers: [...SECURITY_HEADERS] }];
   },
   // Crawlers and password managers probe these conventional root paths without
   // reading the page's <link> tags; unanswered, they 404 and the host's default

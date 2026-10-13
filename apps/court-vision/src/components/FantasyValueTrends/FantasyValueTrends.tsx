@@ -19,7 +19,7 @@ import {
   METHOD_LABELS,
   type MethodKey,
 } from "@/components/PlayerFantasyChart/labels";
-import { getChartChrome, getSeriesPalette } from "@vision/ui/charts/palette";
+import { CHART_CHROME, getSeriesPalette } from "@vision/ui/charts/palette";
 import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 import { type FantasySortKey } from "@/lib/valuation/searchParams";
 import { type FantasyTrendValue } from "@vision/core/valuation/trend";
@@ -159,7 +159,7 @@ export function FantasyValueTrends({
   onSort,
 }: FantasyValueTrendsProps) {
   const { theme } = useTheme();
-  const chrome = getChartChrome({ theme });
+  const chrome = CHART_CHROME;
   const palette = getSeriesPalette({ theme });
   const colors: Record<MethodKey, string> = { z: palette[0], g: palette[1] };
   const domain = trendDomain({ rows });

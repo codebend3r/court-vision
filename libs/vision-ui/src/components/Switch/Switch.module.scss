@@ -34,8 +34,8 @@
   border-radius: var(--radius-sm);
   background: var(--color-control-bg);
   transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease;
+    border-color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
 }
 
 .legendOn,
@@ -45,7 +45,7 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   line-height: 1;
-  transition: opacity 160ms ease;
+  transition: opacity var(--duration-fast) ease;
 }
 
 .legendOn {
@@ -70,10 +70,9 @@
   background: var(--color-surface);
   transform: translateX(0);
   transition:
-    transform 160ms var(--ease-out),
-    background 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms ease;
+    transform var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) ease,
+    border-color var(--duration-fast) ease;
 
   // LED slit on the thumb face.
   &::before {
@@ -82,7 +81,7 @@
     height: var(--space-2);
     border-radius: var(--radius-full);
     background: var(--color-text-muted);
-    transition: background 160ms ease;
+    transition: background var(--duration-fast) ease;
   }
 }
 
@@ -101,7 +100,6 @@
     transform: translateX(1.75rem);
     border-color: var(--color-control-accent);
     background: var(--color-control-accent);
-    box-shadow: 0 0 8px var(--color-focus-ring);
 
     &::before {
       background: var(--color-bg);
@@ -115,14 +113,4 @@
 
 .input:disabled + .track {
   opacity: var(--control-disabled-opacity);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .track,
-  .thumb,
-  .thumb::before,
-  .legendOn,
-  .legendOff {
-    transition: none;
-  }
 }

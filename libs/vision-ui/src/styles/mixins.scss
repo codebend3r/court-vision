@@ -1,17 +1,3 @@
-@use "sass:list";
-
-// Retro long-shadow lettering: stacked $step-offset copies so the shadow reads
-// as one solid diagonal extrusion rather than a blurred drop shadow. Pass an
-// em-based $step to scale the extrusion with the element's font size; keep
-// each step at or below ~1px at the rendered size so the extrusion stays solid.
-@function long-text-shadow($color, $length, $step: 1px) {
-  $shadow: ();
-  @for $i from 1 through $length {
-    $shadow: list.append($shadow, #{$i * $step} #{$i * $step} $color, comma);
-  }
-  @return $shadow;
-}
-
 // The retro text extrusion, opt-in by role. Reserved for page titles, the
 // wordmark, and large readout numbers (the stat figures on dashboard and
 // detail cards) — never applied to a heading just for being a heading. Reads
@@ -264,44 +250,35 @@
   border: 0;
 }
 
+// The native <details>/<summary> disclosure, applied to the <details>: the
+// summary row trades the UA marker for an accent chevron (a `.chevron` child
+// of the summary) that turns a quarter while open. The Disclosure component
+// renders this markup; the summary's own layout stays with its consumer.
+@mixin disclosure {
+  > summary {
+    cursor: pointer;
+    list-style: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+  }
+
+  > summary > .chevron {
+    color: var(--color-accent);
+    font-size: var(--font-size-xs);
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+
+  &[open] > summary > .chevron {
+    transform: rotate(90deg);
+  }
+}
+
 // Accent border shared by every selected control state (active filters, stat
 // chips, sorted columns). Flat by design: no glow effects.
 @mixin selected-accent {
   border-color: var(--color-control-accent);
-}
-
-// Emits the keyframes the animated-gradient-border animation drives. Call once
-// per CSS module that uses `animated-gradient-border`: CSS Modules scopes both
-// the @keyframes name and the animation reference to that module, so a global
-// keyframes would never match the scoped reference.
-@mixin cv-border-spin-keyframes {
-  @keyframes cv-border-spin {
-    to {
-      --cv-border-angle: 360deg;
-    }
-  }
-}
-
-// Rotating blue→purple→pink conic-gradient border for hover/focus states.
-// Requires the global `--cv-border-angle` @property (globals.scss) and the
-// `cv-border-spin-keyframes` mixin included once in the same module. Uses the
-// double-background trick (surface via padding-box, gradient via border-box)
-// so rounded corners survive; apply to an element that already has a 1px
-// border.
-@mixin animated-gradient-border {
-  border-color: transparent;
-  background:
-    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
-    conic-gradient(
-        from var(--cv-border-angle),
-        var(--color-accent),
-        var(--color-accent-purple),
-        var(--color-accent-strong),
-        var(--color-accent-purple),
-        var(--color-accent)
-      )
-      border-box;
-  animation: cv-border-spin 2.5s linear infinite;
 }
 
 // Text-like fields: text/email/password/date/etc. inputs and selects.

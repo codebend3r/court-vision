@@ -7,7 +7,7 @@
   display: grid;
   gap: 1px;
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   line-height: 1;
   letter-spacing: var(--tracking-wide);
@@ -37,7 +37,7 @@
   gap: var(--space-3);
 
   .wordmark {
-    font-size: 20px;
+    font-size: var(--font-size-lg);
     letter-spacing: 0.18em;
     text-align: center;
   }

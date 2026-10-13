@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 
 import { ChartPlaceholder } from "@vision/ui/components/ChartPlaceholder/ChartPlaceholder";
-import { getChartChrome } from "@vision/ui/charts/palette";
+import { CHART_CHROME } from "@vision/ui/charts/palette";
 import type { WatchlistTrendLine } from "@/components/WatchlistTrendChart/WatchlistTrendPlot";
 import { useTheme, type Theme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 import { ROLLING_WINDOW_GAMES, type TrendSeries } from "@vision/core/valuation/rolling";
@@ -85,7 +85,7 @@ export const buildRows = ({ series }: { series: readonly TrendSeries[] }): Chart
 
 export function WatchlistTrendChart({ series, caption }: WatchlistTrendChartProps) {
   const { theme } = useTheme();
-  const chrome = getChartChrome({ theme });
+  const chrome = CHART_CHROME;
   const palette = SERIES_BY_THEME[theme];
 
   const plotted = series.filter((entry) => entry.points.length > 0);

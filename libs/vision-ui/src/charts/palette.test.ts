@@ -1,22 +1,18 @@
 import { describe, expect, it } from "bun:test";
 
-import { getChartChrome, getSeriesPalette } from "#ui/charts/palette";
+import {
+  CHART_CHROME,
+  chartAxisProps,
+  getSeriesPalette,
+  getTrendPalette,
+} from "#ui/charts/palette";
 import { THEMES } from "#ui/theme/themes";
 
-describe("getChartChrome", () => {
-  it("returns the dark chrome palette", () => {
-    expect(getChartChrome({ theme: "dark" })).toEqual({
-      grid: "#2a3050",
-      axis: "#8b93b5",
-      endLabel: "#8b93b5",
-    });
-  });
-
-  it("returns the light chrome palette", () => {
-    expect(getChartChrome({ theme: "light" })).toEqual({
-      grid: "#dfe3f0",
-      axis: "#5a6280",
-      endLabel: "#5a6280",
+describe("CHART_CHROME", () => {
+  it("reads the live border and muted-text tokens rather than per-theme literals", () => {
+    expect(CHART_CHROME).toEqual({
+      grid: "var(--color-border)",
+      axis: "var(--color-text-muted)",
     });
   });
 });
@@ -28,5 +24,29 @@ describe("getSeriesPalette", () => {
       expect(palette).toHaveLength(7);
       expect(new Set(palette).size).toBe(7);
     });
+  });
+});
+
+describe("chartAxisProps", () => {
+  it("draws muted 12px ticks over the chosen rule colour", () => {
+    expect(chartAxisProps({ rule: "grid" })).toEqual({
+      stroke: CHART_CHROME.grid,
+      tick: { fill: CHART_CHROME.axis, fontSize: 12 },
+    });
+    expect(chartAxisProps({ rule: "axis" }).stroke).toBe(CHART_CHROME.axis);
+  });
+});
+
+describe("getTrendPalette", () => {
+  it("gives every theme five distinct hues", () => {
+    THEMES.forEach((theme) => {
+      const palette = getTrendPalette({ theme });
+      expect(palette).toHaveLength(5);
+      expect(new Set(palette).size).toBe(5);
+    });
+  });
+
+  it("darkens the light theme's hues for contrast on white", () => {
+    expect(getTrendPalette({ theme: "light" })).not.toEqual(getTrendPalette({ theme: "dark" }));
   });
 });
