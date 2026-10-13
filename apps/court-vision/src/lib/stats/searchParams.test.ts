@@ -3,12 +3,10 @@ import { describe, expect, it } from "bun:test";
 import {
   coerceStatMode,
   gamesForSpan,
-  isPlayerView,
   loadStatFilters,
   PLAYER_VIEWS,
   rangeForSpan,
   resolveSeasonSelection,
-  SEASON_OPTIONS,
   spanLabel,
 } from "@/lib/stats/searchParams";
 
@@ -71,14 +69,6 @@ describe("loadStatFilters", () => {
   });
 });
 
-describe("SEASON_OPTIONS", () => {
-  it("lists every backfilled season newest first", () => {
-    expect(SEASON_OPTIONS[0]).toBe("2026-27");
-    expect(SEASON_OPTIONS[SEASON_OPTIONS.length - 1]).toBe("2016-17");
-    expect(SEASON_OPTIONS).toHaveLength(11);
-  });
-});
-
 describe("resolveSeasonSelection", () => {
   it("honors an explicit request over the player's seasons", () => {
     expect(
@@ -114,18 +104,9 @@ describe("gamesForSpan", () => {
   });
 });
 
-describe("PLAYER_VIEWS / isPlayerView", () => {
+describe("PLAYER_VIEWS", () => {
   it("lists the three player views in tab order", () => {
     expect(PLAYER_VIEWS).toEqual(["regular", "advanced", "fantasy"]);
-  });
-
-  it("guards arbitrary strings", () => {
-    expect(isPlayerView("advanced")).toBe(true);
-    expect(isPlayerView("fantasy")).toBe(true);
-    expect(isPlayerView("regular")).toBe(true);
-    expect(isPlayerView("starred")).toBe(false);
-    expect(isPlayerView("")).toBe(false);
-    expect(isPlayerView(undefined)).toBe(false);
   });
 });
 

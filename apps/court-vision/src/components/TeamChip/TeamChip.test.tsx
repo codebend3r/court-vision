@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
-import { NBA_TEAMS, TeamChip } from "@/components/TeamChip/TeamChip";
+import { TeamChip } from "@/components/TeamChip/TeamChip";
 
 afterEach(cleanup);
 
@@ -28,10 +28,5 @@ describe("TeamChip", () => {
     const chip = screen.getByText("SEA");
     expect(chip).not.toHaveAttribute("title");
     expect(chip).not.toHaveAttribute("style");
-  });
-
-  it("defines all 30 NBA teams once", () => {
-    expect(NBA_TEAMS).toHaveLength(30);
-    expect(new Set(NBA_TEAMS.map((team) => team.abbreviation))).toHaveLength(30);
   });
 });

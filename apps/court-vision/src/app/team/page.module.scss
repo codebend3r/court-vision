@@ -19,12 +19,6 @@
   font-size: var(--font-size-sm);
 }
 
-.record {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xl);
-  font-variant-numeric: tabular-nums;
-}
-
 // Roster on the left, ranked stats beside it on the right; stacks (roster
 // first) once the viewport can't fit both.
 .content {
@@ -39,38 +33,22 @@
   }
 }
 
+// The one table pattern (spec §7): the wrapper box scrolls a table too wide
+// for the column, and every cell pads with the shared row tokens.
 .statsCard {
+  @include table-wrapper;
   width: 100%;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
   overflow-x: auto;
 }
 
 .table {
-  width: 100%;
-  border-collapse: collapse;
+  @include data-table;
 
-  th {
-    @include micro-label;
-    padding: var(--space-2) var(--space-4);
-    text-align: left;
+  // Value and rank columns, headers included, read as one right-aligned
+  // numeric column (the players table keys its stat headers the same way).
+  .numeric {
+    @include numeric-cell;
   }
-
-  td {
-    padding: var(--space-2) var(--space-4);
-    border-top: 1px solid var(--color-border);
-  }
-
-  tbody {
-    font-variant-numeric: tabular-nums;
-  }
-}
-
-.numeric {
-  text-align: right;
-  white-space: nowrap;
-  font-family: var(--font-mono);
 }
 
 // Ordinal beside a 6px bar filled to (31 − rank) / 30. Flat fills, no glows:
@@ -116,14 +94,9 @@
 }
 
 .rosterCard {
-  display: grid;
+  @include panel-shell;
   gap: var(--space-2);
-  align-content: start;
   width: 100%;
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
 }
 
 .rosterTitle {

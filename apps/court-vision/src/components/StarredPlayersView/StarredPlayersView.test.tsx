@@ -10,9 +10,9 @@ vi.mock("@/lib/watchlist/queries", () => ({ getWatchlistPlayerIds }));
 vi.mock("@/lib/players/searchCached", () => ({ searchPlayers }));
 
 import { StarredPlayersView } from "@/components/StarredPlayersView/StarredPlayersView";
-import { type PlayersSearchParams } from "@/lib/players/searchParams";
+import { type RegularSearchParams } from "@/lib/players/searchParams";
 
-const params: PlayersSearchParams = {
+const params: RegularSearchParams = {
   q: "",
   page: 1,
   size: 50,
@@ -93,16 +93,17 @@ describe("StarredPlayersView", () => {
     expect(screen.getByText("1 starred player")).toBeInTheDocument();
   });
 
-  it("restores star order when the query returns rows in another order", async () => {
+  it("renders the rows in the order the ranked query returns them", async () => {
     getWatchlistPlayerIds.mockResolvedValue([7, 3]);
-    // searchPlayers has no notion of star time, so it hands back its own order.
+    // Star order is applied inside the ranking (before paging), so the view
+    // must not reorder what comes back.
     searchPlayers.mockResolvedValue({ rows: [row({ id: 3 }), row({ id: 7 })], total: 2, page: 1 });
     render(await StarredPlayersView({ params, showCounter: false }));
     const names = within(screen.getByRole("table"))
       .getAllByRole("row")
       .slice(1)
       .map((tableRow) => within(tableRow).getAllByRole("link")[0]?.textContent ?? "");
-    expect(names).toEqual(["First7 Last7", "First3 Last3"]);
+    expect(names).toEqual(["First3 Last3", "First7 Last7"]);
   });
 
   it("passes the watchlist ids to the stats query", async () => {

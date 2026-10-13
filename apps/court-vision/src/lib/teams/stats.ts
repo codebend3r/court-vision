@@ -4,6 +4,7 @@
 
 import { rankByKeys } from "@vision/core/series/ranking";
 import { type TeamGameResult } from "@vision/core/series/teamTrend";
+import { formatSigned } from "@vision/core/util/format";
 
 export type TeamBoxTotals = {
   teamAbbr: string;
@@ -51,18 +52,12 @@ export type TeamStatMeta = {
 
 const perGameFormat = (value: number): string => value.toFixed(1);
 const pctFormat = (value: number): string => `${(value * 100).toFixed(1)}%`;
-const signedFormat = (value: number): string =>
-  value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
+const signedFormat = (value: number): string => formatSigned({ value, digits: 1 });
 
 // Ranked stats shown on the /team page, in display order. Wins/losses/games
 // render in the header instead, so they are not listed here.
 export const TEAM_STAT_META: readonly TeamStatMeta[] = [
-  {
-    key: "winPct",
-    label: "Win %",
-    description: "Share of games won.",
-    format: (value) => `${(value * 100).toFixed(1)}%`,
-  },
+  { key: "winPct", label: "Win %", description: "Share of games won.", format: pctFormat },
   { key: "ppg", label: "PPG", description: "Points scored per game.", format: perGameFormat },
   {
     key: "oppPpg",
@@ -161,5 +156,5 @@ export const rankTeams = ({
     keys: TEAM_RANK_KEYS,
     idOf: (team) => team.abbr,
     valueOf: ({ item, key }) => item[key],
-    lowerIsBetter: (key) => !!TEAM_STAT_META.find((meta) => meta.key === key)?.lowerIsBetter,
+    lowerIsBetter: (key) => TEAM_STAT_META.find((meta) => meta.key === key)?.lowerIsBetter ?? false,
   });

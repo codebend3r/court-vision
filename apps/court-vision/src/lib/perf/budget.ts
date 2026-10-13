@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 // Load-time budgets, the repo's "acceptable threshold" contract. The config
-// lives in perf-budget.json at the repo root; this module owns its shape and
-// the pass/fail math so the runner (check.ts) stays a thin I/O shell and the
-// logic stays unit-testable offline.
+// lives in the app's perf-budget.json; this module owns its shape and the
+// pass/fail math so the runner (scripts/perf-budget.ts) stays a thin I/O shell
+// and the logic stays unit-testable offline.
 
-export const routeBudgetSchema = z.object({
+const routeBudgetSchema = z.object({
   path: z.string().startsWith("/"),
   label: z.string().min(1),
   // Routes that read Prisma need a seeded database behind the server; the
@@ -17,7 +17,7 @@ export const routeBudgetSchema = z.object({
   }),
 });
 
-export const perfBudgetConfigSchema = z.object({
+const perfBudgetConfigSchema = z.object({
   runs: z.number().int().min(1),
   warmupRuns: z.number().int().min(0),
   percentile: z.number().min(1).max(100).default(95),
@@ -55,7 +55,7 @@ export const parsePerfBudgetConfig = (raw: unknown): PerfBudgetConfig =>
 // loud version is the useful one. The index is clamped because `percentile`
 // is a bare number here; the config schema's 1..100 bound does not follow it
 // into direct calls.
-export const percentileOf = ({
+const percentileOf = ({
   values,
   percentile,
 }: {

@@ -9,7 +9,7 @@ import { SeasonSelect } from "@/components/SeasonSelect/SeasonSelect";
 import { StarButton } from "@/components/StarButton/StarButton";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { getUser } from "@/lib/auth/session";
-import { SEASON_LABEL, SEASON_TYPE } from "@/lib/balldontlie/constants";
+import { SEASON_LABEL, SEASON_TYPE } from "@/lib/stats/season";
 import {
   formatBirthDate,
   formatDraft,

@@ -1,11 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import {
-  datesBetween,
-  isIsoDate,
-  todayInNewYork,
-  yesterdayInNewYork,
-} from "@/lib/balldontlie/dates";
+import { datesBetween, isIsoDate, yesterdayInNewYork } from "@/lib/balldontlie/dates";
 
 describe("isIsoDate", () => {
   it("accepts a real YYYY-MM-DD date", () => {
@@ -25,14 +20,12 @@ describe("isIsoDate", () => {
   });
 });
 
-describe("todayInNewYork", () => {
-  it("reads the New York calendar date, not the UTC one", () => {
-    // 03:00 UTC on the 22nd is still 23:00 on the 21st in New York (EDT).
-    expect(todayInNewYork({ now: new Date("2026-10-22T03:00:00Z") })).toBe("2026-10-21");
-  });
-});
-
 describe("yesterdayInNewYork", () => {
+  it("counts back from the New York calendar date, not the UTC one", () => {
+    // 03:00 UTC on the 22nd is still 23:00 on the 21st in New York (EDT).
+    expect(yesterdayInNewYork({ now: new Date("2026-10-22T03:00:00Z") })).toBe("2026-10-20");
+  });
+
   it("returns last night's game date at 3am Eastern during daylight time", () => {
     expect(yesterdayInNewYork({ now: new Date("2026-10-22T07:00:00Z") })).toBe("2026-10-21");
   });

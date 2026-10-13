@@ -4,6 +4,7 @@ import {
   type RatioSpec,
   type RunningMode,
 } from "@vision/core/series/running";
+import { basketball } from "@vision/sport-basketball/descriptor";
 
 import type { StatMode } from "@/lib/stats/searchParams";
 
@@ -64,6 +65,18 @@ const RATIOS: readonly RatioSpec<CumulativeSourceLog, RatioKey>[] = [
   { key: "ftPct", made: (log) => log.ftm, attempted: (log) => log.fta, scale: 100 },
 ];
 
+// Basketball paces per 36 minutes. The descriptor types `perUnit` as nullable
+// for sports with no pace reading; reaching null here is a descriptor bug, not
+// a state to render around.
+const perUnitOf = ({ perUnit }: { perUnit: number | null }): number => {
+  if (perUnit === null) {
+    throw new Error("The basketball descriptor has no per-unit playing time.");
+  }
+  return perUnit;
+};
+
+const PER_UNIT = perUnitOf(basketball.playingTime);
+
 const RUNNING_MODE: Record<StatMode, RunningMode> = {
   game: "game",
   avg: "avg",
@@ -72,8 +85,8 @@ const RUNNING_MODE: Record<StatMode, RunningMode> = {
 };
 
 // The shared running series over basketball's box score. per36 is the pace
-// mode at 36 minutes; min carries the running minutes total in both totals
-// and per36 modes (per-36 minutes would be the constant 36).
+// mode at the descriptor's per-unit minutes; min carries the running minutes
+// total in both totals and per36 modes (per-36 minutes would be the constant 36).
 export const buildStatSeries = (args: {
   logs: CumulativeSourceLog[];
   mode: StatMode;
@@ -82,7 +95,7 @@ export const buildStatSeries = (args: {
     logs: args.logs,
     mode: RUNNING_MODE[args.mode],
     playingTime: (log) => log.minutes,
-    perUnit: 36,
+    perUnit: PER_UNIT,
     counting: COUNTING,
     ratios: RATIOS,
   }).map((point): CumulativePoint => ({

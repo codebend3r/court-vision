@@ -1,7 +1,9 @@
 import type { FetchImpl } from "@vision/core/util/fetchImpl";
+import { type Logger, silentLogger } from "@vision/core/util/logger";
+import type { z } from "zod";
 
 import { bdlFetch, BdlParamValue } from "@/lib/balldontlie/client";
-import { PER_PAGE, SEASON_YEAR, THROTTLE_MS } from "@/lib/balldontlie/constants";
+import { PER_PAGE, THROTTLE_MS } from "@/lib/balldontlie/constants";
 import {
   BdlAdvancedStat,
   BdlGame,
@@ -18,26 +20,19 @@ import {
   bdlStatSchema,
   bdlTeamSchema,
 } from "@/lib/balldontlie/schemas";
-
-export type BdlPageProgress = {
-  endpoint: string;
-  page: number;
-  pageRows: number;
-  totalRows: number;
-  nextCursor: number | null;
-};
+import { SEASON_START_YEAR } from "@/lib/stats/season";
 
 export type BdlClientDeps = {
   fetchImpl?: FetchImpl;
   sleep?: (ms: number) => Promise<void>;
   apiKey?: string;
-  onPage?: (progress: BdlPageProgress) => void;
+  // Receives one progress line per page of a paginated fetch; silent when
+  // left out.
+  logger?: Logger;
 };
 
 const defaultSleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
-
-const noopOnPage = (): void => {};
 
 // A stats fetch covers either a whole season or, for the nightly sync, just
 // the listed game dates (`YYYY-MM-DD`); dates win when both are given.
@@ -45,11 +40,70 @@ const scopeParams = ({
   season,
   dates,
 }: {
-  season: string;
+  season: number;
   dates?: string[];
-}): Record<string, BdlParamValue> => (dates === undefined ? { seasons: [season] } : { dates });
+}): Record<string, BdlParamValue> =>
+  dates === undefined ? { seasons: [String(season)] } : { dates };
 
-export const fetchTeams = async (deps: BdlClientDeps = {}): Promise<BdlTeam[]> => {
+// The transform stamps every row "Regular Season", and these endpoints do not
+// honour `postseason=false` reliably, so playoff rows are dropped here rather
+// than written into the regular-season tables. Every sync shares the filter.
+const isRegularSeason = (row: { game: { postseason: boolean } }): boolean => !row.game.postseason;
+
+// Walks a cursor-paginated endpoint: one request per page, each parsed against
+// `item`, following `meta.next_cursor` with the standard throttle between
+// pages until the API reports no next page.
+const fetchAllPages = async <T>({
+  endpoint,
+  params,
+  item,
+  deps,
+}: {
+  endpoint: string;
+  params: Record<string, BdlParamValue>;
+  item: z.ZodType<T>;
+  deps: BdlClientDeps;
+}): Promise<T[]> => {
+  const { sleep = defaultSleep, logger = silentLogger } = deps;
+  const pageSchema = bdlPaginatedPage(item);
+
+  const loadPage = async ({
+    cursor,
+    rows,
+    page,
+  }: {
+    cursor: number | null;
+    rows: T[];
+    page: number;
+  }): Promise<T[]> => {
+    const cursorParam: Record<string, BdlParamValue> =
+      cursor === null ? {} : { cursor: String(cursor) };
+    const raw = await bdlFetch({
+      endpoint,
+      params: { ...params, per_page: PER_PAGE, ...cursorParam },
+      apiKey: deps.apiKey,
+      fetchImpl: deps.fetchImpl,
+      sleep: deps.sleep,
+    });
+    const { data, meta } = pageSchema.parse(raw);
+    const combined = rows.concat(data);
+    const next = meta.next_cursor ?? null;
+    logger(
+      `${endpoint} page ${page}: ${combined.length} rows total${next === null ? " (final page)" : ""}`,
+    );
+    if (next === null) {
+      return combined;
+    }
+    await sleep(THROTTLE_MS);
+    return loadPage({ cursor: next, rows: combined, page: page + 1 });
+  };
+
+  return loadPage({ cursor: null, rows: [], page: 1 });
+};
+
+export const fetchTeams = async ({ deps = {} }: { deps?: BdlClientDeps } = {}): Promise<
+  BdlTeam[]
+> => {
   const raw = await bdlFetch({
     endpoint: "teams",
     apiKey: deps.apiKey,
@@ -61,13 +115,13 @@ export const fetchTeams = async (deps: BdlClientDeps = {}): Promise<BdlTeam[]> =
 
 // `/v1/standings` (GOAT tier) returns every team's regular-season standing in
 // one unpaginated page, so the tolerant `bdlPage` envelope fits.
-export const fetchStandings = async (
-  args: { deps?: BdlClientDeps; season?: string } = {},
-): Promise<BdlStanding[]> => {
-  const { deps = {}, season = SEASON_YEAR } = args;
+export const fetchStandings = async ({
+  deps = {},
+  season = SEASON_START_YEAR,
+}: { deps?: BdlClientDeps; season?: number } = {}): Promise<BdlStanding[]> => {
   const raw = await bdlFetch({
     endpoint: "standings",
-    params: { season },
+    params: { season: String(season) },
     apiKey: deps.apiKey,
     fetchImpl: deps.fetchImpl,
     sleep: deps.sleep,
@@ -75,197 +129,59 @@ export const fetchStandings = async (
   return bdlPage(bdlStandingSchema).parse(raw).data;
 };
 
-export const fetchAllStats = async (
-  args: { deps?: BdlClientDeps; season?: string; dates?: string[] } = {},
-): Promise<BdlStat[]> => {
-  const { deps = {}, season = SEASON_YEAR, dates } = args;
-  const sleep = deps.sleep ?? defaultSleep;
-  const onPage = deps.onPage ?? noopOnPage;
-  const pageSchema = bdlPaginatedPage(bdlStatSchema);
-
-  const loadPage = async (
-    cursor: number | null,
-    acc: BdlStat[],
-    pageNumber: number,
-  ): Promise<BdlStat[]> => {
-    const cursorParam: Record<string, BdlParamValue> =
-      cursor === null ? {} : { cursor: String(cursor) };
-    const raw = await bdlFetch({
+export const fetchAllStats = async ({
+  deps = {},
+  season = SEASON_START_YEAR,
+  dates,
+}: { deps?: BdlClientDeps; season?: number; dates?: string[] } = {}): Promise<BdlStat[]> =>
+  (
+    await fetchAllPages({
       endpoint: "stats",
-      params: {
-        ...scopeParams({ season, dates }),
-        postseason: "false",
-        per_page: PER_PAGE,
-        ...cursorParam,
-      },
-      apiKey: deps.apiKey,
-      fetchImpl: deps.fetchImpl,
-      sleep: deps.sleep,
-    });
-    const page = pageSchema.parse(raw);
-    const combined = acc.concat(page.data);
-    const next = page.meta.next_cursor ?? null;
-    onPage({
-      endpoint: "stats",
-      page: pageNumber,
-      pageRows: page.data.length,
-      totalRows: combined.length,
-      nextCursor: next,
-    });
-    if (next === null) {
-      return combined;
-    }
-    await sleep(THROTTLE_MS);
-    return loadPage(next, combined, pageNumber + 1);
-  };
+      params: { ...scopeParams({ season, dates }), postseason: "false" },
+      item: bdlStatSchema,
+      deps,
+    })
+  ).filter(isRegularSeason);
 
-  return loadPage(null, [], 1);
-};
-
-export const fetchAllAdvancedStats = async (
-  args: { deps?: BdlClientDeps; season?: string; dates?: string[] } = {},
-): Promise<BdlAdvancedStat[]> => {
-  const { deps = {}, season = SEASON_YEAR, dates } = args;
-  const sleep = deps.sleep ?? defaultSleep;
-  const onPage = deps.onPage ?? noopOnPage;
-  const pageSchema = bdlPaginatedPage(bdlAdvancedStatSchema);
-
-  const loadPage = async (
-    cursor: number | null,
-    acc: BdlAdvancedStat[],
-    pageNumber: number,
-  ): Promise<BdlAdvancedStat[]> => {
-    const cursorParam: Record<string, BdlParamValue> =
-      cursor === null ? {} : { cursor: String(cursor) };
-    const raw = await bdlFetch({
+export const fetchAllAdvancedStats = async ({
+  deps = {},
+  season = SEASON_START_YEAR,
+  dates,
+}: { deps?: BdlClientDeps; season?: number; dates?: string[] } = {}): Promise<BdlAdvancedStat[]> =>
+  (
+    await fetchAllPages({
       endpoint: "stats/advanced",
-      params: {
-        ...scopeParams({ season, dates }),
-        postseason: "false",
-        per_page: PER_PAGE,
-        ...cursorParam,
-      },
-      apiKey: deps.apiKey,
-      fetchImpl: deps.fetchImpl,
-      sleep: deps.sleep,
-    });
-    const page = pageSchema.parse(raw);
-    const combined = acc.concat(page.data);
-    const next = page.meta.next_cursor ?? null;
-    onPage({
-      endpoint: "stats/advanced",
-      page: pageNumber,
-      pageRows: page.data.length,
-      totalRows: combined.length,
-      nextCursor: next,
-    });
-    if (next === null) {
-      return combined;
-    }
-    await sleep(THROTTLE_MS);
-    return loadPage(next, combined, pageNumber + 1);
-  };
-
-  return loadPage(null, [], 1);
-};
+      params: { ...scopeParams({ season, dates }), postseason: "false" },
+      item: bdlAdvancedStatSchema,
+      deps,
+    })
+  ).filter(isRegularSeason);
 
 // `players` is every player Balldontlie has ever listed, each on their last
 // team; `players/active` is only the players on a current NBA roster, rookies
 // included as soon as they sign. Both pages share the player row schema.
-type PlayerEndpoint = "players" | "players/active";
+export const fetchAllPlayers = async ({ deps = {} }: { deps?: BdlClientDeps } = {}): Promise<
+  BdlPlayer[]
+> => fetchAllPages({ endpoint: "players", params: {}, item: bdlPlayerSchema, deps });
 
-const fetchPlayerPages = async (args: {
-  endpoint: PlayerEndpoint;
-  deps: BdlClientDeps;
-  throttleMs: number;
-}): Promise<BdlPlayer[]> => {
-  const { endpoint, deps, throttleMs } = args;
-  const sleep = deps.sleep ?? defaultSleep;
-  const onPage = deps.onPage ?? noopOnPage;
-  const pageSchema = bdlPaginatedPage(bdlPlayerSchema);
+export const fetchActivePlayers = async ({ deps = {} }: { deps?: BdlClientDeps } = {}): Promise<
+  BdlPlayer[]
+> => fetchAllPages({ endpoint: "players/active", params: {}, item: bdlPlayerSchema, deps });
 
-  const loadPage = async (
-    cursor: number | null,
-    acc: BdlPlayer[],
-    pageNumber: number,
-  ): Promise<BdlPlayer[]> => {
-    const cursorParam: Record<string, BdlParamValue> =
-      cursor === null ? {} : { cursor: String(cursor) };
-    const raw = await bdlFetch({
-      endpoint,
-      params: { per_page: PER_PAGE, ...cursorParam },
-      apiKey: deps.apiKey,
-      fetchImpl: deps.fetchImpl,
-      sleep: deps.sleep,
-    });
-    const page = pageSchema.parse(raw);
-    const combined = acc.concat(page.data);
-    const next = page.meta.next_cursor ?? null;
-    onPage({
-      endpoint,
-      page: pageNumber,
-      pageRows: page.data.length,
-      totalRows: combined.length,
-      nextCursor: next,
-    });
-    if (next === null) {
-      return combined;
-    }
-    await sleep(throttleMs);
-    return loadPage(next, combined, pageNumber + 1);
-  };
-
-  return loadPage(null, [], 1);
-};
-
-export const fetchAllPlayers = async (
-  args: { deps?: BdlClientDeps; throttleMs?: number } = {},
-): Promise<BdlPlayer[]> => {
-  const { deps = {}, throttleMs = THROTTLE_MS } = args;
-  return fetchPlayerPages({ endpoint: "players", deps, throttleMs });
-};
-
-export const fetchActivePlayers = async (
-  args: { deps?: BdlClientDeps; throttleMs?: number } = {},
-): Promise<BdlPlayer[]> => {
-  const { deps = {}, throttleMs = THROTTLE_MS } = args;
-  return fetchPlayerPages({ endpoint: "players/active", deps, throttleMs });
-};
-
-export const fetchTeamGames = async (args: {
+export const fetchTeamGames = async ({
+  teamId,
+  deps = {},
+}: {
   teamId: number;
   deps?: BdlClientDeps;
-  throttleMs?: number;
-}): Promise<BdlGame[]> => {
-  const { teamId, deps = {}, throttleMs = THROTTLE_MS } = args;
-  const sleep = deps.sleep ?? defaultSleep;
-  const pageSchema = bdlPaginatedPage(bdlGameRowSchema);
-
-  const loadPage = async (cursor: number | null, acc: BdlGame[]): Promise<BdlGame[]> => {
-    const cursorParam: Record<string, BdlParamValue> =
-      cursor === null ? {} : { cursor: String(cursor) };
-    const raw = await bdlFetch({
-      endpoint: "games",
-      params: {
-        seasons: [SEASON_YEAR],
-        team_ids: [String(teamId)],
-        postseason: "false",
-        per_page: PER_PAGE,
-        ...cursorParam,
-      },
-      apiKey: deps.apiKey,
-      fetchImpl: deps.fetchImpl,
-      sleep: deps.sleep,
-    });
-    const page = pageSchema.parse(raw);
-    const combined = acc.concat(page.data);
-    const next = page.meta.next_cursor ?? null;
-    if (next === null) {
-      return combined;
-    }
-    await sleep(throttleMs);
-    return loadPage(next, combined);
-  };
-
-  return loadPage(null, []);
-};
+}): Promise<BdlGame[]> =>
+  fetchAllPages({
+    endpoint: "games",
+    params: {
+      seasons: [String(SEASON_START_YEAR)],
+      team_ids: [String(teamId)],
+      postseason: "false",
+    },
+    item: bdlGameRowSchema,
+    deps,
+  });

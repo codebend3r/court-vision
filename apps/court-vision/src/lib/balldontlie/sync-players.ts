@@ -19,21 +19,13 @@ export type PlayerSyncSummary = {
 export async function syncPlayers(
   args: { deps?: BdlClientDeps; logger?: Logger } = {},
 ): Promise<PlayerSyncSummary> {
-  const { deps = {}, logger = silentLogger } = args;
+  const { deps = {} } = args;
+  const logger = args.logger ?? deps.logger ?? silentLogger;
 
-  const players = await fetchActivePlayers({
-    deps: {
-      ...deps,
-      onPage: (progress) => {
-        deps.onPage?.(progress);
-        const { page, totalRows, nextCursor } = progress;
-        logger(
-          `active players page ${page}: ${totalRows} rows total${nextCursor === null ? " (final page)" : ""}`,
-        );
-      },
-    },
+  const players = await fetchActivePlayers({ deps: { ...deps, logger } });
+  const upserted = await upsertPlayers({
+    players: players.map((player) => toPlayerInput({ player })),
   });
-  const upserted = await upsertPlayers(players.map((player) => toPlayerInput({ player })));
   const active = await markActiveRoster({ playerIds: players.map((player) => player.id) });
   return { fetched: players.length, upserted, active };
 }
