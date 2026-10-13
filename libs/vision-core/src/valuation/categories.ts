@@ -68,7 +68,9 @@ export const categoryGuard =
   (value: string): value is Category<K> =>
     sport.categoryOrder.some((key) => key === value);
 
-const perBasis = ({
+// A season total read on the chosen basis: as is, or per game played. A
+// player with no games reads 0, never a divide by zero.
+export const perBasis = ({
   total,
   gamesPlayed,
   basis,

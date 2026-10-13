@@ -1,4 +1,4 @@
-import { recordFromKeys } from "#core/util/record";
+import { recordFromItems } from "#core/util/record";
 
 // game: each game's own value; avg: running mean; totals: running sum; pace:
 // running sum per `perUnit` of playing time (per 36 minutes, per 60 on ice),
@@ -93,8 +93,6 @@ export const buildRunningSeries = <L extends RunningLog, C extends string, R ext
   counting: readonly CountingSpec<L, C>[];
   ratios: readonly RatioSpec<L, R>[];
 }): RunningPoint<C, R>[] => {
-  const countingKeys = counting.map((spec) => spec.key);
-  const ratioKeys = ratios.map((spec) => spec.key);
   type Accumulator = {
     points: RunningPoint<C, R>[];
     time: number;
@@ -104,9 +102,9 @@ export const buildRunningSeries = <L extends RunningLog, C extends string, R ext
   const initial: Accumulator = {
     points: [],
     time: 0,
-    counting: recordFromKeys({ keys: countingKeys, value: () => 0 }),
-    ratios: recordFromKeys({
-      keys: ratioKeys,
+    counting: recordFromItems({ items: counting, value: () => 0 }),
+    ratios: recordFromItems({
+      items: ratios,
       value: (): RatioTotals => ({ made: 0, attempted: 0 }),
     }),
   };
@@ -131,29 +129,30 @@ export const buildRunningSeries = <L extends RunningLog, C extends string, R ext
       winLoss: log.winLoss,
       dnp: playingTime(log) === 0,
       playingTime: playingTimeValue({ current: playingTime(log), total: time, gameIndex, mode }),
-      counting: recordFromKeys({
-        keys: countingKeys,
-        value: (key) => {
-          const spec = counting.find((entry) => entry.key === key);
-          return countingValue({
-            current: spec === undefined ? 0 : spec.value(log),
-            total: countingTotals[key],
+      counting: recordFromItems({
+        items: counting,
+        value: (spec) =>
+          countingValue({
+            current: spec.value(log),
+            total: countingTotals[spec.key],
             gameIndex,
             timeTotal: time,
             mode,
             perUnit,
-          });
-        },
+          }),
       }),
-      ratios: recordFromKeys({
-        keys: ratioKeys,
-        value: (key) => {
-          const { made, attempted } = ratioTotals[key];
-          const scale = ratios.find((spec) => spec.key === key)?.scale ?? 1;
-          return attempted === 0 ? null : (scale * made) / attempted;
+      ratios: recordFromItems({
+        items: ratios,
+        value: (spec) => {
+          const { made, attempted } = ratioTotals[spec.key];
+          return attempted === 0 ? null : (spec.scale * made) / attempted;
         },
       }),
     };
-    return { points: [...acc.points, point], time, counting: countingTotals, ratios: ratioTotals };
+    // `points` is this reduce's own array, created in `initial` and only
+    // returned once the season is done: appending in place keeps a season
+    // linear, where spreading it into a fresh array per game was quadratic.
+    acc.points.push(point);
+    return { points: acc.points, time, counting: countingTotals, ratios: ratioTotals };
   }, initial).points;
 };

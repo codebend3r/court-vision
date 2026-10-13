@@ -1,3 +1,4 @@
+import { countingCategory } from "@vision/core/sport/categories";
 import { memberOf, parsePositionGroups } from "@vision/core/sport/positions";
 import { crossYearSeasonLabel } from "@vision/core/sport/season";
 import { type SportDescriptor } from "@vision/core/sport/types";
@@ -35,6 +36,8 @@ export const parseBasketballPosition = parsePositionGroups({
   isGroup: memberOf({ values: BASKETBALL_POSITION_GROUPS }),
 });
 
+const counting = countingCategory<BasketballKeys>();
+
 export const basketball: SportDescriptor<BasketballKeys> = {
   id: "basketball",
   name: "Basketball",
@@ -57,56 +60,38 @@ export const basketball: SportDescriptor<BasketballKeys> = {
     fta: "FTA",
   },
   counting: {
-    pts: {
-      kind: "counting",
+    pts: counting({
       key: "pts",
-      stat: "pts",
-      direction: "higher",
       label: "PTS",
       fullName: "Points",
       description: "Scoring contribution relative to the player pool.",
-      formula: "(PTS − pool avg) ÷ pool std dev × weight",
-    },
-    reb: {
-      kind: "counting",
+    }),
+    reb: counting({
       key: "reb",
-      stat: "reb",
-      direction: "higher",
       label: "REB",
       fullName: "Rebounds",
       description: "Rebounding contribution relative to the player pool.",
-      formula: "(REB − pool avg) ÷ pool std dev × weight",
-    },
-    ast: {
-      kind: "counting",
+    }),
+    ast: counting({
       key: "ast",
-      stat: "ast",
-      direction: "higher",
       label: "AST",
       fullName: "Assists",
       description: "Playmaking contribution relative to the player pool.",
-      formula: "(AST − pool avg) ÷ pool std dev × weight",
-    },
-    stl: {
-      kind: "counting",
+    }),
+    stl: counting({
       key: "stl",
-      stat: "stl",
-      direction: "higher",
       label: "STL",
       fullName: "Steals",
       description: "Steals contribution relative to the player pool.",
-      formula: "(STL − pool avg) ÷ pool std dev × weight",
-    },
-    blk: {
-      kind: "counting",
+    }),
+    blk: counting({
       key: "blk",
-      stat: "blk",
-      direction: "higher",
       label: "BLK",
       fullName: "Blocks",
       description: "Shot-blocking contribution relative to the player pool.",
-      formula: "(BLK − pool avg) ÷ pool std dev × weight",
-    },
+    }),
+    // 3PM totals a stat under another name, and TOV is lower-is-better, so
+    // both spell out their definitions.
     tpm: {
       kind: "counting",
       key: "tpm",

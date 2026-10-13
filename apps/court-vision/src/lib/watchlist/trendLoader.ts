@@ -1,13 +1,10 @@
 import { unstable_cache } from "next/cache";
 
-import { type TrendSeries } from "@vision/core/valuation/rolling";
-import { poolSizeFor } from "@vision/core/valuation/valuePlayers";
-import { basketball } from "@vision/sport-basketball/descriptor";
+import { type RollingMethod, type TrendSeries } from "@vision/core/valuation/rolling";
 import {
-  buildRollingGSeries,
-  buildRollingZSeries,
-  computePoolStats,
+  buildRollingSeries,
   DEFAULT_VALUATION_CONFIG,
+  poolStatsFor,
 } from "@vision/sport-basketball/engine";
 
 import { prisma } from "@/lib/prisma";
@@ -31,13 +28,6 @@ const logSelect = {
   fta: true,
 };
 
-const buildersByMethod = {
-  z: buildRollingZSeries,
-  g: buildRollingGSeries,
-} as const;
-
-type TrendMethod = keyof typeof buildersByMethod;
-
 const fetchSeries = async ({
   playerId,
   fullName,
@@ -45,7 +35,7 @@ const fetchSeries = async ({
 }: {
   playerId: number;
   fullName: string;
-  method: TrendMethod;
+  method: RollingMethod;
 }): Promise<TrendSeries> => {
   const season = await latestSeason();
   if (season === null) {
@@ -53,19 +43,15 @@ const fetchSeries = async ({
   }
   // The yardstick is the whole season's pool, held fixed across every window.
   const lines = await getFantasyPool({ range: "all" });
-  const poolStats = computePoolStats({
-    lines,
-    basis: DEFAULT_VALUATION_CONFIG.basis,
-    poolSize: poolSizeFor({ pool: basketball.pools[0], config: DEFAULT_VALUATION_CONFIG }),
-    windowGames: null,
-  });
+  const poolStats = poolStatsFor({ lines, config: DEFAULT_VALUATION_CONFIG, windowGames: null });
   const rows = await prisma.playerGameLog.findMany({
     where: { playerId, season, seasonType: "Regular Season" },
     orderBy: { gameDate: "asc" },
     select: logSelect,
   });
   const logs = rows.map(({ gameDate, ...row }) => ({ ...toWindowLog({ row }), gameDate }));
-  return buildersByMethod[method]({
+  return buildRollingSeries({
+    method,
     playerId,
     fullName,
     logs,

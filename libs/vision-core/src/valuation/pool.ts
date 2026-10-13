@@ -5,11 +5,14 @@ import {
   type SportKeys,
 } from "#core/sport/types";
 import { recordFromKeys } from "#core/util/record";
-import { categoryDef, categoryValue, ratioDefs } from "#core/valuation/categories";
+import { categoryDef, categoryValue, perBasis, ratioDefs } from "#core/valuation/categories";
+import { scoreZScore } from "#core/valuation/methods/zscore";
+import { byTotalDescending } from "#core/valuation/rank";
 import {
   type Basis,
   type CategoryPoolStats,
   type PoolStats,
+  type ValuationConfig,
   type ValuationLine,
 } from "#core/valuation/types";
 
@@ -42,7 +45,11 @@ export const leagueRates = <K extends SportKeys>({
 // Population mean and standard deviation, two-pass for numeric stability.
 // Fewer than two values (or no spread) yields sigma 0, which downstream
 // scoring treats as "no signal" rather than dividing by it.
-export const meanSigma = (values: readonly number[]): { mu: number; sigma: number } => {
+export const meanSigma = ({
+  values,
+}: {
+  values: readonly number[];
+}): { mu: number; sigma: number } => {
   if (values.length < 2) return { mu: values[0] ?? 0, sigma: 0 };
   const mu = values.reduce((sum, value) => sum + value, 0) / values.length;
   const variance = values.reduce((sum, value) => sum + (value - mu) ** 2, 0) / values.length;
@@ -100,9 +107,9 @@ const statsOver = <K extends SportKeys>({
 }): PoolStats<K> => {
   const leagueRate = leagueRates({ sport, lines });
   const stat = (category: Category<K>): CategoryPoolStats => {
-    const between = meanSigma(
-      lines.map((line) => categoryValue({ sport, line, category, basis, leagueRate })),
-    );
+    const between = meanSigma({
+      values: lines.map((line) => categoryValue({ sport, line, category, basis, leagueRate })),
+    });
     // "Typical" game-level volatility (PRD §6.2): pool mean of each player's
     // own within variance for the category.
     const withinMean =
@@ -121,33 +128,9 @@ const statsOver = <K extends SportKeys>({
   };
 };
 
-const provisionalTotal = <K extends SportKeys>({
-  sport,
-  line,
-  stats,
-  basis,
-}: {
-  sport: SportDescriptor<K>;
-  line: ValuationLine<K>;
-  stats: PoolStats<K>;
-  basis: Basis;
-}): number =>
-  sport.categoryOrder.reduce((total, category) => {
-    const { mu, sigma } = stats.byCategory[category];
-    if (sigma === 0) return total;
-    const value = categoryValue({
-      sport,
-      line,
-      category,
-      basis,
-      leagueRate: stats.leagueRate,
-    });
-    return total + (value - mu) / sigma;
-  }, 0);
-
 // The sport's first pool unless the caller names one: single-pool sports never
 // pass it, split-pool sports value each pool on its own.
-export const resolvePool = <K extends SportKeys>({
+const resolvePool = <K extends SportKeys>({
   sport,
   pool,
 }: {
@@ -180,14 +163,61 @@ export const computePoolStats = <K extends SportKeys>({
   const candidates = lines.filter(
     (line) =>
       line.gamesPlayed >= minGames &&
-      (line.gamesPlayed > 0 ? line.playingTime / line.gamesPlayed : 0) >= minPlayingTimePerGame,
+      perBasis({ total: line.playingTime, gamesPlayed: line.gamesPlayed, basis: "perGame" }) >=
+        minPlayingTimePerGame,
   );
   const provisional = statsOver({ sport, lines: candidates, basis });
   if (candidates.length <= Math.min(poolSize, 1)) return provisional;
+  const provisionalValues = scoreZScore({
+    sport,
+    lines: candidates,
+    poolStats: provisional,
+    config: { categories: [...sport.categoryOrder], weights: {}, basis },
+  });
   const members = candidates
-    .map((line) => ({ line, total: provisionalTotal({ sport, line, stats: provisional, basis }) }))
-    .sort((a, b) => b.total - a.total || a.line.playerId - b.line.playerId)
+    .map((line, index) => ({
+      line,
+      playerId: line.playerId,
+      total: provisionalValues[index]?.total ?? 0,
+    }))
+    .sort(byTotalDescending)
     .slice(0, poolSize)
     .map((entry) => entry.line);
   return statsOver({ sport, lines: members, basis });
+};
+
+// Small leagues still standardize against a broad pool so values stay stable
+// (PRD §5.1); deep leagues widen it to everyone rosterable.
+const poolSizeFor = <K extends SportKeys>({
+  pool,
+  config,
+}: {
+  pool: PoolDef<K>;
+  config: Pick<ValuationConfig<K>, "teams" | "rosterSlots">;
+}): number => Math.max(pool.poolFloor, config.teams * config.rosterSlots);
+
+// The pool a configured league standardizes against: its basis, and a pool
+// sized to the league (never under the pool's floor).
+export const poolStatsFor = <K extends SportKeys>({
+  sport,
+  pool,
+  lines,
+  config,
+  windowGames,
+}: {
+  sport: SportDescriptor<K>;
+  pool?: PoolDef<K>;
+  lines: readonly ValuationLine<K>[];
+  config: Pick<ValuationConfig<K>, "basis" | "teams" | "rosterSlots">;
+  windowGames: number | null;
+}): PoolStats<K> => {
+  const resolved = resolvePool({ sport, pool });
+  return computePoolStats({
+    sport,
+    pool: resolved,
+    lines,
+    basis: config.basis,
+    poolSize: poolSizeFor({ pool: resolved, config }),
+    windowGames,
+  });
 };

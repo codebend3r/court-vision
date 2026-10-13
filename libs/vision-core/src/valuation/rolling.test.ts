@@ -2,8 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import {
   aggregateWindowLogs,
-  buildRollingGSeries,
-  buildRollingZSeries,
+  buildRollingSeries,
   CATEGORY_KEYS,
   computePoolStats,
   type DatedLog,
@@ -22,10 +21,12 @@ import {
 } from "#core/testing/basketball";
 import {
   ROLLING_WINDOW_GAMES,
+  type RollingMethod,
   type RollingSeriesArgs,
   type TrendPoint,
   type TrendSeries,
 } from "#core/valuation/rolling";
+import { type CategoryScoringConfig } from "#core/valuation/methods/perCategory";
 import { type ValuationLine } from "#core/valuation/types";
 
 const log = ({ day, pts }: { day: number; pts: number }): DatedLog =>
@@ -73,7 +74,8 @@ const poolStats = computePoolStats({
 });
 
 const series = ({ logs }: { logs: readonly DatedLog[] }) =>
-  buildRollingZSeries({
+  buildRollingSeries({
+    method: "z",
     playerId: 7,
     fullName: "Jalen Brunson",
     logs,
@@ -81,7 +83,7 @@ const series = ({ logs }: { logs: readonly DatedLog[] }) =>
     config: DEFAULT_VALUATION_CONFIG,
   });
 
-describe("buildRollingZSeries", () => {
+describe("buildRollingSeries on Z-Score", () => {
   it("emits one point per game from the window size onward", () => {
     const logs = Array.from({ length: 12 }, (_, index) => log({ day: index + 1, pts: 20 }));
     const result = series({ logs });
@@ -155,7 +157,7 @@ const inflateSq = (sq: FantasyStatLine["sq"]): FantasyStatLine["sq"] => ({
   fta: sq.fta * 4,
 });
 
-describe("buildRollingGSeries", () => {
+describe("buildRollingSeries on G-Score", () => {
   const logs = Array.from({ length: 12 }, (_, index) => log({ day: index + 1, pts: 20 }));
   const args = {
     playerId: 7,
@@ -167,8 +169,8 @@ describe("buildRollingGSeries", () => {
   it("matches the z-series against a pool with no game-to-game volatility", () => {
     // Constant-line pool players have zero within variance, so the G-Score
     // denominator collapses to the Z-Score one.
-    const gPoints = buildRollingGSeries({ ...args, poolStats }).points;
-    const zPoints = buildRollingZSeries({ ...args, poolStats }).points;
+    const gPoints = buildRollingSeries({ ...args, method: "g", poolStats }).points;
+    const zPoints = buildRollingSeries({ ...args, method: "z", poolStats }).points;
     expect(gPoints).toHaveLength(zPoints.length);
     gPoints.forEach((point, index) => {
       expect(point.value).toBeCloseTo(zPoints[index]?.value ?? Number.NaN, 10);
@@ -185,16 +187,15 @@ describe("buildRollingGSeries", () => {
       poolSize: 150,
       windowGames: null,
     });
-    const gValue = buildRollingGSeries({ ...args, poolStats: volatileStats }).points.at(-1)?.value;
-    const zValue = buildRollingZSeries({ ...args, poolStats: volatileStats }).points.at(-1)?.value;
+    const volatile = { ...args, poolStats: volatileStats };
+    const gValue = buildRollingSeries({ ...volatile, method: "g" }).points.at(-1)?.value;
+    const zValue = buildRollingSeries({ ...volatile, method: "z" }).points.at(-1)?.value;
     expect(gValue).not.toBeCloseTo(zValue ?? Number.NaN, 5);
   });
 
   it("emits no points for a player under the window size", () => {
-    expect(
-      buildRollingGSeries({ ...args, poolStats, logs: logs.slice(0, ROLLING_WINDOW_GAMES - 1) })
-        .points,
-    ).toEqual([]);
+    const short = logs.slice(0, ROLLING_WINDOW_GAMES - 1);
+    expect(buildRollingSeries({ ...args, method: "g", poolStats, logs: short }).points).toEqual([]);
   });
 });
 
@@ -205,7 +206,7 @@ describe("buildRollingGSeries", () => {
 type TrendScorer = (args: {
   lines: readonly ValuationLine<BasketballKeys>[];
   poolStats: PoolStats;
-  config: ValuationConfig;
+  config: CategoryScoringConfig<BasketballKeys>;
 }) => PlayerValue[];
 
 // The rolling line carries only what the scorers read: who, and no position.
@@ -298,9 +299,9 @@ const allCategories: ValuationConfig = {
 };
 
 describe("rolling series against the per-window reference", () => {
-  const seriesCases: { name: string; build: typeof buildRollingZSeries; scorer: TrendScorer }[] = [
-    { name: "Z", build: buildRollingZSeries, scorer: scoreZScore },
-    { name: "G", build: buildRollingGSeries, scorer: scoreGScore },
+  const seriesCases: { name: string; method: RollingMethod; scorer: TrendScorer }[] = [
+    { name: "Z", method: "z", scorer: scoreZScore },
+    { name: "G", method: "g", scorer: scoreGScore },
   ];
   const shapes: { length: number; windowSize?: number }[] = [
     { length: 0 },
@@ -311,7 +312,7 @@ describe("rolling series against the per-window reference", () => {
     { length: 30, windowSize: 1 },
   ];
 
-  seriesCases.forEach(({ name, build, scorer }) => {
+  seriesCases.forEach(({ name, method, scorer }) => {
     shapes.forEach(({ length, windowSize }) => {
       it(`${name}: matches exactly over ${length} games (window ${windowSize ?? "default"})`, () => {
         const args = {
@@ -322,7 +323,9 @@ describe("rolling series against the per-window reference", () => {
           config: allCategories,
           windowSize,
         };
-        expect(build(args)).toStrictEqual(referenceRollingSeries({ ...args, scorer }));
+        expect(buildRollingSeries({ ...args, method })).toStrictEqual(
+          referenceRollingSeries({ ...args, scorer }),
+        );
       });
     });
   });

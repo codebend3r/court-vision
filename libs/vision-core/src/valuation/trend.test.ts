@@ -3,8 +3,7 @@ import { describe, expect, it } from "bun:test";
 import {
   aggregateWindowLogs,
   buildFantasyTrend,
-  buildRollingGSeries,
-  buildRollingZSeries,
+  buildRollingSeries,
   CATEGORY_KEYS,
   computePoolStats,
   type DatedLog,
@@ -16,7 +15,7 @@ import {
   type ValuationConfig,
   makeDatedLog,
 } from "#core/testing/basketball";
-import { weightedConfig } from "#core/valuation/breakdown";
+import { weightedConfig } from "#core/valuation/config";
 import { DEFAULT_TREND_GAMES, type FantasyTrendValue } from "#core/valuation/trend";
 import { ROLLING_WINDOW_GAMES } from "#core/valuation/rolling";
 
@@ -158,12 +157,14 @@ const referenceBuildFantasyTrend = ({
   windowGames: number | null;
 }): FantasyTrendValue[] => {
   const seriesArgs = { playerId: line.playerId, fullName: line.fullName, logs, poolStats };
-  const zPoints = buildRollingZSeries({
+  const zPoints = buildRollingSeries({
     ...seriesArgs,
+    method: "z",
     config: weightedConfig({ config, methodWeights, method: "z" }),
   }).points;
-  const gPoints = buildRollingGSeries({
+  const gPoints = buildRollingSeries({
     ...seriesArgs,
+    method: "g",
     config: weightedConfig({ config, methodWeights, method: "g" }),
   }).points;
   const lead = ROLLING_WINDOW_GAMES - 1;

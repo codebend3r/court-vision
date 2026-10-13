@@ -1,9 +1,7 @@
 import { type SportDescriptor, type SportKeys } from "#core/sport/types";
 import { isAppearance, type DatedLog } from "#core/valuation/aggregate";
-import { weightedConfig } from "#core/valuation/breakdown";
-import { scoreGScore } from "#core/valuation/methods/gscore";
-import { scoreZScore } from "#core/valuation/methods/zscore";
-import { rollingWindowLines } from "#core/valuation/rolling";
+import { weightedConfig } from "#core/valuation/config";
+import { rollingValue, rollingWindowLines } from "#core/valuation/rolling";
 import { type MethodWeights, type PoolStats, type ValuationConfig } from "#core/valuation/types";
 
 // The Fantasy tab's rolling charts show recent form. With no Games window
@@ -65,11 +63,11 @@ export const buildFantasyTrend = <K extends SportKeys>({
       z:
         rolling === null
           ? null
-          : (scoreZScore({ sport, lines: [rolling], poolStats, config: zConfig })[0]?.total ?? 0),
+          : rollingValue({ sport, method: "z", line: rolling, poolStats, config: zConfig }),
       g:
         rolling === null
           ? null
-          : (scoreGScore({ sport, lines: [rolling], poolStats, config: gConfig })[0]?.total ?? 0),
+          : rollingValue({ sport, method: "g", line: rolling, poolStats, config: gConfig }),
     };
   });
 };

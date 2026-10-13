@@ -1,13 +1,11 @@
 import { describe, expect, it } from "bun:test";
 
-import { recordFromKeys } from "@vision/core/util/record";
-import { type ValuationLine } from "@vision/core/valuation/types";
+import { makeLine } from "@vision/core/testing/lines";
 
-import { FOOTBALL_VALUED_STATS, type FootballKeys } from "#football/descriptor";
+import { football, type FootballKeys } from "#football/descriptor";
 import { footballEngine } from "#football/engine";
 
-type Stats = Partial<Record<FootballKeys["valued"], number>>;
-
+// A full seventeen-game season.
 const line = ({
   playerId,
   position,
@@ -15,19 +13,8 @@ const line = ({
 }: {
   playerId: number;
   position: string;
-  stats: Stats;
-}): ValuationLine<FootballKeys> => {
-  const totals = recordFromKeys({ keys: FOOTBALL_VALUED_STATS, value: (key) => stats[key] ?? 0 });
-  return {
-    playerId,
-    position,
-    gamesPlayed: 17,
-    playingTime: 17,
-    stats: totals,
-    sq: totals,
-    cross: {},
-  };
-};
+  stats: Partial<Record<FootballKeys["valued"], number>>;
+}) => makeLine({ sport: football, playerId, position, gamesPlayed: 17, playingTime: 17, stats });
 
 // Season totals worth these PPR points: QBs 400/380, RBs 300/200/100, WR 250.
 const LINES = [

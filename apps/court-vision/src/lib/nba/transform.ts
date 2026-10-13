@@ -19,9 +19,9 @@ export const toPlayerInput = (row: PlayerIndexRow): PlayerInput => ({
   lastName: row.PLAYER_LAST_NAME,
   fullName: `${row.PLAYER_FIRST_NAME} ${row.PLAYER_LAST_NAME}`,
   teamId: row.TEAM_ID === 0 ? null : row.TEAM_ID,
-  teamAbbr: blankToNull(row.TEAM_ABBREVIATION),
-  position: blankToNull(row.POSITION),
-  jerseyNumber: blankToNull(row.JERSEY_NUMBER),
+  teamAbbr: blankToNull({ value: row.TEAM_ABBREVIATION }),
+  position: blankToNull({ value: row.POSITION }),
+  jerseyNumber: blankToNull({ value: row.JERSEY_NUMBER }),
 });
 
 export const toSeasonStatsInput = (row: SeasonStatsRow): SeasonStatsInput => ({
@@ -51,16 +51,16 @@ export const toGameLogInput = (row: GameLogRow): GameLogInput => {
   return {
     playerId: row.PLAYER_ID,
     gameId: row.GAME_ID,
-    gameDate: parseGameDate(row.GAME_DATE),
+    gameDate: parseGameDate({ value: row.GAME_DATE }),
     season: SEASON,
     seasonType: SEASON_TYPE,
     teamId: row.TEAM_ID,
     teamAbbr: row.TEAM_ABBREVIATION,
     matchup: row.MATCHUP,
-    opponentAbbr: blankToNull(opponentAbbr),
+    opponentAbbr: blankToNull({ value: opponentAbbr }),
     homeAway,
     winLoss: row.WL,
-    minutes: parseMinutes(row.MIN),
+    minutes: parseMinutes({ value: row.MIN }),
     fgm: row.FGM,
     fga: row.FGA,
     fg3m: row.FG3M,

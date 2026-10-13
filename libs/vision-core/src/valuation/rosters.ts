@@ -1,11 +1,13 @@
 import { type Category, type SportDescriptor, type SportKeys } from "#core/sport/types";
 import { categoryValue } from "#core/valuation/categories";
 import { scoreZScore } from "#core/valuation/methods/zscore";
+import { meanSigma } from "#core/valuation/pool";
+import { byTotalDescending } from "#core/valuation/rank";
 import { type PoolStats, type ValuationConfig, type ValuationLine } from "#core/valuation/types";
 
-export type CategoryTotals<K extends SportKeys> = Partial<Record<Category<K>, number>>;
+type CategoryTotals<K extends SportKeys> = Partial<Record<Category<K>, number>>;
 
-export type CategorySpread = { min: number; max: number; mean: number; sd: number };
+type CategorySpread = { min: number; max: number; mean: number; sd: number };
 
 // What SGP and the matchup simulation both need, and neither pool statistics
 // nor player values contain: what a *team* looks like, and how far apart two
@@ -32,10 +34,10 @@ export const rankByValue = <K extends SportKeys, L extends ValuationLine<K>>({
   const totals = new Map(
     scoreZScore({ sport, lines, poolStats, config }).map((value) => [value.playerId, value.total]),
   );
-  return [...lines].sort(
-    (a, b) =>
-      (totals.get(b.playerId) ?? 0) - (totals.get(a.playerId) ?? 0) || a.playerId - b.playerId,
-  );
+  return lines
+    .map((line) => ({ line, playerId: line.playerId, total: totals.get(line.playerId) ?? 0 }))
+    .sort(byTotalDescending)
+    .map((entry) => entry.line);
 };
 
 const totalsOver = <K extends SportKeys>({
@@ -75,21 +77,17 @@ const spreadOf = <K extends SportKeys>({
   category: Category<K>;
 }): CategorySpread => {
   const totals = rosters.map((roster) => roster[category] ?? 0);
-  const mean = totals.reduce((sum, total) => sum + total, 0) / (totals.length || 1);
-  const variance =
-    totals.reduce((sum, total) => sum + (total - mean) ** 2, 0) / (totals.length || 1);
-  return { min: Math.min(...totals), max: Math.max(...totals), mean, sd: Math.sqrt(variance) };
+  const { mu, sigma } = meanSigma({ values: totals });
+  return { min: Math.min(...totals), max: Math.max(...totals), mean: mu, sd: sigma };
 };
-
-export const teamTotalsSpread = spreadOf;
 
 // With no league history to read, the league is reconstructed from the pool:
 // take the rosterable players (teams × slots) and deal them out in snake order
 // by value, which is what a competent draft approximates. The spread of the
 // resulting team totals is the standings spread.
 //
-// Built once per valuation and shared by both consumers — each ranks the pool,
-// and ranking runs a full Z-Score pass, so doing it per method tripled the work.
+// SGP and Sim Value each build their own: the draft ranks by the method's own
+// weight set, so two methods share a league only when their weights match.
 export const buildLeague = <K extends SportKeys>({
   sport,
   lines,

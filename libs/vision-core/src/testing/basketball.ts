@@ -7,10 +7,10 @@ import { type Category as CoreCategory } from "#core/sport/types";
 import {
   basketballFixture,
   parsePosition,
-  POSITION_GROUPS,
   VALUED_STATS,
   type BasketballKeys,
 } from "#core/testing/basketballDescriptor";
+import { makeLine } from "#core/testing/lines";
 import { recordFromKeys } from "#core/util/record";
 import {
   type DatedLog as CoreDatedLog,
@@ -18,7 +18,6 @@ import {
   type WindowTotals as CoreWindowTotals,
 } from "#core/valuation/aggregate";
 import { type FantasyProfileLog as CoreFantasyProfileLog } from "#core/valuation/playerValue";
-import { type SyntheticLeague as CoreSyntheticLeague } from "#core/valuation/rosters";
 import {
   type MethodWeights as CoreMethodWeights,
   type PlayerValue as CorePlayerValue,
@@ -37,7 +36,6 @@ export type Category = CoreCategory<BasketballKeys>;
 export type CountingCategory = BasketballKeys["counting"];
 export type RatioCategory = BasketballKeys["ratio"];
 export type StatKey = BasketballKeys["valued"];
-export type PositionGroup = BasketballKeys["group"];
 export type RosterSlotType = BasketballKeys["slot"];
 export type MethodWeights = CoreMethodWeights<BasketballKeys>;
 export type PlayerValue = CorePlayerValue<BasketballKeys>;
@@ -48,7 +46,6 @@ export type WindowLog = CoreWindowLog<BasketballKeys>;
 export type DatedLog = CoreDatedLog<BasketballKeys>;
 export type WindowTotals = CoreWindowTotals<BasketballKeys>;
 export type FantasyProfileLog = CoreFantasyProfileLog<BasketballKeys>;
-export type SyntheticLeague = CoreSyntheticLeague<BasketballKeys>;
 
 // Lines carry identity like an app's would, so tests read naturally.
 export type FantasyStatLine = ValuationLine<BasketballKeys> & {
@@ -82,8 +79,7 @@ export const {
   buildLeague,
   buildPlayerFantasyProfile,
   buildPlayerInsights,
-  buildRollingGSeries,
-  buildRollingZSeries,
+  buildRollingSeries,
   buildSlots,
   categoryPerGame,
   categoryValue,
@@ -92,6 +88,7 @@ export const {
   countsFromSlots,
   defaultScoringConfig,
   eligibleForSlot,
+  groupSlotsByKind,
   isCategory,
   isH2hCategoriesConfig,
   isH2hPointsConfig,
@@ -99,6 +96,7 @@ export const {
   leagueRates,
   positionalValues,
   parseScoringConfig,
+  poolStatsFor,
   rankByValue,
   resizeSlots,
   rollingWindowLines,
@@ -118,12 +116,10 @@ export const CATEGORY_KEYS = engine.categoryKeys;
 export const DEFAULT_POINTS_SCORING = basketballFixture.points.defaults;
 export const SCORED_KEYS = basketballFixture.points.keys;
 export const FANTASY_METHODS = engine.fantasyMethods;
-export const ENABLED_METHODS = engine.enabledMethods;
 export const SLOT_META = basketballFixture.slots;
 export const SLOT_TYPES = engine.slotTypes;
 export const DEFAULT_SLOT_COUNTS = engine.defaultSlotCounts;
-export const DEFAULT_GROUP_SLOTS = basketballFixture.positions.replacementSlots;
-export { parsePosition as parseEligibleGroups, POSITION_GROUPS };
+export { parsePosition as parseEligibleGroups };
 
 // The neutral read most tests score against: every category, no weights,
 // per-game, a standard 12-team / 13-slot league.
@@ -154,37 +150,28 @@ const DEFAULT_STATS: FlatStats = {
   fta: 120,
 };
 
-// Unless a test overrides `sq`/`cross`, the moments describe a player who
-// posts an identical line every game, so within-player variance is exactly 0
-// and G-Score degenerates to Z-Score — the neutral baseline most tests want.
-export const makeStatLine = (overrides: FixtureOverrides): FantasyStatLine => {
-  const games = overrides.gamesPlayed ?? 50;
-  const stats = recordFromKeys({
-    keys: VALUED_STATS,
-    value: (key) => overrides[key] ?? DEFAULT_STATS[key],
-  });
-  const constantSq = (total: number): number => (games > 0 ? (total * total) / games : 0);
-  const sq =
-    overrides.sq ?? recordFromKeys({ keys: VALUED_STATS, value: (key) => constantSq(stats[key]) });
-  const cross = overrides.cross ?? {
-    fg: games > 0 ? (stats.fgm * stats.fga) / games : 0,
-    ft: games > 0 ? (stats.ftm * stats.fta) / games : 0,
-  };
-  return {
+// A 50-game, 1500-minute guard on a constant line (see `makeLine`) unless the
+// overrides say otherwise.
+export const makeStatLine = (overrides: FixtureOverrides): FantasyStatLine => ({
+  firstName: overrides.firstName ?? "Test",
+  lastName: overrides.lastName ?? `Player ${overrides.playerId}`,
+  fullName: overrides.fullName ?? `Test Player ${overrides.playerId}`,
+  teamAbbr: overrides.teamAbbr === undefined ? "BOS" : overrides.teamAbbr,
+  nbaPersonId: overrides.nbaPersonId ?? null,
+  ...makeLine({
+    sport: basketballFixture,
     playerId: overrides.playerId,
-    firstName: overrides.firstName ?? "Test",
-    lastName: overrides.lastName ?? `Player ${overrides.playerId}`,
-    fullName: overrides.fullName ?? `Test Player ${overrides.playerId}`,
-    teamAbbr: overrides.teamAbbr === undefined ? "BOS" : overrides.teamAbbr,
     position: overrides.position === undefined ? "G" : overrides.position,
-    nbaPersonId: overrides.nbaPersonId ?? null,
-    gamesPlayed: games,
+    gamesPlayed: overrides.gamesPlayed ?? 50,
     playingTime: overrides.minutes ?? 1500,
-    stats,
-    sq,
-    cross,
-  };
-};
+    stats: recordFromKeys({
+      keys: VALUED_STATS,
+      value: (key) => overrides[key] ?? DEFAULT_STATS[key],
+    }),
+    sq: overrides.sq,
+    cross: overrides.cross,
+  }),
+});
 
 // A game log from flat box-score fields (absent ones are 0) and minutes.
 export const makeLog = (overrides: Partial<FlatStats> & { minutes: number }): WindowLog => ({

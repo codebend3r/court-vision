@@ -43,7 +43,7 @@ export const generateGameLogs = (args: {
   teamAbbrById: Map<number, string>;
 }): GameLogInput[] => {
   const { playerId, teamId, teamAbbr, games, profile, teamAbbrById } = args;
-  const rng = createPrng(playerId);
+  const rng = createPrng({ seed: playerId });
 
   const played = games
     .filter(wasPlayed)

@@ -1,4 +1,5 @@
 import { type PoolDef, type SportDescriptor, type SportKeys } from "#core/sport/types";
+import { weightedConfig } from "#core/valuation/config";
 import { scoreGScore } from "#core/valuation/methods/gscore";
 import { scorePoints } from "#core/valuation/methods/points";
 import { scoreSGP } from "#core/valuation/methods/sgp";
@@ -6,7 +7,7 @@ import { scoreSimValue } from "#core/valuation/methods/simvalue";
 import { scoreZScore } from "#core/valuation/methods/zscore";
 import { positionalValues } from "#core/valuation/modifiers/positional";
 import { replacementLevel } from "#core/valuation/modifiers/replacement";
-import { computePoolStats, resolvePool } from "#core/valuation/pool";
+import { poolStatsFor } from "#core/valuation/pool";
 import {
   type FantasyPlayerValues,
   type MethodWeights,
@@ -15,16 +16,6 @@ import {
   type ValuationLine,
   type WeightedMethodKey,
 } from "#core/valuation/types";
-
-// Small leagues still standardize against a broad pool so values stay stable
-// (PRD §5.1); deep leagues widen it to everyone rosterable.
-export const poolSizeFor = <K extends SportKeys>({
-  pool,
-  config,
-}: {
-  pool: PoolDef<K>;
-  config: ValuationConfig<K>;
-}): number => Math.max(pool.poolFloor, config.teams * config.rosterSlots);
 
 // Every method's score for every supplied line (PRD §9.3): Z-Score and
 // G-Score share the pool primitives; PL Linear is the scoring dot product;
@@ -52,19 +43,9 @@ export const valuePlayers = <K extends SportKeys>({
   methodWeights?: MethodWeights<K>;
   windowGames: number | null;
 }): { values: FantasyPlayerValues[]; poolStats: PoolStats<K> } => {
-  const resolved = resolvePool({ sport, pool });
-  const poolStats = computePoolStats({
-    sport,
-    pool: resolved,
-    lines,
-    basis: config.basis,
-    poolSize: poolSizeFor({ pool: resolved, config }),
-    windowGames,
-  });
-  const configFor = (method: WeightedMethodKey): ValuationConfig<K> => ({
-    ...config,
-    weights: methodWeights[method] ?? config.weights,
-  });
+  const poolStats = poolStatsFor({ sport, pool, lines, config, windowGames });
+  const configFor = (method: WeightedMethodKey): ValuationConfig<K> =>
+    weightedConfig({ config, methodWeights, method });
 
   const zValues = scoreZScore({ sport, lines, poolStats, config: configFor("z") });
   const gValues = scoreGScore({ sport, lines, poolStats, config: configFor("g") });
@@ -80,9 +61,7 @@ export const valuePlayers = <K extends SportKeys>({
   const replacementBase = (method: "vorp" | "pos"): { playerId: number; total: number }[] =>
     sport.replacementBase === "points"
       ? pointsValues
-      : scoreZScore({ sport, lines, poolStats, config: configFor(method) }).map(
-          ({ playerId, total }) => ({ playerId, total }),
-        );
+      : scoreZScore({ sport, lines, poolStats, config: configFor(method) });
   const vorpTotals = replacementBase("vorp");
   const globalReplacement = replacementLevel({
     totals: vorpTotals,

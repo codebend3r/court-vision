@@ -23,6 +23,14 @@ describe("describeSportIssues", () => {
     expect(describeSportIssues({ sport })).toContain('stat "fga" is read but not in valuedStats');
   });
 
+  it("reports a category method on a sport with no categories, and only those", () => {
+    const issues = describeSportIssues({ sport: { ...basketballFixture, categoryOrder: [] } });
+    expect(issues).toContain('method "zscore" needs categories, and this sport has none');
+    expect(issues).toContain('method "simvalue" needs categories, and this sport has none');
+    expect(issues).not.toContain('method "points" needs categories, and this sport has none');
+    expect(issues).not.toContain('method "positional" needs categories, and this sport has none');
+  });
+
   it("reports a slot that defaults above its own ceiling", () => {
     const sport = {
       ...basketballFixture,

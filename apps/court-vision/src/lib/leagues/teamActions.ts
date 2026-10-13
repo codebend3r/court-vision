@@ -59,7 +59,7 @@ const ensureTeamRow = async ({
         profileId,
         name,
         slug: uniqueSlug({
-          base: teamNameToSlug(name),
+          base: teamNameToSlug({ name }),
           taken: existing.map((row) => row.slug),
         }),
       },
@@ -222,7 +222,10 @@ export const importLegacyTeams = async ({
     if (league === null) return { status: "unauthenticated" };
 
     const slugs = teams.reduce<string[]>(
-      (taken, team) => [...taken, uniqueSlug({ base: teamNameToSlug(team.name.trim()), taken })],
+      (taken, team) => [
+        ...taken,
+        uniqueSlug({ base: teamNameToSlug({ name: team.name.trim() }), taken }),
+      ],
       [],
     );
 
@@ -243,7 +246,7 @@ export const importLegacyTeams = async ({
               leagueId: league.id,
               profileId: profile.id,
               team: { ...team, name: team.name.trim() },
-              slug: slugs[index] ?? teamNameToSlug(team.name.trim()),
+              slug: slugs[index] ?? teamNameToSlug({ name: team.name.trim() }),
             }),
           ),
         Promise.resolve(),

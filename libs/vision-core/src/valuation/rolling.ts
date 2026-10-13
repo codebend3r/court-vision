@@ -1,27 +1,20 @@
 import { type SportDescriptor, type SportKeys } from "#core/sport/types";
 import { aggregateWindowLogs, type DatedLog } from "#core/valuation/aggregate";
 import { scoreGScore } from "#core/valuation/methods/gscore";
+import { type CategoryScoringConfig } from "#core/valuation/methods/perCategory";
 import { scoreZScore } from "#core/valuation/methods/zscore";
-import {
-  type PlayerValue,
-  type PoolStats,
-  type ValuationConfig,
-  type ValuationLine,
-} from "#core/valuation/types";
+import { type PoolStats, type ValuationLine } from "#core/valuation/types";
 
 // Ten games is the shortest window that smooths a single blow-up game without
 // lagging a real change in role.
 export const ROLLING_WINDOW_GAMES = 10;
 
+// The two methods a rolling trend reads: Z-Score, or G-Score's volatility-
+// damped version of it.
+export type RollingMethod = "z" | "g";
+
 export type TrendPoint = { date: number; value: number };
 export type TrendSeries = { playerId: number; fullName: string; points: TrendPoint[] };
-
-type TrendScorer<K extends SportKeys> = (args: {
-  sport: SportDescriptor<K>;
-  lines: readonly ValuationLine<K>[];
-  poolStats: PoolStats<K>;
-  config: ValuationConfig<K>;
-}) => PlayerValue<K>[];
 
 export type RollingSeriesArgs<K extends SportKeys> = {
   sport: SportDescriptor<K>;
@@ -29,7 +22,7 @@ export type RollingSeriesArgs<K extends SportKeys> = {
   fullName: string;
   logs: readonly DatedLog<K>[];
   poolStats: PoolStats<K>;
-  config: ValuationConfig<K>;
+  config: CategoryScoringConfig<K>;
   windowSize?: number;
 };
 
@@ -52,37 +45,48 @@ export const rollingWindowLines =
           ...aggregateWindowLogs({ sport, logs: logs.slice(index + 1 - windowSize, index + 1) }),
         };
 
+// One rolling line's total under a method, against a pool the caller holds
+// fixed. Every rolling reading (the watchlist series, the Fantasy tab's and
+// the player page's trends) is scored here.
+export const rollingValue = <K extends SportKeys>({
+  sport,
+  method,
+  line,
+  poolStats,
+  config,
+}: {
+  sport: SportDescriptor<K>;
+  method: RollingMethod;
+  line: ValuationLine<K>;
+  poolStats: PoolStats<K>;
+  config: CategoryScoringConfig<K>;
+}): number => {
+  const args = { sport, lines: [line], poolStats, config };
+  const [value] = method === "z" ? scoreZScore(args) : scoreGScore(args);
+  return value?.total ?? 0;
+};
+
 // One point per game from the window size onward: each scores that game and
 // the previous nine, measured against a pool the caller holds fixed for the
 // whole season. A rising line is the player improving, not the yardstick
-// moving.
-const buildRollingSeries = <K extends SportKeys>({
+// moving. Under a full window there is no honest number to plot, so a player
+// short of one gets no points and the chart says so in its legend.
+export const buildRollingSeries = <K extends SportKeys>({
   sport,
+  method,
   playerId,
   fullName,
   logs,
   poolStats,
   config,
-  scorer,
   windowSize = ROLLING_WINDOW_GAMES,
-}: RollingSeriesArgs<K> & { scorer: TrendScorer<K> }): TrendSeries => {
-  // Under a full window there is no honest number to plot; the chart says so in
-  // its legend rather than drawing a stub.
-  if (logs.length < windowSize) {
-    return { playerId, fullName, points: [] };
-  }
+}: RollingSeriesArgs<K> & { method: RollingMethod }): TrendSeries => {
   const lineEndingAt = rollingWindowLines({ sport, playerId, logs, windowSize });
   const points = logs.flatMap((log, index): TrendPoint[] => {
     const line = lineEndingAt({ index });
     if (line === null) return [];
-    const [value] = scorer({ sport, lines: [line], poolStats, config });
-    return [{ date: log.gameDate.getTime(), value: value?.total ?? 0 }];
+    const value = rollingValue({ sport, method, line, poolStats, config });
+    return [{ date: log.gameDate.getTime(), value }];
   });
   return { playerId, fullName, points };
 };
-
-export const buildRollingZSeries = <K extends SportKeys>(args: RollingSeriesArgs<K>): TrendSeries =>
-  buildRollingSeries({ ...args, scorer: scoreZScore });
-
-export const buildRollingGSeries = <K extends SportKeys>(args: RollingSeriesArgs<K>): TrendSeries =>
-  buildRollingSeries({ ...args, scorer: scoreGScore });

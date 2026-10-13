@@ -1,13 +1,14 @@
 import { type SportDescriptor, type SportKeys } from "#core/sport/types";
 import { type MetricPoint } from "#core/series/metricPoint";
-import { isAppearance, type DatedLog } from "#core/valuation/aggregate";
+import { type DatedLog } from "#core/valuation/aggregate";
 import { buildCategoryBreakdown, type FantasyCategoryBreakdown } from "#core/valuation/breakdown";
 import { buildFantasyGameValues, type FantasyGameValue } from "#core/valuation/gameValues";
 import { fantasyMethods } from "#core/valuation/registry";
-import { type FantasyTrendValue } from "#core/valuation/trend";
+import { buildFantasyTrend, type FantasyTrendValue } from "#core/valuation/trend";
 import {
   type FantasyMethodKey,
   type FantasyPlayerValues,
+  type MethodValueKey,
   type MethodWeights,
   type ValuationConfig,
   type ValuationLine,
@@ -16,7 +17,7 @@ import { valuePlayers } from "#core/valuation/valuePlayers";
 
 // One method column's score for the viewed player, with their standing among
 // every player valued in the same window (competition ranking: ties share).
-export type FantasyMethodReadout = {
+type FantasyMethodReadout = {
   key: FantasyMethodKey;
   label: string;
   value: number;
@@ -43,25 +44,15 @@ export type FantasyProfileLog<K extends SportKeys> = DatedLog<K> & {
   winLoss: string | null;
 };
 
-const VALUE_BY_METHOD: Record<FantasyMethodKey, (values: FantasyPlayerValues) => number> = {
-  zscore: (values) => values.z,
-  gscore: (values) => values.g,
-  points: (values) => values.points,
-  vorp: (values) => values.vorp,
-  positional: (values) => values.positional,
-  sgp: (values) => values.sgp,
-  simvalue: (values) => values.sim,
-};
-
 const rankAmong = ({
   values,
   value,
-  pick,
+  valueKey,
 }: {
   values: readonly FantasyPlayerValues[];
   value: number;
-  pick: (values: FantasyPlayerValues) => number;
-}): number => values.filter((entry) => pick(entry) > value).length + 1;
+  valueKey: MethodValueKey;
+}): number => values.filter((entry) => entry[valueKey] > value).length + 1;
 
 // Everything the fantasy view shows for one player, scored the way the Fantasy
 // Value tab scores the whole pool (valuePlayers) so the two agree to the
@@ -102,32 +93,43 @@ export const buildPlayerFantasyProfile = <K extends SportKeys>({
   if (own === undefined) return null;
 
   const readouts = fantasyMethods({ sport }).map((method): FantasyMethodReadout => {
-    const pick = VALUE_BY_METHOD[method.key];
-    const value = pick(own);
+    const value = own[method.valueKey];
     return {
       key: method.key,
       label: method.label,
       value,
-      rank: rankAmong({ values, value, pick }),
+      rank: rankAmong({ values, value, valueKey: method.valueKey }),
       of: values.length,
     };
   });
 
   const breakdown = buildCategoryBreakdown({ sport, line, poolStats, config, methodWeights });
 
-  // Game values compute the full-season rolling timeline once. The chart is
-  // just a window onto those same readings, with metadata from the log spine.
-  const games = buildFantasyGameValues({ sport, line, logs, poolStats, config, methodWeights });
-  const points = logs.map((log, index): FantasyTrendPoint => ({
-    gameIndex: index + 1,
-    gameNumber: index + 1,
-    gameDate: log.gameDate.toISOString(),
-    matchup: log.matchup,
-    winLoss: log.winLoss,
-    dnp: !isAppearance(log),
-    z: games[index]?.rollingZ ?? null,
-    g: games[index]?.rollingG ?? null,
-  }));
+  // The full-season rolling timeline, computed once: the game log reads every
+  // game of it, and the chart is a window onto the same readings, with
+  // metadata from the log spine.
+  const season = buildFantasyTrend({
+    sport,
+    line,
+    logs,
+    poolStats,
+    config,
+    methodWeights,
+    windowGames: null,
+  });
+  const games = buildFantasyGameValues({
+    sport,
+    line,
+    logs,
+    season,
+    poolStats,
+    config,
+    methodWeights,
+  });
+  const points = season.flatMap((value, index): FantasyTrendPoint[] => {
+    const log = logs[index];
+    return log === undefined ? [] : [{ ...value, matchup: log.matchup, winLoss: log.winLoss }];
+  });
   const windowed = windowGames === null ? points : points.slice(-windowGames);
   const trend = windowed.map((point, index) => ({ ...point, gameIndex: index + 1 }));
 

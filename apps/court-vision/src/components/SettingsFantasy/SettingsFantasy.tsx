@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 
 import styles from "@/components/SettingsFantasy/SettingsFantasy.module.scss";
 import { updatePreferences } from "@/lib/settings/actions";
-import { ENABLED_METHODS } from "@vision/sport-basketball/engine";
+import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
 import { type FantasyMethodKey } from "@vision/core/valuation/types";
 
 export type SettingsFantasyProps = {
@@ -57,7 +57,7 @@ export function SettingsFantasy({ preferredFormula }: SettingsFantasyProps) {
             <span className={styles.radioTitle}>App default</span>
           </label>
         </div>
-        {ENABLED_METHODS.map((method) => {
+        {FANTASY_METHODS.map((method) => {
           const descriptionId = `${headingId}-${method.key}-description`;
           return (
             <div key={method.key} className={styles.option}>

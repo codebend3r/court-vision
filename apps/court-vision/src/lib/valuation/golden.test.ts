@@ -6,13 +6,12 @@ import {
   aggregateWindowLogs,
   autoAssignSlotId,
   buildCategoryBreakdown,
-  buildFantasyGameValues,
+  buildFantasyGameValues as buildSeasonGameValues,
   buildFantasyTrend,
   buildLeague,
   buildPlayerFantasyProfile,
   buildPlayerInsights,
-  buildRollingGSeries,
-  buildRollingZSeries,
+  buildRollingSeries,
   buildSlots,
   CATEGORY_KEYS,
   CATEGORY_META,
@@ -21,7 +20,7 @@ import {
   DEFAULT_SLOT_COUNTS,
   DEFAULT_VALUATION_CONFIG,
   eligibleForSlot,
-  FANTASY_METHODS,
+  FANTASY_METHODS as REGISTRY_METHODS,
   leagueRates,
   parseEligibleGroups,
   positionalValues,
@@ -153,7 +152,7 @@ const gamesFor = (index: number): number => {
 };
 
 const syntheticPlayer = (index: number): SyntheticPlayer => {
-  const rng = createPrng(0xc0ffee + index * 7919);
+  const rng = createPrng({ seed: 0xc0ffee + index * 7919 });
   const minutesBase = 8 + rng() * 30;
   const shooter = 0.35 + rng() * 0.2;
   const noFreeThrows = index % 23 === 0;
@@ -319,6 +318,32 @@ const runLeaguePcts = ({ lines }: { lines: readonly FantasyStatLine[] }) => {
   const rates = leagueRates({ lines });
   return { leagueFgPct: rates.fg, leagueFtPct: rates.ft };
 };
+
+type RollingArgs = Omit<Parameters<typeof buildRollingSeries>[0], "method">;
+
+// The rolling series take their method as an argument.
+const buildRollingZSeries = (args: RollingArgs) => buildRollingSeries({ ...args, method: "z" });
+const buildRollingGSeries = (args: RollingArgs) => buildRollingSeries({ ...args, method: "g" });
+
+// Game values read the season trend their caller computes once.
+const buildFantasyGameValues = (
+  args: Omit<Parameters<typeof buildSeasonGameValues>[0], "season">,
+) => buildSeasonGameValues({ ...args, season: buildFantasyTrend({ ...args, windowGames: null }) });
+
+// The method copy in its pinned shape: the registry's lookup keys (sortKey,
+// valueKey, needsCategories) are not copy, and the retired `available` flag
+// was true for every method.
+const FANTASY_METHODS = REGISTRY_METHODS.map(
+  ({ key, label, fullName, description, whyItMatters, formula }) => ({
+    key,
+    label,
+    fullName,
+    description,
+    whyItMatters,
+    formula,
+    available: true,
+  }),
+);
 
 // ---------------------------------------------------------------------------
 // Fixed inputs

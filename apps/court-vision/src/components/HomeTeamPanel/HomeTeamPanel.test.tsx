@@ -21,7 +21,7 @@ const team = ({
 }): FantasyTeam => ({
   id,
   name,
-  slug: slug ?? teamNameToSlug(name),
+  slug: slug ?? teamNameToSlug({ name }),
   createdAt,
   slots: buildSlots<FantasyTeamPlayer>({ counts: DEFAULT_SLOT_COUNTS }).map((slot) =>
     slot.id === "PG-1"

@@ -45,7 +45,7 @@ import {
 } from "@/lib/stats/searchParams";
 import { getFantasyPool } from "@/lib/valuation/loader";
 import { toWindowLog } from "@/lib/valuation/trendLogs";
-import { buildPlayerFantasyProfile, ENABLED_METHODS } from "@vision/sport-basketball/engine";
+import { buildPlayerFantasyProfile, FANTASY_METHODS } from "@vision/sport-basketball/engine";
 import { buildLeagueSeed, configFromSeed } from "@/lib/leagues/fantasyDefaults";
 
 import styles from "@/app/players/[playerId]/page.module.scss";
@@ -190,7 +190,7 @@ const loadFantasyView = async (context: ViewContext): Promise<PlayerViewResult> 
     getProfile(),
   ]);
   const formula =
-    ENABLED_METHODS.find((method) => method.key === profile?.preferredFormula)?.key ?? null;
+    FANTASY_METHODS.find((method) => method.key === profile?.preferredFormula)?.key ?? null;
   const seed = buildLeagueSeed({ league, preferredFormula: formula, presentKeys: new Set() });
   const { config, methodWeights } = configFromSeed({ seed });
   const fantasy = buildPlayerFantasyProfile({

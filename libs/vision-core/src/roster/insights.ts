@@ -1,9 +1,14 @@
 import { type Category, type SportDescriptor, type SportKeys } from "#core/sport/types";
-import { categoryMeta, categoryPerGame, type CategoryKind } from "#core/valuation/categories";
+import {
+  categoryMeta,
+  categoryPerGame,
+  perBasis,
+  type CategoryKind,
+} from "#core/valuation/categories";
 import { scoreZScore } from "#core/valuation/methods/zscore";
-import { computePoolStats } from "#core/valuation/pool";
+import { poolStatsFor } from "#core/valuation/pool";
+import { byTotalDescending } from "#core/valuation/rank";
 import { type ValuationConfig, type ValuationLine } from "#core/valuation/types";
-import { poolSizeFor } from "#core/valuation/valuePlayers";
 
 export type PlayerCategoryInsight<K extends SportKeys> = {
   key: Category<K>;
@@ -39,20 +44,14 @@ export const buildPlayerInsights = <K extends SportKeys>({
   lines: readonly ValuationLine<K>[];
   config: ValuationConfig<K>;
 }): PlayerInsight<K>[] => {
-  const poolStats = computePoolStats({
-    sport,
-    lines,
-    basis: config.basis,
-    poolSize: poolSizeFor({ pool: sport.pools[0], config }),
-    windowGames: null,
-  });
+  const poolStats = poolStatsFor({ sport, lines, config, windowGames: null });
   const zValues = scoreZScore({ sport, lines, poolStats, config });
   const zById = new Map(zValues.map((value) => [value.playerId, value]));
   const parse = sport.positions.parse;
 
   const overallOf = lines.length;
   const overallRank = [...zValues]
-    .sort((a, b) => b.total - a.total || a.playerId - b.playerId)
+    .sort(byTotalDescending)
     .reduce((acc, value, index) => acc.set(value.playerId, index + 1), new Map<number, number>());
 
   // Rank every eligibility group independently by z, so a player eligible at
@@ -62,13 +61,13 @@ export const buildPlayerInsights = <K extends SportKeys>({
       const eligible = lines.filter((line) =>
         parse(line.position).some((candidate) => candidate === group),
       );
-      const rank = [...eligible]
-        .sort(
-          (a, b) =>
-            (zById.get(b.playerId)?.total ?? 0) - (zById.get(a.playerId)?.total ?? 0) ||
-            a.playerId - b.playerId,
-        )
-        .reduce((acc, line, index) => acc.set(line.playerId, index + 1), new Map<number, number>());
+      const rank = eligible
+        .map((line) => ({ playerId: line.playerId, total: zById.get(line.playerId)?.total ?? 0 }))
+        .sort(byTotalDescending)
+        .reduce(
+          (acc, entry, index) => acc.set(entry.playerId, index + 1),
+          new Map<number, number>(),
+        );
       return [group, { rank, count: eligible.length }];
     }),
   );
@@ -93,8 +92,9 @@ export const buildPlayerInsights = <K extends SportKeys>({
       count: number;
     } | null>((acc, group) => {
       const groupRanks = rankByGroup.get(group);
-      const rank = groupRanks?.rank.get(line.playerId);
-      if (groupRanks === undefined || rank === undefined) return acc;
+      if (groupRanks === undefined) return acc;
+      const rank = groupRanks.rank.get(line.playerId);
+      if (rank === undefined) return acc;
       if (acc === null || rank < acc.rank) return { group, rank, count: groupRanks.count };
       return acc;
     }, null);
@@ -102,7 +102,11 @@ export const buildPlayerInsights = <K extends SportKeys>({
     return {
       playerId: line.playerId,
       gamesPlayed: line.gamesPlayed,
-      playingTimePerGame: line.gamesPlayed > 0 ? line.playingTime / line.gamesPlayed : 0,
+      playingTimePerGame: perBasis({
+        total: line.playingTime,
+        gamesPlayed: line.gamesPlayed,
+        basis: "perGame",
+      }),
       z: zEntry?.total ?? 0,
       overallRank: overallRank.get(line.playerId) ?? overallOf,
       overallOf,

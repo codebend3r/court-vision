@@ -4,24 +4,10 @@ import {
   defaultScoringConfig,
   isH2hCategoriesConfig,
   isH2hPointsConfig,
-  isLeagueMutationResult,
-  isLeagueScoringType,
   isRotoConfig,
   parseScoringConfig,
-} from "@/lib/leagues/guards";
-import type { LeagueScoringConfig } from "@/lib/leagues/types";
-
-describe("isLeagueScoringType", () => {
-  it("accepts the three scoring types", () => {
-    expect(isLeagueScoringType("h2h_categories")).toBe(true);
-    expect(isLeagueScoringType("h2h_points")).toBe(true);
-    expect(isLeagueScoringType("roto")).toBe(true);
-  });
-  it("rejects unknown values", () => {
-    expect(isLeagueScoringType("dynasty")).toBe(false);
-    expect(isLeagueScoringType("")).toBe(false);
-  });
-});
+} from "#basketball/engine";
+import { type LeagueScoringConfig } from "#basketball/types";
 
 describe("isH2hCategoriesConfig", () => {
   it("accepts categories with optional weights", () => {
@@ -79,30 +65,5 @@ describe("parseScoringConfig", () => {
     expect(
       parseScoringConfig({ scoringType: "h2h_points", value: { categories: ["pts"] } }),
     ).toEqual(defaultScoringConfig({ scoringType: "h2h_points" }));
-  });
-});
-
-describe("isLeagueMutationResult", () => {
-  it("accepts every status arm", () => {
-    const league = {
-      id: "1",
-      name: "A",
-      slug: "a",
-      scoringType: "roto",
-      teamCount: 12,
-      rosterSlots: 13,
-      scoringConfig: { categories: ["pts"] },
-      createdAt: "2026-07-31T00:00:00.000Z",
-    };
-    expect(isLeagueMutationResult({ status: "ok", league })).toBe(true);
-    expect(isLeagueMutationResult({ status: "limit" })).toBe(true);
-    expect(isLeagueMutationResult({ status: "invalid" })).toBe(true);
-    expect(isLeagueMutationResult({ status: "unauthenticated" })).toBe(true);
-    expect(isLeagueMutationResult({ status: "error" })).toBe(true);
-  });
-  it("rejects ok without a league and unknown statuses", () => {
-    expect(isLeagueMutationResult({ status: "ok" })).toBe(false);
-    expect(isLeagueMutationResult({ status: "nope" })).toBe(false);
-    expect(isLeagueMutationResult(null)).toBe(false);
   });
 });
