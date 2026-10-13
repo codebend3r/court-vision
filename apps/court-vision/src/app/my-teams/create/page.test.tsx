@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { makeStatLine } from "@/lib/valuation/fixtures";
@@ -7,11 +8,13 @@ import { type LeagueSummary } from "@/lib/leagues/types";
 const getProfile = vi.fn();
 const getActiveLeague = vi.fn();
 const getFantasyPool = vi.fn();
+const getActiveRosterPlayers = vi.fn();
 const saveLeagueTeam = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({ getProfile: () => getProfile() }));
 vi.mock("@/lib/leagues/queries", () => ({ getActiveLeague: () => getActiveLeague() }));
 vi.mock("@/lib/valuation/loader", () => ({ getFantasyPool }));
+vi.mock("@/lib/fantasyTeams/loader", () => ({ getActiveRosterPlayers }));
 vi.mock("@/lib/leagues/teamActions", () => ({ saveLeagueTeam }));
 
 vi.mock("next/navigation", () => ({
@@ -46,6 +49,7 @@ beforeEach(() => {
   getProfile.mockResolvedValue({ id: "profile-1" });
   getActiveLeague.mockResolvedValue(league({ id: "league-1", name: "Bench Mob League" }));
   getFantasyPool.mockResolvedValue([makeStatLine({ playerId: 1 })]);
+  getActiveRosterPlayers.mockResolvedValue([]);
 });
 
 afterEach(cleanup);
@@ -78,5 +82,25 @@ describe("CreateTeamPage", () => {
     expect(screen.getByLabelText("Team name")).toBeInTheDocument();
     expect(screen.getByLabelText("Search players")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "My teams" })).toHaveAttribute("href", "/my-teams");
+  });
+
+  it("lets a rookie with no stats be found and added", async () => {
+    const user = userEvent.setup();
+    getActiveRosterPlayers.mockResolvedValue([
+      {
+        playerId: 1057262817,
+        firstName: "AJ",
+        lastName: "Dybantsa",
+        fullName: "AJ Dybantsa",
+        teamAbbr: "WAS",
+        position: "F",
+        nbaPersonId: null,
+      },
+    ]);
+    render(await CreateTeamPage());
+
+    await user.type(screen.getByLabelText("Search players"), "Dybantsa");
+
+    expect(screen.getByRole("button", { name: "Add AJ Dybantsa" })).toBeEnabled();
   });
 });

@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { TeamEditor } from "@/components/TeamEditor/TeamEditor";
 import { getProfile } from "@/lib/auth/session";
+import { getActiveRosterPlayers } from "@/lib/fantasyTeams/loader";
 import { fantasyPlayersFromPool } from "@/lib/fantasyTeams/players";
 import { getActiveLeague } from "@/lib/leagues/queries";
 import { getLeagueTeamBySlug } from "@/lib/leagues/teamQueries";
@@ -38,14 +39,15 @@ export default async function EditTeamPage({ params }: { params: Promise<{ teamS
   }
 
   // The pool is league-independent, so it loads alongside the team lookup
-  // rather than after it.
-  const [team, lines] = await Promise.all([
+  // rather than after it. The active roster adds players yet to play.
+  const [team, lines, activePlayers] = await Promise.all([
     getLeagueTeamBySlug({ leagueId: league.id, slug: teamSlug }),
     getFantasyPool({ range: "all" }),
+    getActiveRosterPlayers(),
   ]);
   if (team === null) notFound();
 
-  const players = fantasyPlayersFromPool({ lines });
+  const players = fantasyPlayersFromPool({ lines, activePlayers });
   const insights = buildPlayerInsights({ lines, config: DEFAULT_VALUATION_CONFIG });
 
   return (

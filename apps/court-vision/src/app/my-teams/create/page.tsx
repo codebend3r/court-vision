@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { TeamBuilder } from "@/components/TeamBuilder/TeamBuilder";
 import { getProfile } from "@/lib/auth/session";
+import { getActiveRosterPlayers } from "@/lib/fantasyTeams/loader";
 import { fantasyPlayersFromPool } from "@/lib/fantasyTeams/players";
 import { getActiveLeague } from "@/lib/leagues/queries";
 import { getFantasyPool } from "@/lib/valuation/loader";
@@ -35,10 +36,14 @@ export default async function CreateTeamPage() {
     );
   }
 
-  // The cached fantasy pool already carries everything the builder needs:
-  // identity, position, and team for every active player this season.
-  const lines = await getFantasyPool({ range: "all" });
-  const players = fantasyPlayersFromPool({ lines });
+  // The cached fantasy pool carries identity, position, and team for every
+  // player with a line this season; the active roster adds those who have yet
+  // to play, so rookies can be drafted before opening night.
+  const [lines, activePlayers] = await Promise.all([
+    getFantasyPool({ range: "all" }),
+    getActiveRosterPlayers(),
+  ]);
+  const players = fantasyPlayersFromPool({ lines, activePlayers });
   const insights = buildPlayerInsights({ lines, config: DEFAULT_VALUATION_CONFIG });
 
   return (

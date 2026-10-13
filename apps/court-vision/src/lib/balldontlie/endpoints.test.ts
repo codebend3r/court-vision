@@ -370,6 +370,62 @@ describe("fetchAllPlayers", () => {
   });
 });
 
+describe("fetchActivePlayers", () => {
+  const rookieRow = {
+    id: 1057262817,
+    first_name: "AJ",
+    last_name: "Dybantsa",
+    position: "F",
+    jersey_number: "0",
+    height: "6-9",
+    weight: "210",
+    college: "BYU",
+    country: "USA",
+    draft_year: 2026,
+    draft_round: 1,
+    draft_number: 1,
+    team: { id: 30, abbreviation: "WAS" },
+  };
+
+  it("pages the active-roster endpoint with cursor until next_cursor is null", async () => {
+    const pageOne = { data: [rookieRow], meta: { next_cursor: 99, per_page: 100 } };
+    const pageTwo = { data: [{ ...rookieRow, id: 2 }], meta: { next_cursor: null } };
+    const fetchImpl = vi
+      .fn<FetchImpl>()
+      .mockResolvedValueOnce(jsonResponse(pageOne))
+      .mockResolvedValueOnce(jsonResponse(pageTwo));
+    const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
+
+    const { fetchActivePlayers } = await import("@/lib/balldontlie/endpoints");
+    const players = await fetchActivePlayers({ deps: { fetchImpl, sleep, apiKey: "k" } });
+
+    expect(players.map((player) => player.id)).toEqual([1057262817, 2]);
+    expect(fetchImpl.mock.calls[0]?.[0]?.toString() ?? "").toContain(
+      "/players/active?per_page=100",
+    );
+    expect(fetchImpl.mock.calls[1]?.[0]?.toString() ?? "").toContain("cursor=99");
+    expect(sleep).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports progress under the active endpoint's name", async () => {
+    const fetchImpl = vi
+      .fn<FetchImpl>()
+      .mockResolvedValue(jsonResponse({ data: [rookieRow], meta: { next_cursor: null } }));
+    const onPage = vi.fn();
+
+    const { fetchActivePlayers } = await import("@/lib/balldontlie/endpoints");
+    await fetchActivePlayers({ deps: { fetchImpl, apiKey: "k", onPage } });
+
+    expect(onPage).toHaveBeenCalledWith({
+      endpoint: "players/active",
+      page: 1,
+      pageRows: 1,
+      totalRows: 1,
+      nextCursor: null,
+    });
+  });
+});
+
 describe("fetchTeamGames", () => {
   it("requests the team season schedule, paginates, and flattens nested team objects", async () => {
     const gameRow = {

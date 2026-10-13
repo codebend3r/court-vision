@@ -170,6 +170,19 @@
       font-weight: var(--font-weight-semibold);
     }
   }
+
+  // A row whose player is on one of your fantasy teams: an app renders a
+  // `[data-on-your-team]` marker in the row with the words for screen readers.
+  // The tint sits on the row so the sorted column's own tint still layers on
+  // top, and the solid edge bar keeps the cue from resting on colour alone.
+  // Purple keeps it apart from the accent the sorted column already uses.
+  tr:has([data-on-your-team="true"]) {
+    background: color-mix(in srgb, var(--color-accent-purple) 9%, transparent);
+
+    > td:first-child {
+      box-shadow: inset 3px 0 0 var(--color-accent-purple);
+    }
+  }
 }
 
 // Numeric table cells: mono, right-aligned, never wrapping.

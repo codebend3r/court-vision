@@ -1,8 +1,9 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import { type ComponentProps, createContext, use } from "react";
 
 import { PlayersTable } from "@/components/PlayersTable/PlayersTable";
+import { useRosteredStore } from "@/lib/leagues/rosteredStore";
 import { type PlayerRow } from "@/lib/players/search";
 import { type AdvancedPlayerRow } from "@/lib/players/searchAdvanced";
 import { buildPlayersHref, type PlayersSearchParams } from "@/lib/players/searchParams";
@@ -35,6 +36,10 @@ vi.mock("next/link", () => ({
 }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/players" }));
 vi.mock("@/lib/watchlist/actions", () => ({ starPlayer: vi.fn(), unstarPlayer: vi.fn() }));
+
+beforeEach(() => {
+  useRosteredStore.setState({ playerIds: new Set<number>() });
+});
 
 afterEach(cleanup);
 
@@ -92,6 +97,21 @@ describe("PlayersTable", () => {
     const links = headerLinks();
     expect(links.length).toBeGreaterThan(1);
     expect(links.every((link) => link.getAttribute("data-prefetch") === "false")).toBe(true);
+  });
+
+  it("marks a player on one of your teams inside their own row", () => {
+    useRosteredStore.getState().hydrate({ playerIds: [curry.id] });
+    renderRegular();
+
+    const row = screen.getByRole("row", { name: /Stephen Curry/ });
+    expect(within(row).getByText("On your team")).toHaveAttribute("data-on-your-team", "true");
+  });
+
+  it("leaves a player on none of your teams unmarked", () => {
+    useRosteredStore.getState().hydrate({ playerIds: [999] });
+    renderRegular();
+
+    expect(screen.queryByText("On your team")).toBeNull();
   });
 
   it("leaves the player row links on the default prefetch", () => {

@@ -45,8 +45,10 @@ type PersonMatch = {
   nbaPersonId: number;
 };
 
-// Only players with at least one game log get mapped (the plan's "current
-// players" set — see docs/superpowers/plans/2026-07-11-player-headshots.md).
+// Only players with at least one game log, or on a current roster, get mapped
+// (the plan's "current players" set — see
+// docs/superpowers/plans/2026-07-11-player-headshots.md). The roster arm is
+// what reaches rookies, who have no logs until they play.
 // Ambiguity on either side (0 or 2+ index matches, or two of our players
 // normalizing identically) is skipped and reported rather than guessed.
 export async function mapHeadshots(deps: MapHeadshotsDeps = {}): Promise<MapHeadshotsResult> {
@@ -55,7 +57,7 @@ export async function mapHeadshots(deps: MapHeadshotsDeps = {}): Promise<MapHead
   const indexByName = groupByNormalizedName(index);
 
   const players = await prisma.player.findMany({
-    where: { gameLogs: { some: {} } },
+    where: { OR: [{ gameLogs: { some: {} } }, { isActive: true }] },
     select: { id: true, fullName: true },
   });
   const playersByName = groupByNormalizedName(players);

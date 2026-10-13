@@ -114,6 +114,7 @@ describe("seedDemo", () => {
     const upsertPlayers = vi.spyOn(persist, "upsertPlayers").mockResolvedValue(6);
     const upsertGameLogs = vi.spyOn(persist, "upsertGameLogs").mockResolvedValue(15);
     const upsertSeasonStats = vi.spyOn(persist, "upsertSeasonStats").mockResolvedValue(5);
+    const markActiveRoster = vi.spyOn(persist, "markActiveRoster").mockResolvedValue(5);
 
     const summary = await seedDemo({ deps: { apiKey: "k" } });
 
@@ -148,6 +149,9 @@ describe("seedDemo", () => {
 
     expect(upsertGameLogs).toHaveBeenCalledTimes(1);
     expect(upsertSeasonStats).toHaveBeenCalledTimes(1);
+    // Only the five profiled players make the demo's rosters, not Bob Extra.
+    const activeIds = markActiveRoster.mock.calls[0]?.[0]?.playerIds ?? [];
+    expect([...activeIds].sort((a, b) => a - b)).toEqual([15, 3220, 4066, 3202128, 3547232]);
   });
 
   it("stays silent unless a logger is supplied", async () => {
@@ -160,6 +164,7 @@ describe("seedDemo", () => {
     vi.spyOn(persist, "upsertPlayers").mockResolvedValue(6);
     vi.spyOn(persist, "upsertGameLogs").mockResolvedValue(15);
     vi.spyOn(persist, "upsertSeasonStats").mockResolvedValue(5);
+    vi.spyOn(persist, "markActiveRoster").mockResolvedValue(5);
     const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
     const logger = vi.fn();
 

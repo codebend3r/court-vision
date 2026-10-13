@@ -96,20 +96,16 @@ export type TeamRosterPlayer = {
   teamAbbr: string | null;
 };
 
-// Current roster: players whose Balldontlie team is this one and who logged a
-// game this season. The season filter is load-bearing — `gameLogs: { some: {} }`
-// means "has a log in any backfilled season", which silently widens every time
-// the backfill window does. When the window moved to 2016-17 it admitted 386
-// players whose last game was 2016-2019 but whose Balldontlie team still points
-// at their final club. The season is the newest one with game logs, like the
-// teams table, rather than SEASON_LABEL: after the constant moves to a new
-// season, rosters keep showing last season's until opening night's logs land.
+// Current roster: players on Balldontlie's active list whose team is this one.
+// `isActive` is written by `sync:players`, so rookies and new signings appear
+// before their first game. It replaced "logged a game in the newest season",
+// which hid every rookie until opening night. A game-log test also has to be
+// season-scoped, because retired players keep pointing at their final club:
+// the unscoped version admitted 386 of them when the backfill reached 2016-17.
 // Ordered by name for the /team roster section.
-const fetchRoster = async (abbr: string): Promise<TeamRosterPlayer[]> => {
-  const season = await latestSeason();
-  if (season === null) return [];
-  return prisma.player.findMany({
-    where: { teamAbbr: abbr, gameLogs: { some: { season } } },
+const fetchRoster = (abbr: string): Promise<TeamRosterPlayer[]> =>
+  prisma.player.findMany({
+    where: { teamAbbr: abbr, isActive: true },
     select: {
       id: true,
       firstName: true,
@@ -122,7 +118,6 @@ const fetchRoster = async (abbr: string): Promise<TeamRosterPlayer[]> => {
     },
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
   });
-};
 
 const cachedRoster = unstable_cache((abbr: string) => fetchRoster(abbr), ["team:roster"], {
   revalidate: 300,

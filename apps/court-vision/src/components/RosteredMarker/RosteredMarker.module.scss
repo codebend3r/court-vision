@@ -1,0 +1,7 @@
+@use "@/styles/mixins" as *;
+
+// The row tint and edge bar carry the cue visually (see `data-table` in
+// @vision/ui's mixins); the words are for screen readers.
+.marker {
+  @include visually-hidden;
+}

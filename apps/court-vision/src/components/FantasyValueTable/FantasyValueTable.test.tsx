@@ -1,13 +1,18 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import {
   FantasyValueTable,
   type FantasyTableRow,
 } from "@/components/FantasyValueTable/FantasyValueTable";
+import { useRosteredStore } from "@/lib/leagues/rosteredStore";
 import { makeStatLine } from "@/lib/valuation/fixtures";
 import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
+
+beforeEach(() => {
+  useRosteredStore.setState({ playerIds: new Set<number>() });
+});
 
 afterEach(cleanup);
 
@@ -94,6 +99,16 @@ describe("FantasyValueTable", () => {
     expect(onSort).toHaveBeenCalledWith({ sort: "g" });
     await user.click(screen.getByRole("button", { name: /Pos VORP/ }));
     expect(onSort).toHaveBeenCalledWith({ sort: "pos" });
+  });
+
+  it("marks only the rows of players on one of your teams", () => {
+    useRosteredStore.getState().hydrate({ playerIds: [2] });
+    render(<FantasyValueTable isSignedIn={false} {...defaultProps} rows={rows} />);
+
+    const [marker, ...others] = screen.getAllByText("On your team");
+    expect(others).toHaveLength(0);
+    const row = marker?.closest("tr") ?? document.body;
+    expect(within(row).getAllByRole("link")[0]).toHaveAttribute("href", "/players/2");
   });
 
   it("hides the rank column for name sorts", () => {

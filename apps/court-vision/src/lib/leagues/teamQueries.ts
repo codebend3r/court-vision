@@ -1,3 +1,4 @@
+import { getActiveLeagueRecord } from "@/lib/leagues/queries";
 import { rowsToSlots } from "@/lib/leagues/teams";
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 import { prisma } from "@/lib/prisma";
@@ -91,4 +92,19 @@ export const getLeagueTeamBySlug = async ({
     include: TEAM_INCLUDE,
   });
   return team === null ? null : toFantasyTeam({ team });
+};
+
+// Every player on one of your teams in the active league, which the player
+// tables tint as "on your team". Signed out or without a league, nobody is.
+// Uncached for the same reason as the watchlist read: per-user, a few dozen
+// rows, and it must reflect a saved team immediately.
+export const getRosteredPlayerIds = async (): Promise<number[]> => {
+  const league = await getActiveLeagueRecord();
+  if (league === null) return [];
+  const slots = await prisma.leagueTeamSlot.findMany({
+    where: { team: { leagueId: league.id }, playerId: { not: null } },
+    distinct: ["playerId"],
+    select: { playerId: true },
+  });
+  return slots.flatMap((slot) => (slot.playerId === null ? [] : [slot.playerId]));
 };

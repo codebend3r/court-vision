@@ -31,6 +31,10 @@ model Player {
   draftYear    Int?
   draftRound   Int?
   draftNumber  Int?
+  // On a current NBA roster per Balldontlie's /v1/players/active, refreshed by
+  // `sync:players`. Team rosters read this, not game logs, so rookies and new
+  // signings appear before they play.
+  isActive     Boolean             @default(false)
   seasonStats  PlayerSeasonStats[]
   gameLogs     PlayerGameLog[]
   advancedGameLogs PlayerAdvancedGameLog[]

@@ -1,3 +1,5 @@
+import { type ReactNode } from "react";
+
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PositionTag } from "@/components/PositionTag/PositionTag";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
@@ -25,11 +27,36 @@ const formatPerGame = (category: PlayerCategoryInsight): string =>
 const zToneClass = (z: number): string =>
   z > 0.05 ? styles.zPos : z < -0.05 ? styles.zNeg : styles.zFlat;
 
+// Avatar, name, position and team: the panel's header whether or not the
+// player has stats. `games` fills the trailing meta slot when they do.
+function PanelHead({ player, games }: { player: FantasyTeamPlayer; games: ReactNode }) {
+  return (
+    <header className={styles.head}>
+      <PlayerAvatar
+        fullName={player.fullName}
+        nbaPersonId={player.nbaPersonId}
+        size="lg"
+        teamAbbr={player.teamAbbr}
+      />
+      <span className={styles.identity}>
+        <span className={styles.name}>{player.fullName}</span>
+        <span className={styles.meta}>
+          {!!player.position && <PositionTag position={player.position} className={styles.pos} />}
+          {player.teamAbbr !== null && <TeamChip team={player.teamAbbr} size="sm" />}
+          <span className={styles.games}>{games}</span>
+        </span>
+      </span>
+    </header>
+  );
+}
+
 // Desktop-only quick-stats read for the hovered roster player: per-game line,
 // total z-score, and overall + positional z rank. Hidden on small screens by
-// its container; shows a hint until a player is hovered.
+// its container; shows a hint until a player is hovered. A player with no
+// stat line (a rookie before opening night) gets their header and a note
+// instead of the ranks.
 export function PlayerInsightPanel({ player, insight }: PlayerInsightPanelProps) {
-  if (player === null || insight === null) {
+  if (player === null) {
     return (
       <aside className={styles.panel} aria-label="Player quick stats">
         <p className={styles.hint}>Hover a player to see their per-game stats and z-score ranks.</p>
@@ -37,26 +64,23 @@ export function PlayerInsightPanel({ player, insight }: PlayerInsightPanelProps)
     );
   }
 
+  if (insight === null) {
+    return (
+      <aside className={styles.panel} aria-label={`${player.fullName} quick stats`}>
+        <PanelHead player={player} games="0 GP" />
+        <p className={styles.hint}>
+          No games played yet. Per-game stats and z-score ranks appear after their first game.
+        </p>
+      </aside>
+    );
+  }
+
   return (
     <aside className={styles.panel} aria-label={`${player.fullName} quick stats`}>
-      <header className={styles.head}>
-        <PlayerAvatar
-          fullName={player.fullName}
-          nbaPersonId={player.nbaPersonId}
-          size="lg"
-          teamAbbr={player.teamAbbr}
-        />
-        <span className={styles.identity}>
-          <span className={styles.name}>{player.fullName}</span>
-          <span className={styles.meta}>
-            {!!player.position && <PositionTag position={player.position} className={styles.pos} />}
-            {player.teamAbbr !== null && <TeamChip team={player.teamAbbr} size="sm" />}
-            <span className={styles.games}>
-              {insight.gamesPlayed} GP · {insight.playingTimePerGame.toFixed(1)} MPG
-            </span>
-          </span>
-        </span>
-      </header>
+      <PanelHead
+        player={player}
+        games={`${insight.gamesPlayed} GP · ${insight.playingTimePerGame.toFixed(1)} MPG`}
+      />
 
       <dl className={styles.ranks}>
         <div className={styles.rank}>

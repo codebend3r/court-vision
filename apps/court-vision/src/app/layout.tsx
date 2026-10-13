@@ -10,9 +10,11 @@ import { SideNav } from "@/components/SideNav/SideNav";
 import { SiteFooter } from "@/components/SiteFooter/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader/SiteHeader";
 import { WatchlistAlert } from "@/components/WatchlistAlert/WatchlistAlert";
+import { RosteredHydrator } from "@/components/RosteredHydrator/RosteredHydrator";
 import { WatchlistHydrator } from "@/components/WatchlistHydrator/WatchlistHydrator";
 import { getProfile } from "@/lib/auth/session";
 import { fallbackActiveLeagueId, getLeagues } from "@/lib/leagues/queries";
+import { getRosteredPlayerIds } from "@/lib/leagues/teamQueries";
 import { fontScaleOf } from "@/lib/settings/guards";
 import { resolveSiteOrigin } from "@/lib/siteUrl";
 import { getWatchlistPlayerIds } from "@/lib/watchlist/queries";
@@ -76,14 +78,15 @@ export default async function RootLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  // One watchlist read per navigation seeds every StarButton on the page. All
-  // three reads run together rather than as a waterfall on every navigation:
-  // getLeagues and getWatchlistPlayerIds each resolve the profile themselves
-  // (deduped by React cache) and return [] signed out, so nothing here needs
-  // to wait for `profile` before starting.
-  const [profile, watchlistPlayerIds, leagues] = await Promise.all([
+  // One watchlist read per navigation seeds every StarButton on the page, and
+  // one rostered read tints every player on your teams. All four reads run
+  // together rather than as a waterfall on every navigation: the other three
+  // each resolve the profile themselves (deduped by React cache) and return []
+  // signed out, so nothing here needs to wait for `profile` before starting.
+  const [profile, watchlistPlayerIds, rosteredPlayerIds, leagues] = await Promise.all([
     getProfile(),
     getWatchlistPlayerIds(),
+    getRosteredPlayerIds(),
     getLeagues(),
   ]);
   // Matches resolveActiveLeague's DB-side fallback (updatedAt desc), not
@@ -115,6 +118,7 @@ export default async function RootLayout({
             </a>
             <SiteHeader />
             <WatchlistHydrator playerIds={watchlistPlayerIds} />
+            <RosteredHydrator playerIds={rosteredPlayerIds} />
             <LeaguesHydrator leagues={leagues} activeLeagueId={activeLeagueId} />
             {!!profile && <LegacyTeamsMigrator />}
             <WatchlistAlert />

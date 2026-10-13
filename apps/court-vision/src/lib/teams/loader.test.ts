@@ -23,24 +23,30 @@ beforeEach(() => {
 });
 
 describe("getTeamRoster", () => {
-  it("scopes the roster to the newest season that has game logs", async () => {
-    findFirstGameLog.mockResolvedValue({ season: "2025-26" });
-
-    await getTeamRoster({ abbr: "GSW" });
+  it("lists the team's players flagged active, not those with a game log", async () => {
+    await getTeamRoster({ abbr: "WAS" });
 
     expect(findManyPlayers).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { teamAbbr: "GSW", gameLogs: { some: { season: "2025-26" } } },
-      }),
+      expect.objectContaining({ where: { teamAbbr: "WAS", isActive: true } }),
     );
   });
 
-  it("returns an empty roster without querying players when no logs exist", async () => {
-    findFirstGameLog.mockResolvedValue(null);
+  it("does not wait on game logs, so a rookie with none still makes the roster", async () => {
+    const rookie = {
+      id: 1057262817,
+      firstName: "AJ",
+      lastName: "Dybantsa",
+      fullName: "AJ Dybantsa",
+      position: "F",
+      jerseyNumber: "0",
+      nbaPersonId: null,
+      teamAbbr: "WAS",
+    };
+    findManyPlayers.mockResolvedValue([rookie]);
 
-    const roster = await getTeamRoster({ abbr: "GSW" });
+    const roster = await getTeamRoster({ abbr: "WAS" });
 
-    expect(roster).toEqual([]);
-    expect(findManyPlayers).not.toHaveBeenCalled();
+    expect(roster).toEqual([rookie]);
+    expect(findFirstGameLog).not.toHaveBeenCalled();
   });
 });
