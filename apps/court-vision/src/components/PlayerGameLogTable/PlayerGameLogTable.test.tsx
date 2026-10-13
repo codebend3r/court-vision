@@ -4,15 +4,21 @@ import { withNuqsTestingAdapter, type UrlUpdateEvent } from "nuqs/adapters/testi
 import { afterEach, describe, expect, it } from "bun:test";
 
 import {
+  type CategoryColumn,
+  type GameLogRow,
+} from "@/components/PlayerGameLogTable/gameLogColumns";
+import {
   PlayerGameLogTable,
   type PlayerGameLogTableProps,
-  type PlayerGameLogTableRow,
 } from "@/components/PlayerGameLogTable/PlayerGameLogTable";
 import { type AdvancedMetricKey } from "@/lib/players/searchParams";
 
 afterEach(cleanup);
 
-const buildRow = (overrides: Partial<PlayerGameLogTableRow>): PlayerGameLogTableRow => ({
+// Extra fields (a view's `advanced` or `fantasy`) ride along on the row.
+const buildRow = <Extra extends object>(
+  overrides: Partial<GameLogRow> & Extra,
+): GameLogRow & Extra => ({
   id: "log-1",
   gameNumber: 1,
   gameDate: "2026-03-10T00:00:00.000Z",
@@ -39,20 +45,17 @@ const buildRow = (overrides: Partial<PlayerGameLogTableRow>): PlayerGameLogTable
   ...overrides,
 });
 
-const renderTable = ({
-  rows,
-  view,
-  categories,
-  searchParams = {},
-  onUrlUpdate,
-}: {
-  rows: PlayerGameLogTableRow[];
-  view?: PlayerGameLogTableProps["view"];
-  categories?: PlayerGameLogTableProps["categories"];
+type RenderOptions = {
   searchParams?: Record<string, string>;
   onUrlUpdate?: (event: UrlUpdateEvent) => void;
-}) =>
-  render(<PlayerGameLogTable rows={rows} view={view} categories={categories} />, {
+};
+
+const renderTable = ({
+  searchParams = {},
+  onUrlUpdate,
+  ...props
+}: RenderOptions & PlayerGameLogTableProps) =>
+  render(<PlayerGameLogTable {...props} />, {
     wrapper: withNuqsTestingAdapter({ hasMemory: true, searchParams, onUrlUpdate }),
   });
 
@@ -85,6 +88,7 @@ const columnNames = () =>
 describe("PlayerGameLogTable", () => {
   it("shows raw game stats in newest-first order", () => {
     renderTable({
+      view: "regular",
       rows: [
         buildRow({ id: "older", gameDate: "2026-02-08T00:00:00.000Z", pts: 12 }),
         buildRow({ id: "newer" }),
@@ -100,6 +104,7 @@ describe("PlayerGameLogTable", () => {
 
   it("sorts every column, including points", () => {
     renderTable({
+      view: "regular",
       rows: [
         buildRow({ id: "high", pts: 83 }),
         buildRow({ id: "low", pts: 12, gameDate: "2026-02-08T00:00:00.000Z" }),
@@ -119,6 +124,7 @@ describe("PlayerGameLogTable", () => {
 
   it("restores sorting from the URL and highlights the active column", () => {
     renderTable({
+      view: "regular",
       rows: [
         buildRow({ id: "high", ast: 12 }),
         buildRow({ id: "low", ast: 3, gameDate: "2026-02-08T00:00:00.000Z" }),
@@ -134,10 +140,37 @@ describe("PlayerGameLogTable", () => {
     expect(rows[1].querySelectorAll('[data-sort-active="true"]')).toHaveLength(1);
   });
 
+  it("reads an unknown sort direction as descending and an unknown column as the date", () => {
+    renderTable({
+      view: "regular",
+      rows: [buildRow({ id: "a" })],
+      searchParams: { sort: "ast", dir: "sideways" },
+    });
+    expect(screen.getByRole("columnheader", { name: /AST/ })).toHaveAttribute(
+      "aria-sort",
+      "descending",
+    );
+
+    cleanup();
+    renderTable({
+      view: "regular",
+      rows: [buildRow({ id: "a" })],
+      searchParams: { sort: "bogus", dir: "asc" },
+    });
+    expect(screen.getByRole("columnheader", { name: /Date/ })).toHaveAttribute(
+      "aria-sort",
+      "descending",
+    );
+  });
+
   it("writes the selected sort and direction to the URL", async () => {
     const user = userEvent.setup();
     const updates: UrlUpdateEvent[] = [];
-    renderTable({ rows: [buildRow({})], onUrlUpdate: (event) => updates.push(event) });
+    renderTable({
+      view: "regular",
+      rows: [buildRow({})],
+      onUrlUpdate: (event) => updates.push(event),
+    });
 
     await user.click(screen.getByRole("button", { name: /AST/ }));
     await waitFor(() => expect(updates.at(-1)?.queryString).toBe("?sort=ast&dir=asc"));
@@ -148,6 +181,7 @@ describe("PlayerGameLogTable", () => {
 
   it("colors wins and losses with the win/loss classes", () => {
     renderTable({
+      view: "regular",
       rows: [
         buildRow({ id: "won", winLoss: "W" }),
         buildRow({ id: "lost", gameDate: "2026-03-11T00:00:00.000Z", winLoss: "L" }),
@@ -160,6 +194,7 @@ describe("PlayerGameLogTable", () => {
 
   it("shows the game score next to the result", () => {
     renderTable({
+      view: "regular",
       rows: [buildRow({ winLoss: "L", teamScore: 102, opponentScore: 118 })],
     });
 
@@ -169,6 +204,7 @@ describe("PlayerGameLogTable", () => {
 
   it("shows the game number and flags DNP games with a dot", () => {
     renderTable({
+      view: "regular",
       rows: [
         buildRow({ id: "played", gameNumber: 71 }),
         buildRow({
@@ -188,6 +224,7 @@ describe("PlayerGameLogTable", () => {
 
   it("omits the score when it is not recorded", () => {
     renderTable({
+      view: "regular",
       rows: [buildRow({ teamScore: null, opponentScore: null })],
     });
 
@@ -197,6 +234,7 @@ describe("PlayerGameLogTable", () => {
 
   it("wraps the log in a disclosure that opens by default and names the game count", () => {
     const { container } = renderTable({
+      view: "regular",
       rows: [buildRow({ id: "a" }), buildRow({ id: "b", gameDate: "2026-02-08T00:00:00.000Z" })],
     });
 
@@ -213,7 +251,7 @@ describe("PlayerGameLogTable", () => {
   });
 
   it("collapses when the summary is activated", () => {
-    const { container } = renderTable({ rows: [buildRow({ id: "a" })] });
+    const { container } = renderTable({ view: "regular", rows: [buildRow({ id: "a" })] });
 
     const summary = container.querySelector("summary");
     fireEvent.click(summary ?? container);
@@ -293,7 +331,7 @@ describe("PlayerGameLogTable advanced view", () => {
 });
 
 describe("PlayerGameLogTable fantasy view", () => {
-  const categories: PlayerGameLogTableProps["categories"] = [
+  const categories: CategoryColumn[] = [
     { key: "pts", label: "PTS" },
     { key: "reb", label: "REB" },
   ];

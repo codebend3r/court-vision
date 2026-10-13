@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 
 import { restoreEnv, stubEnv } from "@vision/testing/env";
 
-import { getSupabaseEnv, isSupabaseConfigured } from "@/lib/supabase/env";
+import { getSupabaseEnv, requireSupabaseEnv } from "@/lib/supabase/env";
 
 afterEach(() => {
   restoreEnv();
@@ -17,7 +17,6 @@ describe("getSupabaseEnv", () => {
       url: "https://example.supabase.co",
       key: "sb_publishable_abc",
     });
-    expect(isSupabaseConfigured()).toBe(true);
   });
 
   it("returns null when either value is missing or blank", () => {
@@ -25,6 +24,24 @@ describe("getSupabaseEnv", () => {
     stubEnv({ key: "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", value: "" });
 
     expect(getSupabaseEnv()).toBeNull();
-    expect(isSupabaseConfigured()).toBe(false);
+  });
+});
+
+describe("requireSupabaseEnv", () => {
+  it("returns the pair when Supabase is configured", () => {
+    stubEnv({ key: "NEXT_PUBLIC_SUPABASE_URL", value: "https://example.supabase.co" });
+    stubEnv({ key: "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", value: "sb_publishable_abc" });
+
+    expect(requireSupabaseEnv()).toEqual({
+      url: "https://example.supabase.co",
+      key: "sb_publishable_abc",
+    });
+  });
+
+  it("throws, naming the variables, when either value is missing", () => {
+    stubEnv({ key: "NEXT_PUBLIC_SUPABASE_URL", value: "" });
+    stubEnv({ key: "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", value: "sb_publishable_abc" });
+
+    expect(() => requireSupabaseEnv()).toThrow(/NEXT_PUBLIC_SUPABASE_URL/);
   });
 });

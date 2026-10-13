@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 import { makeStatLine } from "@/lib/valuation/fixtures";
-import { SEASON_LABEL, SEASON_YEAR } from "@/lib/balldontlie/constants";
+import { SEASON_LABEL, SEASON_START_YEAR } from "@/lib/stats/season";
 
 const findUniquePlayer = vi.fn();
 const findManyGameLogs = vi.fn();
@@ -330,7 +330,7 @@ describe("PlayerPage", () => {
     expect(screen.getByText("USA")).toBeInTheDocument();
     expect(screen.getByText("2020 · Rd 1 · Pick 5")).toBeInTheDocument();
     // drafted 2020, so the current season is their (start year - 2020 + 1)th
-    expect(screen.getByText(`${Number(SEASON_YEAR) - 2020 + 1} seasons`)).toBeInTheDocument();
+    expect(screen.getByText(`${SEASON_START_YEAR - 2020 + 1} seasons`)).toBeInTheDocument();
     // birthDate is null, so the Born fact is omitted entirely
     expect(screen.queryByText("Born")).not.toBeInTheDocument();
   });

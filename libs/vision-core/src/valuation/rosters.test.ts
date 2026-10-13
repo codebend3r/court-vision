@@ -9,7 +9,6 @@ import {
   rankByValue,
   type ValuationConfig,
 } from "#core/testing/basketball";
-import { teamTotalsSpread } from "#core/valuation/rosters";
 
 const config = (overrides: Partial<ValuationConfig> = {}): ValuationConfig => ({
   categories: ["pts"],
@@ -67,20 +66,6 @@ describe("buildLeague", () => {
     expect(spread.pts?.min).toBeCloseTo(30, 6);
     expect(spread.pts?.max).toBeCloseTo(40, 6);
     expect(spread.pts?.mean).toBeCloseTo(35, 6);
-  });
-});
-
-describe("teamTotalsSpread", () => {
-  it("summarizes the standings spread in a category", () => {
-    expect(teamTotalsSpread({ rosters: [{ pts: 10 }, { pts: 20 }], category: "pts" })).toEqual({
-      min: 10,
-      max: 20,
-      mean: 15,
-      sd: 5,
-    });
-  });
-
-  it("treats a missing category as zero", () => {
-    expect(teamTotalsSpread({ rosters: [{}, { pts: 10 }], category: "pts" }).min).toBe(0);
+    expect(spread.pts?.sd).toBeCloseTo(5, 6);
   });
 });

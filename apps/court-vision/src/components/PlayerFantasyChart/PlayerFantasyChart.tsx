@@ -1,6 +1,5 @@
 "use client";
 
-import { parseAsBoolean, useQueryState } from "nuqs";
 import {
   Bar,
   BarChart,
@@ -14,24 +13,31 @@ import {
 
 import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 import { type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
+import { formatSigned } from "@vision/core/util/format";
 import { type FantasyTrendPoint } from "@vision/core/valuation/playerValue";
 import { ROLLING_WINDOW_GAMES } from "@vision/core/valuation/rolling";
 import { MetricLineChart, type MetricMeta } from "@/components/MetricLineChart/MetricLineChart";
 import { BreakdownTooltip, SignedBar } from "@/components/PlayerFantasyChart/breakdownChart";
 import {
-  formatSigned,
+  METHOD_KEYS,
   METHOD_LABELS,
+  methodColors,
   type MethodKey,
 } from "@/components/PlayerFantasyChart/labels";
-import { getChartChrome, getSeriesPalette } from "@vision/ui/charts/palette";
-import { Switch } from "@vision/ui/components/Switch/Switch";
+import { ChartPanel } from "@/components/SeriesChart/ChartPanel";
+import { GamesMissedSwitch, useShowDnp } from "@/components/SeriesChart/GamesMissedSwitch";
+import { CHART_CHROME } from "@vision/ui/charts/palette";
 
 import styles from "@/components/PlayerFantasyChart/PlayerFantasyChart.module.scss";
+import chartStyles from "@/components/SeriesChart/SeriesChart.module.scss";
 
 export type PlayerFantasyChartProps = {
   breakdown: FantasyCategoryBreakdown[];
   trend: FantasyTrendPoint[];
 };
+
+// Recharts hands its tick formatter the bare value.
+const formatTick = (value: number): string => formatSigned({ value, digits: 1 });
 
 // The fantasy view's two figures: where the value comes from (each category's
 // Z and G, side by side) and where it is going (the rolling ten-game value
@@ -39,19 +45,18 @@ export type PlayerFantasyChartProps = {
 // the legend above.
 export function PlayerFantasyChart({ breakdown, trend }: PlayerFantasyChartProps) {
   const { theme } = useTheme();
-  const chrome = getChartChrome({ theme });
-  const palette = getSeriesPalette({ theme });
-  const colors: Record<MethodKey, string> = { z: palette[0], g: palette[1] };
-  const [showDnp, setShowDnp] = useQueryState("dnp", parseAsBoolean.withDefault(false));
+  const colors = methodColors({ theme });
+  const { showDnp } = useShowDnp();
 
-  const trendMetas: MetricMeta<MethodKey>[] = [
-    { key: "z", label: METHOD_LABELS.z, color: colors.z },
-    { key: "g", label: METHOD_LABELS.g, color: colors.g },
-  ];
+  const trendMetas: MetricMeta<MethodKey>[] = METHOD_KEYS.map((key) => ({
+    key,
+    label: METHOD_LABELS[key],
+    color: colors[key],
+  }));
   const hasTrend = trend.some((point) => point.z !== null || point.g !== null);
 
   return (
-    <div className={styles.root}>
+    <div className={chartStyles.root}>
       <ul className={styles.legend} aria-label="Series">
         {trendMetas.map((meta) => (
           <li key={meta.key} className={styles.legendItem}>
@@ -65,15 +70,10 @@ export function PlayerFantasyChart({ breakdown, trend }: PlayerFantasyChartProps
         ))}
       </ul>
 
-      <Switch
-        label="Games missed"
-        checked={showDnp}
-        onChange={({ checked }) => void setShowDnp(checked)}
-      />
+      <GamesMissedSwitch />
 
       <div className={styles.panels}>
-        <section className={styles.panel}>
-          <h3 className={styles.panelTitle}>Category breakdown</h3>
+        <ChartPanel title="Category breakdown">
           <ResponsiveContainer
             width="100%"
             height={320}
@@ -85,22 +85,22 @@ export function PlayerFantasyChart({ breakdown, trend }: PlayerFantasyChartProps
               barGap={2}
               maxBarSize={24}
             >
-              <CartesianGrid stroke={chrome.grid} vertical={false} />
+              <CartesianGrid stroke={CHART_CHROME.grid} vertical={false} />
               <XAxis
                 dataKey="label"
-                tick={{ fill: chrome.axis, fontSize: 12 }}
-                stroke={chrome.grid}
+                tick={{ fill: CHART_CHROME.axis, fontSize: 12 }}
+                stroke={CHART_CHROME.grid}
               />
               <YAxis
-                tick={{ fill: chrome.axis, fontSize: 12 }}
-                stroke={chrome.grid}
-                tickFormatter={formatSigned}
+                tick={{ fill: CHART_CHROME.axis, fontSize: 12 }}
+                stroke={CHART_CHROME.grid}
+                tickFormatter={formatTick}
               />
               <Tooltip
                 content={<BreakdownTooltip breakdown={breakdown} colors={colors} />}
-                cursor={{ fill: chrome.grid, fillOpacity: 0.35 }}
+                cursor={{ fill: CHART_CHROME.grid, fillOpacity: 0.35 }}
               />
-              <ReferenceLine y={0} stroke={chrome.axis} />
+              <ReferenceLine y={0} stroke={CHART_CHROME.axis} />
               {trendMetas.map((meta) => (
                 <Bar
                   key={meta.key}
@@ -113,26 +113,25 @@ export function PlayerFantasyChart({ breakdown, trend }: PlayerFantasyChartProps
               ))}
             </BarChart>
           </ResponsiveContainer>
-        </section>
+        </ChartPanel>
 
-        <section className={styles.panel}>
-          <h3 className={styles.panelTitle}>Rolling value</h3>
+        <ChartPanel title="Rolling value">
           {hasTrend ? (
             <MetricLineChart
               metas={trendMetas}
               series={trend}
               showDnp={showDnp}
               zeroLine
-              formatValue={({ value }) => formatSigned(value)}
-              formatTick={formatSigned}
+              formatValue={({ value }) => formatSigned({ value, digits: 1 })}
+              formatTick={formatTick}
             />
           ) : (
-            <p className={styles.emptyHint}>
+            <p className={chartStyles.emptyHint}>
               Rolling value needs {ROLLING_WINDOW_GAMES} games in this timeframe before it can be
               drawn.
             </p>
           )}
-        </section>
+        </ChartPanel>
       </div>
     </div>
   );

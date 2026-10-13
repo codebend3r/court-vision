@@ -3,8 +3,8 @@
 import { z } from "zod";
 
 import { confirmationRedirectTo } from "@/lib/auth/confirmationRedirect";
-import { normalizeUsername, usernameSchema } from "@/lib/auth/username";
-import { prisma } from "@/lib/prisma";
+import { usernameSchema } from "@/lib/auth/username";
+import { isUsernameTaken } from "@/lib/auth/usernameTaken";
 import { createClient } from "@/lib/supabase/server";
 
 const inputSchema = z.object({
@@ -12,14 +12,6 @@ const inputSchema = z.object({
   username: usernameSchema,
   password: z.string().min(8, "Password must be at least 8 characters."),
 });
-
-export async function isUsernameTaken(username: string): Promise<boolean> {
-  const existing = await prisma.profile.findFirst({
-    where: { username: { equals: normalizeUsername(username), mode: "insensitive" } },
-    select: { id: true },
-  });
-  return !!existing;
-}
 
 type SignUpResult = { ok: true } | { ok: false; error: string };
 
@@ -35,7 +27,7 @@ export async function signUp(input: {
 
   const { email, username, password } = parsed.data;
 
-  if (await isUsernameTaken(username)) {
+  if (await isUsernameTaken({ username })) {
     return { ok: false, error: "That username is taken." };
   }
 

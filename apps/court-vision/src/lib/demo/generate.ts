@@ -1,7 +1,7 @@
-import { SEASON_LABEL, SEASON_TYPE } from "@/lib/balldontlie/constants";
 import { BdlGame } from "@/lib/balldontlie/schemas";
-import { deriveGameContext } from "@/lib/balldontlie/transform";
+import { deriveGameContext, isGamePlayed } from "@/lib/balldontlie/transform";
 import { GameLogInput } from "@/lib/stats/inputs";
+import { SEASON_LABEL, SEASON_TYPE } from "@/lib/stats/season";
 
 import { createPrng, gaussian } from "@vision/core/util/prng";
 import { DemoProfile, MeanSpread } from "@/lib/demo/profiles";
@@ -15,8 +15,6 @@ const boundedPct = (args: { rng: () => number; pct: number }): number => {
   const { rng, pct } = args;
   return Math.min(0.95, Math.max(0.1, gaussian({ rng, mean: pct, spread: 0.09 })));
 };
-
-const wasPlayed = (game: BdlGame): boolean => game.home_team_score + game.visitor_team_score > 0;
 
 const selectSkippedIndices = (args: {
   rng: () => number;
@@ -43,10 +41,10 @@ export const generateGameLogs = (args: {
   teamAbbrById: Map<number, string>;
 }): GameLogInput[] => {
   const { playerId, teamId, teamAbbr, games, profile, teamAbbrById } = args;
-  const rng = createPrng(playerId);
+  const rng = createPrng({ seed: playerId });
 
   const played = games
-    .filter(wasPlayed)
+    .filter(isGamePlayed)
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
   const skippedIndices = selectSkippedIndices({

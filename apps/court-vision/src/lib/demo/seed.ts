@@ -1,25 +1,20 @@
-import { FREE_TIER_THROTTLE_MS } from "@/lib/balldontlie/constants";
-import {
-  BdlClientDeps,
-  fetchAllPlayers,
-  fetchTeamGames,
-  fetchTeams,
-} from "@/lib/balldontlie/endpoints";
+import { BdlClientDeps, fetchAllPlayers, fetchTeamGames } from "@/lib/balldontlie/endpoints";
+import { fetchTeamAbbrById } from "@/lib/balldontlie/pipeline";
 import { BdlPlayer } from "@/lib/balldontlie/schemas";
 import { aggregateSeasonStats, toPlayerInput } from "@/lib/balldontlie/transform";
 import { GameLogInput } from "@/lib/stats/inputs";
 import {
   SyncSummary,
   markActiveRoster,
-  upsertGameLogs,
+  replaceGameLogs,
   upsertPlayers,
   upsertSeasonStats,
 } from "@/lib/stats/persist";
 
 import { generateGameLogs } from "@/lib/demo/generate";
-import { normalizeName } from "@/lib/demo/names";
 import { DEMO_PROFILES } from "@/lib/demo/profiles";
 import { Logger, consoleLogger, silentLogger } from "@vision/core/util/logger";
+import { normalizeName } from "@vision/core/util/names";
 import { sequentially } from "@vision/core/util/sequentially";
 import { isMainModule } from "@vision/core/util/runtime";
 
@@ -28,38 +23,33 @@ export async function seedDemo(
 ): Promise<SyncSummary> {
   const { deps = {}, logger = silentLogger } = args;
 
-  const teams = await fetchTeams(deps);
-  logger(`Fetched ${teams.length} teams.`);
-  const teamAbbrById = teams.reduce(
-    (map, team) => map.set(team.id, team.abbreviation),
-    new Map<number, string>(),
-  );
+  const teamAbbrById = await fetchTeamAbbrById({ deps });
+  logger(`Fetched ${teamAbbrById.size} teams.`);
 
-  const bdlPlayers = await fetchAllPlayers({ deps, throttleMs: FREE_TIER_THROTTLE_MS });
-  const players = await upsertPlayers(bdlPlayers.map((player) => toPlayerInput({ player })));
+  const bdlPlayers = await fetchAllPlayers({ deps });
+  const players = await upsertPlayers({
+    players: bdlPlayers.map((player) => toPlayerInput({ player })),
+  });
   logger(`Fetched ${bdlPlayers.length} players, upserted ${players}.`);
 
   const byName = bdlPlayers.reduce(
-    (map, player) => map.set(normalizeName(`${player.first_name} ${player.last_name}`), player),
+    (map, player) =>
+      map.set(normalizeName({ name: `${player.first_name} ${player.last_name}` }), player),
     new Map<string, BdlPlayer>(),
   );
 
-  // One profile at a time: fetchTeamGames is throttled to the free API tier,
-  // so overlapping these would just queue against the same rate limit.
+  // One profile at a time: every fetch shares one API rate limit, so
+  // overlapping these would just queue against it.
   const gameLogInputs = (
     await sequentially({
       items: DEMO_PROFILES,
       run: async ({ item: profile }): Promise<GameLogInput[]> => {
-        const match = byName.get(normalizeName(profile.fullName));
+        const match = byName.get(normalizeName({ name: profile.fullName }));
         const team = match?.team ?? null;
         if (!match || team === null) {
           throw new Error(`Demo profile not resolvable: ${profile.fullName}`);
         }
-        const games = await fetchTeamGames({
-          teamId: team.id,
-          deps,
-          throttleMs: FREE_TIER_THROTTLE_MS,
-        });
+        const games = await fetchTeamGames({ teamId: team.id, deps });
         const logs = generateGameLogs({
           playerId: match.id,
           teamId: team.id,
@@ -74,8 +64,10 @@ export async function seedDemo(
     })
   ).flat();
 
-  const gameLogs = await upsertGameLogs(gameLogInputs);
-  const seasonStats = await upsertSeasonStats(aggregateSeasonStats(gameLogInputs));
+  const gameLogs = await replaceGameLogs({ rows: gameLogInputs });
+  const seasonStats = await upsertSeasonStats({
+    rows: aggregateSeasonStats({ logs: gameLogInputs }),
+  });
   // Team rosters list active players only, so the profiled players are the
   // demo's rosters.
   await markActiveRoster({

@@ -1,8 +1,7 @@
 import { type Category, type SportDescriptor, type SportKeys } from "#core/sport/types";
-import { categoryValue } from "#core/valuation/categories";
-import { buildLeague, type SyntheticLeague } from "#core/valuation/rosters";
+import { scorePerCategory } from "#core/valuation/methods/perCategory";
+import { buildLeague } from "#core/valuation/rosters";
 import {
-  type CategoryContribution,
   type PlayerValue,
   type PoolStats,
   type ValuationConfig,
@@ -25,16 +24,14 @@ export const standingsGainDenominators = <K extends SportKeys>({
   lines,
   poolStats,
   config,
-  league,
 }: {
   sport: SportDescriptor<K>;
   lines: readonly ValuationLine<K>[];
   poolStats: PoolStats<K>;
   config: ValuationConfig<K>;
-  league?: SyntheticLeague<K>;
 }): Partial<Record<Category<K>, number>> => {
   if (config.teams < 2) return {};
-  const { spread } = league ?? buildLeague({ sport, lines, poolStats, config });
+  const { spread } = buildLeague({ sport, lines, poolStats, config });
   return config.categories.reduce<Partial<Record<Category<K>, number>>>((acc, category) => {
     const { min, max } = spread[category] ?? { min: 0, max: 0 };
     return { ...acc, [category]: (max - min) / (config.teams - 1) };
@@ -46,37 +43,23 @@ export const scoreSGP = <K extends SportKeys>({
   lines,
   poolStats,
   config,
-  league,
 }: {
   sport: SportDescriptor<K>;
   lines: readonly ValuationLine<K>[];
   poolStats: PoolStats<K>;
   config: ValuationConfig<K>;
-  league?: SyntheticLeague<K>;
 }): PlayerValue<K>[] => {
-  const denominators = standingsGainDenominators({ sport, lines, poolStats, config, league });
-  return lines.map((line) => {
-    const breakdown = config.categories.reduce<Partial<Record<Category<K>, CategoryContribution>>>(
-      (acc, category) => {
-        const denominator = denominators[category] ?? 0;
-        const value = categoryValue({
-          sport,
-          line,
-          category,
-          basis: config.basis,
-          leagueRate: poolStats.leagueRate,
-        });
-        // A category every team ties in cannot move you in the standings, so it
-        // carries no signal — same rule Z-Score applies to a zero sigma.
-        const raw = denominator === 0 ? 0 : value / denominator;
-        return { ...acc, [category]: { raw, weighted: raw * (config.weights[category] ?? 1) } };
-      },
-      {},
-    );
-    const total = config.categories.reduce(
-      (sum, category) => sum + (breakdown[category]?.weighted ?? 0),
-      0,
-    );
-    return { playerId: line.playerId, total, breakdown };
+  const denominators = standingsGainDenominators({ sport, lines, poolStats, config });
+  return scorePerCategory({
+    sport,
+    lines,
+    poolStats,
+    config,
+    raw: ({ category, value }) => {
+      const denominator = denominators[category] ?? 0;
+      // A category every team ties in cannot move you in the standings, so it
+      // carries no signal — same rule Z-Score applies to a zero sigma.
+      return denominator === 0 ? 0 : value / denominator;
+    },
   });
 };

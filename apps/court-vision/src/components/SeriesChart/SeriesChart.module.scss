@@ -1,0 +1,53 @@
+@use "@/styles/mixins" as *;
+
+// The scaffolding every player-page chart shares: the stacked root, the chip
+// row, the titled panels, and the muted hint a panel shows when it has
+// nothing to draw. Each chart lays out its own panel grid.
+.root {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chip {
+  @include keycap;
+
+  &[aria-pressed="true"]:not(:disabled) {
+    @include keycap-engaged;
+  }
+}
+
+// Bulk companion ("all"/"none") rides along without competing with toggles.
+.chipAction {
+  @include keycap;
+  border-style: dashed;
+  color: var(--color-text-muted);
+
+  &:hover:not(:disabled) {
+    color: var(--color-text);
+  }
+}
+
+.panel {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.panelTitle {
+  @include micro-label;
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+  font-family: var(--font-sans);
+}
+
+.emptyHint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}

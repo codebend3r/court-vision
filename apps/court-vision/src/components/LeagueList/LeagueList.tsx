@@ -2,58 +2,46 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { startTransition, useOptimistic, useState } from "react";
 
 import styles from "@/components/LeagueList/LeagueList.module.scss";
-import { deleteLeague, setActiveLeague } from "@/lib/leagues/actions";
+import { deleteLeague } from "@/lib/leagues/actions";
 import { MAX_LEAGUES } from "@vision/core/league/constants";
-import { useLeaguesStore } from "@/lib/leagues/store";
-import { type LeagueScoringType, type LeagueSummary } from "@/lib/leagues/types";
+import { SCORING_TYPE_LABELS } from "@/lib/leagues/settings";
+import { SWITCH_LEAGUE_ERROR, useLeaguesStore } from "@/lib/leagues/store";
+import { type LeagueSummary } from "@/lib/leagues/types";
 
-const SCORING_TYPE_LABELS: Record<LeagueScoringType, string> = {
-  h2h_categories: "H2H Categories",
-  h2h_points: "H2H Points",
-  roto: "Rotisserie",
-};
+const DELETE_ERROR = "Could not delete the league — try again.";
 
 export type LeagueListProps = {
   leagues: LeagueSummary[];
   activeLeagueId: string | null;
 };
 
-// Client list backing /leagues: local state seeded from the server render so
-// activate/delete feel instant, then reconciled with props (and mirrored
-// into the global store) once router.refresh() re-runs the server page.
+// Client list backing /leagues. Activate and delete show their outcome on the
+// click; the optimistic values hold until router.refresh() lands the server's
+// own `leagues`/`activeLeagueId`, and fall back to them when an action fails.
 export function LeagueList({ leagues, activeLeagueId }: LeagueListProps) {
   const router = useRouter();
-  // Seeded from props (the server's fetch), then diverges optimistically on
-  // each action; router.refresh() re-runs the server page, which flows a
-  // fresh `leagues`/`activeLeagueId` back in through these effects.
-  const [localLeagues, setLocalLeagues] = useState(leagues);
-  const [localActiveId, setLocalActiveId] = useState(activeLeagueId);
+  const [shownLeagues, removeShownLeague] = useOptimistic(leagues, (current, leagueId: string) =>
+    current.filter((league) => league.id !== leagueId),
+  );
+  const [shownActiveId, setShownActiveId] = useOptimistic(activeLeagueId);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => setLocalLeagues(leagues), [leagues]);
-  useEffect(() => setLocalActiveId(activeLeagueId), [activeLeagueId]);
-
   const setActive = ({ leagueId }: { leagueId: string }) => {
     // Already active: a no-op, not another round trip.
-    if (leagueId === localActiveId) return;
-    const previousActiveId = useLeaguesStore.getState().activeLeagueId;
-    setLocalActiveId(leagueId);
-    useLeaguesStore.getState().setActive({ leagueId });
-    void setActiveLeague({ leagueId }).then((result) => {
+    if (leagueId === shownActiveId) return;
+    startTransition(async () => {
+      setShownActiveId(leagueId);
+      const result = await useLeaguesStore.getState().switchActiveLeague({ leagueId });
       if (result.status !== "ok") {
-        // Revert the optimistic flip; re-read fresh rather than reuse a
-        // pre-flip store snapshot, in case something else changed it meanwhile.
-        setLocalActiveId(previousActiveId);
-        useLeaguesStore.setState({ activeLeagueId: previousActiveId });
-        setErrorMessage("Could not switch leagues — try again.");
+        setErrorMessage(SWITCH_LEAGUE_ERROR);
         return;
       }
       setErrorMessage(null);
-      router.refresh();
+      startTransition(() => router.refresh());
     });
   };
 
@@ -61,16 +49,17 @@ export function LeagueList({ leagues, activeLeagueId }: LeagueListProps) {
     setPendingDeleteId(leagueId);
   };
 
+  // The card goes only once the server confirms the delete; a failed (or
+  // throwing) delete leaves it in place with an alert.
   const confirmDelete = ({ leagueId }: { leagueId: string }) => {
     setPendingDeleteId(null);
-    void deleteLeague({ leagueId }).then((result) => {
-      if (result.status !== "ok") {
-        // Nothing was deleted server-side: leave the card in place and say so.
-        setErrorMessage("Could not delete the league — try again.");
+    startTransition(async () => {
+      const result = await deleteLeague({ leagueId }).catch(() => null);
+      if (result === null || result.status !== "ok") {
+        setErrorMessage(DELETE_ERROR);
         return;
       }
       setErrorMessage(null);
-      setLocalLeagues((current) => current.filter((league) => league.id !== leagueId));
       const store = useLeaguesStore.getState();
       store.remove({ leagueId });
       // deleteLeague only changes the active pointer when the deleted league
@@ -81,13 +70,16 @@ export function LeagueList({ leagues, activeLeagueId }: LeagueListProps) {
       if (result.activeLeagueId !== null && result.activeLeagueId !== currentActiveId) {
         store.setActive({ leagueId: result.activeLeagueId });
       }
-      router.refresh();
+      startTransition(() => {
+        removeShownLeague(leagueId);
+        router.refresh();
+      });
     });
   };
 
-  const atCap = localLeagues.length >= MAX_LEAGUES;
+  const atCap = shownLeagues.length >= MAX_LEAGUES;
 
-  if (localLeagues.length === 0) {
+  if (shownLeagues.length === 0) {
     return (
       <section className={styles.list}>
         <p className={styles.empty}>Create your first league to start tracking your team.</p>
@@ -107,7 +99,7 @@ export function LeagueList({ leagues, activeLeagueId }: LeagueListProps) {
       )}
       <div className={styles.header}>
         <p className={styles.count}>
-          {localLeagues.length} of {MAX_LEAGUES} leagues
+          {shownLeagues.length} of {MAX_LEAGUES} leagues
         </p>
         {atCap ? (
           <p className={styles.capNotice}>Limit reached ({MAX_LEAGUES})</p>
@@ -118,8 +110,8 @@ export function LeagueList({ leagues, activeLeagueId }: LeagueListProps) {
         )}
       </div>
       <ul className={styles.cards}>
-        {localLeagues.map((league) => {
-          const isActive = league.id === localActiveId;
+        {shownLeagues.map((league) => {
+          const isActive = league.id === shownActiveId;
           const isPendingDelete = league.id === pendingDeleteId;
           return (
             <li key={league.id} className={styles.card}>

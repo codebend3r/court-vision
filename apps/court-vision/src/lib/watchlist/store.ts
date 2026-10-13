@@ -16,7 +16,7 @@ type WatchlistState = {
 
 // Deliberately NOT persisted: the database is the source of truth, and a stale
 // localStorage copy would contradict it after a sign-out or on a second
-// device. WatchlistHydrator re-seeds this store from the server on every
+// device. SessionHydrator re-seeds this store from the server on every
 // navigation, and `count` is corrected from each action's result.
 export const useWatchlistStore = create<WatchlistState>()((set) => ({
   playerIds: new Set<number>(),
@@ -41,5 +41,3 @@ export const useWatchlistStore = create<WatchlistState>()((set) => ({
 
 export const useIsStarred = ({ playerId }: { playerId: number }): boolean =>
   useWatchlistStore((state) => state.playerIds.has(playerId));
-
-export const useWatchlistCount = (): number => useWatchlistStore((state) => state.count);

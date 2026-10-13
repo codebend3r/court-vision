@@ -1,41 +1,23 @@
 import {
+  SyncSummary,
   findSeasonAggregateLogs,
   replaceAdvancedGameLogsForGames,
   replaceGameLogsForGames,
-  upsertPlayers,
-  upsertSeasonStats,
 } from "@/lib/stats/persist";
+import { SEASON_TYPE } from "@/lib/stats/season";
 
-import { SEASON_TYPE } from "@/lib/balldontlie/constants";
 import {
   MAX_NIGHTLY_DATES,
   datesBetween,
   isIsoDate,
   yesterdayInNewYork,
 } from "@/lib/balldontlie/dates";
-import {
-  BdlClientDeps,
-  fetchAllAdvancedStats,
-  fetchAllStats,
-  fetchTeams,
-} from "@/lib/balldontlie/endpoints";
-import { logPage } from "@/lib/balldontlie/sync";
-import {
-  aggregateSeasonStats,
-  toAdvancedGameLogInput,
-  toGameLogInput,
-  toPlayerInputs,
-} from "@/lib/balldontlie/transform";
+import { BdlClientDeps, fetchAllAdvancedStats, fetchAllStats } from "@/lib/balldontlie/endpoints";
+import { fetchTeamAbbrById, writeBoxScores } from "@/lib/balldontlie/pipeline";
 import { Logger, consoleLogger, silentLogger } from "@vision/core/util/logger";
 import { isMainModule } from "@vision/core/util/runtime";
 
-export type NightlySyncSummary = {
-  games: number;
-  players: number;
-  gameLogs: number;
-  advancedGameLogs: number;
-  seasonStats: number;
-};
+export type NightlySyncSummary = SyncSummary & { games: number };
 
 const emptySummary: NightlySyncSummary = {
   games: 0,
@@ -44,11 +26,6 @@ const emptySummary: NightlySyncSummary = {
   advancedGameLogs: 0,
   seasonStats: 0,
 };
-
-// The transform stamps every row "Regular Season", and these endpoints take
-// no reliable postseason filter, so playoff rows are dropped here instead of
-// being written into the regular-season tables.
-const isRegularSeason = (row: { game: { postseason: boolean } }): boolean => !row.game.postseason;
 
 const unique = <T>(values: T[]): T[] => [...new Set(values)];
 
@@ -63,12 +40,14 @@ export async function syncNightly(args: {
   deps?: BdlClientDeps;
   logger?: Logger;
 }): Promise<NightlySyncSummary> {
-  const { dates, deps = {}, logger = silentLogger } = args;
+  const { dates, deps = {} } = args;
+  const logger = args.logger ?? deps.logger ?? silentLogger;
+  const nightDeps: BdlClientDeps = { ...deps, logger };
   const label = dates.join(", ");
 
-  const stats = (
-    await fetchAllStats({ deps: { onPage: logPage({ label: "stats", logger }), ...deps }, dates })
-  ).filter(isRegularSeason);
+  // An empty night (an off day, or playoffs only) ends here, before any other
+  // request or write.
+  const stats = await fetchAllStats({ deps: nightDeps, dates });
   if (stats.length === 0) {
     logger(`No regular-season box scores for ${label}; nothing to sync.`);
     return emptySummary;
@@ -76,39 +55,32 @@ export async function syncNightly(args: {
   const games = unique(stats.map((stat) => stat.game.id)).length;
   logger(`Fetched ${stats.length} stat rows across ${games} games for ${label}.`);
 
-  const teams = await fetchTeams(deps);
-  const teamAbbrById = teams.reduce(
-    (map, team) => map.set(team.id, team.abbreviation),
-    new Map<number, string>(),
-  );
+  const [teamAbbrById, advanced] = await Promise.all([
+    fetchTeamAbbrById({ deps }),
+    fetchAllAdvancedStats({ deps: nightDeps, dates }),
+  ]);
+  logger(`Fetched ${advanced.length} advanced rows.`);
 
-  const players = await upsertPlayers(toPlayerInputs(stats, teamAbbrById));
-  logger(`Upserted ${players} players; replacing game logs…`);
-
-  const gameLogInputs = stats.map((stat) => toGameLogInput({ stat, teamAbbrById }));
-  const gameLogs = await replaceGameLogsForGames(gameLogInputs);
-  logger(`Replaced ${gameLogs} game logs; rebuilding season lines…`);
-
-  const seasonLogs = await findSeasonAggregateLogs({
-    playerIds: unique(gameLogInputs.map((log) => log.playerId)),
-    seasons: unique(gameLogInputs.map((log) => log.season)),
-    seasonType: SEASON_TYPE,
+  // The nightly sync owns whole games: it replaces those, and rebuilds each
+  // appearing player's season line from every log stored for them.
+  const summary = await writeBoxScores({
+    stats,
+    advanced,
+    teamAbbrById,
+    logger,
+    writers: {
+      gameLogs: replaceGameLogsForGames,
+      advancedGameLogs: replaceAdvancedGameLogsForGames,
+      seasonLogs: ({ gameLogs }) =>
+        findSeasonAggregateLogs({
+          playerIds: unique(gameLogs.map((log) => log.playerId)),
+          seasons: unique(gameLogs.map((log) => log.season)),
+          seasonType: SEASON_TYPE,
+        }),
+    },
   });
-  const seasonStats = await upsertSeasonStats(aggregateSeasonStats(seasonLogs));
-  logger(`Rebuilt ${seasonStats} season lines; fetching advanced stats…`);
 
-  const advanced = (
-    await fetchAllAdvancedStats({
-      deps: { onPage: logPage({ label: "advanced", logger }), ...deps },
-      dates,
-    })
-  ).filter(isRegularSeason);
-  const advancedGameLogs = await replaceAdvancedGameLogsForGames(
-    advanced.map((stat) => toAdvancedGameLogInput({ stat })),
-  );
-  logger(`Replaced ${advancedGameLogs} advanced game logs.`);
-
-  return { games, players, gameLogs, advancedGameLogs, seasonStats };
+  return { games, ...summary };
 }
 
 const FLAGS = ["--date", "--from", "--to"];

@@ -1,0 +1,55 @@
+@use "@/styles/mixins" as *;
+
+// One specimen per keycap mixin (@vision/ui styles/mixins.scss).
+.keycap {
+  @include keycap;
+}
+
+// A toggle: engaged while pressed.
+.keycapEngaged {
+  @include keycap;
+
+  &[aria-pressed="true"]:not(:disabled) {
+    @include keycap-engaged;
+  }
+}
+
+.keycapDanger {
+  @include keycap;
+  @include keycap-danger;
+}
+
+// A primary action: presses into its shadow while held.
+.keycapPress {
+  @include keycap;
+
+  &:active:not(:disabled) {
+    @include keycap-press;
+  }
+}
+
+.buttonSpecimens {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.buttonSpecimen {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+
+.buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+// A button group is just a wrapping flex row; every keycap composes into one
+// without extra styles.
+.buttonGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}

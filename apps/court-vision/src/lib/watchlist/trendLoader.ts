@@ -1,104 +1,74 @@
 import { unstable_cache } from "next/cache";
 
-import { type TrendSeries } from "@vision/core/valuation/rolling";
-import { poolSizeFor } from "@vision/core/valuation/valuePlayers";
-import { basketball } from "@vision/sport-basketball/descriptor";
+import { type RollingMethod, type TrendSeries } from "@vision/core/valuation/rolling";
 import {
-  buildRollingGSeries,
-  buildRollingZSeries,
-  computePoolStats,
+  buildRollingSeries,
   DEFAULT_VALUATION_CONFIG,
+  poolStatsFor,
 } from "@vision/sport-basketball/engine";
 
+import { PLAYERS_CACHE_OPTIONS } from "@/lib/cache";
 import { prisma } from "@/lib/prisma";
+import { SEASON_TYPE } from "@/lib/stats/season";
 import { getFantasyPool } from "@/lib/valuation/loader";
 import { latestSeason } from "@/lib/valuation/season";
-import { toWindowLog } from "@/lib/valuation/trendLogs";
+import { GAME_LOG_SELECT, toWindowLog } from "@/lib/valuation/trendLogs";
 
-const logSelect = {
-  gameDate: true,
-  minutes: true,
-  pts: true,
-  reb: true,
-  ast: true,
-  stl: true,
-  blk: true,
-  fg3m: true,
-  tov: true,
-  fgm: true,
-  fga: true,
-  ftm: true,
-  fta: true,
-};
+// One player's rolling Z and G series, scored from the same logs and pool.
+type PlayerTrends = Record<RollingMethod, TrendSeries>;
 
-const buildersByMethod = {
-  z: buildRollingZSeries,
-  g: buildRollingGSeries,
-} as const;
-
-type TrendMethod = keyof typeof buildersByMethod;
-
-const fetchSeries = async ({
+// The homepage charts both trends for the same players, so one read feeds both
+// methods: the season, the pool, its stats and the player's logs are fetched
+// once rather than once per chart.
+const fetchTrends = async ({
   playerId,
   fullName,
-  method,
 }: {
   playerId: number;
   fullName: string;
-  method: TrendMethod;
-}): Promise<TrendSeries> => {
+}): Promise<PlayerTrends> => {
   const season = await latestSeason();
   if (season === null) {
-    return { playerId, fullName, points: [] };
+    return { z: { playerId, fullName, points: [] }, g: { playerId, fullName, points: [] } };
   }
   // The yardstick is the whole season's pool, held fixed across every window.
   const lines = await getFantasyPool({ range: "all" });
-  const poolStats = computePoolStats({
-    lines,
-    basis: DEFAULT_VALUATION_CONFIG.basis,
-    poolSize: poolSizeFor({ pool: basketball.pools[0], config: DEFAULT_VALUATION_CONFIG }),
-    windowGames: null,
-  });
+  const poolStats = poolStatsFor({ lines, config: DEFAULT_VALUATION_CONFIG, windowGames: null });
   const rows = await prisma.playerGameLog.findMany({
-    where: { playerId, season, seasonType: "Regular Season" },
+    where: { playerId, season, seasonType: SEASON_TYPE },
     orderBy: { gameDate: "asc" },
-    select: logSelect,
+    select: GAME_LOG_SELECT,
   });
   const logs = rows.map(({ gameDate, ...row }) => ({ ...toWindowLog({ row }), gameDate }));
-  return buildersByMethod[method]({
-    playerId,
-    fullName,
-    logs,
-    poolStats,
-    config: DEFAULT_VALUATION_CONFIG,
-  });
+  const seriesFor = ({ method }: { method: RollingMethod }): TrendSeries =>
+    buildRollingSeries({
+      method,
+      playerId,
+      fullName,
+      logs,
+      poolStats,
+      config: DEFAULT_VALUATION_CONFIG,
+    });
+  return { z: seriesFor({ method: "z" }), g: seriesFor({ method: "g" }) };
 };
 
 // Cached per player rather than per watchlist: two users watching the same star
 // share one entry. Same tag and revalidate window as the other players caches,
 // so one sync invalidation busts every surface.
-const cachedZSeries = unstable_cache(
-  (playerId: number, fullName: string) => fetchSeries({ playerId, fullName, method: "z" }),
-  ["watchlist:z-trend"],
-  { revalidate: 300, tags: ["players"] },
+const cachedTrends = unstable_cache(
+  (playerId: number, fullName: string) => fetchTrends({ playerId, fullName }),
+  ["watchlist:trends"],
+  PLAYERS_CACHE_OPTIONS,
 );
 
-const cachedGSeries = unstable_cache(
-  (playerId: number, fullName: string) => fetchSeries({ playerId, fullName, method: "g" }),
-  ["watchlist:g-trend"],
-  { revalidate: 300, tags: ["players"] },
-);
-
-export const getZTrendSeries = ({
+// Every listed player's Z and G series, in the order given.
+export const getTrendSeries = async ({
   players,
 }: {
   players: readonly { playerId: number; fullName: string }[];
-}): Promise<TrendSeries[]> =>
-  Promise.all(players.map((player) => cachedZSeries(player.playerId, player.fullName)));
-
-export const getGTrendSeries = ({
-  players,
-}: {
-  players: readonly { playerId: number; fullName: string }[];
-}): Promise<TrendSeries[]> =>
-  Promise.all(players.map((player) => cachedGSeries(player.playerId, player.fullName)));
+}): Promise<{ z: TrendSeries[]; g: TrendSeries[] }> => {
+  const trends = await Promise.all(
+    players.map((player) => cachedTrends(player.playerId, player.fullName)),
+  );
+  return { z: trends.map((trend) => trend.z), g: trends.map((trend) => trend.g) };
+};

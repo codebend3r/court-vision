@@ -10,12 +10,11 @@
   background: var(--color-surface);
 }
 
+// An eyebrow, so never extruded (micro-label clears the shadow).
 .badge {
   @include micro-label;
-  // Bold so the glyphs hold their own against the long-shadow extrusion.
   font-weight: var(--font-weight-bold);
   color: var(--color-highlight);
-  text-shadow: long-text-shadow(var(--color-retro-shadow), 5);
 }
 
 .title {

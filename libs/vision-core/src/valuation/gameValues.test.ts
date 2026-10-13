@@ -75,14 +75,11 @@ const build = ({
   logs: DatedLog[];
   categories?: ValuationConfig["categories"];
   methodWeights?: MethodWeights;
-}) =>
-  buildFantasyGameValues({
-    line: star,
-    logs,
-    poolStats,
-    config: { ...config, categories },
-    methodWeights,
-  });
+}) => {
+  const args = { line: star, logs, poolStats, config: { ...config, categories }, methodWeights };
+  const season = buildFantasyTrend({ ...args, windowGames: null });
+  return buildFantasyGameValues({ ...args, season });
+};
 
 describe("buildFantasyGameValues", () => {
   it("values each game on its own, so a big night outscores a quiet one", () => {

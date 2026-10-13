@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "bun:test";
 
+import { Prisma } from "@generated/prisma/client";
+
 import type { AdvancedPlayerRow, PlayerAdvancedStats } from "@/lib/players/searchAdvanced";
-import type { PlayersSearchParams } from "@/lib/players/searchParams";
+import type { AdvancedSearchParams } from "@/lib/players/searchParams";
+import { SEASON_TYPE } from "@/lib/stats/season";
 
 const queryRaw = vi.fn<(strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>>();
 
@@ -9,10 +12,17 @@ vi.mock("@/lib/prisma", () => ({
   prisma: { $queryRaw: queryRaw },
 }));
 
-const { averageAdvancedLogs, fetchAdvancedPool, rankAdvancedPlayers, searchPlayersAdvanced } =
+const { averageAdvancedLogs, fetchAdvancedPool, rankAdvancedPlayers } =
   await import("@/lib/players/searchAdvanced");
 
-const defaultParams: PlayersSearchParams = {
+// The first query, with its shared fragments spliced back in, the way Prisma
+// composes it: the full SQL text and every bound value in order.
+const firstQuery = (): Prisma.Sql => {
+  const [strings, ...values] = queryRaw.mock.calls[0] ?? [];
+  return Prisma.sql(strings ?? [], ...values);
+};
+
+const defaultParams: AdvancedSearchParams = {
   q: "",
   page: 1,
   size: 25,
@@ -110,9 +120,9 @@ describe("fetchAdvancedPool", () => {
 
     const pool = await fetchAdvancedPool({ range: "last10" });
 
-    const [strings, ...values] = queryRaw.mock.calls[0] ?? [];
-    expect(strings?.join("?")).toContain('"PlayerAdvancedGameLog"');
-    expect(values).toEqual([10, false]);
+    expect(firstQuery().sql).toContain('"PlayerAdvancedGameLog"');
+    // The season type binds through the shared latest-season join.
+    expect(firstQuery().values).toEqual([SEASON_TYPE, 10, false]);
     expect(pool).toEqual([
       {
         id: 1,
@@ -132,7 +142,7 @@ describe("fetchAdvancedPool", () => {
 
     await fetchAdvancedPool({ range: "all" });
 
-    expect(queryRaw.mock.calls[0]?.slice(1)).toEqual([100, true]);
+    expect(firstQuery().values).toEqual([SEASON_TYPE, 100, true]);
   });
 
   it("rejects rows whose metrics are not numbers or null", async () => {
@@ -187,18 +197,6 @@ describe("rankAdvancedPlayers", () => {
     const result = rankAdvancedPlayers({ pool: [], args: defaultParams });
 
     expect(result).toEqual({ rows: [], total: 0, page: 1 });
-  });
-});
-
-describe("searchPlayersAdvanced", () => {
-  it("ranks the pool for the requested range", async () => {
-    queryRaw.mockReset();
-    queryRaw.mockResolvedValue([sqlRow({ id: 1, pie: 9 }), sqlRow({ id: 2, pie: 14 })]);
-
-    const result = await searchPlayersAdvanced({ ...defaultParams, range: "last5" });
-
-    expect(idsOf(result.rows)).toEqual([2, 1]);
-    expect(queryRaw.mock.calls[0]?.slice(1)).toEqual([5, false]);
   });
 });
 

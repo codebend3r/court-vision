@@ -61,6 +61,12 @@ export type ScoringSettings<K extends SportKeys> = Record<K["scoring"], number>;
 // reads category weights.
 export type WeightedMethodKey = "z" | "g" | "vorp" | "pos" | "sgp" | "sim";
 
+// Every method column's sort key: the weighted ones plus PL Linear's.
+export type MethodSortKey = WeightedMethodKey | "points";
+
+// The FantasyPlayerValues field a method's score lands in.
+export type MethodValueKey = Exclude<keyof FantasyPlayerValues, "playerId">;
+
 export type CategoryWeights<K extends SportKeys> = Partial<Record<Category<K>, number>>;
 
 // One independent weight set per method column. The Weights panel edits the

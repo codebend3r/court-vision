@@ -1,4 +1,5 @@
-import type { AdvancedMetricKey } from "@/lib/players/searchParams";
+import { ADVANCED_METRIC_KEYS, type AdvancedMetricKey } from "@/lib/players/searchParams";
+import { recordFromKeys } from "@vision/core/util/record";
 
 // How a metric is stored and read: a "percentage" is a 0–1 share of something
 // (PIE, TS%, USG%, the rebound shares) and displays like FG%; a "rating" is a
@@ -16,12 +17,12 @@ export type AdvancedStatMeta = {
 
 // Single source of truth for the Advanced tab and the player page's advanced
 // view: header row, body cells, header tooltips, the legend panel, the summary
-// card, and the chart chips all render from this list, in column order.
+// card, and the chart chips all render from this table. Keyed by metric so a
+// lookup can never miss; ADVANCED_STAT_META below lists it in column order.
 // Formulas are the readable simplified forms (PIE/USG% especially); the
 // description carries the intuition. Definitions match NBA.com advanced stats.
-export const ADVANCED_STAT_META: readonly AdvancedStatMeta[] = [
-  {
-    key: "pie",
+const ADVANCED_STAT_DETAILS: Record<AdvancedMetricKey, Omit<AdvancedStatMeta, "key">> = {
+  pie: {
     label: "PIE",
     fullName: "Player Impact Estimate",
     description:
@@ -29,8 +30,7 @@ export const ADVANCED_STAT_META: readonly AdvancedStatMeta[] = [
     formula: "player events ÷ total game events",
     kind: "percentage",
   },
-  {
-    key: "pace",
+  pace: {
     label: "Pace",
     fullName: "Pace",
     description:
@@ -38,32 +38,28 @@ export const ADVANCED_STAT_META: readonly AdvancedStatMeta[] = [
     formula: "48 × possessions ÷ minutes played",
     kind: "rating",
   },
-  {
-    key: "assistPercentage",
+  assistPercentage: {
     label: "AST%",
     fullName: "Assist Percentage",
     description: "The share of teammate field goals the player assisted while on the floor.",
     formula: "AST ÷ teammate FGM while on floor",
     kind: "percentage",
   },
-  {
-    key: "assistRatio",
+  assistRatio: {
     label: "AST Ratio",
     fullName: "Assist Ratio",
     description: "Assists per 100 possessions the player uses.",
     formula: "100 × AST ÷ (FGA + 0.44 × FTA + AST + TOV)",
     kind: "rating",
   },
-  {
-    key: "assistToTurnover",
+  assistToTurnover: {
     label: "AST/TO",
     fullName: "Assist-to-Turnover Ratio",
     description: "Assists recorded for every turnover committed.",
     formula: "AST ÷ TOV",
     kind: "rating",
   },
-  {
-    key: "defensiveRating",
+  defensiveRating: {
     label: "DRTG",
     fullName: "Defensive Rating",
     description:
@@ -71,16 +67,14 @@ export const ADVANCED_STAT_META: readonly AdvancedStatMeta[] = [
     formula: "100 × opponent PTS ÷ possessions",
     kind: "rating",
   },
-  {
-    key: "defensiveReboundPercentage",
+  defensiveReboundPercentage: {
     label: "DREB%",
     fullName: "Defensive Rebound Percentage",
     description: "The share of available defensive rebounds the player grabs while on the floor.",
     formula: "DREB ÷ available defensive rebounds",
     kind: "percentage",
   },
-  {
-    key: "effectiveFieldGoalPercentage",
+  effectiveFieldGoalPercentage: {
     label: "EFG%",
     fullName: "Effective Field Goal Percentage",
     description:
@@ -88,8 +82,7 @@ export const ADVANCED_STAT_META: readonly AdvancedStatMeta[] = [
     formula: "(FGM + 0.5 × 3PM) ÷ FGA",
     kind: "percentage",
   },
-  {
-    key: "netRating",
+  netRating: {
     label: "Net Rtg",
     fullName: "Net Rating",
     description:
@@ -97,48 +90,42 @@ export const ADVANCED_STAT_META: readonly AdvancedStatMeta[] = [
     formula: "ORTG − DRTG",
     kind: "rating",
   },
-  {
-    key: "offensiveRating",
+  offensiveRating: {
     label: "ORTG",
     fullName: "Offensive Rating",
     description: "Points the team scores per 100 possessions while the player is on the floor.",
     formula: "100 × team PTS ÷ possessions",
     kind: "rating",
   },
-  {
-    key: "offensiveReboundPercentage",
+  offensiveReboundPercentage: {
     label: "OREB%",
     fullName: "Offensive Rebound Percentage",
     description: "The share of available offensive rebounds the player grabs while on the floor.",
     formula: "OREB ÷ available offensive rebounds",
     kind: "percentage",
   },
-  {
-    key: "reboundPercentage",
+  reboundPercentage: {
     label: "REB%",
     fullName: "Rebound Percentage",
     description: "The share of all available rebounds the player grabs while on the floor.",
     formula: "REB ÷ available rebounds",
     kind: "percentage",
   },
-  {
-    key: "trueShootingPercentage",
+  trueShootingPercentage: {
     label: "TS%",
     fullName: "True Shooting Percentage",
     description: "Shooting efficiency in one number: twos, threes, and free throws all count.",
     formula: "PTS ÷ (2 × (FGA + 0.44 × FTA))",
     kind: "percentage",
   },
-  {
-    key: "turnoverRatio",
+  turnoverRatio: {
     label: "TOV Ratio",
     fullName: "Turnover Ratio",
     description: "Turnovers per 100 possessions the player uses.",
     formula: "100 × TOV ÷ (FGA + 0.44 × FTA + AST + TOV)",
     kind: "rating",
   },
-  {
-    key: "usagePercentage",
+  usagePercentage: {
     label: "USG%",
     fullName: "Usage Percentage",
     description:
@@ -146,10 +133,20 @@ export const ADVANCED_STAT_META: readonly AdvancedStatMeta[] = [
     formula: "(FGA + 0.44 × FTA + TOV) ÷ team plays while on floor",
     kind: "percentage",
   },
-];
+};
 
-export const advancedStatMeta = (key: AdvancedMetricKey): AdvancedStatMeta | undefined =>
-  ADVANCED_STAT_META.find((meta) => meta.key === key);
+const ADVANCED_STAT_BY_KEY: Record<AdvancedMetricKey, AdvancedStatMeta> = recordFromKeys({
+  keys: ADVANCED_METRIC_KEYS,
+  value: (key) => ({ key, ...ADVANCED_STAT_DETAILS[key] }),
+});
+
+// Every metric in column order (the order ADVANCED_METRIC_KEYS lists them).
+export const ADVANCED_STAT_META: readonly AdvancedStatMeta[] = ADVANCED_METRIC_KEYS.map(
+  (key) => ADVANCED_STAT_BY_KEY[key],
+);
+
+export const advancedStatMeta = ({ key }: { key: AdvancedMetricKey }): AdvancedStatMeta =>
+  ADVANCED_STAT_BY_KEY[key];
 
 // Player-page display: percentages read like the season card's FG% ("58.8%"),
 // ratings to one decimal; a game with no advanced row is a dash.
@@ -161,7 +158,7 @@ export const formatAdvancedStat = ({
   value: number | null;
 }): string => {
   if (value === null) return "—";
-  return advancedStatMeta(key)?.kind === "percentage"
+  return advancedStatMeta({ key }).kind === "percentage"
     ? `${(value * 100).toFixed(1)}%`
     : value.toFixed(1);
 };

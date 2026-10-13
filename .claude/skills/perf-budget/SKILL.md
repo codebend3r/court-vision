@@ -91,8 +91,7 @@ Work down; stop at the first rung that clears the budget:
   Lighthouse already covers, with a weaker signal, so it would read as coverage
   while asserting nothing new. Re-adding it to CI only makes sense alongside a
   seeded database. The only seed path today is `seed:demo`, which needs a live
-  Balldontlie key and free-tier throttling; an offline fixture seed is the
-  prerequisite. Database-backed routes are the local run's job until then.
+  Balldontlie key; an offline fixture seed is the prerequisite. Database-backed routes are the local run's job until then.
 
 ## Checklist
 

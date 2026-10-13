@@ -8,6 +8,7 @@ import {
   DEFAULT_SLOT_COUNTS,
   eligibleForSlot,
   type FantasyTeamPlayer,
+  groupSlotsByKind,
   resizeSlots,
   rosterSize,
   SLOT_TYPES,
@@ -85,6 +86,30 @@ describe("buildSlots / resizeSlots", () => {
     expect(grown.filter((slot) => slot.type === "BENCH")).toHaveLength(4);
     expect(grown.find((slot) => slot.id === "BENCH-2")?.player?.playerId).toBe(2);
     expect(grown.find((slot) => slot.id === "BENCH-4")?.player).toBeNull();
+  });
+});
+
+describe("groupSlotsByKind", () => {
+  it("splits a roster into starters, bench and injured list, in roster order", () => {
+    const groups = groupSlotsByKind({ slots: buildSlots({ counts: DEFAULT_SLOT_COUNTS }) });
+    expect(groups.map((group) => group.kind)).toEqual(["starter", "bench", "injured"]);
+    expect(groups[0]?.slots[0]?.id).toBe("PG-1");
+    expect(groups[1]?.slots.every((slot) => slot.type === "BENCH")).toBe(true);
+    expect(groups[2]?.slots.map((slot) => slot.id)).toEqual(["IL-1", "ILPLUS-1"]);
+  });
+
+  it("leaves out a section the roster has no slots of", () => {
+    const counts: SlotCounts = { ...DEFAULT_SLOT_COUNTS, IL: 0, ILPLUS: 0 };
+    const groups = groupSlotsByKind({ slots: buildSlots({ counts }) });
+    expect(groups.map((group) => group.kind)).toEqual(["starter", "bench"]);
+  });
+
+  it("keeps each slot's player", () => {
+    const slots = buildSlots<FantasyTeamPlayer>({ counts: DEFAULT_SLOT_COUNTS }).map((slot) =>
+      slot.id === "BENCH-1" ? { ...slot, player: player({ playerId: 7 }) } : slot,
+    );
+    const bench = groupSlotsByKind({ slots }).find((group) => group.kind === "bench");
+    expect(bench?.slots[0]?.player?.playerId).toBe(7);
   });
 });
 

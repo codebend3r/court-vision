@@ -21,7 +21,7 @@ const team = ({
 }): FantasyTeam => ({
   id,
   name,
-  slug: slug ?? teamNameToSlug(name),
+  slug: slug ?? teamNameToSlug({ name }),
   createdAt,
   slots: buildSlots<FantasyTeamPlayer>({ counts: DEFAULT_SLOT_COUNTS }).map((slot) =>
     slot.id === "PG-1"
@@ -43,7 +43,7 @@ const team = ({
 
 describe("HomeTeamPanel", () => {
   it("prompts to create a team when there are none", () => {
-    render(<HomeTeamPanel teams={[]} />);
+    render(<HomeTeamPanel team={null} />);
     expect(screen.getByText(/No fantasy teams yet/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "create your first team" })).toHaveAttribute(
       "href",
@@ -51,13 +51,10 @@ describe("HomeTeamPanel", () => {
     );
   });
 
-  it("shows the most recently created team's starters", () => {
+  it("shows the team's starters and how full its roster is", () => {
     render(
       <HomeTeamPanel
-        teams={[
-          team({ id: "a", name: "Bench Mob", createdAt: "2026-07-20T00:00:00.000Z" }),
-          team({ id: "b", name: "Second Unit", createdAt: "2026-07-25T00:00:00.000Z" }),
-        ]}
+        team={team({ id: "b", name: "Second Unit", createdAt: "2026-07-25T00:00:00.000Z" })}
       />,
     );
     expect(screen.getByRole("link", { name: "Second Unit" })).toHaveAttribute(
@@ -74,16 +71,14 @@ describe("HomeTeamPanel", () => {
   it("links a renamed team to its stable DB slug, not one recomputed from the new name", () => {
     render(
       <HomeTeamPanel
-        teams={[
-          team({ id: "a", name: "Beta", createdAt: "2026-07-20T00:00:00.000Z", slug: "alpha" }),
-        ]}
+        team={team({ id: "a", name: "Beta", createdAt: "2026-07-20T00:00:00.000Z", slug: "alpha" })}
       />,
     );
     expect(screen.getByRole("link", { name: "Beta" })).toHaveAttribute("href", "/my-teams/alpha");
   });
 
   it("applies the layout className to the panel", () => {
-    const { container } = render(<HomeTeamPanel teams={[]} className="panel-card" />);
+    const { container } = render(<HomeTeamPanel team={null} className="panel-card" />);
     expect(container.querySelector(".panel-card")).toBeInTheDocument();
   });
 });

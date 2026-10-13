@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "bun:test";
 
 import type { PlayerSeasonStats } from "@generated/prisma/client";
 
+import { SEASON_TYPE } from "@/lib/stats/season";
+
 const findMany = vi.fn<() => Promise<PlayerSeasonStats[]>>();
 
 // A pass-through: bun:test has no Next incremental cache. The double is still
@@ -27,10 +29,10 @@ beforeEach(() => {
 
 describe("getSeasonStatsPool", () => {
   it("reads the whole pool for the requested season and type", async () => {
-    await getSeasonStatsPool({ season: "2025-26", seasonType: "Regular Season" });
+    await getSeasonStatsPool({ season: "2025-26", seasonType: SEASON_TYPE });
 
     expect(findMany).toHaveBeenCalledWith({
-      where: { season: "2025-26", seasonType: "Regular Season" },
+      where: { season: "2025-26", seasonType: SEASON_TYPE },
     });
   });
 
@@ -38,9 +40,9 @@ describe("getSeasonStatsPool", () => {
     const rows: PlayerSeasonStats[] = [];
     findMany.mockResolvedValue(rows);
 
-    await expect(
-      getSeasonStatsPool({ season: "2024-25", seasonType: "Regular Season" }),
-    ).resolves.toBe(rows);
+    await expect(getSeasonStatsPool({ season: "2024-25", seasonType: SEASON_TYPE })).resolves.toBe(
+      rows,
+    );
   });
 
   it("registers the cache under the players tag so a sync can bust it", () => {

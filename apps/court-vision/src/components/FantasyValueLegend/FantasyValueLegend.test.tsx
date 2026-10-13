@@ -28,6 +28,7 @@ describe("FantasyValueLegend", () => {
     const details = openLegend(container);
     FANTASY_METHODS.map((method) => {
       expect(within(details).getByText(`${method.fullName}.`)).toBeInTheDocument();
+      expect(within(details).getByText(method.formula)).toBeInTheDocument();
     });
     expect(within(details).getByText(/156/)).toBeInTheDocument();
     expect(within(details).getByText(/Last 10 games/)).toBeInTheDocument();

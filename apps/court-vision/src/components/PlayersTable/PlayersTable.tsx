@@ -7,93 +7,89 @@ import { PositionTag } from "@/components/PositionTag/PositionTag";
 import { RosteredMarker } from "@/components/RosteredMarker/RosteredMarker";
 import { StarButton } from "@/components/StarButton/StarButton";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
+import { formatRate } from "@vision/core/util/format";
 import { ADVANCED_STAT_META, type AdvancedStatMeta } from "@/lib/players/advancedStatMeta";
-import { type PlayerRow, type PlayerStats } from "@/lib/players/search";
+import { type PlayerIdentity } from "@/lib/players/identity";
+import { isNameSort } from "@/lib/players/rank";
+import { type CountingSortKey, type PlayerPoolRow } from "@/lib/players/search";
 import { type AdvancedPlayerRow } from "@/lib/players/searchAdvanced";
 import {
   buildPlayersHref,
   type AdvancedSortKey,
   type PlayerSortKey,
+  type PlayerStatMode,
   type PlayersSearchParams,
   type SortDirection,
 } from "@/lib/players/searchParams";
 
 import styles from "@/components/PlayersTable/PlayersTable.module.scss";
 
-const formatPerGame = (total: number, gamesPlayed: number): string =>
+const formatPerGame = ({ total, gamesPlayed }: { total: number; gamesPlayed: number }): string =>
   gamesPlayed > 0 ? (total / gamesPlayed).toFixed(1) : "—";
 
-const formatPercentage = (made: number, attempted: number): string =>
-  attempted > 0 ? (made / attempted).toFixed(3).replace(/^0/, "") : "—";
+const formatPercentage = ({ made, attempted }: { made: number; attempted: number }): string =>
+  attempted > 0 ? formatRate({ value: made / attempted }) : "—";
 
-// Each numeric column pairs its sort key with how to read the value, so the
+// Each stat column pairs its sort key with how to read the value, so the
 // header link and the body cell always agree on which column is highlighted.
-type StatColumn = {
+// `meta` gives a column its header tooltip and spoken full name.
+export type StatColumn<Row> = {
   label: string;
-  sortKey: PlayerSortKey;
-  value: (args: { stats: PlayerStats; formatCountingStat: (value: number) => string }) => string;
+  sortKey: PlayerSortKey | AdvancedSortKey;
+  meta?: AdvancedStatMeta;
+  cell: (row: Row) => string;
 };
 
-const STAT_COLUMNS: readonly StatColumn[] = [
-  { label: "GP", sortKey: "gamesPlayed", value: ({ stats }) => String(stats.gamesPlayed) },
-  {
-    label: "PTS",
-    sortKey: "pts",
-    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.pts),
-  },
-  {
-    label: "REB",
-    sortKey: "reb",
-    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.reb),
-  },
-  {
-    label: "AST",
-    sortKey: "ast",
-    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.ast),
-  },
-  {
-    label: "STL",
-    sortKey: "stl",
-    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.stl),
-  },
-  {
-    label: "BLK",
-    sortKey: "blk",
-    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.blk),
-  },
-  {
-    label: "FGM",
-    sortKey: "fgm",
-    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.fgm),
-  },
-  {
-    label: "FGA",
-    sortKey: "fga",
-    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.fga),
-  },
-  {
-    label: "3PM",
-    sortKey: "fg3m",
-    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.fg3m),
-  },
-  {
-    label: "3PA",
-    sortKey: "fg3a",
-    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.fg3a),
-  },
-  { label: "FG%", sortKey: "fgPct", value: ({ stats }) => formatPercentage(stats.fgm, stats.fga) },
-  {
-    label: "3P%",
-    sortKey: "fg3Pct",
-    value: ({ stats }) => formatPercentage(stats.fg3m, stats.fg3a),
-  },
-  { label: "FT%", sortKey: "ftPct", value: ({ stats }) => formatPercentage(stats.ftm, stats.fta) },
-  {
-    label: "TOV",
-    sortKey: "tov",
-    value: ({ stats, formatCountingStat }) => formatCountingStat(stats.tov),
-  },
-];
+// The regular table's columns. Counting stats read per game or as totals, per
+// the stat mode; games played and the percentages read the same either way.
+export const regularColumns = ({
+  mode,
+}: {
+  mode: PlayerStatMode;
+}): readonly StatColumn<PlayerPoolRow>[] => {
+  const counting = ({
+    label,
+    key,
+  }: {
+    label: string;
+    key: CountingSortKey;
+  }): StatColumn<PlayerPoolRow> => ({
+    label,
+    sortKey: key,
+    cell: ({ stats }) =>
+      mode === "total"
+        ? String(stats[key])
+        : formatPerGame({ total: stats[key], gamesPlayed: stats.gamesPlayed }),
+  });
+  return [
+    { label: "GP", sortKey: "gamesPlayed", cell: ({ stats }) => String(stats.gamesPlayed) },
+    counting({ label: "PTS", key: "pts" }),
+    counting({ label: "REB", key: "reb" }),
+    counting({ label: "AST", key: "ast" }),
+    counting({ label: "STL", key: "stl" }),
+    counting({ label: "BLK", key: "blk" }),
+    counting({ label: "FGM", key: "fgm" }),
+    counting({ label: "FGA", key: "fga" }),
+    counting({ label: "3PM", key: "fg3m" }),
+    counting({ label: "3PA", key: "fg3a" }),
+    {
+      label: "FG%",
+      sortKey: "fgPct",
+      cell: ({ stats }) => formatPercentage({ made: stats.fgm, attempted: stats.fga }),
+    },
+    {
+      label: "3P%",
+      sortKey: "fg3Pct",
+      cell: ({ stats }) => formatPercentage({ made: stats.fg3m, attempted: stats.fg3a }),
+    },
+    {
+      label: "FT%",
+      sortKey: "ftPct",
+      cell: ({ stats }) => formatPercentage({ made: stats.ftm, attempted: stats.fta }),
+    },
+    counting({ label: "TOV", key: "tov" }),
+  ];
+};
 
 // Share-style metrics (TS%, USG%, PIE, the rebound shares) are fractions and
 // display like FG%; ratings and ratios read to one decimal. The kind lives on
@@ -106,16 +102,17 @@ const formatAdvancedMetric = ({
   value: number | null;
 }): string => {
   if (value === null) return "—";
-  return meta.kind === "percentage" ? value.toFixed(3).replace(/^0/, "") : value.toFixed(1);
+  return meta.kind === "percentage" ? formatRate({ value }) : value.toFixed(1);
 };
 
-type PlayerIdentity = {
-  id: number;
-  fullName: string;
-  nbaPersonId: number | null;
-  teamAbbr: string | null;
-  position: string | null;
-};
+export const ADVANCED_COLUMNS: readonly StatColumn<AdvancedPlayerRow>[] = ADVANCED_STAT_META.map(
+  (meta) => ({
+    label: meta.label,
+    sortKey: meta.key,
+    meta,
+    cell: (row) => formatAdvancedMetric({ meta, value: row.stats[meta.key] }),
+  }),
+);
 
 // The consolidated player cell (spec §7): avatar, then name over team chip +
 // position tag. Replaces the old First name / Last name / Team / Position
@@ -143,28 +140,31 @@ function PlayerCell({ row }: { row: PlayerIdentity }) {
   );
 }
 
-type PlayersTableProps = {
+export type PlayersTableProps<Row extends PlayerIdentity> = {
+  rows: readonly Row[];
+  columns: readonly StatColumn<Row>[];
   params: PlayersSearchParams;
   page: number;
   isSignedIn: boolean;
   // Footer bar rendered inside the table wrapper (the pager).
   footer?: ReactNode;
-} & (
-  | { variant: "regular"; rows: PlayerRow[] }
-  | { variant: "advanced"; rows: AdvancedPlayerRow[] }
-);
+};
 
-export function PlayersTable(props: PlayersTableProps) {
-  const { params, page, isSignedIn, footer } = props;
-
+export function PlayersTable<Row extends PlayerIdentity>({
+  rows,
+  columns,
+  params,
+  page,
+  isSignedIn,
+  footer,
+}: PlayersTableProps<Row>) {
   const nextDir = ({ sortKey }: { sortKey: PlayerSortKey | AdvancedSortKey }): SortDirection =>
     params.sort === sortKey ? (params.dir === "desc" ? "asc" : "desc") : "desc";
 
-  // Rank only means something when the rows are ordered by a stat.
-  const isStatSort = params.sort !== "firstName" && params.sort !== "lastName";
   // The one player column sorts by last name; a first-name sort (via URL)
-  // still highlights it as the active column.
-  const isPlayerSort = !isStatSort;
+  // still highlights it as the active column. Rank only means something when
+  // the rows are ordered by a stat.
+  const isPlayerSort = isNameSort(params.sort);
 
   const renderSortableHeader = ({
     label,
@@ -220,128 +220,65 @@ export function PlayersTable(props: PlayersTableProps) {
     );
   };
 
-  // The star column has no visible header: the buttons name themselves, and a
-  // visible "Watchlist" label would cost a column of width on every row.
-  // Signed out there is no watchlist to act on, and 50 icon-only sign-in links
-  // would be pure tab-order noise, so the column is omitted entirely.
-  const starHeader = isSignedIn && (
-    <th className={styles.starColumn}>
-      <span className={styles.visuallyHidden}>Watchlist</span>
-    </th>
-  );
-
-  const starCell = ({ playerId, fullName }: { playerId: number; fullName: string }) =>
-    isSignedIn && (
-      <td className={styles.starCell}>
-        <StarButton playerId={playerId} fullName={fullName} isSignedIn />
-      </td>
-    );
-
-  const rankCell = ({ index }: { index: number }) => (
-    <td className={`${styles.numeric} ${styles.rank}`}>{(page - 1) * params.size + index + 1}</td>
-  );
-
-  const playerCell = (row: PlayerIdentity) => (
-    <td className={styles.player} data-sort-active={isPlayerSort || undefined}>
-      <PlayerCell row={row} />
-    </td>
-  );
-
-  if (props.variant === "advanced") {
-    return (
-      <div className={styles.tableWrapper}>
-        <div className={styles.tableScroller}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                {starHeader}
-                {isStatSort && (
-                  <th className={styles.numeric} title="Rank in the current sort">
-                    #
-                  </th>
-                )}
-                {renderSortableHeader({ label: "Player", sortKey: "lastName" })}
-                {ADVANCED_STAT_META.map((meta) =>
-                  renderSortableHeader({
-                    label: meta.label,
-                    sortKey: meta.key,
-                    meta,
-                    isStatColumn: true,
-                  }),
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {props.rows.map((row, index) => (
-                <tr key={row.id}>
-                  {starCell({ playerId: row.id, fullName: row.fullName })}
-                  {isStatSort && rankCell({ index })}
-                  {playerCell(row)}
-                  {ADVANCED_STAT_META.map((meta) => (
-                    <td
-                      key={meta.key}
-                      className={styles.numeric}
-                      data-sort-active={params.sort === meta.key || undefined}
-                    >
-                      {formatAdvancedMetric({ meta, value: row.stats[meta.key] })}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {footer}
-      </div>
-    );
-  }
-
   return (
     <div className={styles.tableWrapper}>
       <div className={styles.tableScroller}>
         <table className={styles.table}>
           <thead>
             <tr>
-              {starHeader}
-              {isStatSort && (
+              {/* The star column has no visible header: the buttons name
+                  themselves, and a visible "Watchlist" label would cost a
+                  column of width on every row. Signed out there is no
+                  watchlist to act on, and 50 icon-only sign-in links would be
+                  pure tab-order noise, so the column is omitted entirely. */}
+              {isSignedIn && (
+                <th className={styles.starColumn}>
+                  <span className={styles.visuallyHidden}>Watchlist</span>
+                </th>
+              )}
+              {!isPlayerSort && (
                 <th className={styles.numeric} title="Rank in the current sort">
                   #
                 </th>
               )}
               {renderSortableHeader({ label: "Player", sortKey: "lastName" })}
-              {STAT_COLUMNS.map((column) =>
+              {columns.map((column) =>
                 renderSortableHeader({
                   label: column.label,
                   sortKey: column.sortKey,
+                  meta: column.meta,
                   isStatColumn: true,
                 }),
               )}
             </tr>
           </thead>
           <tbody>
-            {props.rows.map((row, index) => {
-              const stats = row.stats ?? row.seasonStats?.[0];
-              const formatCountingStat = (value: number) =>
-                params.mode === "total"
-                  ? String(value)
-                  : formatPerGame(value, stats?.gamesPlayed ?? 0);
-              return (
-                <tr key={row.id}>
-                  {starCell({ playerId: row.id, fullName: row.fullName })}
-                  {isStatSort && rankCell({ index })}
-                  {playerCell(row)}
-                  {STAT_COLUMNS.map((column) => (
-                    <td
-                      key={column.sortKey}
-                      className={styles.numeric}
-                      data-sort-active={params.sort === column.sortKey || undefined}
-                    >
-                      {stats ? column.value({ stats, formatCountingStat }) : "—"}
-                    </td>
-                  ))}
-                </tr>
-              );
-            })}
+            {rows.map((row, index) => (
+              <tr key={row.id}>
+                {isSignedIn && (
+                  <td className={styles.starCell}>
+                    <StarButton playerId={row.id} fullName={row.fullName} isSignedIn />
+                  </td>
+                )}
+                {!isPlayerSort && (
+                  <td className={`${styles.numeric} ${styles.rank}`}>
+                    {(page - 1) * params.size + index + 1}
+                  </td>
+                )}
+                <td className={styles.player} data-sort-active={isPlayerSort || undefined}>
+                  <PlayerCell row={row} />
+                </td>
+                {columns.map((column) => (
+                  <td
+                    key={column.sortKey}
+                    className={styles.numeric}
+                    data-sort-active={params.sort === column.sortKey || undefined}
+                  >
+                    {column.cell(row)}
+                  </td>
+                ))}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

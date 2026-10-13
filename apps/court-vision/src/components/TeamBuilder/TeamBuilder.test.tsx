@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
@@ -73,7 +73,7 @@ const searchFor = async (text: string) => {
 
 describe("TeamBuilder", () => {
   it("renders the default 15-slot roster and settings", () => {
-    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={null} insights={[]} />);
     expect(screen.getByLabelText("Team name")).toBeInTheDocument();
     expect(screen.getByText("0 of 15 slots filled")).toBeInTheDocument();
     expect(screen.getAllByText("Empty")).toHaveLength(15);
@@ -81,14 +81,14 @@ describe("TeamBuilder", () => {
   });
 
   it("searches by first or last name", async () => {
-    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={null} insights={[]} />);
     await searchFor("brun");
     expect(screen.getByText("Jalen Brunson")).toBeInTheDocument();
     expect(screen.queryByText("Karl-Anthony Towns")).not.toBeInTheDocument();
   });
 
   it("adds a player to the first eligible slot with the + button", async () => {
-    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={null} insights={[]} />);
     const user = await searchFor("towns");
     await user.click(screen.getByRole("button", { name: "Add Karl-Anthony Towns" }));
     expect(screen.getByText("1 of 15 slots filled")).toBeInTheDocument();
@@ -99,7 +99,7 @@ describe("TeamBuilder", () => {
   });
 
   it("changes roster shape from the settings steppers", async () => {
-    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={null} insights={[]} />);
     const user = userEvent.setup();
     const bench = screen.getByLabelText("Bench slots");
     await user.clear(bench);
@@ -109,7 +109,7 @@ describe("TeamBuilder", () => {
   });
 
   it("highlights eligible slots green and ineligible red during a drag", async () => {
-    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={null} insights={[]} />);
     await searchFor("brunson");
     const card = screen.getByText("Jalen Brunson").closest("li");
     if (card === null) throw new Error("card not rendered");
@@ -127,7 +127,7 @@ describe("TeamBuilder", () => {
   });
 
   it("assigns a player on drop into an eligible slot", async () => {
-    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={null} insights={[]} />);
     await searchFor("brunson");
     const card = screen.getByText("Jalen Brunson").closest("li");
     const slot = document.querySelector('[data-slot-id="G-1"]');
@@ -138,7 +138,7 @@ describe("TeamBuilder", () => {
   });
 
   it("ignores drops into ineligible slots", async () => {
-    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={null} insights={[]} />);
     await searchFor("brunson");
     const card = screen.getByText("Jalen Brunson").closest("li");
     const center = document.querySelector('[data-slot-id="C-1"]');
@@ -149,7 +149,7 @@ describe("TeamBuilder", () => {
   });
 
   it("asks for confirmation before removing a player and honors cancel", async () => {
-    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={null} insights={[]} />);
     const user = await searchFor("brunson");
     await user.click(screen.getByRole("button", { name: "Add Jalen Brunson" }));
     await user.click(screen.getByRole("button", { name: "Remove Jalen Brunson" }));
@@ -163,6 +163,29 @@ describe("TeamBuilder", () => {
     expect(screen.getByText("0 of 15 slots filled")).toBeInTheDocument();
   });
 
+  it("names the slot the player comes off in the remove dialog", async () => {
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={null} insights={[]} />);
+    const user = await searchFor("brunson");
+    await user.click(screen.getByRole("button", { name: "Add Jalen Brunson" }));
+    await user.click(screen.getByRole("button", { name: "Remove Jalen Brunson" }));
+    expect(screen.getByRole("dialog", { name: "Remove Jalen Brunson?" })).toHaveTextContent(
+      "They'll come off the point guard slot.",
+    );
+  });
+
+  it("closes the remove dialog on Escape and returns focus to its trigger", async () => {
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={null} insights={[]} />);
+    const user = await searchFor("brunson");
+    await user.click(screen.getByRole("button", { name: "Add Jalen Brunson" }));
+    const remove = screen.getByRole("button", { name: "Remove Jalen Brunson" });
+    await user.click(remove);
+    expect(screen.getByRole("button", { name: "Cancel" })).toHaveFocus();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(remove).toHaveFocus();
+    expect(screen.getByText("1 of 15 slots filled")).toBeInTheDocument();
+  });
+
   it("saves edits to an existing team and returns to My Teams", async () => {
     const user = userEvent.setup();
     const existing = {
@@ -174,7 +197,7 @@ describe("TeamBuilder", () => {
         slot.id === "PG-1" ? { ...slot, player: players[0] ?? null } : slot,
       ),
     };
-    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={existing} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={existing} insights={[]} />);
     expect(screen.getByLabelText("Team name")).toHaveValue("Bench Mob");
     expect(screen.getByText("1 of 15 slots filled")).toBeInTheDocument();
     await user.type(screen.getByLabelText("Search players"), "hart");
@@ -188,7 +211,7 @@ describe("TeamBuilder", () => {
   });
 
   it("saves a new named team and lands on My Teams", async () => {
-    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={null} insights={[]} />);
     const user = userEvent.setup();
     expect(screen.getByRole("button", { name: "Save team" })).toBeDisabled();
     await user.type(screen.getByLabelText("Team name"), "Bench Mob");
@@ -204,7 +227,7 @@ describe("TeamBuilder", () => {
 
   it("shows an inline alert when the save is invalid", async () => {
     saveLeagueTeamMock.mockResolvedValue({ status: "invalid" });
-    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={null} insights={[]} />);
     const user = userEvent.setup();
     await user.type(screen.getByLabelText("Team name"), "Bench Mob");
     await user.click(screen.getByRole("button", { name: "Save team" }));
@@ -214,11 +237,37 @@ describe("TeamBuilder", () => {
 
   it("shows a generic inline alert on any other failure", async () => {
     saveLeagueTeamMock.mockResolvedValue({ status: "error" });
-    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} />);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={null} insights={[]} />);
     const user = userEvent.setup();
     await user.type(screen.getByLabelText("Team name"), "Bench Mob");
     await user.click(screen.getByRole("button", { name: "Save team" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Something went wrong — try again.");
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it("re-enables Save with an alert when the save action throws", async () => {
+    saveLeagueTeamMock.mockRejectedValue(new Error("network down"));
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={null} insights={[]} />);
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Team name"), "Bench Mob");
+    await user.click(screen.getByRole("button", { name: "Save team" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Something went wrong — try again.");
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save team" })).toBeEnabled());
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("keeps Save disabled while the save is in flight", async () => {
+    const pending = Promise.withResolvers<{ status: "error" }>();
+    saveLeagueTeamMock.mockReturnValue(pending.promise);
+    render(<TeamBuilder leagueId={LEAGUE_ID} players={players} team={null} insights={[]} />);
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Team name"), "Bench Mob");
+    await user.click(screen.getByRole("button", { name: "Save team" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save team" })).toBeDisabled());
+    await act(async () => {
+      pending.resolve({ status: "error" });
+      await pending.promise;
+    });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save team" })).toBeEnabled());
   });
 });

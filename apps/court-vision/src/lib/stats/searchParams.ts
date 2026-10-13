@@ -1,12 +1,7 @@
 import { createLoader, parseAsStringLiteral } from "nuqs/server";
 
-import {
-  BACKFILL_START_YEAR,
-  SEASON_LABEL,
-  SEASON_YEAR,
-  seasonLabelFromYear,
-} from "@/lib/balldontlie/constants";
 import type { PlayerGameRange } from "@/lib/players/searchParams";
+import { SEASON_LABEL, SEASON_OPTIONS } from "@/lib/stats/season";
 
 export type StatMode = "avg" | "game" | "totals" | "per36";
 export type StatSpan = "5" | "10" | "20" | "40" | "60" | "season";
@@ -15,25 +10,15 @@ export const STAT_MODES: readonly StatMode[] = ["game", "avg", "totals", "per36"
 export const STAT_SPANS: readonly StatSpan[] = ["5", "10", "20", "40", "60", "season"];
 
 export const DEFAULT_MODE: StatMode = "game";
-export const DEFAULT_SPAN: StatSpan = "season";
+const DEFAULT_SPAN: StatSpan = "season";
 
 // The three player-page views, mirroring the /players stat tabs (minus
 // Starred, which is a list, not a lens on one player).
 export type PlayerView = "regular" | "advanced" | "fantasy";
 export const PLAYER_VIEWS: readonly PlayerView[] = ["regular", "advanced", "fantasy"];
-export const DEFAULT_VIEW: PlayerView = "regular";
-
-export const isPlayerView = (value: string | undefined): value is PlayerView =>
-  PLAYER_VIEWS.some((view) => view === value);
+const DEFAULT_VIEW: PlayerView = "regular";
 
 export const CAREER = "career";
-
-// Every season label the database can hold (newest first), bounded by the
-// backfill window; these are the only seasons a ?season= value could name.
-export const SEASON_OPTIONS: readonly string[] = Array.from(
-  { length: Number(SEASON_YEAR) - BACKFILL_START_YEAR + 1 },
-  (_, index) => seasonLabelFromYear(Number(SEASON_YEAR) - index),
-);
 
 const SEASON_SELECTIONS: readonly string[] = [...SEASON_OPTIONS, CAREER];
 

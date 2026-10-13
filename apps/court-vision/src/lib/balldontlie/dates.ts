@@ -19,7 +19,7 @@ const shiftDays = ({ date, days }: { date: string; days: number }): string =>
   new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 
 // The calendar date it is right now in New York. `en-CA` formats as YYYY-MM-DD.
-export const todayInNewYork = ({ now }: { now: Date }): string =>
+const todayInNewYork = ({ now }: { now: Date }): string =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/New_York",
     year: "numeric",

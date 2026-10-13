@@ -1,0 +1,5 @@
+@use "@vision/ui/styles/mixins" as *;
+
+.page {
+  @include page-shell(var(--space-6));
+}

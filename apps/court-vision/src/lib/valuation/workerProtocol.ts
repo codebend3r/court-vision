@@ -7,15 +7,15 @@ import {
   SCORED_KEYS,
   valuePlayers,
 } from "@vision/sport-basketball/engine";
-import { type BasketballLine } from "@vision/sport-basketball/types";
 import {
+  type BasketballLine,
   type CategoryWeights,
-  type FantasyPlayerValues,
-  type FantasyStatLine,
   type MethodWeights,
   type PoolStats,
   type ValuationConfig,
-} from "@/lib/valuation/types";
+} from "@vision/sport-basketball/types";
+import { type FantasyPlayerValues } from "@vision/core/valuation/types";
+import { type FantasyStatLine } from "@/lib/valuation/types";
 
 // The Fantasy tab's valuation worker is stateless: each request carries the
 // whole job and gets back every method's score for it. Cloning the pool per

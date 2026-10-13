@@ -38,6 +38,7 @@ const listCss = compileStyles({
 const panelsCss = compileStyles({
   paths: [
     "src/styles/globals.scss",
+    "src/components/SeriesChart/SeriesChart.module.scss",
     "src/components/PlayerFantasyChart/PlayerFantasyChart.module.scss",
   ],
 });

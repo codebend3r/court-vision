@@ -1,10 +1,10 @@
 import type { FetchImpl } from "@vision/core/util/fetchImpl";
 
-import { normalizeName } from "@/lib/demo/names";
 import { prisma } from "@/lib/prisma";
 
 import { fetchNbaPlayerIndex } from "@/lib/headshots/sources";
 import { Logger, consoleLogger, silentLogger } from "@vision/core/util/logger";
+import { normalizeName } from "@vision/core/util/names";
 import { isMainModule } from "@vision/core/util/runtime";
 
 export type MapHeadshotsDeps = {
@@ -25,7 +25,7 @@ type NamedRow = {
 // index, apostrophes, hyphens), so the match key drops everything but letters,
 // digits, and single spaces after diacritic normalization.
 const matchKey = (name: string): string =>
-  normalizeName(name)
+  normalizeName({ name })
     .replace(/[^a-z0-9 ]/g, "")
     .replace(/\s+/g, " ")
     .trim();
@@ -87,13 +87,15 @@ export async function mapHeadshots(deps: MapHeadshotsDeps = {}): Promise<MapHead
     { matches: [], unmatched: [] },
   );
 
-  await matches.reduce(async (previous, match) => {
-    await previous;
-    await prisma.player.update({
-      where: { id: match.id },
-      data: { nbaPersonId: match.nbaPersonId },
-    });
-  }, Promise.resolve());
+  // One transaction, so a failed write leaves no run half-applied.
+  await prisma.$transaction(
+    matches.map((match) =>
+      prisma.player.update({
+        where: { id: match.id },
+        data: { nbaPersonId: match.nbaPersonId },
+      }),
+    ),
+  );
 
   logger(`Matched ${matches.length} player(s) to an NBA person id.`);
   if (unmatched.length > 0) {

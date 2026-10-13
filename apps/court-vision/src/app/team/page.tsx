@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { formatOrdinal } from "@vision/core/util/format";
+import { formatOrdinal, formatSigned } from "@vision/core/util/format";
 
 import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
@@ -23,7 +23,7 @@ export default async function TeamPage({
   searchParams: Promise<RawSearchParams>;
 }) {
   const { is } = await loadTeamSearchParams(searchParams);
-  const team = teamBySlug(is);
+  const team = teamBySlug({ slug: is });
 
   if (team === undefined) {
     return (
@@ -42,10 +42,10 @@ export default async function TeamPage({
 
   const [{ season, stats }, roster] = await Promise.all([
     getTeamStats(),
-    getTeamRoster({ abbr: team.abbr }),
+    getTeamRoster({ abbr: team.abbreviation }),
   ]);
-  const teamStats = stats.find((entry) => entry.abbr === team.abbr);
-  const ranks = rankTeams({ stats }).get(team.abbr);
+  const teamStats = stats.find((entry) => entry.abbr === team.abbreviation);
+  const ranks = rankTeams({ stats }).get(team.abbreviation);
   const leagueSize = stats.length;
 
   return (
@@ -57,7 +57,7 @@ export default async function TeamPage({
         actions={<PageAction href="/teams">All teams</PageAction>}
       />
       <header className={styles.header}>
-        <TeamChip team={team.abbr} />
+        <TeamChip team={team.abbreviation} />
         <span className={styles.context}>
           {team.division} Division · {team.conference}ern Conference
           {!!season && <> · {season} regular season</>}
@@ -73,7 +73,7 @@ export default async function TeamPage({
           />
           <ReadoutCard
             label="Point diff"
-            value={teamStats.diff > 0 ? `+${teamStats.diff.toFixed(1)}` : teamStats.diff.toFixed(1)}
+            value={formatSigned({ value: teamStats.diff, digits: 1 })}
             note="per game"
             sentiment={teamStats.diff >= 0 ? "up" : "down"}
           />

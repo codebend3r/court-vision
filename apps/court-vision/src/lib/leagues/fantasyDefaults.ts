@@ -1,20 +1,14 @@
-import { isH2hPointsConfig } from "@/lib/leagues/guards";
+import { LEAGUE_BOUNDS } from "@/lib/leagues/settings";
 import { type LeagueSummary } from "@/lib/leagues/types";
-import { CATEGORY_KEYS, DEFAULT_POINTS_SCORING } from "@vision/sport-basketball/engine";
-import { WEIGHTED_METHOD_KEYS } from "@vision/core/valuation/registry";
+import {
+  CATEGORY_KEYS,
+  DEFAULT_POINTS_SCORING,
+  isH2hPointsConfig,
+} from "@vision/sport-basketball/engine";
+import { SORT_KEY_BY_METHOD, WEIGHTED_METHOD_KEYS } from "@vision/core/valuation/registry";
 import { type FantasyMethodKey } from "@vision/core/valuation/types";
-import { type MethodWeights, type ValuationConfig } from "@/lib/valuation/types";
-import { type FantasySearchParams, type FantasySortKey } from "@/lib/valuation/searchParams";
-
-export const SORT_KEY_BY_METHOD: Record<FantasyMethodKey, FantasySortKey> = {
-  zscore: "z",
-  gscore: "g",
-  points: "points",
-  vorp: "vorp",
-  positional: "pos",
-  sgp: "sgp",
-  simvalue: "sim",
-};
+import { type MethodWeights, type ValuationConfig } from "@vision/sport-basketball/types";
+import { type FantasySearchParams } from "@/lib/valuation/searchParams";
 
 export type FantasySeed = Partial<
   Pick<FantasySearchParams, "teams" | "slots" | "x" | "w" | "s" | "sort">
@@ -36,7 +30,7 @@ export const buildLeagueSeed = ({
     presentKeys.has("sort") === false
       ? preferredFormula !== null
         ? { sort: SORT_KEY_BY_METHOD[preferredFormula] }
-        : league?.scoringType === "h2h_points"
+        : league !== null && league.scoringType === "h2h_points"
           ? { sort: "points" }
           : {}
       : {};
@@ -86,8 +80,8 @@ export const configFromSeed = ({
       categories: CATEGORY_KEYS.filter((key) => !excluded.some((entry) => entry === key)),
       weights: {},
       basis: "perGame",
-      teams: seed.teams ?? 12,
-      rosterSlots: seed.slots ?? 13,
+      teams: seed.teams ?? LEAGUE_BOUNDS.teams.fallback,
+      rosterSlots: seed.slots ?? LEAGUE_BOUNDS.slots.fallback,
       scoring: seed.s ?? { ...DEFAULT_POINTS_SCORING },
     },
     methodWeights: seed.w ?? {},

@@ -33,7 +33,6 @@
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "postinstall": "bun run --cwd apps/court-vision db:generate",
-    "sync:nba": "bun run --cwd apps/court-vision sync:nba",
     "sync:bdl": "bun run --cwd apps/court-vision sync:bdl",
     "sync:players": "bun run --cwd apps/court-vision sync:players",
     "sync:nightly": "bun run --cwd apps/court-vision sync:nightly",

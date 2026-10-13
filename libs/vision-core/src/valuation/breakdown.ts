@@ -1,5 +1,6 @@
 import { type Category, type SportDescriptor, type SportKeys } from "#core/sport/types";
 import { categoryMeta, categoryPerGame, type CategoryKind } from "#core/valuation/categories";
+import { weightedConfig } from "#core/valuation/config";
 import { scoreGScore } from "#core/valuation/methods/gscore";
 import { scoreZScore } from "#core/valuation/methods/zscore";
 import {
@@ -7,7 +8,6 @@ import {
   type PoolStats,
   type ValuationConfig,
   type ValuationLine,
-  type WeightedMethodKey,
 } from "#core/valuation/types";
 
 // Where a player's value comes from: each included category's sign-corrected
@@ -21,18 +21,6 @@ export type FantasyCategoryBreakdown<K extends SportKeys> = {
   z: number;
   g: number;
 };
-
-// A method column's own weight set over the shared config; a column with no
-// stored weights falls back to the config's (all 1s by default).
-export const weightedConfig = <K extends SportKeys>({
-  config,
-  methodWeights,
-  method,
-}: {
-  config: ValuationConfig<K>;
-  methodWeights: MethodWeights<K>;
-  method: WeightedMethodKey;
-}): ValuationConfig<K> => ({ ...config, weights: methodWeights[method] ?? config.weights });
 
 // One player's per-category Z and G against a pool the caller has already
 // computed, in table order. Raw (unweighted) scores on purpose: a punted

@@ -13,6 +13,7 @@
   "imports": {
     "#ui/components/*.module.scss": "./src/components/*.module.scss",
     "#ui/components/*": "./src/components/*.tsx",
+    "#ui/styles/*.scss": "./src/styles/*.scss",
     "#ui/styles/*": "./src/styles/*.scss",
     "#ui/*": "./src/*.ts"
   },

@@ -13,12 +13,6 @@
   align-items: center;
   justify-content: start;
   gap: var(--space-2);
-  cursor: pointer;
-  list-style: none;
-
-  &::-webkit-details-marker {
-    display: none;
-  }
 
   &:hover .title {
     color: var(--color-text);
@@ -28,16 +22,6 @@
     @include control-focus-ring;
     border-radius: var(--radius-sm);
   }
-}
-
-.chevron {
-  color: var(--color-accent);
-  font-size: var(--font-size-xs);
-  transition: transform var(--duration-fast) var(--ease-out);
-}
-
-.section[open] .chevron {
-  transform: rotate(90deg);
 }
 
 .title {

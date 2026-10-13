@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 
-import { teamColorsFor } from "@/components/TeamChip/TeamChip";
+import { teamColorsFor } from "@/lib/teams/meta";
 import { headshotUrl } from "@/lib/headshots/url";
 
 import styles from "@/components/PlayerAvatar/PlayerAvatar.module.scss";

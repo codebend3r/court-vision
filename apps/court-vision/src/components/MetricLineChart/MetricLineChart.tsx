@@ -15,8 +15,9 @@ import {
 } from "recharts";
 
 import { isMetricPoint, type MetricPoint } from "@vision/core/series/metricPoint";
-import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
-import { getChartChrome } from "@vision/ui/charts/palette";
+import { CHART_CHROME, chartAxisProps } from "@vision/ui/charts/palette";
+import { endLabel, lastPlottedIndex } from "@/components/ChartEndLabel/ChartEndLabel";
+import { SeriesTooltip } from "@/components/SeriesTooltip/SeriesTooltip";
 import { TeamMatchup } from "@/components/TeamMatchup/TeamMatchup";
 
 import styles from "@/components/MetricLineChart/MetricLineChart.module.scss";
@@ -74,31 +75,6 @@ function DnpMarker({
   );
 }
 
-const renderEndLabel = ({
-  label,
-  lastIndex,
-  fill,
-}: {
-  label: string;
-  lastIndex: number;
-  fill: string;
-}) =>
-  function EndLabel(props: {
-    x?: number | string;
-    y?: number | string;
-    index?: number;
-  }): ReactElement | null {
-    const { x, y, index } = props;
-    if (index !== lastIndex || typeof x !== "number" || typeof y !== "number") {
-      return null;
-    }
-    return (
-      <text x={x + 8} y={y + 4} fill={fill} fontSize={12}>
-        {label}
-      </text>
-    );
-  };
-
 // Recharts clones `content` (see ContentType in its Tooltip types) and injects
 // `active`/`payload` at render time — they are never supplied at JSX-authoring
 // time here, so they must stay optional on this component's own prop type.
@@ -133,22 +109,24 @@ function MetricTooltip<K extends string>({
   }
 
   return (
-    <div className={styles.tooltip}>
-      <p className={styles.tooltipHeader}>
-        Game {point.gameIndex} · {formatDate(point.gameDate)} ·{" "}
-        <TeamMatchup matchup={point.matchup} size="sm" /> {point.winLoss ?? ""}
-      </p>
-      {metas.map((meta) => {
+    <SeriesTooltip
+      header={
+        <>
+          Game {point.gameIndex} · {formatDate(point.gameDate)} ·{" "}
+          <TeamMatchup matchup={point.matchup} size="sm" /> {point.winLoss ?? ""}
+        </>
+      }
+      rows={metas.map((meta) => {
         const value = point[meta.key];
-        return (
-          <p key={meta.key} className={styles.tooltipRow}>
-            <span className={styles.dot} style={{ backgroundColor: meta.color }} />
-            {meta.label}: {value === null ? "—" : formatValue({ key: meta.key, value })}
-          </p>
-        );
+        return {
+          key: meta.key,
+          label: meta.label,
+          color: meta.color,
+          value: value === null ? "—" : formatValue({ key: meta.key, value }),
+        };
       })}
-      {point.dnp && <p className={styles.tooltipStatus}>DNP / DNP-CD (0 MIN)</p>}
-    </div>
+      status={point.dnp ? "DNP / DNP-CD (0 MIN)" : undefined}
+    />
   );
 }
 
@@ -167,36 +145,21 @@ export function MetricLineChart<K extends string>({
   endLabels = true,
   height = 320,
 }: MetricLineChartProps<K>) {
-  const { theme } = useTheme();
-  const chrome = getChartChrome({ theme });
-
-  // A line ends at its last recorded game, which a run of trailing DNPs or
-  // missing rows can put well before the final x tick; the label belongs
-  // beside that point, not floating where the line would have gone.
-  const lastIndexOf = (key: K): number =>
-    series.reduce((last, point, index) => (point[key] === null ? last : index), -1);
-
   return (
     <ResponsiveContainer width="100%" height={height} initialDimension={{ width: 800, height }}>
       <LineChart data={[...series]} margin={{ top: 8, right: 56, bottom: 8, left: 0 }}>
-        <CartesianGrid stroke={chrome.grid} vertical={false} />
+        <CartesianGrid stroke={CHART_CHROME.grid} vertical={false} />
         <XAxis
+          {...chartAxisProps({ rule: "grid" })}
           dataKey="gameIndex"
           interval="equidistantPreserveStart"
-          tick={{ fill: chrome.axis, fontSize: 12 }}
-          stroke={chrome.grid}
         />
-        <YAxis
-          tick={{ fill: chrome.axis, fontSize: 12 }}
-          stroke={chrome.grid}
-          domain={domain}
-          tickFormatter={formatTick}
-        />
+        <YAxis {...chartAxisProps({ rule: "grid" })} domain={domain} tickFormatter={formatTick} />
         <Tooltip
           content={<MetricTooltip metas={metas} series={series} formatValue={formatValue} />}
-          cursor={{ stroke: chrome.axis, strokeDasharray: "3 3" }}
+          cursor={{ stroke: CHART_CHROME.axis, strokeDasharray: "3 3" }}
         />
-        {zeroLine && <ReferenceLine y={0} stroke={chrome.axis} />}
+        {zeroLine && <ReferenceLine y={0} stroke={CHART_CHROME.axis} />}
         {showDnp &&
           series
             .filter((point) => point.dnp)
@@ -222,12 +185,15 @@ export function MetricLineChart<K extends string>({
             activeDot={{ r: 4 }}
             isAnimationActive={false}
             connectNulls={false}
+            // A line ends at its last recorded game, which a run of trailing
+            // DNPs or missing rows can put well before the final x tick; the
+            // label belongs beside that point, not where the line would have gone.
             label={
               endLabels
-                ? renderEndLabel({
-                    label: meta.label,
-                    lastIndex: lastIndexOf(meta.key),
-                    fill: chrome.endLabel,
+                ? endLabel({
+                    text: meta.label,
+                    lastIndex: lastPlottedIndex({ rows: series, key: meta.key }),
+                    fill: CHART_CHROME.axis,
                   })
                 : undefined
             }

@@ -2,9 +2,13 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import { type ComponentProps, createContext, use } from "react";
 
-import { PlayersTable } from "@/components/PlayersTable/PlayersTable";
+import {
+  ADVANCED_COLUMNS,
+  PlayersTable,
+  regularColumns,
+} from "@/components/PlayersTable/PlayersTable";
 import { useRosteredStore } from "@/lib/leagues/rosteredStore";
-import { type PlayerRow } from "@/lib/players/search";
+import { type PlayerPoolRow } from "@/lib/players/search";
 import { type AdvancedPlayerRow } from "@/lib/players/searchAdvanced";
 import { buildPlayersHref, type PlayersSearchParams } from "@/lib/players/searchParams";
 
@@ -55,7 +59,7 @@ const params: PlayersSearchParams = {
   tab: "regular",
 };
 
-const curry: PlayerRow = {
+const curry: PlayerPoolRow = {
   id: 1,
   firstName: "Stephen",
   lastName: "Curry",
@@ -83,7 +87,13 @@ const curry: PlayerRow = {
 const renderRegular = ({ pendingHref = null }: { pendingHref?: string | null } = {}) =>
   render(
     <PendingHref value={pendingHref}>
-      <PlayersTable variant="regular" rows={[curry]} params={params} page={1} isSignedIn={false} />
+      <PlayersTable
+        rows={[curry]}
+        columns={regularColumns({ mode: params.mode })}
+        params={params}
+        page={1}
+        isSignedIn={false}
+      />
     </PendingHref>,
   );
 
@@ -159,7 +169,7 @@ describe("PlayersTable", () => {
     render(
       <PendingHref value={pieHref}>
         <PlayersTable
-          variant="advanced"
+          columns={ADVANCED_COLUMNS}
           rows={rows}
           params={advancedParams}
           page={1}

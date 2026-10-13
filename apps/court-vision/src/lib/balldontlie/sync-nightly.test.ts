@@ -45,12 +45,6 @@ const statRow: BdlStat = {
   },
 };
 
-const playoffRow: BdlStat = {
-  ...statRow,
-  id: 2,
-  game: { ...statRow.game, id: 39999, postseason: true },
-};
-
 const advancedRow: BdlAdvancedStat = {
   id: 50,
   pie: 0.152,
@@ -154,28 +148,44 @@ describe("syncNightly", () => {
     expect(fetchAllAdvancedStats).toHaveBeenCalledWith(
       expect.objectContaining({ dates: ["2026-10-21"] }),
     );
-    expect(upsertPlayers).toHaveBeenCalledWith([
-      expect.objectContaining({ id: 115, teamAbbr: "GSW" }),
-    ]);
-    expect(replaceGameLogs).toHaveBeenCalledWith([
-      expect.objectContaining({ gameId: "30001", season: "2026-27", opponentAbbr: "BOS" }),
-    ]);
+    expect(upsertPlayers).toHaveBeenCalledWith({
+      players: [expect.objectContaining({ id: 115, teamAbbr: "GSW" })],
+    });
+    expect(replaceGameLogs).toHaveBeenCalledWith({
+      rows: [expect.objectContaining({ gameId: "30001", season: "2026-27", opponentAbbr: "BOS" })],
+    });
     expect(findSeasonLogs).toHaveBeenCalledWith({
       playerIds: [115],
       seasons: ["2026-27"],
       seasonType: "Regular Season",
     });
     // The season line sums every stored game, not just last night's.
-    expect(upsertSeasonStats).toHaveBeenCalledWith([
-      expect.objectContaining({ playerId: 115, gamesPlayed: 2, pts: 51, ast: 14 }),
-    ]);
-    expect(replaceAdvanced).toHaveBeenCalledWith([
-      expect.objectContaining({ playerId: 115, gameId: "30001", pie: 0.152 }),
-    ]);
+    expect(upsertSeasonStats).toHaveBeenCalledWith({
+      rows: [expect.objectContaining({ playerId: 115, gamesPlayed: 2, pts: 51, ast: 14 })],
+    });
+    expect(replaceAdvanced).toHaveBeenCalledWith({
+      rows: [expect.objectContaining({ playerId: 115, gameId: "30001", pie: 0.152 })],
+    });
+  });
+
+  it("writes nothing when a fetch fails after the box scores arrive", async () => {
+    vi.spyOn(endpoints, "fetchAllStats").mockResolvedValue([statRow]);
+    vi.spyOn(endpoints, "fetchAllAdvancedStats").mockRejectedValue(
+      new Error("Balldontlie request failed (503) for stats/advanced"),
+    );
+    const upsertPlayers = vi.spyOn(persist, "upsertPlayers").mockResolvedValue(0);
+    const replaceGameLogs = vi.spyOn(persist, "replaceGameLogsForGames").mockResolvedValue(0);
+
+    await expect(syncNightly({ dates: ["2026-10-21"], deps: { apiKey: "k" } })).rejects.toThrow(
+      "503",
+    );
+    expect(upsertPlayers).not.toHaveBeenCalled();
+    expect(replaceGameLogs).not.toHaveBeenCalled();
   });
 
   it("writes nothing on a night without regular-season games", async () => {
-    vi.spyOn(endpoints, "fetchAllStats").mockResolvedValue([playoffRow]);
+    // `fetchAllStats` has already dropped the night's playoff rows.
+    vi.spyOn(endpoints, "fetchAllStats").mockResolvedValue([]);
     const fetchAllAdvancedStats = vi.spyOn(endpoints, "fetchAllAdvancedStats");
     const upsertPlayers = vi.spyOn(persist, "upsertPlayers");
     const replaceGameLogs = vi.spyOn(persist, "replaceGameLogsForGames");
@@ -192,26 +202,6 @@ describe("syncNightly", () => {
     expect(fetchAllAdvancedStats).not.toHaveBeenCalled();
     expect(upsertPlayers).not.toHaveBeenCalled();
     expect(replaceGameLogs).not.toHaveBeenCalled();
-  });
-
-  it("drops playoff rows so they never land in the regular-season tables", async () => {
-    vi.spyOn(endpoints, "fetchAllStats").mockResolvedValue([statRow, playoffRow]);
-    vi.spyOn(endpoints, "fetchAllAdvancedStats").mockResolvedValue([
-      advancedRow,
-      { ...advancedRow, id: 51, game: playoffRow.game },
-    ]);
-    vi.spyOn(persist, "upsertPlayers").mockResolvedValue(1);
-    const replaceGameLogs = vi.spyOn(persist, "replaceGameLogsForGames").mockResolvedValue(1);
-    vi.spyOn(persist, "findSeasonAggregateLogs").mockResolvedValue([]);
-    vi.spyOn(persist, "upsertSeasonStats").mockResolvedValue(0);
-    const replaceAdvanced = vi
-      .spyOn(persist, "replaceAdvancedGameLogsForGames")
-      .mockResolvedValue(1);
-
-    await syncNightly({ dates: ["2027-04-11"], deps: { apiKey: "k" } });
-
-    expect(replaceGameLogs).toHaveBeenCalledWith([expect.objectContaining({ gameId: "30001" })]);
-    expect(replaceAdvanced).toHaveBeenCalledWith([expect.objectContaining({ gameId: "30001" })]);
   });
 });
 

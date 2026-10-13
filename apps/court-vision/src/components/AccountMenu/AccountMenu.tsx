@@ -1,47 +1,54 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+
+import { useDismiss } from "@vision/ui/hooks/useDismiss";
 
 import styles from "@/components/AccountMenu/AccountMenu.module.scss";
 
-const MENU_ID = "account-menu";
+const PANEL_ID = "account-menu";
 
+// The account popover in the header: a disclosure (a button that shows and
+// hides a panel of ordinary links and a sign-out button), not an ARIA menu,
+// so Tab and Enter work as they do anywhere else. Opening moves focus to the
+// first item and Tab cycles within the panel; Escape, a pointer outside, or
+// following Settings closes it, and Escape returns focus to the trigger.
 export function AccountMenu({ username }: { username: string }) {
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
   const firstItemRef = useRef<HTMLAnchorElement>(null);
+  const lastItemRef = useRef<HTMLButtonElement>(null);
 
-  // Land the keyboard on the first item instead of leaving focus on the
-  // trigger, which is what makes the menu operable without a pointer.
   useEffect(() => {
     if (!open) return;
     firstItemRef.current?.focus();
   }, [open]);
 
-  // Pointer outside the menu closes it, mirroring LeagueSwitcher.
-  useEffect(() => {
-    if (!open) return;
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target;
-      if (menuRef.current === null) return;
-      if (target instanceof Node && menuRef.current.contains(target)) return;
-      setOpen(false);
-    };
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [open]);
+  useDismiss({ open, ref: containerRef, onDismiss: () => setOpen(false) });
 
   const closeAndRestore = () => {
     setOpen(false);
     triggerRef.current?.focus();
   };
 
+  // Keep Tab inside the open panel: past the last item wraps to the first,
+  // and Shift+Tab before the first wraps to the last.
+  const trapTab = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Tab") return;
+    const [from, to] = event.shiftKey
+      ? [firstItemRef.current, lastItemRef.current]
+      : [lastItemRef.current, firstItemRef.current];
+    if (document.activeElement !== from) return;
+    event.preventDefault();
+    to?.focus();
+  };
+
   return (
     <div
       className={styles.menu}
-      ref={menuRef}
+      ref={containerRef}
       onKeyDown={(event) => {
         if (open && event.key === "Escape") {
           event.stopPropagation();
@@ -53,9 +60,8 @@ export function AccountMenu({ username }: { username: string }) {
         type="button"
         ref={triggerRef}
         className={styles.trigger}
-        aria-haspopup="menu"
         aria-expanded={open}
-        aria-controls={MENU_ID}
+        aria-controls={PANEL_ID}
         onClick={() => setOpen((value) => !value)}
       >
         @{username}
@@ -64,21 +70,17 @@ export function AccountMenu({ username }: { username: string }) {
         </span>
       </button>
       {open && (
-        <div className={styles.dropdown} id={MENU_ID} role="menu">
+        <div className={styles.dropdown} id={PANEL_ID} onKeyDown={trapTab}>
           <Link
             href="/settings"
-            role="menuitem"
             ref={firstItemRef}
             className={styles.settingsLink}
             onClick={() => setOpen(false)}
           >
             Settings
           </Link>
-          {/* role="none" so the form does not sit between the menu and its
-              item: an owned menuitem must be a child of the menu, and without
-              this the sign-out button is skipped in AT menu mode entirely. */}
-          <form action="/auth/signout" method="post" role="none">
-            <button type="submit" role="menuitem" className={styles.signout}>
+          <form action="/auth/signout" method="post">
+            <button type="submit" ref={lastItemRef} className={styles.signout}>
               Sign out
             </button>
           </form>

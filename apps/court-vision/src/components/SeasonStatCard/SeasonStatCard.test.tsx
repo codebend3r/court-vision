@@ -1,20 +1,25 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
-import type { SeasonAverageStat } from "@/lib/players/seasonAverages";
-
-import { SeasonStatCard } from "@/components/SeasonStatCard/SeasonStatCard";
+import { SeasonStatCard, type SeasonStat } from "@/components/SeasonStatCard/SeasonStatCard";
 
 afterEach(cleanup);
 
-const buildStat = (overrides: Partial<SeasonAverageStat> & { key: string }): SeasonAverageStat => ({
-  label: overrides.key.toUpperCase(),
-  value: "20.0",
-  rank: 10,
-  rankTone: "leader",
-  eligibleCount: 400,
-  ...overrides,
-});
+const buildStat = ({
+  key,
+  label = key.toUpperCase(),
+  value = "20.0",
+  rank = 10,
+  tone = "leader",
+  eligibleCount = 400,
+}: {
+  key: string;
+  label?: string;
+  value?: string;
+  rank?: number;
+  tone?: "leader" | "neutral";
+  eligibleCount?: number;
+}): SeasonStat => ({ key, label, value, rank: { position: rank, tone, eligibleCount } });
 
 describe("SeasonStatCard", () => {
   it("renders the season, each stat value, and its NBA rank", () => {
@@ -59,7 +64,7 @@ describe("SeasonStatCard", () => {
     render(
       <SeasonStatCard
         season="2025-26"
-        stats={[buildStat({ key: "tov", rank: 1, rankTone: "neutral" })]}
+        stats={[buildStat({ key: "tov", rank: 1, tone: "neutral" })]}
       />,
     );
 
@@ -80,12 +85,11 @@ describe("SeasonStatCard", () => {
     );
   });
 
-  it("lets a caller rename the rank scope and the pool the tooltip describes", () => {
+  it("lets a caller rename the pool the tooltip describes", () => {
     render(
       <SeasonStatCard
         season="2025-26"
         title="Fantasy value"
-        rankScope="in NBA"
         poolNoun="valued players"
         stats={[
           buildStat({
@@ -124,9 +128,16 @@ describe("SeasonStatCard", () => {
     expect(within(second).getByRole("heading", { level: 2 })).toHaveAttribute("id", secondId);
   });
 
-  it("renders nothing without stats", () => {
-    const { container } = render(<SeasonStatCard season="2025-26" stats={[]} />);
+  it("shows no pill for an unranked stat", () => {
+    render(
+      <SeasonStatCard
+        season="2016-17 to 2025-26"
+        title="Career averages"
+        stats={[{ key: "pts", label: "PTS", value: "21.3" }]}
+      />,
+    );
 
-    expect(container).toBeEmptyDOMElement();
+    expect(screen.getByText("21.3")).toBeInTheDocument();
+    expect(screen.queryByText(/in NBA/)).not.toBeInTheDocument();
   });
 });

@@ -1,46 +1,3 @@
-@use "@/styles/mixins" as *;
-
-.form {
-  display: grid;
-  gap: var(--space-4);
-  width: 100%;
-  max-width: 22rem;
-
-  button[type="submit"] {
-    padding: var(--space-2) var(--space-4);
-    border: none;
-    border-radius: var(--radius-sm);
-    background: var(--color-accent);
-    color: var(--color-bg);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-semibold);
-    cursor: pointer;
-
-    &:focus-visible {
-      @include control-focus-ring;
-    }
-
-    &:disabled {
-      opacity: var(--control-disabled-opacity);
-      cursor: not-allowed;
-    }
-  }
-}
-
-.field {
-  display: grid;
-  gap: var(--space-1);
-
-  span {
-    color: var(--color-text-muted);
-    font-size: var(--font-size-sm);
-  }
-
-  input {
-    @include control-field;
-  }
-}
-
 .hint {
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
@@ -54,20 +11,6 @@
 .available {
   color: var(--color-accent);
   font-size: var(--font-size-xs);
-}
-
-.error {
-  color: var(--color-accent-strong);
-  font-size: var(--font-size-sm);
-}
-
-.alt {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-
-  a {
-    text-decoration: underline;
-  }
 }
 
 .sent {

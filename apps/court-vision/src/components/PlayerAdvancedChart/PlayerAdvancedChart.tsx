@@ -1,7 +1,5 @@
 "use client";
 
-import { parseAsBoolean, parseAsString, useQueryState } from "nuqs";
-
 import {
   ADVANCED_STAT_META,
   advancedStatMeta,
@@ -11,17 +9,15 @@ import { ADVANCED_METRIC_KEYS, type AdvancedMetricKey } from "@/lib/players/sear
 import type { AdvancedPoint, AdvancedSeriesMode } from "@/lib/stats/advancedSeries";
 import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 import { MetricLineChart, type MetricMeta } from "@/components/MetricLineChart/MetricLineChart";
+import { ChartPanel } from "@/components/SeriesChart/ChartPanel";
+import { GamesMissedSwitch, useShowDnp } from "@/components/SeriesChart/GamesMissedSwitch";
+import { SeriesChips } from "@/components/SeriesChart/SeriesChips";
+import { useSeriesSelection } from "@/components/SeriesChart/useSeriesSelection";
 import { getSeriesPalette } from "@vision/ui/charts/palette";
-import { Switch } from "@vision/ui/components/Switch/Switch";
 
 import { ADVANCED_PANELS } from "@/components/PlayerAdvancedChart/advancedChartMeta";
 import styles from "@/components/PlayerAdvancedChart/PlayerAdvancedChart.module.scss";
-
-const isMetricKey = (value: string): value is AdvancedMetricKey =>
-  ADVANCED_METRIC_KEYS.some((key) => key === value);
-
-const parseVisibleMetrics = (value: string | null): AdvancedMetricKey[] =>
-  value === null ? [...ADVANCED_METRIC_KEYS] : value.split(",").filter(isMetricKey);
+import chartStyles from "@/components/SeriesChart/SeriesChart.module.scss";
 
 const CAPTION_BY_MODE: Record<AdvancedSeriesMode, string> = {
   game: "Per-game values",
@@ -45,19 +41,12 @@ export function PlayerAdvancedChart({
 }) {
   const { theme } = useTheme();
   const palette = getSeriesPalette({ theme });
-  const [metrics, setMetrics] = useQueryState("adv", parseAsString);
-  const [showDnp, setShowDnp] = useQueryState("dnp", parseAsBoolean.withDefault(false));
-  const active = parseVisibleMetrics(metrics);
-
-  const toggle = (key: AdvancedMetricKey) => {
-    const next = active.includes(key)
-      ? active.filter((activeKey) => activeKey !== key)
-      : [...active, key];
-    void setMetrics(next.join(","));
-  };
-
-  const hasActive = active.length > 0;
-  const toggleAll = () => void setMetrics(hasActive ? "" : ADVANCED_METRIC_KEYS.join(","));
+  const selection = useSeriesSelection({
+    param: "adv",
+    keys: ADVANCED_METRIC_KEYS,
+    defaults: ADVANCED_METRIC_KEYS,
+  });
+  const { showDnp } = useShowDnp();
 
   // Colour is assigned by a metric's fixed slot within its panel, never by
   // its position among whichever chips happen to be on.
@@ -70,55 +59,44 @@ export function PlayerAdvancedChart({
   const panels = ADVANCED_PANELS.map((panel) => ({
     ...panel,
     metas: panel.keys
-      .filter((key) => active.includes(key))
+      .filter((key) => selection.isActive({ key }))
       .map((key): MetricMeta<AdvancedMetricKey> => ({
         key,
-        label: advancedStatMeta(key)?.label ?? key,
+        label: advancedStatMeta({ key }).label,
         color: colorOf(key),
       })),
-    isPercent: panel.keys.every((key) => advancedStatMeta(key)?.kind === "percentage"),
+    isPercent: panel.keys.every((key) => advancedStatMeta({ key }).kind === "percentage"),
   })).filter((panel) => panel.metas.length > 0);
 
   return (
-    <div className={styles.root}>
-      <div className={styles.chips}>
-        {ADVANCED_STAT_META.map((meta) => (
-          <button
-            key={meta.key}
-            type="button"
-            aria-pressed={active.includes(meta.key)}
-            onClick={() => toggle(meta.key)}
-            title={meta.fullName}
-            className={styles.chip}
-          >
+    <div className={chartStyles.root}>
+      <SeriesChips
+        selection={selection}
+        all={ADVANCED_METRIC_KEYS}
+        chips={ADVANCED_STAT_META.map((meta) => ({
+          key: meta.key,
+          label: meta.label,
+          title: meta.fullName,
+          mark: (
             <span
               className={styles.swatch}
               style={{ backgroundColor: colorOf(meta.key) }}
               aria-hidden="true"
             />
-            {meta.label}
-          </button>
-        ))}
-        <button type="button" onClick={toggleAll} className={styles.chipAction}>
-          {hasActive ? "Clear all" : "Select all"}
-        </button>
-      </div>
-
-      <Switch
-        label="Games missed"
-        checked={showDnp}
-        onChange={({ checked }) => void setShowDnp(checked)}
+          ),
+        }))}
       />
+
+      <GamesMissedSwitch />
 
       <p className={styles.caption}>{CAPTION_BY_MODE[mode]}</p>
 
       {panels.length === 0 ? (
-        <p className={styles.emptyHint}>Select a metric to plot</p>
+        <p className={chartStyles.emptyHint}>Select a metric to plot</p>
       ) : (
         <div className={styles.panels}>
           {panels.map((panel) => (
-            <section key={panel.key} className={styles.panel}>
-              <h3 className={styles.panelTitle}>{panel.title}</h3>
+            <ChartPanel key={panel.key} title={panel.title}>
               <MetricLineChart
                 metas={panel.metas}
                 series={series}
@@ -128,7 +106,7 @@ export function PlayerAdvancedChart({
                 formatValue={({ key, value }) => formatAdvancedStat({ key, value })}
                 formatTick={panel.isPercent ? formatPercentTick : undefined}
               />
-            </section>
+            </ChartPanel>
           ))}
         </div>
       )}

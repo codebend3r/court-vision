@@ -12,10 +12,8 @@ import {
   type PlayerValue,
   type PoolStats,
   scoreSimValue,
-  type SyntheticLeague,
   type ValuationConfig,
 } from "#core/testing/basketball";
-import { SIM_ITERATIONS } from "#core/valuation/methods/simvalue";
 import { type CategoryContribution } from "#core/valuation/types";
 
 const config = (overrides: Partial<ValuationConfig> = {}): ValuationConfig => ({
@@ -110,8 +108,10 @@ describe("scoreSimValue", () => {
 });
 
 // The pass-over-every-week implementation the binary search replaced, kept
-// verbatim (SIM_SEED, mulberry32, standardNormal, and the scorer itself) so
-// the faster one is held to exactly its output, not to a tolerance.
+// verbatim (SIM_ITERATIONS, SIM_SEED, mulberry32, standardNormal, and the
+// scorer itself) so the faster one is held to exactly its output, not to a
+// tolerance.
+const SIM_ITERATIONS = 400;
 const SIM_SEED = 0x5eed;
 
 const mulberry32 = ({ seed }: { seed: number }) => {
@@ -135,16 +135,14 @@ const referenceScoreSimValue = ({
   lines,
   poolStats,
   config,
-  league,
   iterations = SIM_ITERATIONS,
 }: {
   lines: readonly FantasyStatLine[];
   poolStats: PoolStats;
   config: ValuationConfig;
-  league?: SyntheticLeague;
   iterations?: number;
 }): PlayerValue[] => {
-  const { replacement, spread } = league ?? buildLeague({ lines, poolStats, config });
+  const { replacement, spread } = buildLeague({ lines, poolStats, config });
 
   const random = mulberry32({ seed: SIM_SEED });
   const opponents = config.categories.reduce<Partial<Record<Category, number[]>>>(
@@ -264,17 +262,5 @@ describe("scoreSimValue against the per-week reference", () => {
       const args = { lines: caseLines, poolStats, config: caseConfig, iterations };
       expect(scoreSimValue(args)).toStrictEqual(referenceScoreSimValue(args));
     });
-  });
-
-  it("matches exactly when handed a prebuilt league", () => {
-    const poolStats = computePoolStats({
-      lines: pool,
-      basis: "perGame",
-      poolSize: 150,
-      windowGames: null,
-    });
-    const league = buildLeague({ lines: pool, poolStats, config: allCategories });
-    const args = { lines: pool, poolStats, config: allCategories, league };
-    expect(scoreSimValue(args)).toStrictEqual(referenceScoreSimValue(args));
   });
 });

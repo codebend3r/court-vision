@@ -1,0 +1,15 @@
+@use "@/styles/mixins" as *;
+
+.panel {
+  @include panel-shell;
+}
+
+.title {
+  @include panel-title;
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}

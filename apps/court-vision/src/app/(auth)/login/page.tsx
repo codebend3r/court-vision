@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
 
-import { LogoLockup } from "@/components/Logo/Logo";
 import { isLoginNoticeCode, loginNoticeMessage } from "@/lib/auth/loginNotice";
 import { safeNextPath } from "@/lib/auth/safeNextPath";
 import { getUser } from "@/lib/auth/session";
 
-import authStyles from "@/app/(auth)/auth.module.scss";
+import { AuthCard } from "@/app/(auth)/AuthCard";
 import { LoginForm } from "@/app/(auth)/login/LoginForm";
 
 export default async function LoginPage({
@@ -22,14 +21,8 @@ export default async function LoginPage({
   // this the user got a bare form and no explanation.
   const notice = isLoginNoticeCode(error) ? loginNoticeMessage(error) : null;
   return (
-    <main className={authStyles.shell} data-centered>
-      <section className={authStyles.card} aria-labelledby="login-title">
-        <LogoLockup orientation="vertical" />
-        <h1 className={authStyles.title} id="login-title">
-          Sign in
-        </h1>
-        <LoginForm next={safeNextPath(next)} notice={notice} />
-      </section>
-    </main>
+    <AuthCard titleId="login-title" title="Sign in">
+      <LoginForm next={safeNextPath({ next })} notice={notice} />
+    </AuthCard>
   );
 }

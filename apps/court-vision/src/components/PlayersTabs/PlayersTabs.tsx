@@ -3,10 +3,9 @@
 import { StatViewTabs } from "@vision/ui/components/StatViewTabs/StatViewTabs";
 import {
   buildPlayersHref,
-  DEFAULT_ADVANCED_SORT_KEY,
   DEFAULT_SORT_DIR,
-  DEFAULT_SORT_KEY,
-  DEFAULT_STARRED_SORT_KEY,
+  DEFAULT_STAT_MODE,
+  defaultSortFor,
   type PlayerGameRange,
   type PlayersTab,
 } from "@/lib/players/searchParams";
@@ -25,6 +24,8 @@ export type PlayersTabsProps = {
   range: PlayerGameRange;
 };
 
+// Switching tabs keeps the search, page size and game range, and lands on the
+// new tab's first page in its own default order.
 export function PlayersTabs({ active, q, size, range }: PlayersTabsProps) {
   return (
     <StatViewTabs
@@ -37,15 +38,10 @@ export function PlayersTabs({ active, q, size, range }: PlayersTabsProps) {
           q,
           page: 1,
           size,
-          sort:
-            entry.tab === "advanced"
-              ? DEFAULT_ADVANCED_SORT_KEY
-              : entry.tab === "starred"
-                ? DEFAULT_STARRED_SORT_KEY
-                : DEFAULT_SORT_KEY,
+          sort: defaultSortFor({ tab: entry.tab }),
           dir: DEFAULT_SORT_DIR,
           range,
-          mode: "average",
+          mode: DEFAULT_STAT_MODE,
           minimums: true,
           tab: entry.tab,
         }),

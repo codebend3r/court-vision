@@ -1,14 +1,12 @@
 import {
-  createLoader,
   createParser,
   parseAsArrayOf,
-  parseAsNumberLiteral,
-  parseAsString,
   parseAsStringLiteral,
   type inferParserType,
 } from "nuqs/server";
 
-import { PAGE_SIZES, PLAYER_GAME_RANGES } from "@/lib/players/searchParams";
+import { clampScore, LEAGUE_BOUNDS, snapWeight } from "@/lib/leagues/settings";
+import { listParsers, parseAsClampedInt } from "@/lib/players/searchParams";
 import {
   CATEGORY_KEYS,
   DEFAULT_POINTS_SCORING,
@@ -20,7 +18,7 @@ import {
   type MethodWeights,
   type ScoringSettings,
   type ScoringStatKey,
-} from "@/lib/valuation/types";
+} from "@vision/sport-basketball/types";
 
 // One sort key per method column plus the name sorts.
 export type FantasySortKey =
@@ -45,21 +43,11 @@ export const FANTASY_SORT_KEYS: readonly FantasySortKey[] = [
   "lastName",
 ];
 
-const SORT_DIRECTIONS = ["asc", "desc"] as const;
-const STAT_MODES = ["average", "total"] as const;
-
 // How the scored rows render: the method-column table, or one row per player
 // carrying a compact Z/G chart (each category's score, or the rolling ten-game
 // value). All three read the same sorted, paged rows.
 export const FANTASY_LAYOUTS = ["table", "categories", "rolling"] as const;
 export type FantasyLayout = (typeof FANTASY_LAYOUTS)[number];
-
-// Weights are multiplicative, clamped to [0, 2] in 0.25 steps (PRD §7).
-// NaN reads as "untouched", i.e. the default weight of 1.
-export const snapWeight = (value: number): number => {
-  if (Number.isNaN(value)) return 1;
-  return Math.round(Math.min(2, Math.max(0, value)) * 4) / 4;
-};
 
 // "z.ft:0,g.tov:0.5" ↔ { z: { ft: 0 }, g: { tov: 0.5 } }: each entry is scoped
 // to the method column it tunes. Weight-1 entries are dropped in both
@@ -79,15 +67,15 @@ export const parseWeights = (value: string): MethodWeights | null =>
     if (!isWeightedMethodKey(method) || !isCategory(key)) return null;
     const parsed = Number.parseFloat(rawWeight);
     if (!Number.isFinite(parsed)) return null;
-    const snapped = snapWeight(parsed);
+    const snapped = snapWeight({ value: parsed });
     return snapped === 1 ? acc : { ...acc, [method]: { ...(acc[method] ?? {}), [key]: snapped } };
   }, {});
 
 export const serializeWeights = (weights: MethodWeights): string =>
   WEIGHTED_METHOD_KEYS.flatMap((method) =>
     CATEGORY_KEYS.flatMap((key) => {
-      const weight = weights[method]?.[key];
-      return weight === undefined || weight === 1 ? [] : [`${method}.${key}:${weight}`];
+      const weight = weights[method]?.[key] ?? 1;
+      return weight === 1 ? [] : [`${method}.${key}:${weight}`];
     }),
   ).join(",");
 
@@ -99,12 +87,6 @@ const parseAsWeights = createParser({
 
 const isScoringStatKey = (value: string): value is ScoringStatKey =>
   SCORED_KEYS.some((key) => key === value);
-
-// Points-league scoring is per-stat and can legitimately be negative (turnovers)
-// or fractional, so it is clamped to a sane band rather than snapped like the
-// category weights.
-export const clampScore = (value: number): number =>
-  Math.round(Math.min(10, Math.max(-10, value)) * 100) / 100;
 
 // "reb:1.5,tov:-2" ↔ { reb: 1.5, tov: -2 }, defaults omitted in both directions
 // so an untouched scoring table never reaches the URL.
@@ -118,7 +100,7 @@ export const parseScoring = (value: string): ScoringSettings | null =>
     if (!isScoringStatKey(key)) return null;
     const parsed = Number.parseFloat(rawScore);
     if (!Number.isFinite(parsed)) return null;
-    return { ...acc, [key]: clampScore(parsed) };
+    return { ...acc, [key]: clampScore({ value: parsed }) };
   }, DEFAULT_POINTS_SCORING);
 
 export const serializeScoring = (scoring: ScoringSettings): string =>
@@ -132,36 +114,25 @@ const parseAsScoring = createParser({
   eq: (a, b) => serializeScoring(a) === serializeScoring(b),
 });
 
-const parseAsClampedInt = ({ min, max }: { min: number; max: number }) =>
-  createParser({
-    parse: (value: string) => {
-      const parsed = Number.parseInt(value, 10);
-      return Number.isSafeInteger(parsed) ? Math.min(max, Math.max(min, parsed)) : null;
-    },
-    serialize: (value: number) => String(value),
-  });
-
 // Shallow split (design spec): `range` needs new server data, everything else
 // is satisfied client-side from the loaded pool. `mode` (the PRD's `basis`)
-// stays shallow because per-game conversion happens client-side.
+// stays shallow because per-game conversion happens client-side. The list
+// keys (q, page, size, dir, range, mode) parse exactly as the other /players
+// tabs read them.
 export const fantasyParsers = {
-  q: parseAsString.withDefault(""),
-  page: parseAsClampedInt({ min: 1, max: 100000 }).withDefault(1),
-  size: parseAsNumberLiteral(PAGE_SIZES).withDefault(50),
+  q: listParsers.q,
+  page: listParsers.page,
+  size: listParsers.size,
   sort: parseAsStringLiteral(FANTASY_SORT_KEYS).withDefault("z"),
-  dir: parseAsStringLiteral(SORT_DIRECTIONS).withDefault("desc"),
+  dir: listParsers.dir,
   x: parseAsArrayOf(parseAsStringLiteral(CATEGORY_KEYS)).withDefault([]),
   w: parseAsWeights.withDefault({}),
   s: parseAsScoring.withDefault(DEFAULT_POINTS_SCORING),
-  teams: parseAsClampedInt({ min: 2, max: 30 }).withDefault(12),
-  slots: parseAsClampedInt({ min: 1, max: 25 }).withDefault(13),
-  range: parseAsStringLiteral(PLAYER_GAME_RANGES).withDefault("all").withOptions({
-    shallow: false,
-  }),
-  mode: parseAsStringLiteral(STAT_MODES).withDefault("average"),
+  teams: parseAsClampedInt(LEAGUE_BOUNDS.teams).withDefault(LEAGUE_BOUNDS.teams.fallback),
+  slots: parseAsClampedInt(LEAGUE_BOUNDS.slots).withDefault(LEAGUE_BOUNDS.slots.fallback),
+  range: listParsers.range.withOptions({ shallow: false }),
+  mode: listParsers.mode,
   layout: parseAsStringLiteral(FANTASY_LAYOUTS).withDefault("table"),
 };
 
 export type FantasySearchParams = inferParserType<typeof fantasyParsers>;
-
-export const loadFantasySearchParams = createLoader(fantasyParsers);

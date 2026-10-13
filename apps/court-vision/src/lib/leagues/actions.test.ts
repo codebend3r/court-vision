@@ -2,23 +2,29 @@ import { beforeEach, describe, expect, it, vi } from "bun:test";
 
 const findMany = vi.fn();
 const create = vi.fn();
-const updateMany = vi.fn();
+const leagueUpdate = vi.fn();
 const deleteMany = vi.fn();
-const findUnique = vi.fn();
 const findFirst = vi.fn();
+// profile.update, shared by the client and the transaction so a test sees the
+// write wherever the action makes it.
 const update = vi.fn();
 const getProfile = vi.fn();
+const $transaction = vi.fn();
 
+const leagueDelegate = { findMany, create, update: leagueUpdate, deleteMany, findFirst };
 const tx = {
-  league: { findMany, create, updateMany, deleteMany, findUnique, findFirst },
-  profile: { updateMany: vi.fn(), update: vi.fn() },
+  league: leagueDelegate,
+  profile: { updateMany: vi.fn(), update },
 };
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    league: { findMany, create, updateMany, deleteMany, findUnique, findFirst },
+    league: leagueDelegate,
     profile: { update },
-    $transaction: vi.fn((fn: (client: typeof tx) => unknown) => fn(tx)),
+    $transaction: vi.fn((fn: (client: typeof tx) => unknown) => {
+      $transaction();
+      return fn(tx);
+    }),
   },
 }));
 vi.mock("@/lib/auth/session", () => ({ getProfile }));
@@ -43,20 +49,19 @@ const league = {
 beforeEach(() => {
   findMany.mockReset();
   create.mockReset();
-  updateMany.mockReset();
+  leagueUpdate.mockReset();
   deleteMany.mockReset();
-  findUnique.mockReset();
   findFirst.mockReset();
   update.mockReset();
   getProfile.mockReset();
+  $transaction.mockReset();
   tx.profile.updateMany.mockReset();
 
   getProfile.mockResolvedValue(profile);
   findMany.mockResolvedValue([]);
   create.mockResolvedValue(league);
-  updateMany.mockResolvedValue({ count: 1 });
+  leagueUpdate.mockResolvedValue(league);
   deleteMany.mockResolvedValue({ count: 1 });
-  findUnique.mockResolvedValue(league);
   findFirst.mockResolvedValue(league);
   update.mockResolvedValue({});
   tx.profile.updateMany.mockResolvedValue({ count: 1 });
@@ -162,8 +167,7 @@ describe("createLeague", () => {
 });
 
 describe("updateLeague", () => {
-  it("updates an owned league", async () => {
-    updateMany.mockResolvedValueOnce({ count: 1 });
+  it("updates an owned league and returns the updated row", async () => {
     const result = await updateLeague({
       leagueId: "league-1",
       name: "Updated",
@@ -173,7 +177,8 @@ describe("updateLeague", () => {
       scoringConfig: { categories: ["pts"] },
     });
     expect(result.status).toBe("ok");
-    expect(updateMany).toHaveBeenCalledWith({
+    expect(result).toHaveProperty("league", league);
+    expect(leagueUpdate).toHaveBeenCalledWith({
       where: { id: "league-1", profileId: profile.id },
       data: expect.objectContaining({
         name: "Updated",
@@ -184,8 +189,8 @@ describe("updateLeague", () => {
     });
   });
 
-  it("returns invalid for a forged leagueId (updateMany count 0)", async () => {
-    updateMany.mockResolvedValueOnce({ count: 0 });
+  it("returns invalid for a forged leagueId (no owned row, P2025)", async () => {
+    leagueUpdate.mockRejectedValueOnce({ code: "P2025" });
     const result = await updateLeague({
       leagueId: "forged",
       name: "Hacked",
@@ -195,6 +200,19 @@ describe("updateLeague", () => {
       scoringConfig: { categories: ["pts"] },
     });
     expect(result).toEqual({ status: "invalid" });
+  });
+
+  it("returns error on any other database exception", async () => {
+    leagueUpdate.mockRejectedValueOnce(new Error("db error"));
+    const result = await updateLeague({
+      leagueId: "league-1",
+      name: "Test",
+      scoringType: "roto",
+      teamCount: 12,
+      rosterSlots: 13,
+      scoringConfig: { categories: ["pts"] },
+    });
+    expect(result).toEqual({ status: "error" });
   });
 
   it("returns unauthenticated when no profile", async () => {
@@ -229,6 +247,17 @@ describe("deleteLeague", () => {
     const result = await deleteLeague({ leagueId: "league-1" });
     expect(result).toEqual({ status: "ok", activeLeagueId: "league-2" });
     expect(update).not.toHaveBeenCalled();
+  });
+
+  it("deletes, picks the fallback, and repoints the profile in one transaction", async () => {
+    findFirst.mockResolvedValueOnce({ id: "league-2" });
+    await deleteLeague({ leagueId: "league-1" });
+    expect($transaction).toHaveBeenCalledTimes(1);
+    expect(deleteMany).toHaveBeenCalledWith({ where: { id: "league-1", profileId: profile.id } });
+    expect(update).toHaveBeenCalledWith({
+      where: { id: profile.id },
+      data: { activeLeagueId: "league-2" },
+    });
   });
 
   it("deletes the active league, promotes fallback, and calls profile.update", async () => {

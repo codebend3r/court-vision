@@ -6,6 +6,8 @@ import {
   formatExperience,
   formatHeight,
   formatOrdinal,
+  formatRate,
+  formatSigned,
   formatWeight,
 } from "#core/util/format";
 
@@ -92,5 +94,44 @@ describe("formatDraft", () => {
 
   it("returns null without a draft year", () => {
     expect(formatDraft({ draftYear: null, draftRound: 1, draftNumber: 5 })).toBeNull();
+  });
+});
+
+describe("formatSigned", () => {
+  it("prefixes a plus on positive values at the requested precision", () => {
+    expect(formatSigned({ value: 1.44, digits: 1 })).toBe("+1.4");
+    expect(formatSigned({ value: 3, digits: 1 })).toBe("+3.0");
+    expect(formatSigned({ value: 2.137, digits: 2 })).toBe("+2.14");
+  });
+
+  it("keeps the minus on negative values", () => {
+    expect(formatSigned({ value: -2.06, digits: 1 })).toBe("-2.1");
+    expect(formatSigned({ value: -0.4, digits: 2 })).toBe("-0.40");
+  });
+
+  it("leaves zero unsigned by default", () => {
+    expect(formatSigned({ value: 0, digits: 1 })).toBe("0.0");
+  });
+
+  it("signs zero when asked", () => {
+    expect(formatSigned({ value: 0, digits: 2, signZero: true })).toBe("+0.00");
+    expect(formatSigned({ value: -1, digits: 2, signZero: true })).toBe("-1.00");
+  });
+
+  it("prints whole numbers with zero digits", () => {
+    expect(formatSigned({ value: 7, digits: 0 })).toBe("+7");
+    expect(formatSigned({ value: -3, digits: 0 })).toBe("-3");
+  });
+});
+
+describe("formatRate", () => {
+  it("drops the leading zero of a sub-one rate", () => {
+    expect(formatRate({ value: 0.48 })).toBe(".480");
+    expect(formatRate({ value: 0.0456 })).toBe(".046");
+    expect(formatRate({ value: 0 })).toBe(".000");
+  });
+
+  it("keeps the whole-number digit of a perfect rate", () => {
+    expect(formatRate({ value: 1 })).toBe("1.000");
   });
 });

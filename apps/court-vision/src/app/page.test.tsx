@@ -4,15 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 const getProfile = vi.fn();
 const getWatchlistPlayers = vi.fn();
 const getWatchlistCount = vi.fn();
-const getZTrendSeries = vi.fn();
-const getGTrendSeries = vi.fn();
+const getTrendSeries = vi.fn();
 const getConferenceStandings = vi.fn();
 const getActiveLeague = vi.fn();
 const getLeagueTeams = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({ getProfile: () => getProfile() }));
 vi.mock("@/lib/watchlist/queries", () => ({ getWatchlistPlayers, getWatchlistCount }));
-vi.mock("@/lib/watchlist/trendLoader", () => ({ getZTrendSeries, getGTrendSeries }));
+vi.mock("@/lib/watchlist/trendLoader", () => ({ getTrendSeries }));
 vi.mock("@/lib/standings/loader", () => ({ getConferenceStandings }));
 vi.mock("@/lib/leagues/queries", () => ({ getActiveLeague: () => getActiveLeague() }));
 vi.mock("@/lib/leagues/teamQueries", () => ({
@@ -32,13 +31,11 @@ beforeEach(() => {
   getProfile.mockReset();
   getWatchlistPlayers.mockReset();
   getWatchlistCount.mockReset();
-  getZTrendSeries.mockReset();
-  getGTrendSeries.mockReset();
+  getTrendSeries.mockReset();
   getConferenceStandings.mockReset();
   getWatchlistPlayers.mockResolvedValue([]);
   getWatchlistCount.mockResolvedValue(0);
-  getZTrendSeries.mockResolvedValue([]);
-  getGTrendSeries.mockResolvedValue([]);
+  getTrendSeries.mockResolvedValue({ z: [], g: [] });
   getConferenceStandings.mockResolvedValue(null);
   getActiveLeague.mockReset().mockResolvedValue(null);
   getLeagueTeams.mockReset().mockResolvedValue([]);
@@ -165,6 +162,48 @@ describe("Home", () => {
     );
   });
 
+  it("features the newest team in both the Roster readout and the Your Team panel", async () => {
+    getProfile.mockResolvedValue({ username: "steve" });
+    getActiveLeague.mockResolvedValue({
+      id: "league-1",
+      name: "Bench Mob League",
+      slug: "bench-mob-league",
+      scoringType: "h2h_categories",
+      teamCount: 12,
+      rosterSlots: 13,
+      scoringConfig: { categories: ["pts", "reb", "ast"] },
+      createdAt: "2026-07-01T00:00:00.000Z",
+      updatedAt: "2026-07-01T00:00:00.000Z",
+    });
+    // teamQueries returns teams oldest first.
+    getLeagueTeams.mockResolvedValue([
+      {
+        id: "a",
+        name: "Old Guard",
+        slug: "old-guard",
+        createdAt: "2026-07-01T00:00:00.000Z",
+        slots: [],
+      },
+      {
+        id: "b",
+        name: "New Blood",
+        slug: "new-blood",
+        createdAt: "2026-07-23T00:00:00.000Z",
+        slots: [],
+      },
+    ]);
+
+    await renderHome();
+
+    expect(screen.getByRole("link", { name: "New Blood" })).toHaveAttribute(
+      "href",
+      "/my-teams/new-blood",
+    );
+    expect(screen.getAllByText("New Blood")).toHaveLength(2);
+    expect(screen.queryByText("Old Guard")).not.toBeInTheDocument();
+    expect(screen.getByText("12-team")).toBeInTheDocument();
+  });
+
   it("shows the conference standings ladders for a signed-in user", async () => {
     getProfile.mockResolvedValue({ username: "steve" });
     getConferenceStandings.mockResolvedValue({
@@ -210,13 +249,14 @@ describe("Home", () => {
     getProfile.mockResolvedValue({ username: "steve" });
     const players = [summary({ playerId: 1, fullName: "Jalen Brunson" })];
     getWatchlistPlayers.mockResolvedValue(players);
-    getZTrendSeries.mockResolvedValue([{ playerId: 1, fullName: "Jalen Brunson", points: [] }]);
-    getGTrendSeries.mockResolvedValue([{ playerId: 1, fullName: "Jalen Brunson", points: [] }]);
+    const series = [{ playerId: 1, fullName: "Jalen Brunson", points: [] }];
+    getTrendSeries.mockResolvedValue({ z: series, g: series });
 
     await renderHome();
 
-    expect(getZTrendSeries).toHaveBeenCalledWith({ players });
-    expect(getGTrendSeries).toHaveBeenCalledWith({ players });
+    // One read feeds both charts.
+    expect(getTrendSeries).toHaveBeenCalledTimes(1);
+    expect(getTrendSeries).toHaveBeenCalledWith({ players });
     expect(screen.getByRole("heading", { name: "Z-Score Trend" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "G-Score Trend" })).toBeInTheDocument();
   });

@@ -9,10 +9,10 @@ import {
 import {
   findSeasonAggregateLogs,
   markActiveRoster,
+  replaceAdvancedGameLogs,
   replaceAdvancedGameLogsForGames,
+  replaceGameLogs,
   replaceGameLogsForGames,
-  upsertAdvancedGameLogs,
-  upsertGameLogs,
   upsertPlayers,
   upsertSeasonStats,
 } from "@/lib/stats/persist";
@@ -68,6 +68,8 @@ const baseGameLog: GameLogInput = {
   opponentAbbr: "LAL",
   homeAway: "home",
   winLoss: "W",
+  teamScore: 112,
+  opponentScore: 108,
   minutes: 34,
   fgm: 10,
   fga: 20,
@@ -117,7 +119,7 @@ beforeEach(() => {
 
 describe("upsertPlayers", () => {
   it("upserts each player keyed by id and returns the count", async () => {
-    const count = await upsertPlayers([player]);
+    const count = await upsertPlayers({ players: [player] });
     expect(count).toBe(1);
     expect(client.player.upsert).toHaveBeenCalledWith({
       where: { id: 1629029 },
@@ -135,15 +137,15 @@ describe("upsertPlayers", () => {
   });
 
   it("is idempotent — re-running uses upsert, never create", async () => {
-    await upsertPlayers([player]);
-    await upsertPlayers([player]);
+    await upsertPlayers({ players: [player] });
+    await upsertPlayers({ players: [player] });
     expect(client.player.upsert).toHaveBeenCalledTimes(2);
   });
 
   it("commits chunked upserts with a timeout past Prisma's 5s default", async () => {
     const players = Array.from({ length: 501 }, (_, index) => ({ ...player, id: index }));
 
-    const count = await upsertPlayers(players);
+    const count = await upsertPlayers({ players });
 
     expect(count).toBe(501);
     expect(client.player.upsert).toHaveBeenCalledTimes(501);
@@ -207,7 +209,7 @@ describe("upsertSeasonStats", () => {
       tov: 200,
       pts: 1700,
     };
-    const count = await upsertSeasonStats([stats]);
+    const count = await upsertSeasonStats({ rows: [stats] });
     expect(count).toBe(1);
     expect(client.playerSeasonStats.upsert).toHaveBeenCalledWith({
       where: {
@@ -223,7 +225,7 @@ describe("upsertSeasonStats", () => {
   });
 });
 
-describe("upsertGameLogs", () => {
+describe("replaceGameLogs", () => {
   it("replaces a season's logs with chunked inserts in one transaction", async () => {
     const logs = Array.from({ length: 1500 }, (_, index) => ({
       ...baseGameLog,
@@ -231,7 +233,7 @@ describe("upsertGameLogs", () => {
       playerId: index,
     }));
 
-    const count = await upsertGameLogs(logs);
+    const count = await replaceGameLogs({ rows: logs });
 
     expect(count).toBe(1500);
     // The whole season-replace runs inside a single interactive transaction.
@@ -244,15 +246,34 @@ describe("upsertGameLogs", () => {
     expect(client.playerGameLog.createMany).toHaveBeenCalledTimes(2);
   });
 
+  it("clears each season the rows cover once, in first-seen order", async () => {
+    await replaceGameLogs({
+      rows: [
+        { ...baseGameLog, gameId: "a", season: "2020-21" },
+        { ...baseGameLog, gameId: "b", season: "2025-26" },
+        { ...baseGameLog, gameId: "c", season: "2020-21" },
+      ],
+    });
+
+    expect(client.playerGameLog.deleteMany).toHaveBeenCalledWith({
+      where: {
+        OR: [
+          { season: "2020-21", seasonType: "Regular Season" },
+          { season: "2025-26", seasonType: "Regular Season" },
+        ],
+      },
+    });
+  });
+
   it("does no work when there are no rows", async () => {
-    const count = await upsertGameLogs([]);
+    const count = await replaceGameLogs({ rows: [] });
     expect(count).toBe(0);
     expect(client.$transaction).not.toHaveBeenCalled();
     expect(client.playerGameLog.deleteMany).not.toHaveBeenCalled();
   });
 });
 
-describe("upsertAdvancedGameLogs", () => {
+describe("replaceAdvancedGameLogs", () => {
   it("replaces a season's advanced logs with chunked inserts in one transaction", async () => {
     const logs = Array.from({ length: 1500 }, (_, index) => ({
       ...baseAdvancedLog,
@@ -260,7 +281,7 @@ describe("upsertAdvancedGameLogs", () => {
       playerId: index,
     }));
 
-    const count = await upsertAdvancedGameLogs(logs);
+    const count = await replaceAdvancedGameLogs({ rows: logs });
 
     expect(count).toBe(1500);
     expect(client.$transaction).toHaveBeenCalledTimes(1);
@@ -271,7 +292,7 @@ describe("upsertAdvancedGameLogs", () => {
   });
 
   it("does no work when there are no rows", async () => {
-    const count = await upsertAdvancedGameLogs([]);
+    const count = await replaceAdvancedGameLogs({ rows: [] });
     expect(count).toBe(0);
     expect(client.$transaction).not.toHaveBeenCalled();
   });
@@ -285,7 +306,7 @@ describe("replaceGameLogsForGames", () => {
       { ...baseGameLog, gameId: "g2", playerId: 3 },
     ];
 
-    const count = await replaceGameLogsForGames(logs);
+    const count = await replaceGameLogsForGames({ rows: logs });
 
     expect(count).toBe(3);
     expect(client.$transaction).toHaveBeenCalledTimes(1);
@@ -296,7 +317,7 @@ describe("replaceGameLogsForGames", () => {
   });
 
   it("does no work when there are no rows", async () => {
-    const count = await replaceGameLogsForGames([]);
+    const count = await replaceGameLogsForGames({ rows: [] });
     expect(count).toBe(0);
     expect(client.$transaction).not.toHaveBeenCalled();
   });
@@ -309,7 +330,7 @@ describe("replaceAdvancedGameLogsForGames", () => {
       { ...baseAdvancedLog, gameId: "g2", playerId: 2 },
     ];
 
-    const count = await replaceAdvancedGameLogsForGames(logs);
+    const count = await replaceAdvancedGameLogsForGames({ rows: logs });
 
     expect(count).toBe(2);
     expect(client.$transaction).toHaveBeenCalledTimes(1);
@@ -320,7 +341,7 @@ describe("replaceAdvancedGameLogsForGames", () => {
   });
 
   it("does no work when there are no rows", async () => {
-    const count = await replaceAdvancedGameLogsForGames([]);
+    const count = await replaceAdvancedGameLogsForGames({ rows: [] });
     expect(count).toBe(0);
     expect(client.$transaction).not.toHaveBeenCalled();
   });
@@ -364,7 +385,7 @@ describe("resilient writes", () => {
   it("retries after a transient connection drop, then succeeds", async () => {
     client.$transaction.mockRejectedValueOnce(new Error("Connection terminated unexpectedly"));
 
-    await expect(upsertGameLogs([baseGameLog])).resolves.toBe(1);
+    await expect(replaceGameLogs({ rows: [baseGameLog] })).resolves.toBe(1);
     // One failed attempt plus one successful retry.
     expect(client.$transaction).toHaveBeenCalledTimes(2);
   });
@@ -374,7 +395,9 @@ describe("resilient writes", () => {
       new Error("Unique constraint failed on the fields: (playerId, gameId)"),
     );
 
-    await expect(upsertGameLogs([baseGameLog])).rejects.toThrow("Unique constraint failed");
+    await expect(replaceGameLogs({ rows: [baseGameLog] })).rejects.toThrow(
+      "Unique constraint failed",
+    );
     expect(client.$transaction).toHaveBeenCalledTimes(1);
   });
 });

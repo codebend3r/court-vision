@@ -1,3 +1,4 @@
+import { DashboardPanel, DashboardPanelEmpty } from "@/components/DashboardPanel/DashboardPanel";
 import { type ConferenceStandings, type ConferenceTeamStanding } from "@/lib/standings/standings";
 
 import styles from "@/components/HomeStandingsPanel/HomeStandingsPanel.module.scss";
@@ -42,15 +43,9 @@ function ConferenceLadder({
 
 export function HomeStandingsPanel({ standings, className }: HomeStandingsPanelProps) {
   return (
-    <section
-      className={[styles.panel, className].filter(Boolean).join(" ")}
-      aria-labelledby="home-standings-title"
-    >
-      <h2 id="home-standings-title" className={styles.title}>
-        Conference Standings
-      </h2>
+    <DashboardPanel id="home-standings-title" title="Conference Standings" className={className}>
       {standings === null ? (
-        <p className={styles.empty}>Standings are unavailable right now.</p>
+        <DashboardPanelEmpty>Standings are unavailable right now.</DashboardPanelEmpty>
       ) : (
         <>
           <div className={styles.conferences}>
@@ -60,6 +55,6 @@ export function HomeStandingsPanel({ standings, className }: HomeStandingsPanelP
           <p className={styles.footnote}>Top {HOME_STANDINGS_LIMIT} seeds by conference rank.</p>
         </>
       )}
-    </section>
+    </DashboardPanel>
   );
 }

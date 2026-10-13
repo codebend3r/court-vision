@@ -1,4 +1,5 @@
 import { type SportDescriptor, type SportKeys } from "#core/sport/types";
+import { perBasis } from "#core/valuation/categories";
 import { type Basis, type ScoringSettings, type ValuationLine } from "#core/valuation/types";
 
 // Points-League Linear (PRD §6.4): the dot product of the stat line with the
@@ -18,6 +19,8 @@ export const scorePoints = <K extends SportKeys>({
 }): Array<{ playerId: number; total: number }> =>
   lines.map((line) => {
     const raw = sport.points.keys.reduce((sum, key) => sum + line.stats[key] * scoring[key], 0);
-    const total = basis === "total" ? raw : line.gamesPlayed > 0 ? raw / line.gamesPlayed : 0;
-    return { playerId: line.playerId, total };
+    return {
+      playerId: line.playerId,
+      total: perBasis({ total: raw, gamesPlayed: line.gamesPlayed, basis }),
+    };
   });

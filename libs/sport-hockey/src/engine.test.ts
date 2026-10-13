@@ -1,13 +1,11 @@
 import { describe, expect, it } from "bun:test";
 
-import { recordFromKeys } from "@vision/core/util/record";
-import { type ValuationLine } from "@vision/core/valuation/types";
+import { makeLine } from "@vision/core/testing/lines";
 
-import { hockey, HOCKEY_VALUED_STATS, type HockeyKeys } from "#hockey/descriptor";
+import { hockey, type HockeyKeys } from "#hockey/descriptor";
 import { hockeyEngine } from "#hockey/engine";
 
-type Stats = Partial<Record<HockeyKeys["valued"], number>>;
-
+// Sixty games, with time on ice as the playing time.
 const line = ({
   playerId,
   position,
@@ -15,23 +13,16 @@ const line = ({
 }: {
   playerId: number;
   position: string;
-  stats: Stats;
-}): ValuationLine<HockeyKeys> => {
-  const gamesPlayed = 60;
-  const totals = recordFromKeys({ keys: HOCKEY_VALUED_STATS, value: (key) => stats[key] ?? 0 });
-  return {
+  stats: Partial<Record<HockeyKeys["valued"], number>>;
+}) =>
+  makeLine({
+    sport: hockey,
     playerId,
     position,
-    gamesPlayed,
-    playingTime: totals.toi,
-    stats: totals,
-    sq: recordFromKeys({
-      keys: HOCKEY_VALUED_STATS,
-      value: (key) => (totals[key] * totals[key]) / gamesPlayed,
-    }),
-    cross: { gaa: 0, svp: 0 },
-  };
-};
+    gamesPlayed: 60,
+    playingTime: stats.toi ?? 0,
+    stats,
+  });
 
 const [skaterPool, goaliePool] = hockey.pools;
 

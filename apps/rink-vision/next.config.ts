@@ -2,16 +2,11 @@ import { resolve } from "node:path";
 
 import type { NextConfig } from "next";
 
+import { SECURITY_HEADERS } from "@vision/ui/next/securityHeaders";
+
 // The monorepo root: Turbopack compiles only files under its root, and the
 // workspace libs live beside this app. File tracing must agree with it.
 const workspaceRoot = resolve(import.meta.dirname, "../..");
-
-const securityHeaders = [
-  { key: "X-Frame-Options", value: "DENY" },
-  { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
-];
 
 const nextConfig: NextConfig = {
   turbopack: { root: workspaceRoot },
@@ -22,7 +17,7 @@ const nextConfig: NextConfig = {
   // AI agent starts it; the repo's root CLAUDE.md covers this app.
   agentRules: false,
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [{ source: "/:path*", headers: [...SECURITY_HEADERS] }];
   },
 };
 

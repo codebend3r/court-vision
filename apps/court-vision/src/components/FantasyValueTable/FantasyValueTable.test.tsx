@@ -2,10 +2,8 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
-import {
-  FantasyValueTable,
-  type FantasyTableRow,
-} from "@/components/FantasyValueTable/FantasyValueTable";
+import { FantasyValueTable } from "@/components/FantasyValueTable/FantasyValueTable";
+import { type FantasyTableRow } from "@/lib/valuation/fantasyRows";
 import { useRosteredStore } from "@/lib/leagues/rosteredStore";
 import { makeStatLine } from "@/lib/valuation/fixtures";
 import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
@@ -67,12 +65,11 @@ describe("FantasyValueTable", () => {
     expect(screen.getByText("+1.8")).toBeInTheDocument(); // g
   });
 
-  it("renders a blocked placeholder column per unimplemented method", () => {
+  it("prints PL Linear's points total without the plus sign the scores carry", () => {
     render(<FantasyValueTable isSignedIn={false} {...defaultProps} rows={rows} />);
-    const blocked = FANTASY_METHODS.filter((method) => !method.available);
-    // Every registered method is implemented today; the placeholder machinery
-    // stays covered so the next blocked method renders correctly.
-    expect(screen.queryAllByText("—")).toHaveLength(rows.length * blocked.length);
+    expect(screen.getAllByText("40.0")).toHaveLength(rows.length);
+    expect(screen.queryByText("+40.0")).not.toBeInTheDocument();
+    expect(screen.getByText("-2.2")).toBeInTheDocument(); // vorp keeps its minus
   });
 
   it("does not render per-category columns", () => {
@@ -128,7 +125,7 @@ describe("FantasyValueTable header tooltips", () => {
     render(
       <FantasyValueTable isSignedIn={false} rows={rows} sort="z" dir="desc" onSort={vi.fn()} />,
     );
-    // One per method column, SGP's blocked placeholder included.
+    // One per method column.
     expect(screen.getAllByText("Why it matters")).toHaveLength(FANTASY_METHODS.length);
     expect(screen.getByText(/who is better/)).toBeInTheDocument();
     expect(screen.getByText(/would I actually lose by dropping him/)).toBeInTheDocument();

@@ -8,29 +8,43 @@ import {
   isActionText,
   isOptionalActionId,
 } from "@vision/core/util/argGuards";
+import { isRecord } from "@vision/core/util/record";
 import { getProfile } from "@/lib/auth/session";
+import { withProfile } from "@/lib/auth/withProfile";
 import { teamNameToSlug } from "@vision/core/roster/slug";
 import { type FantasyTeam, type RosterSlot } from "@/lib/fantasyTeams/types";
 import { ensureDefaultLeague } from "@/lib/leagues/queries";
 import { uniqueSlug } from "@vision/core/league/slug";
 import { TEAM_INCLUDE, toFantasyTeam } from "@/lib/leagues/teamQueries";
-import { isFantasyTeamPlayer, isRosterSlotType, slotsToRows } from "@/lib/leagues/teams";
-import { type LeagueTeamActionResult, type LegacyTeamsImportResult } from "@/lib/leagues/types";
+import { isRosterSlot, slotsToRows } from "@/lib/leagues/teams";
+import {
+  type LeagueTeamDeleteResult,
+  type LeagueTeamSaveResult,
+  type LegacyTeamsImportResult,
+} from "@/lib/leagues/types";
 import { prisma } from "@/lib/prisma";
 
-const isValidSlot = (value: unknown): value is RosterSlot => {
-  if (typeof value !== "object" || value === null) return false;
-  const slot: Record<string, unknown> = { ...value };
-  return (
-    typeof slot.id === "string" &&
-    typeof slot.type === "string" &&
-    isRosterSlotType(slot.type) &&
-    (slot.player === null || isFantasyTeamPlayer(slot.player))
-  );
-};
-
 const isValidSlots = ({ slots }: { slots: readonly unknown[] }): boolean =>
-  slots.length >= 1 && slots.length <= 60 && slots.every(isValidSlot);
+  slots.length >= 1 && slots.length <= 60 && slots.every(isRosterSlot);
+
+// Writes every given team's slots as LeagueTeamSlot rows, in roster order, in
+// one statement. Each row carries the owner as well as the team, so RLS is a
+// direct check.
+const writeSlots = async ({
+  tx,
+  profileId,
+  teams,
+}: {
+  tx: Prisma.TransactionClient;
+  profileId: string;
+  teams: readonly { teamId: string; slots: readonly RosterSlot[] }[];
+}): Promise<void> => {
+  const data = teams.flatMap(({ teamId, slots }) =>
+    slotsToRows({ slots }).map((row) => ({ teamId, profileId, ...row })),
+  );
+  if (data.length === 0) return;
+  await tx.leagueTeamSlot.createMany({ data });
+};
 
 // Resolves the LeagueTeam row to write slots against: creates a fresh row
 // with a collision-proof slug when teamId is null, otherwise renames the
@@ -59,7 +73,7 @@ const ensureTeamRow = async ({
         profileId,
         name,
         slug: uniqueSlug({
-          base: teamNameToSlug(name),
+          base: teamNameToSlug({ name }),
           taken: existing.map((row) => row.slug),
         }),
       },
@@ -83,7 +97,7 @@ export const saveLeagueTeam = async ({
   teamId: string | null;
   name: string;
   slots: readonly RosterSlot[];
-}): Promise<LeagueTeamActionResult> => {
+}): Promise<LeagueTeamSaveResult> => {
   // Runtime-check every argument that reaches a `where` clause before Prisma
   // sees it: the annotations above are erased, and an object here becomes a
   // Prisma filter rather than a value. `name.trim()` below also throws on a
@@ -100,86 +114,46 @@ export const saveLeagueTeam = async ({
   const trimmed = name.trim();
   if (trimmed === "" || !isValidSlots({ slots })) return { status: "invalid" };
 
-  const profile = await getProfile();
-  if (profile === null) return { status: "unauthenticated" };
-
-  // RLS-safe ownership check up front: a forged leagueId never sees a row.
-  const league = await prisma.league.findFirst({
-    where: { id: leagueId, profileId: profile.id },
-    select: { id: true },
-  });
-  if (league === null) return { status: "invalid" };
-
-  try {
-    return await prisma.$transaction(async (tx) => {
-      const teamRow = await ensureTeamRow({
-        tx,
-        leagueId,
-        teamId,
-        profileId: profile.id,
-        name: trimmed,
+  return withProfile<LeagueTeamSaveResult>({
+    getProfile,
+    run: async ({ profile }) => {
+      // RLS-safe ownership check up front: a forged leagueId never sees a row.
+      const league = await prisma.league.findFirst({
+        where: { id: leagueId, profileId: profile.id },
+        select: { id: true },
       });
-      if (teamRow.status === "invalid") return { status: "invalid" };
+      if (league === null) return { status: "invalid" };
 
-      // Scoped by owner as well as team. Independent of the guard above: this
-      // delete must never be able to widen past the caller's own rows, whatever
-      // teamRow.teamId turns out to hold.
-      await tx.leagueTeamSlot.deleteMany({
-        where: { teamId: teamRow.teamId, profileId: profile.id },
-      });
-      const rows = slotsToRows({ slots });
-      if (rows.length > 0) {
-        await tx.leagueTeamSlot.createMany({
-          data: rows.map((row) => ({
-            teamId: teamRow.teamId,
-            profileId: profile.id,
-            slotType: row.slotType,
-            position: row.position,
-            playerId: row.playerId,
-          })),
+      return prisma.$transaction(async (tx) => {
+        const teamRow = await ensureTeamRow({
+          tx,
+          leagueId,
+          teamId,
+          profileId: profile.id,
+          name: trimmed,
         });
-      }
+        if (teamRow.status === "invalid") return { status: "invalid" };
 
-      const team = await tx.leagueTeam.findUnique({
-        where: { id: teamRow.teamId },
-        include: TEAM_INCLUDE,
+        // Scoped by owner as well as team. Independent of the guard above: this
+        // delete must never be able to widen past the caller's own rows, whatever
+        // teamRow.teamId turns out to hold.
+        await tx.leagueTeamSlot.deleteMany({
+          where: { teamId: teamRow.teamId, profileId: profile.id },
+        });
+        await writeSlots({
+          tx,
+          profileId: profile.id,
+          teams: [{ teamId: teamRow.teamId, slots }],
+        });
+
+        const team = await tx.leagueTeam.findUnique({
+          where: { id: teamRow.teamId },
+          include: TEAM_INCLUDE,
+        });
+        if (team === null) return { status: "error" };
+        return { status: "ok", team: toFantasyTeam({ team }) };
       });
-      if (team === null) return { status: "error" };
-      return { status: "ok", team: toFantasyTeam({ team }) };
-    });
-  } catch {
-    return { status: "error" };
-  }
-};
-
-// Creates one LeagueTeam + its slots inside the given transaction, reusing
-// the same create path as ensureTeamRow/saveLeagueTeam.
-const createLegacyTeam = async ({
-  tx,
-  leagueId,
-  profileId,
-  team,
-  slug,
-}: {
-  tx: Prisma.TransactionClient;
-  leagueId: string;
-  profileId: string;
-  team: FantasyTeam;
-  slug: string;
-}): Promise<void> => {
-  const created = await tx.leagueTeam.create({
-    data: { leagueId, profileId, name: team.name, slug },
-  });
-  const rows = slotsToRows({ slots: team.slots });
-  if (rows.length === 0) return;
-  await tx.leagueTeamSlot.createMany({
-    data: rows.map((row) => ({
-      teamId: created.id,
-      profileId,
-      slotType: row.slotType,
-      position: row.position,
-      playerId: row.playerId,
-    })),
+    },
   });
 };
 
@@ -187,16 +161,28 @@ const createLegacyTeam = async ({
 // bounded by what a person could plausibly have built by hand in the old UI.
 const MAX_LEGACY_IMPORT_TEAMS = 50;
 
-const isValidLegacyTeam = ({ team }: { team: unknown }): boolean => {
-  if (typeof team !== "object" || team === null) return false;
-  const record: Record<string, unknown> = { ...team };
-  return (
-    typeof record.name === "string" &&
-    record.name.trim() !== "" &&
-    isActionArray(record.slots) &&
-    isValidSlots({ slots: record.slots })
-  );
-};
+// The fields the import writes, checked on the untrusted payload. The slot
+// check is the one parseLegacyTeamsPayload narrows the stored payload with.
+const isValidLegacyTeam = ({ team }: { team: unknown }): boolean =>
+  isRecord(team) &&
+  typeof team.name === "string" &&
+  team.name.trim() !== "" &&
+  isActionArray(team.slots) &&
+  isValidSlots({ slots: team.slots });
+
+type LegacyTeamRow = { name: string; slug: string; slots: readonly RosterSlot[] };
+
+// Each team's trimmed name, and a slug no earlier team in the batch holds. The
+// import only writes into an empty league, so the batch is the whole namespace.
+const toLegacyTeamRows = ({ teams }: { teams: readonly FantasyTeam[] }): LegacyTeamRow[] =>
+  teams.reduce<LegacyTeamRow[]>((rows, team) => {
+    const name = team.name.trim();
+    const slug = uniqueSlug({
+      base: teamNameToSlug({ name }),
+      taken: rows.map((row) => row.slug),
+    });
+    return [...rows, { name, slug, slots: team.slots }];
+  }, []);
 
 // One-time import of the pre-league localStorage teams into the caller's
 // default league. Only runs against an empty league — if teams already exist
@@ -206,73 +192,75 @@ export const importLegacyTeams = async ({
 }: {
   teams: readonly FantasyTeam[];
 }): Promise<LegacyTeamsImportResult> => {
-  // Checked before `.length`/`.every` below: those run outside the try block,
-  // so a non-array argument would escape as a 500 rather than a result union.
+  // Checked before `.length`/`.every` below: a non-array argument would
+  // otherwise escape as a 500 rather than a result union.
   if (!isActionArray(teams)) return { status: "error" };
   if (teams.length > MAX_LEGACY_IMPORT_TEAMS) return { status: "error" };
   if (!teams.every((team) => isValidLegacyTeam({ team }))) return { status: "error" };
+  const rows = toLegacyTeamRows({ teams });
 
-  try {
-    const profile = await getProfile();
-    if (profile === null) return { status: "unauthenticated" };
+  return withProfile<LegacyTeamsImportResult>({
+    getProfile,
+    run: async ({ profile }) => {
+      // Pass the already-resolved profile through so ensureDefaultLeague
+      // doesn't re-fetch the session a second time.
+      const league = await ensureDefaultLeague({ profile });
+      if (league === null) return { status: "unauthenticated" };
 
-    // Pass the already-resolved profile through so ensureDefaultLeague
-    // doesn't re-fetch the session a second time.
-    const league = await ensureDefaultLeague({ profile });
-    if (league === null) return { status: "unauthenticated" };
+      return prisma.$transaction(async (tx) => {
+        // Re-checked inside the transaction (not just before it) so two
+        // concurrent imports — a double-invoke or two tabs — can't both read
+        // "empty" and both write; the slug unique constraint is the second
+        // line of defense if this still races across transactions.
+        const existingCount = await tx.leagueTeam.count({ where: { leagueId: league.id } });
+        if (existingCount > 0) return { status: "skipped" };
+        if (rows.length === 0) return { status: "ok" };
 
-    const slugs = teams.reduce<string[]>(
-      (taken, team) => [...taken, uniqueSlug({ base: teamNameToSlug(team.name.trim()), taken })],
-      [],
-    );
-
-    return await prisma.$transaction(async (tx) => {
-      // Re-checked inside the transaction (not just before it) so two
-      // concurrent imports — a double-invoke or two tabs — can't both read
-      // "empty" and both write; the slug unique constraint is the second
-      // line of defense if this still races across transactions.
-      const existingCount = await tx.leagueTeam.count({ where: { leagueId: league.id } });
-      if (existingCount > 0) return { status: "skipped" };
-      if (teams.length === 0) return { status: "ok" };
-
-      await teams.reduce(
-        (previous, team, index) =>
-          previous.then(() =>
-            createLegacyTeam({
-              tx,
-              leagueId: league.id,
-              profileId: profile.id,
-              team: { ...team, name: team.name.trim() },
-              slug: slugs[index] ?? teamNameToSlug(team.name.trim()),
-            }),
-          ),
-        Promise.resolve(),
-      );
-      return { status: "ok" };
-    });
-  } catch {
-    return { status: "error" };
-  }
+        const created = await tx.leagueTeam.createManyAndReturn({
+          data: rows.map(({ name, slug }) => ({
+            leagueId: league.id,
+            profileId: profile.id,
+            name,
+            slug,
+          })),
+          select: { id: true, slug: true },
+        });
+        // Matched back by slug, which is unique within the league, rather than
+        // trusting the order RETURNING happens to hand the rows back in.
+        const teamIdBySlug = new Map(created.map((team) => [team.slug, team.id]));
+        const teamIdOf = ({ slug }: { slug: string }): string => {
+          const teamId = teamIdBySlug.get(slug);
+          if (teamId === undefined) throw new Error(`importLegacyTeams: no row for "${slug}"`);
+          return teamId;
+        };
+        await writeSlots({
+          tx,
+          profileId: profile.id,
+          teams: rows.map(({ slug, slots }) => ({ teamId: teamIdOf({ slug }), slots })),
+        });
+        return { status: "ok" };
+      });
+    },
+  });
 };
 
 export const deleteLeagueTeam = async ({
   teamId,
 }: {
   teamId: string;
-}): Promise<LeagueTeamActionResult> => {
+}): Promise<LeagueTeamDeleteResult> => {
   // Without this the annotation above is the only thing standing between a
   // caller and `where: { id: { not: "" } }`, which turns this single-row
   // delete into "every team I own", cascading their slots with it.
   if (!isActionId(teamId)) return { status: "error" };
 
-  const profile = await getProfile();
-  if (profile === null) return { status: "unauthenticated" };
-  try {
-    // Idempotent: deleting an already-gone or unowned team still reports
-    // ok-deleted, since the end state the caller wants is "team is gone".
-    await prisma.leagueTeam.deleteMany({ where: { id: teamId, profileId: profile.id } });
-    return { status: "ok-deleted" };
-  } catch {
-    return { status: "error" };
-  }
+  return withProfile<LeagueTeamDeleteResult>({
+    getProfile,
+    run: async ({ profile }) => {
+      // Idempotent: deleting an already-gone or unowned team still reports
+      // ok, since the end state the caller wants is "team is gone".
+      await prisma.leagueTeam.deleteMany({ where: { id: teamId, profileId: profile.id } });
+      return { status: "ok" };
+    },
+  });
 };

@@ -1,5 +1,6 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
+import { type ReactNode, use, useEffect, useState } from "react";
 
 import { LeagueList } from "@/components/LeagueList/LeagueList";
 import { MAX_LEAGUES } from "@vision/core/league/constants";
@@ -44,7 +45,7 @@ const league = ({
 beforeEach(() => {
   deleteLeagueMock.mockReset().mockResolvedValue({ status: "ok", activeLeagueId: null });
   setActiveLeagueMock.mockReset().mockResolvedValue({ status: "ok" });
-  refreshMock.mockClear();
+  refreshMock.mockReset();
   pushMock.mockClear();
   useLeaguesStore.setState({
     leagues: [league({ id: "a", name: "Alpha" }), league({ id: "b", name: "Beta" })],
@@ -53,6 +54,40 @@ beforeEach(() => {
 });
 
 afterEach(cleanup);
+
+// A refresh that never lands: suspending on it inside the transition that
+// called `refresh` holds that transition pending, so the optimistic state is
+// observable before the server's new props arrive.
+const unresolvedRefresh = new Promise<never>(() => {});
+
+function AwaitRefresh() {
+  use(unresolvedRefresh);
+  return null;
+}
+
+function PendingRefresh({ children }: { children: ReactNode }) {
+  const [hasRefreshed, setHasRefreshed] = useState(false);
+  useEffect(() => {
+    refreshMock.mockImplementation(() => setHasRefreshed(true));
+  }, []);
+  return (
+    <>
+      {children}
+      {hasRefreshed && <AwaitRefresh />}
+    </>
+  );
+}
+
+const twoLeagues = () => [league({ id: "a", name: "Alpha" }), league({ id: "b", name: "Beta" })];
+
+// Long enough for a transition that was going to settle to have settled.
+const aBeatLater = () => act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+
+const cardOf = ({ name }: { name: string }): HTMLElement => {
+  const card = screen.getByRole("link", { name }).closest("li");
+  if (card === null) throw new Error(`no card for ${name}`);
+  return card;
+};
 
 describe("LeagueList", () => {
   it("renders one card per league with name and scoring-type label", () => {
@@ -118,9 +153,54 @@ describe("LeagueList", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Could not switch leagues — try again.",
     );
-    expect(screen.getByRole("button", { name: "Active" })).toBeInTheDocument();
+    // The optimistic flip falls back to the server's league once the action ends.
+    await waitFor(() =>
+      expect(
+        within(cardOf({ name: "Alpha" })).getByRole("button", { name: "Active" }),
+      ).toBeVisible(),
+    );
     expect(useLeaguesStore.getState().activeLeagueId).toBe("a");
     expect(refreshMock).not.toHaveBeenCalled();
+  });
+
+  it("reverts the active league and shows an alert when setActiveLeague throws", async () => {
+    setActiveLeagueMock.mockReset().mockRejectedValue(new Error("network down"));
+    render(<LeagueList leagues={twoLeagues()} activeLeagueId="a" />);
+    fireEvent.click(screen.getByRole("button", { name: "Set active" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not switch leagues — try again.",
+    );
+    await waitFor(() =>
+      expect(
+        within(cardOf({ name: "Alpha" })).getByRole("button", { name: "Active" }),
+      ).toBeVisible(),
+    );
+    expect(useLeaguesStore.getState().activeLeagueId).toBe("a");
+    expect(refreshMock).not.toHaveBeenCalled();
+  });
+
+  it("shows the new active league while the refresh is on its way", async () => {
+    render(
+      <PendingRefresh>
+        <LeagueList leagues={twoLeagues()} activeLeagueId="a" />
+      </PendingRefresh>,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Set active" }));
+    });
+    await waitFor(() => expect(refreshMock).toHaveBeenCalled());
+    await aBeatLater();
+    expect(within(cardOf({ name: "Beta" })).getByRole("button", { name: "Active" })).toBeVisible();
+    expect(
+      within(cardOf({ name: "Alpha" })).getByRole("button", { name: "Set active" }),
+    ).toBeVisible();
+    expect(useLeaguesStore.getState().activeLeagueId).toBe("b");
+  });
+
+  it("follows the server's active league once it lands", () => {
+    const { rerender } = render(<LeagueList leagues={twoLeagues()} activeLeagueId="a" />);
+    rerender(<LeagueList leagues={twoLeagues()} activeLeagueId="b" />);
+    expect(within(cardOf({ name: "Beta" })).getByRole("button", { name: "Active" })).toBeVisible();
   });
 
   it("requires a second click to delete a league", async () => {
@@ -155,6 +235,38 @@ describe("LeagueList", () => {
     );
     expect(screen.getByRole("link", { name: "Alpha" })).toBeInTheDocument();
     expect(refreshMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the card visible and shows an alert when delete throws", async () => {
+    deleteLeagueMock.mockReset().mockRejectedValue(new Error("network down"));
+    render(<LeagueList leagues={twoLeagues()} activeLeagueId="a" />);
+    const [firstDelete] = screen.getAllByRole("button", { name: /^Delete/ });
+    fireEvent.click(firstDelete);
+    fireEvent.click(screen.getByRole("button", { name: /Confirm delete/ }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not delete the league — try again.",
+    );
+    expect(screen.getByRole("link", { name: "Alpha" })).toBeInTheDocument();
+    expect(refreshMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps a deleted league's card gone while the refresh is on its way", async () => {
+    render(
+      <PendingRefresh>
+        <LeagueList leagues={twoLeagues()} activeLeagueId="a" />
+      </PendingRefresh>,
+    );
+    const [firstDelete] = screen.getAllByRole("button", { name: /^Delete/ });
+    fireEvent.click(firstDelete);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /Confirm delete/ }));
+    });
+    await waitFor(() => expect(refreshMock).toHaveBeenCalled());
+    await aBeatLater();
+    expect(screen.queryByRole("link", { name: "Alpha" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Beta" })).toBeInTheDocument();
+    expect(screen.getByText("1 of 10 leagues")).toBeInTheDocument();
+    expect(useLeaguesStore.getState().leagues.map((entry) => entry.id)).toEqual(["b"]);
   });
 
   it("replaces the Create league link with cap copy at MAX_LEAGUES", () => {

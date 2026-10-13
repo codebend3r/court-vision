@@ -5,21 +5,13 @@ import HomePage from "@/app/page";
 
 afterEach(cleanup);
 
+// SportShellHome's own tests cover the page; this pins the wiring.
 describe("Diamond Vision home page", () => {
-  it("titles the page with the app's name", () => {
+  it("renders Diamond Vision's copy over the baseball descriptor", () => {
     render(<HomePage />);
     expect(screen.getByRole("heading", { level: 1, name: "Diamond Vision" })).toBeInTheDocument();
-  });
-
-  it("says the data is still to come", () => {
-    render(<HomePage />);
-    expect(screen.getByRole("heading", { name: "Player data" })).toBeInTheDocument();
-    expect(screen.getByText("Coming soon")).toBeInTheDocument();
-  });
-
-  it("describes the scoring and roster from the sport descriptor", () => {
-    render(<HomePage />);
-    expect(screen.getByRole("region", { name: "Points scoring" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Roster slots" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Scoring categories: Pitchers" }),
+    ).toBeInTheDocument();
   });
 });

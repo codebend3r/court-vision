@@ -39,6 +39,23 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+// A player with no games yet: every per-game cell and percentage reads "—".
+const zeroStats = {
+  gamesPlayed: 0,
+  pts: 0,
+  reb: 0,
+  ast: 0,
+  stl: 0,
+  blk: 0,
+  fg3m: 0,
+  fg3a: 0,
+  fgm: 0,
+  fga: 0,
+  ftm: 0,
+  fta: 0,
+  tov: 0,
+};
+
 afterEach(cleanup);
 
 describe("PlayersPage", () => {
@@ -53,23 +70,21 @@ describe("PlayersPage", () => {
           teamAbbr: "GSW",
           position: "G",
           nbaPersonId: null,
-          seasonStats: [
-            {
-              gamesPlayed: 10,
-              pts: 250,
-              reb: 50,
-              ast: 60,
-              stl: 15,
-              blk: 5,
-              fg3m: 40,
-              fg3a: 110,
-              fgm: 90,
-              fga: 180,
-              ftm: 30,
-              fta: 40,
-              tov: 20,
-            },
-          ],
+          stats: {
+            gamesPlayed: 10,
+            pts: 250,
+            reb: 50,
+            ast: 60,
+            stl: 15,
+            blk: 5,
+            fg3m: 40,
+            fg3a: 110,
+            fgm: 90,
+            fga: 180,
+            ftm: 30,
+            fta: 40,
+            tov: 20,
+          },
         },
         {
           id: 2,
@@ -79,6 +94,7 @@ describe("PlayersPage", () => {
           teamAbbr: "GSW",
           position: "F",
           nbaPersonId: null,
+          stats: zeroStats,
         },
       ],
       total: 60,
@@ -130,6 +146,7 @@ describe("PlayersPage", () => {
           teamAbbr: "GSW",
           position: "G",
           nbaPersonId: null,
+          stats: zeroStats,
         },
         {
           id: 2,
@@ -139,6 +156,7 @@ describe("PlayersPage", () => {
           teamAbbr: "GSW",
           position: "F",
           nbaPersonId: null,
+          stats: zeroStats,
         },
       ],
       total: 60,
@@ -168,6 +186,7 @@ describe("PlayersPage", () => {
           teamAbbr: "GSW",
           position: "G",
           nbaPersonId: null,
+          stats: zeroStats,
         },
       ],
       total: 1,
@@ -202,6 +221,7 @@ describe("PlayersPage", () => {
           teamAbbr: "GSW",
           position: "G",
           nbaPersonId: null,
+          stats: zeroStats,
         },
       ],
       total: 1,
@@ -280,6 +300,7 @@ describe("PlayersPage", () => {
           teamAbbr: "GSW",
           position: "G",
           nbaPersonId: 201939,
+          stats: zeroStats,
         },
         {
           id: 2,
@@ -289,6 +310,7 @@ describe("PlayersPage", () => {
           teamAbbr: "GSW",
           position: "F",
           nbaPersonId: null,
+          stats: zeroStats,
         },
       ],
       total: 2,

@@ -1,4 +1,9 @@
-import { type SlotDef, type SportDescriptor, type SportKeys } from "#core/sport/types";
+import {
+  type SlotDef,
+  type SlotKind,
+  type SportDescriptor,
+  type SportKeys,
+} from "#core/sport/types";
 import { recordFromKeys } from "#core/util/record";
 
 // The least a roster needs to know about a player: who, and where they play.
@@ -112,6 +117,29 @@ export const resizeSlots = <K extends SportKeys, P extends RosterPlayer>({
       type: meta.type,
       player: existing[index]?.player ?? null,
     }));
+  });
+
+// The order a roster reads in: starters, then bench, then the injured list.
+export const SLOT_KINDS: readonly SlotKind[] = ["starter", "bench", "injured"];
+
+export type SlotGroup<K extends SportKeys, P extends RosterPlayer> = {
+  kind: SlotKind;
+  slots: RosterSlot<K, P>[];
+};
+
+// A roster split into its sections, in reading order, keeping each slot's
+// own order. A kind the roster has no slots of is left out, so the reader
+// never sees an empty heading.
+export const groupSlotsByKind = <K extends SportKeys, P extends RosterPlayer>({
+  sport,
+  slots,
+}: {
+  sport: SportDescriptor<K>;
+  slots: readonly RosterSlot<K, P>[];
+}): SlotGroup<K, P>[] =>
+  SLOT_KINDS.flatMap((kind) => {
+    const kindSlots = slots.filter((slot) => slotMeta({ sport, type: slot.type }).kind === kind);
+    return kindSlots.length === 0 ? [] : [{ kind, slots: kindSlots }];
   });
 
 export const rosteredIds = <K extends SportKeys, P extends RosterPlayer>({
