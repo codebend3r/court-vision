@@ -169,10 +169,17 @@ export const fetchAllAdvancedStats = async (
   return loadPage(null, [], 1);
 };
 
-export const fetchAllPlayers = async (
-  args: { deps?: BdlClientDeps; throttleMs?: number } = {},
-): Promise<BdlPlayer[]> => {
-  const { deps = {}, throttleMs = THROTTLE_MS } = args;
+// `players` is every player Balldontlie has ever listed, each on their last
+// team; `players/active` is only the players on a current NBA roster, rookies
+// included as soon as they sign. Both pages share the player row schema.
+type PlayerEndpoint = "players" | "players/active";
+
+const fetchPlayerPages = async (args: {
+  endpoint: PlayerEndpoint;
+  deps: BdlClientDeps;
+  throttleMs: number;
+}): Promise<BdlPlayer[]> => {
+  const { endpoint, deps, throttleMs } = args;
   const sleep = deps.sleep ?? defaultSleep;
   const onPage = deps.onPage ?? noopOnPage;
   const pageSchema = bdlPaginatedPage(bdlPlayerSchema);
@@ -185,7 +192,7 @@ export const fetchAllPlayers = async (
     const cursorParam: Record<string, BdlParamValue> =
       cursor === null ? {} : { cursor: String(cursor) };
     const raw = await bdlFetch({
-      endpoint: "players",
+      endpoint,
       params: { per_page: PER_PAGE, ...cursorParam },
       apiKey: deps.apiKey,
       fetchImpl: deps.fetchImpl,
@@ -195,7 +202,7 @@ export const fetchAllPlayers = async (
     const combined = acc.concat(page.data);
     const next = page.meta.next_cursor ?? null;
     onPage({
-      endpoint: "players",
+      endpoint,
       page: pageNumber,
       pageRows: page.data.length,
       totalRows: combined.length,
@@ -209,6 +216,20 @@ export const fetchAllPlayers = async (
   };
 
   return loadPage(null, [], 1);
+};
+
+export const fetchAllPlayers = async (
+  args: { deps?: BdlClientDeps; throttleMs?: number } = {},
+): Promise<BdlPlayer[]> => {
+  const { deps = {}, throttleMs = THROTTLE_MS } = args;
+  return fetchPlayerPages({ endpoint: "players", deps, throttleMs });
+};
+
+export const fetchActivePlayers = async (
+  args: { deps?: BdlClientDeps; throttleMs?: number } = {},
+): Promise<BdlPlayer[]> => {
+  const { deps = {}, throttleMs = THROTTLE_MS } = args;
+  return fetchPlayerPages({ endpoint: "players/active", deps, throttleMs });
 };
 
 export const fetchTeamGames = async (args: {

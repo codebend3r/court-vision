@@ -78,14 +78,14 @@ beforeEach(() => {
 });
 
 describe("mapHeadshots", () => {
-  it("queries only players that have game logs", async () => {
+  it("queries players that have game logs or sit on a current roster", async () => {
     mockIndex([]);
     mockFindMany([]);
 
     await mapHeadshots();
 
     expect(findMany).toHaveBeenCalledWith({
-      where: { gameLogs: { some: {} } },
+      where: { OR: [{ gameLogs: { some: {} } }, { isActive: true }] },
       select: { id: true, fullName: true },
     });
   });

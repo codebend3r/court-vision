@@ -8,6 +8,7 @@ import {
 } from "@/lib/stats/inputs";
 import {
   findSeasonAggregateLogs,
+  markActiveRoster,
   replaceAdvancedGameLogsForGames,
   replaceGameLogsForGames,
   upsertAdvancedGameLogs,
@@ -20,7 +21,10 @@ import {
 // does not hoist `vi.mock`, so the assertions below reach the mock through this
 // binding instead of re-importing `@/lib/prisma`.
 const client = {
-  player: { upsert: vi.fn() },
+  player: {
+    upsert: vi.fn(),
+    updateMany: vi.fn(() => Promise.resolve({ count: 0 })),
+  },
   playerSeasonStats: { upsert: vi.fn() },
   playerGameLog: {
     deleteMany: vi.fn(() => Promise.resolve({ count: 0 })),
@@ -32,10 +36,10 @@ const client = {
     createMany: vi.fn(() => Promise.resolve({ count: 0 })),
   },
   // Support both transaction forms: the array form (batched upserts) resolves
-  // with the operations it was handed, and the interactive callback form runs
-  // against this same mock client.
+  // with the results of the operations it was handed, and the interactive
+  // callback form runs against this same mock client.
   $transaction: vi.fn((arg: ((tx: unknown) => Promise<unknown>) | unknown[]) =>
-    typeof arg === "function" ? arg(client) : Promise.resolve(arg),
+    typeof arg === "function" ? arg(client) : Promise.all(arg),
   ),
 };
 
@@ -151,6 +155,32 @@ describe("upsertPlayers", () => {
       expect.any(Array),
       expect.objectContaining({ timeout: expect.any(Number) }),
     );
+  });
+});
+
+describe("markActiveRoster", () => {
+  it("clears players who left the active list and flags everyone on it", async () => {
+    client.player.updateMany
+      .mockResolvedValueOnce({ count: 4 })
+      .mockResolvedValueOnce({ count: 3 });
+
+    const count = await markActiveRoster({ playerIds: [1, 2, 3] });
+
+    expect(count).toBe(3);
+    expect(client.player.updateMany).toHaveBeenCalledWith({
+      where: { isActive: true, id: { notIn: [1, 2, 3] } },
+      data: { isActive: false },
+    });
+    expect(client.player.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: [1, 2, 3] } },
+      data: { isActive: true },
+    });
+    expect(client.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses an empty active list instead of emptying every roster", async () => {
+    await expect(markActiveRoster({ playerIds: [] })).rejects.toThrow(/empty active roster/);
+    expect(client.player.updateMany).not.toHaveBeenCalled();
   });
 });
 

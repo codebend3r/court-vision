@@ -4,7 +4,10 @@ name: 🌙 Nightly stats sync
 # players who appeared, their game logs and advanced logs for those games, and
 # their season lines. Team stats come along for free; the teams page sums them
 # from the game logs. Rebuilding every player's stats stays a manual job
-# (`bun run sync:bdl`).
+# (`bun run sync:bdl`). Then it refreshes current rosters from Balldontlie's
+# active-player list (`bun run sync:players`), so trades, signings, waivers and
+# rookies reach the team pages without waiting for a game. That step runs even
+# when there were no games, and even if the stats step failed.
 #
 # Cron runs in UTC and has no time zone, so both 07:00 UTC (3am EDT) and
 # 08:00 UTC (3am EST) are scheduled and the gate step lets only the one that
@@ -98,6 +101,16 @@ jobs:
             grep -E "^Nightly sync|^No regular-season" sync.log || true
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: 👥 Refresh rosters
+        if: ${{ !cancelled() && steps.gate.outputs.run == 'true' }}
+        env:
+          BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -o pipefail
+          bun run sync:players 2>&1 | tee rosters.log
+          grep -E "^Roster sync" rosters.log >> "$GITHUB_STEP_SUMMARY" || true
+
       - name: 🚨 Sync failed
         if: failure()
-        run: echo "💥 The nightly stats sync failed; check the Sync step above." >> "$GITHUB_STEP_SUMMARY"
+        run: echo "💥 The nightly sync failed; check the Sync and Refresh rosters steps above." >> "$GITHUB_STEP_SUMMARY"

@@ -8,7 +8,13 @@ import {
 import { BdlPlayer } from "@/lib/balldontlie/schemas";
 import { aggregateSeasonStats, toPlayerInput } from "@/lib/balldontlie/transform";
 import { GameLogInput } from "@/lib/stats/inputs";
-import { SyncSummary, upsertGameLogs, upsertPlayers, upsertSeasonStats } from "@/lib/stats/persist";
+import {
+  SyncSummary,
+  markActiveRoster,
+  upsertGameLogs,
+  upsertPlayers,
+  upsertSeasonStats,
+} from "@/lib/stats/persist";
 
 import { generateGameLogs } from "@/lib/demo/generate";
 import { normalizeName } from "@/lib/demo/names";
@@ -70,6 +76,11 @@ export async function seedDemo(
 
   const gameLogs = await upsertGameLogs(gameLogInputs);
   const seasonStats = await upsertSeasonStats(aggregateSeasonStats(gameLogInputs));
+  // Team rosters list active players only, so the profiled players are the
+  // demo's rosters.
+  await markActiveRoster({
+    playerIds: [...new Set(gameLogInputs.map((log) => log.playerId))],
+  });
   // The demo seed generates box scores only; advanced metrics come from the
   // Balldontlie sync.
   return { players, seasonStats, gameLogs, advancedGameLogs: 0 };
