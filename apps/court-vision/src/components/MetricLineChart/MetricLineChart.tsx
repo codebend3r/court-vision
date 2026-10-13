@@ -15,8 +15,7 @@ import {
 } from "recharts";
 
 import { isMetricPoint, type MetricPoint } from "@vision/core/series/metricPoint";
-import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
-import { getChartChrome } from "@vision/ui/charts/palette";
+import { CHART_CHROME } from "@vision/ui/charts/palette";
 import { TeamMatchup } from "@/components/TeamMatchup/TeamMatchup";
 
 import styles from "@/components/MetricLineChart/MetricLineChart.module.scss";
@@ -167,8 +166,7 @@ export function MetricLineChart<K extends string>({
   endLabels = true,
   height = 320,
 }: MetricLineChartProps<K>) {
-  const { theme } = useTheme();
-  const chrome = getChartChrome({ theme });
+  const chrome = CHART_CHROME;
 
   // A line ends at its last recorded game, which a run of trailing DNPs or
   // missing rows can put well before the final x tick; the label belongs
@@ -227,7 +225,7 @@ export function MetricLineChart<K extends string>({
                 ? renderEndLabel({
                     label: meta.label,
                     lastIndex: lastIndexOf(meta.key),
-                    fill: chrome.endLabel,
+                    fill: chrome.axis,
                   })
                 : undefined
             }

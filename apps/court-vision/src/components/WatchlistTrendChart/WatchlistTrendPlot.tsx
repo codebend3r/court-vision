@@ -13,10 +13,9 @@ import {
   type TooltipPayloadEntry,
 } from "recharts";
 
-import { getChartChrome } from "@vision/ui/charts/palette";
+import { CHART_CHROME } from "@vision/ui/charts/palette";
 import type { ChartRow } from "@/components/WatchlistTrendChart/WatchlistTrendChart";
 import { usePrefersReducedMotion } from "@vision/ui/hooks/usePrefersReducedMotion";
-import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 
 import styles from "@/components/WatchlistTrendChart/WatchlistTrendChart.module.scss";
 
@@ -103,8 +102,7 @@ const endLabelRenderer = ({
 // library stays off the home page's critical path. It fills the plot box its
 // parent sizes, the same box the loading placeholder holds.
 export function WatchlistTrendPlot({ rows, lines }: WatchlistTrendPlotProps) {
-  const { theme } = useTheme();
-  const chrome = getChartChrome({ theme });
+  const chrome = CHART_CHROME;
   const prefersReducedMotion = usePrefersReducedMotion();
 
   return (

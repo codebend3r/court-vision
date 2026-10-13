@@ -20,13 +20,10 @@ export type ThemeMeta = {
   label: string;
   // One line on what the theme is for, shown on the settings card.
   note: string;
-  // Literal palette samples. Swatches preview every theme at once, so these
-  // cannot read the live custom properties of the active theme.
-  bg: string;
-  surface: string;
-  accent: string;
-  accentStrong: string;
-  text: string;
+  // Whether the theme's background is dark or light, for anything that must
+  // contrast with it (a chart line, say). Its colors live in globals.scss
+  // under `[data-theme]`; a swatch previews them by carrying the attribute.
+  tone: "dark" | "light";
 };
 
 export const THEME_META: readonly ThemeMeta[] = [
@@ -34,60 +31,36 @@ export const THEME_META: readonly ThemeMeta[] = [
     id: "dark",
     label: "Dark",
     note: "The original navy palette, tuned for evening research.",
-    bg: "#131629",
-    surface: "#1c2138",
-    accent: "#3fc3e8",
-    accentStrong: "#ff2e7e",
-    text: "#e8eaf6",
+    tone: "dark",
   },
   {
     id: "light",
     label: "Light",
     note: "Bright rooms and daytime stat reading.",
-    bg: "#f7f8fc",
-    surface: "#ffffff",
-    accent: "#0b749a",
-    accentStrong: "#d6206a",
-    text: "#171b2e",
+    tone: "light",
   },
   {
     id: "high-contrast",
     label: "High contrast",
     note: "AAA text on pure black for maximum legibility.",
-    bg: "#000000",
-    surface: "#0b0e1a",
-    accent: "#6fe3ff",
-    accentStrong: "#ff74ae",
-    text: "#ffffff",
+    tone: "dark",
   },
   {
     id: "colorblind-safe",
     label: "Colorblind-safe",
     note: "Blue and amber encoding — no red-green pairing.",
-    bg: "#0f1220",
-    surface: "#191d2e",
-    accent: "#5aa9ff",
-    accentStrong: "#ffb02e",
-    text: "#eef1f8",
+    tone: "dark",
   },
   {
     id: "amber-crt",
     label: "Amber CRT",
     note: "Warm phosphor glow for low-light drafting.",
-    bg: "#120d05",
-    surface: "#1d1409",
-    accent: "#ffa726",
-    accentStrong: "#ff7043",
-    text: "#ffd694",
+    tone: "dark",
   },
   {
     id: "team-accent",
     label: "Team accent",
     note: "The accent follows your club's primary color.",
-    bg: "#14161c",
-    surface: "#1e222b",
-    accent: "#ff3b5c",
-    accentStrong: "#ffd166",
-    text: "#f1f2f6",
+    tone: "dark",
   },
 ];

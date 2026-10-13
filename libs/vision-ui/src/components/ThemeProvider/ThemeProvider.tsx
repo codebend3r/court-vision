@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, createContext, useContext, useEffect, useRef, useState } from "react";
+import { type ReactNode, createContext, useContext, useEffect, useState } from "react";
 
 import { type Theme, isTheme } from "#ui/theme/themes";
 
@@ -8,7 +8,6 @@ export type { Theme } from "#ui/theme/themes";
 
 export type ThemeContextValue = {
   theme: Theme;
-  mounted: boolean;
   setTheme: (args: { theme: Theme }) => void;
 };
 
@@ -16,17 +15,12 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("dark");
-  const [mounted, setMounted] = useState(false);
-  const hasSyncedStampedTheme = useRef(false);
 
+  // ThemeInitScript stamped data-theme on <html> before first paint; adopt it
+  // once mounted, since the server render can't read it.
   useEffect(() => {
-    if (hasSyncedStampedTheme.current) {
-      return;
-    }
-    hasSyncedStampedTheme.current = true;
     const stamped = document.documentElement.dataset.theme;
     setThemeState(isTheme(stamped) ? stamped : "dark");
-    setMounted(true);
   }, []);
 
   const setTheme = ({ theme: next }: { theme: Theme }) => {
@@ -35,9 +29,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeState(next);
   };
 
-  return (
-    <ThemeContext.Provider value={{ theme, mounted, setTheme }}>{children}</ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
 }
 
 export const useTheme = (): ThemeContextValue => {

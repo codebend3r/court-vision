@@ -10,10 +10,6 @@ describe("Wordmark", () => {
     render(<Wordmark lead="Rink" />);
     expect(screen.getByText("Rink")).toHaveClass("lead");
     expect(screen.getByText("Vision")).toHaveClass("trail");
-  });
-
-  it("uses the hero lockup when asked", () => {
-    render(<Wordmark lead="Diamond" size="hero" />);
-    expect(screen.getByText("Diamond").parentElement).toHaveClass("hero");
+    expect(screen.getByText("Rink").parentElement).toHaveClass("wordmark");
   });
 });

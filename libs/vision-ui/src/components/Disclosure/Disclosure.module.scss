@@ -1,0 +1,5 @@
+@use "@vision/ui/styles/mixins" as *;
+
+.disclosure {
+  @include disclosure;
+}

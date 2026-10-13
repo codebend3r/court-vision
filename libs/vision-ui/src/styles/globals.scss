@@ -3,8 +3,17 @@
 // these tokens (see CLAUDE.md CSS rules).
 @use "@vision/ui/styles/mixins" as *;
 
-:root {
-  // Color
+// Theme palettes. Each theme is a block of color tokens on `[data-theme]`,
+// registered in theme/themes.ts. The dark palette is also the unstamped
+// default, so its block matches :root too. Every theme block shares this
+// block's specificity (0,1,0) and comes after it, so on <html> the stamped
+// theme wins by source order. Any other element carrying `data-theme` (the
+// theme swatches) re-inks itself and its subtree in that theme's colors
+// without touching the document. Only color tokens live in these blocks:
+// geometry and type below stay on :root so a scoped `data-theme` never resets
+// them (or the `data-font-scale` preference).
+:root,
+[data-theme="dark"] {
   --color-bg: #131629;
   --color-surface: #1c2138;
   --color-border: #2a3050;
@@ -15,14 +24,25 @@
   --color-highlight: #ff9f3c;
   --color-win: #3dd68c;
   --color-loss: #ff5c6a;
-  // Extrusion color for retro long-shadow lettering (see long-text-shadow in mixins).
+  // Extrusion color for the retro lettering and keycap shadows (see
+  // retro-extrude in mixins).
   --color-retro-shadow: color-mix(in srgb, var(--color-accent) 55%, var(--color-bg));
-  // Purple accent (animated gradient border, TeamBuilder card view).
+  // Purple accent (TeamBuilder's animated gradient border and card view).
   --color-accent-purple: #9b7dff;
   // Games a player missed, on the stat chart and the game log.
   --color-chart-dnp: #f4d35e;
-  --color-chart-dnp-muted: rgb(244 211 94 / 65%);
 
+  // Form controls
+  --color-control-bg: #10142a;
+  --color-control-border: var(--color-border);
+  --color-control-accent: var(--color-accent);
+  --color-control-placeholder: #6a7194;
+  --color-focus-ring: rgb(63 195 232 / 32%);
+
+  color-scheme: dark;
+}
+
+:root {
   // Retro depth geometry. A theme may only redefine color tokens — shadow
   // offsets, spacing, radii, and the type scale are hard constants shared by
   // every theme, which is what keeps the look consistent across all six.
@@ -45,7 +65,7 @@
     drop-shadow(1px 1px 0 var(--color-retro-shadow));
 
   // Table row rhythm. Every table cell pads with these rather than hardcoded
-  // spacing, so density is a one-attribute change on the root.
+  // spacing, so a table density setting would be a two-token change here.
   --row-y: var(--space-3);
   --row-x: var(--space-4);
 
@@ -91,18 +111,11 @@
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   // Form controls
-  --color-control-bg: #10142a;
-  --color-control-border: var(--color-border);
-  --color-control-accent: var(--color-accent);
-  --color-control-placeholder: #6a7194;
-  --color-focus-ring: rgb(63 195 232 / 32%);
   --control-height: 2.25rem;
   --control-size: 1.25rem;
   --control-radius: var(--radius-sm);
   --focus-ring-width: 3px;
   --control-disabled-opacity: 0.5;
-
-  color-scheme: dark;
 }
 
 // User font-size preference (settings → appearance). Stamped on <html> by the
@@ -130,23 +143,6 @@
   --font-size-md: 1.25rem;
   --font-size-lg: 1.5rem;
   --font-size-xl: 2.25rem;
-}
-
-// Table density. Internal for now — no settings UI stamps this yet, so every
-// page runs at the "comfortable" defaults declared in :root above.
-[data-density="compact"] {
-  --row-y: var(--space-2);
-  --row-x: var(--space-3);
-}
-
-[data-density="comfortable"] {
-  --row-y: var(--space-3);
-  --row-x: var(--space-4);
-}
-
-[data-density="roomy"] {
-  --row-y: var(--space-4);
-  --row-x: var(--space-6);
 }
 
 *,
@@ -216,7 +212,7 @@ h1 {
   @include retro-extrude;
 }
 
-:root[data-theme="light"] {
+[data-theme="light"] {
   --color-bg: #f7f8fc;
   --color-surface: #fff;
   --color-border: #dfe3f0;
@@ -240,7 +236,6 @@ h1 {
   // The dark DNP yellow is 1.47:1 on a light surface, under the 3:1 floor for
   // a non-text indicator.
   --color-chart-dnp: #8a6d00;
-  --color-chart-dnp-muted: rgb(138 109 0 / 65%);
 
   // Light needs a literal extrusion color: the :root color-mix against a dark
   // --color-bg produces a shadow darker than the text it sits behind.
@@ -250,7 +245,7 @@ h1 {
 }
 
 // WCAG AAA body text on pure black.
-:root[data-theme="high-contrast"] {
+[data-theme="high-contrast"] {
   --color-bg: #000;
   --color-surface: #0b0e1a;
   --color-border: #7d86b4;
@@ -276,7 +271,7 @@ h1 {
 }
 
 // Blue/amber encoding — no red-green pairing anywhere.
-:root[data-theme="colorblind-safe"] {
+[data-theme="colorblind-safe"] {
   --color-bg: #0f1220;
   --color-surface: #191d2e;
   --color-border: #2e3650;
@@ -302,7 +297,7 @@ h1 {
 }
 
 // Low-light drafting.
-:root[data-theme="amber-crt"] {
+[data-theme="amber-crt"] {
   --color-bg: #120d05;
   --color-surface: #1d1409;
   --color-border: #402f14;
@@ -330,7 +325,7 @@ h1 {
 // team picker overrides --color-accent and --color-retro-shadow (a darkened,
 // desaturated form of the accent, ~40% lightness) from the selected team's
 // primary color. Everything else stays fixed.
-:root[data-theme="team-accent"] {
+[data-theme="team-accent"] {
   --color-bg: #14161c;
   --color-surface: #1e222b;
   --color-border: #333844;
@@ -350,17 +345,6 @@ h1 {
   --color-retro-shadow: #6b1c2c;
 
   color-scheme: dark;
-}
-
-// Registered angle so the animated-gradient-border mixin (mixins.scss) can
-// spin its conic gradient — a plain custom property can't be animated. The
-// companion `cv-border-spin` keyframes must be declared inside each consuming
-// CSS module (via `cv-border-spin-keyframes`), because CSS Modules scopes the
-// animation name and a global keyframes wouldn't match the scoped reference.
-@property --cv-border-angle {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
 }
 
 // Respect users who ask the OS to minimize motion: collapse every animation

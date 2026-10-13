@@ -1,7 +1,40 @@
 @use "@/styles/mixins" as *;
 
-// Scoped keyframes for the roster-row / search-card animated gradient border.
-@include cv-border-spin-keyframes;
+// Registered angle so the animated gradient border can spin its conic
+// gradient: a plain custom property can't be animated.
+@property --cv-border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+// Declared here rather than globally because CSS Modules scopes both the
+// @keyframes name and the animation reference to this module.
+@keyframes cv-border-spin {
+  to {
+    --cv-border-angle: 360deg;
+  }
+}
+
+// Rotating blue→purple→pink conic-gradient border for the roster rows' and
+// search cards' hover/focus states. Uses the double-background trick (surface
+// via padding-box, gradient via border-box) so rounded corners survive; apply
+// to an element that already has a 1px border.
+@mixin animated-gradient-border {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    conic-gradient(
+        from var(--cv-border-angle),
+        var(--color-accent),
+        var(--color-accent-purple),
+        var(--color-accent-strong),
+        var(--color-accent-purple),
+        var(--color-accent)
+      )
+      border-box;
+  animation: cv-border-spin 2.5s linear infinite;
+}
 
 .builder {
   display: grid;

@@ -17,7 +17,7 @@
   background: transparent;
   color: var(--color-text-muted);
   cursor: help;
-  transition: color 160ms ease;
+  transition: color var(--duration-fast) ease;
 
   &:hover,
   &:focus-visible {
@@ -39,9 +39,9 @@
   visibility: hidden;
   transform: translate(-50%, var(--space-1));
   transition:
-    opacity 140ms ease,
-    transform 140ms ease,
-    visibility 140ms ease;
+    opacity var(--duration-fast) ease,
+    transform var(--duration-fast) ease,
+    visibility var(--duration-fast) ease;
   pointer-events: none;
 }
 
@@ -50,18 +50,4 @@
   opacity: 1;
   visibility: visible;
   transform: translate(-50%, 0);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bubble {
-    transform: translateX(-50%);
-    transition:
-      opacity 140ms ease,
-      visibility 140ms ease;
-  }
-
-  .wrapper:hover .bubble,
-  .wrapper:focus-within .bubble {
-    transform: translateX(-50%);
-  }
 }

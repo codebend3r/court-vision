@@ -7,7 +7,9 @@ import styles from "#ui/components/ThemeSwatches/ThemeSwatches.module.scss";
 
 // The header theme strip: six 20px buttons, each a 135° diagonal split of
 // that theme's background and accent, with the active one outlined. Replaces
-// the old two-state ThemeToggle.
+// the old two-state ThemeToggle. The split is an inner chip carrying the
+// theme's `data-theme`, so it reads that theme's tokens while the button's own
+// border and outline stay in the page's theme.
 export function ThemeSwatches() {
   const { theme, setTheme } = useTheme();
 
@@ -18,12 +20,13 @@ export function ThemeSwatches() {
           key={meta.id}
           type="button"
           className={styles.swatch}
-          style={{ background: `linear-gradient(135deg, ${meta.bg} 50%, ${meta.accent} 50%)` }}
           aria-label={`Switch to ${meta.label} theme`}
           aria-pressed={theme === meta.id}
           title={meta.label}
           onClick={() => setTheme({ theme: meta.id })}
-        />
+        >
+          <span className={styles.chip} data-theme={meta.id} aria-hidden="true" />
+        </button>
       ))}
     </div>
   );

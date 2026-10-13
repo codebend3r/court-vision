@@ -1,6 +1,6 @@
+// A flat dot under each missed game: no glow, the fill alone marks it.
 .dnpMarker {
   fill: var(--color-chart-dnp);
-  filter: drop-shadow(0 0 3px var(--color-chart-dnp-muted));
 }
 
 .tooltip {

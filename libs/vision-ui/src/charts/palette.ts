@@ -3,7 +3,6 @@ import { type Theme } from "#ui/theme/themes";
 export type ChartChrome = {
   grid: string;
   axis: string;
-  endLabel: string;
 };
 
 // Seven categorical hues per theme, in fixed slot order.
@@ -29,20 +28,52 @@ const SERIES_BY_THEME: Record<Theme, readonly string[]> = {
   "team-accent": DARK_SERIES,
 };
 
-// grid mirrors each theme's --color-border; axis/endLabel its --color-text-muted.
-const CHROME_BY_THEME: Record<Theme, ChartChrome> = {
-  dark: { grid: "#2a3050", axis: "#8b93b5", endLabel: "#8b93b5" },
-  light: { grid: "#dfe3f0", axis: "#5a6280", endLabel: "#5a6280" },
-  "high-contrast": { grid: "#7d86b4", axis: "#cfd4ec", endLabel: "#cfd4ec" },
-  "colorblind-safe": { grid: "#2e3650", axis: "#98a1bd", endLabel: "#98a1bd" },
-  "amber-crt": { grid: "#402f14", axis: "#b58c50", endLabel: "#b58c50" },
-  "team-accent": { grid: "#333844", axis: "#9aa0b2", endLabel: "#9aa0b2" },
+// Chart chrome reads the live theme tokens, so it re-inks with the theme on
+// its own: grid lines and axis rules in the border color; ticks, axis labels,
+// reference lines and line-end labels in the muted text color.
+export const CHART_CHROME: ChartChrome = {
+  grid: "var(--color-border)",
+  axis: "var(--color-text-muted)",
 };
+
+// Axis styling every chart shares: muted 12px tick labels, with the axis rule
+// drawn in either the grid colour (the player charts) or the muted text
+// colour (the trend charts). Spread it onto an XAxis or YAxis.
+export const chartAxisProps = ({
+  rule,
+}: {
+  rule: keyof ChartChrome;
+}): { stroke: string; tick: { fill: string; fontSize: number } } => ({
+  stroke: CHART_CHROME[rule],
+  tick: { fill: CHART_CHROME.axis, fontSize: 12 },
+});
+
+// Five solid hues for the watchlist trend charts, one per starred player, in
+// fixed order. Validated with the dataviz six checks on adjacent pairs:
+//   dark  — all checks pass; worst CVD ΔE 8.4 (protan), above the 8 target.
+//   light — darker steps so every 3px line clears 3:1 on white; worst CVD
+//           ΔE 6.6 sits in the 6–8 floor band, which is legal here because each
+//           line is also directly labelled at its right end and named in the
+//           legend, so identity never rests on colour alone.
+const DARK_TREND_SERIES = ["#3987e5", "#c98500", "#199e70", "#9085e9", "#d55181"] as const;
+
+// The four newer themes share the dark series (all dark-surfaced); each line is
+// directly labelled and named in the legend, so identity never rests on
+// colour alone.
+const TREND_SERIES_BY_THEME: Record<Theme, readonly string[]> = {
+  dark: DARK_TREND_SERIES,
+  light: ["#2a78d6", "#a86a00", "#0f7d55", "#4a3aa7", "#c2185b"],
+  "high-contrast": DARK_TREND_SERIES,
+  "colorblind-safe": DARK_TREND_SERIES,
+  "amber-crt": DARK_TREND_SERIES,
+  "team-accent": DARK_TREND_SERIES,
+};
+
+export const getTrendPalette = ({ theme }: { theme: Theme }): readonly string[] =>
+  TREND_SERIES_BY_THEME[theme];
 
 // The categorical series palette, in fixed slot order. Every player-page
 // chart assigns hues from it by position within its own panel, so a metric
 // keeps its colour however the neighbouring chips are toggled.
 export const getSeriesPalette = ({ theme }: { theme: Theme }): readonly string[] =>
   SERIES_BY_THEME[theme];
-
-export const getChartChrome = ({ theme }: { theme: Theme }): ChartChrome => CHROME_BY_THEME[theme];
