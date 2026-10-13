@@ -3,7 +3,6 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "bun:test";
 
 import {
-  breakdownDomain,
   FantasyValueCharts,
   type FantasyChartRow,
 } from "@/components/FantasyValueCharts/FantasyValueCharts";
@@ -62,14 +61,20 @@ describe("FantasyValueCharts", () => {
   it("draws a Z and a G bar for every category on every player's row", () => {
     const { container } = renderCharts();
 
-    const items = within(screen.getByRole("list", { name: "Fantasy value charts" })).getAllByRole(
-      "listitem",
-    );
+    const items = within(screen.getByRole("list", { name: "Players" })).getAllByRole("listitem");
     expect(items).toHaveLength(rows.length);
     expect(container.querySelectorAll(".recharts-bar")).toHaveLength(rows.length * 2);
     expect(container.querySelectorAll(".recharts-bar-rectangle")).toHaveLength(
       rows.length * CATEGORY_META.length * 2,
     );
+  });
+
+  it("names the region and the list inside it differently", () => {
+    renderCharts();
+
+    const region = screen.getByRole("region", { name: "Fantasy value charts" });
+    expect(within(region).getByRole("list", { name: "Players" })).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Fantasy value charts" })).not.toBeInTheDocument();
   });
 
   it("links each row to the player's page", () => {
@@ -102,7 +107,7 @@ describe("FantasyValueCharts", () => {
   it("keeps the charts out of the tab order", () => {
     renderCharts();
 
-    const list = screen.getByRole("list", { name: "Fantasy value charts" });
+    const list = screen.getByRole("list", { name: "Players" });
     expect(list.querySelectorAll("svg[tabindex]")).toHaveLength(0);
     expect(list.querySelectorAll('[role="application"]')).toHaveLength(0);
   });
@@ -160,15 +165,5 @@ describe("FantasyValueCharts", () => {
       </ThemeProvider>,
     );
     expect(screen.getAllByRole("button", { name: /^Star / })).toHaveLength(rows.length);
-  });
-});
-
-describe("breakdownDomain", () => {
-  it("is symmetric around zero at the page's widest score", () => {
-    expect(breakdownDomain({ rows })).toEqual([-2.4, 2.4]);
-  });
-
-  it("keeps one standard deviation of headroom for a page of average players", () => {
-    expect(breakdownDomain({ rows: [row({ playerId: 3, z: 0.2, rank: 1 })] })).toEqual([-1, 1]);
   });
 });

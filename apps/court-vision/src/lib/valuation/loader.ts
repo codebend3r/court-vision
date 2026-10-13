@@ -1,22 +1,19 @@
 import { unstable_cache } from "next/cache";
 import { z } from "zod";
 
+import { PLAYERS_CACHE_OPTIONS } from "@/lib/cache";
 import { prisma } from "@/lib/prisma";
+import { playerIdentitySchema } from "@/lib/players/identity";
 import { gamesForRange, type PlayerGameRange } from "@/lib/players/searchParams";
+import { SEASON_TYPE } from "@/lib/stats/season";
 import { latestSeason } from "@/lib/valuation/season";
 import { type FantasyStatLine } from "@/lib/valuation/types";
 
 // One aggregated stat line per player, flat: totals, second moments (`sq*`
 // sums of squares, `cross*` made-attempt products) and identity. Integer
 // sums are cast to int4 in SQL so they arrive as plain numbers.
-const windowLineSchema = z.object({
+const windowLineSchema = playerIdentitySchema.extend({
   playerId: z.number(),
-  firstName: z.string(),
-  lastName: z.string(),
-  fullName: z.string(),
-  teamAbbr: z.string().nullable(),
-  position: z.string().nullable(),
-  nbaPersonId: z.number().nullable(),
   gamesPlayed: z.number(),
   minutes: z.number(),
   pts: z.number(),
@@ -127,7 +124,7 @@ const fetchWindowLines = async ({
              gl.blk, gl.fg3m, gl.tov, gl.fgm, gl.fga, gl.ftm, gl.fta,
              row_number() OVER (PARTITION BY gl."playerId" ORDER BY gl."gameDate" DESC) AS rn
       FROM "PlayerGameLog" gl
-      WHERE gl.season = ${season} AND gl."seasonType" = 'Regular Season'
+      WHERE gl.season = ${season} AND gl."seasonType" = ${SEASON_TYPE}
     ), windowed AS (
       SELECT "playerId",
              (count(*) FILTER (WHERE minutes > 0))::int AS "gamesPlayed",
@@ -178,7 +175,7 @@ const cachedPool = unstable_cache(
   // v2: lines carry nested `stats`/`playingTime`; a cached flat line from
   // before the sport-engine refactor must never be read as the new shape.
   ["fantasy:pool:v2"],
-  { revalidate: 300, tags: ["players"] },
+  PLAYERS_CACHE_OPTIONS,
 );
 
 // The Fantasy tab and the home/team surfaces value the latest season; the

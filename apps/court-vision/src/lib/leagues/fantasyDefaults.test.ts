@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import { DEFAULT_POINTS_SCORING } from "@vision/sport-basketball/engine";
 
-import { buildLeagueSeed, configFromSeed, SORT_KEY_BY_METHOD } from "@/lib/leagues/fantasyDefaults";
+import { buildLeagueSeed, configFromSeed } from "@/lib/leagues/fantasyDefaults";
 import { type LeagueSummary } from "@/lib/leagues/types";
 
 const base: LeagueSummary = {
@@ -43,8 +43,8 @@ describe("buildLeagueSeed", () => {
       scoringConfig: { categories: ["pts", "reb"], weights: { pts: 1.5 } },
     };
     const seed = buildLeagueSeed({ league, preferredFormula: null, presentKeys: new Set() });
-    expect(seed.w?.z).toEqual({ pts: 1.5 });
-    expect(seed.w?.sim).toEqual({ pts: 1.5 });
+    expect(seed.w?.z ?? null).toEqual({ pts: 1.5 });
+    expect(seed.w?.sim ?? null).toEqual({ pts: 1.5 });
   });
 
   it("seeds the scoring table and points sort for a points league", () => {
@@ -54,7 +54,7 @@ describe("buildLeagueSeed", () => {
       scoringConfig: { scoring: { pts: 1, reb: 2, ast: 1.5, stl: 3, blk: 3, fg3m: 0.5, tov: -1 } },
     };
     const seed = buildLeagueSeed({ league, preferredFormula: null, presentKeys: new Set() });
-    expect(seed.s?.reb).toBe(2);
+    expect(seed.s?.reb ?? null).toBe(2);
     expect(seed.sort).toBe("points");
   });
 
@@ -64,7 +64,7 @@ describe("buildLeagueSeed", () => {
       preferredFormula: "positional",
       presentKeys: new Set(),
     });
-    expect(seed.sort).toBe(SORT_KEY_BY_METHOD.positional);
+    expect(seed.sort).toBe("pos");
   });
 
   it("returns an empty seed without a league beyond the formula sort", () => {

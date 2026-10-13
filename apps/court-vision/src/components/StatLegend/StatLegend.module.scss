@@ -11,32 +11,21 @@
   padding: var(--space-3) var(--space-4);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
-  cursor: pointer;
-  list-style: none;
-
-  &::-webkit-details-marker {
-    display: none;
-  }
 
   &:hover {
     color: var(--color-text);
   }
 }
 
-.chevron {
-  color: var(--color-accent);
-  font-size: var(--font-size-xs);
-  transition: transform var(--duration-fast) var(--ease-out);
-}
-
-.legend[open] .chevron {
-  transform: rotate(90deg);
-}
-
 .grid {
   display: grid;
   margin: 0;
   padding: 0 var(--space-4) var(--space-4);
+
+  &[data-columns="true"] {
+    grid-template-columns: repeat(auto-fit, minmax(28rem, 1fr));
+    column-gap: var(--space-8);
+  }
 }
 
 .row {
@@ -69,20 +58,6 @@
   }
 }
 
-.formula {
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  background: var(--color-control-bg);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
-.blocked {
-  font-size: var(--font-size-xs);
-  color: var(--color-highlight);
-}
-
 // Plain-language counterpart to the technical description.
 .why {
   color: var(--color-text-muted);
@@ -90,4 +65,14 @@
 
 .whyLabel {
   color: var(--color-accent);
+}
+
+// Same recessed chip as the header tooltip's formula line.
+.formula {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-control-bg);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }

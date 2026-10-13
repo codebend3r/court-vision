@@ -3,37 +3,34 @@
 import Link from "next/link";
 import { type ReactNode } from "react";
 
-import { type FantasyTableRow } from "@/components/FantasyValueTable/FantasyValueTable";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import {
-  formatSigned,
+  METHOD_KEYS,
   METHOD_LABELS,
-  type MethodKey,
+  methodColors,
+  type MethodColors,
 } from "@/components/PlayerFantasyChart/labels";
-import { getSeriesPalette } from "@vision/ui/charts/palette";
+import { SortButton } from "@/components/SortButton/SortButton";
 import { StarButton } from "@/components/StarButton/StarButton";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
-import { type FantasySortKey } from "@/lib/valuation/searchParams";
+import { formatSigned } from "@vision/core/util/format";
+import { isNameSort } from "@/lib/players/rank";
+import { type FantasyTableRow, type ListSortProps } from "@/lib/valuation/fantasyRows";
 
 import styles from "@/components/FantasyChartList/FantasyChartList.module.scss";
 
-const METHOD_KEYS: readonly MethodKey[] = ["z", "g"];
-
-export type FantasyChartListProps<Row extends FantasyTableRow> = {
-  // Names the section and the list for assistive tech.
+export type FantasyChartListProps<Row extends FantasyTableRow> = ListSortProps & {
+  // Names the region for assistive tech; the list inside is "Players".
   label: string;
   // The one-line caption above the list, explaining what the charts share.
   hint: string;
   rows: readonly Row[];
-  sort: FantasySortKey;
-  dir: "asc" | "desc";
-  isSignedIn: boolean;
-  onSort: (args: { sort: FantasySortKey }) => void;
   // Header content over the chart track: whatever labels the x direction.
   bands: ReactNode;
-  // The chart itself, drawn inside the row's chart slot.
-  renderChart: (args: { row: Row }) => ReactNode;
+  // The chart itself, drawn inside the row's chart slot in the list's Z/G
+  // colours.
+  renderChart: (args: { row: Row; colors: MethodColors }) => ReactNode;
   // The chart is hover-only, so its reading is spelled out per row.
   describeChart: (args: { row: Row }) => string;
   // Marks the region busy while a layout's data is still arriving.
@@ -62,36 +59,9 @@ export function FantasyChartList<Row extends FantasyTableRow>({
   notice,
 }: FantasyChartListProps<Row>) {
   const { theme } = useTheme();
-  const palette = getSeriesPalette({ theme });
-  const colors: Record<MethodKey, string> = { z: palette[0], g: palette[1] };
-  const isStatSort = sort !== "firstName" && sort !== "lastName";
-
-  const sortHeader = ({ key }: { key: MethodKey }) => {
-    const isActive = sort === key;
-    return (
-      <button
-        type="button"
-        onClick={() => onSort({ sort: key })}
-        className={styles.sortButton}
-        data-active={isActive ? "true" : "false"}
-        data-method={key}
-      >
-        {METHOD_LABELS[key]}
-        {isActive && <span aria-hidden="true">{dir === "asc" ? "▲" : "▼"}</span>}
-      </button>
-    );
-  };
-
-  const readout = ({ key, value }: { key: MethodKey; value: number }) => (
-    <span
-      className={styles.readout}
-      data-method={key}
-      data-sort-active={sort === key || undefined}
-      data-negative={value < 0 || undefined}
-    >
-      {formatSigned(value)}
-    </span>
-  );
+  const colors = methodColors({ theme });
+  // Rank only means something when the rows are ordered by a score.
+  const showRank = !isNameSort(sort);
 
   return (
     <section className={styles.root} aria-label={label} aria-busy={busy || undefined}>
@@ -118,11 +88,20 @@ export function FantasyChartList<Row extends FantasyTableRow>({
             #
           </span>
           <span className={styles.playerHeading}>Player</span>
-          {sortHeader({ key: "z" })}
-          {sortHeader({ key: "g" })}
+          {METHOD_KEYS.map((key) => (
+            <SortButton
+              key={key}
+              label={METHOD_LABELS[key]}
+              isActive={sort === key}
+              dir={dir}
+              onClick={() => onSort({ sort: key })}
+              className={styles.methodSort}
+              data-method={key}
+            />
+          ))}
           <span className={styles.bands}>{bands}</span>
         </div>
-        <ol className={styles.list} aria-label={label}>
+        <ol className={styles.list} aria-label="Players">
           {rows.map((row) => (
             <li key={row.playerId} className={styles.row}>
               {isSignedIn && (
@@ -130,7 +109,7 @@ export function FantasyChartList<Row extends FantasyTableRow>({
                   <StarButton playerId={row.playerId} fullName={row.fullName} isSignedIn />
                 </span>
               )}
-              <span className={styles.rank}>{isStatSort && row.rank}</span>
+              <span className={styles.rank}>{showRank && row.rank}</span>
               <span className={styles.player}>
                 <PlayerAvatar
                   fullName={row.fullName}
@@ -148,11 +127,20 @@ export function FantasyChartList<Row extends FantasyTableRow>({
                   </span>
                 </span>
               </span>
-              {readout({ key: "z", value: row.values.z })}
-              {readout({ key: "g", value: row.values.g })}
+              {METHOD_KEYS.map((key) => (
+                <span
+                  key={key}
+                  className={styles.readout}
+                  data-method={key}
+                  data-sort-active={sort === key || undefined}
+                  data-negative={row.values[key] < 0 || undefined}
+                >
+                  {formatSigned({ value: row.values[key], digits: 1 })}
+                </span>
+              ))}
               {/* A div, not a span: recharts renders block-level divs inside. */}
               <div className={styles.chart} role="img" aria-label={describeChart({ row })}>
-                {renderChart({ row })}
+                {renderChart({ row, colors })}
               </div>
             </li>
           ))}

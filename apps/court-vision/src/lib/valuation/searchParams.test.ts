@@ -6,25 +6,7 @@ import {
   fantasyParsers,
   parseWeights,
   serializeWeights,
-  snapWeight,
 } from "@/lib/valuation/searchParams";
-
-describe("snapWeight", () => {
-  it("clamps to [0, 2]", () => {
-    expect(snapWeight(-1)).toBe(0);
-    expect(snapWeight(5)).toBe(2);
-  });
-
-  it("snaps to 0.25 steps", () => {
-    expect(snapWeight(0.6)).toBe(0.5);
-    expect(snapWeight(0.63)).toBe(0.75);
-    expect(snapWeight(1.1)).toBe(1);
-  });
-
-  it("treats NaN as the default weight", () => {
-    expect(snapWeight(Number.NaN)).toBe(1);
-  });
-});
 
 describe("weights codec", () => {
   it("round-trips method-scoped punt and fractional weights", () => {

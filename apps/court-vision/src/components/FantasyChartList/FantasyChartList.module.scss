@@ -148,30 +148,10 @@
   }
 }
 
-// Sort triggers are buttons (client-side sorting), styled like the table's.
-.sortButton {
-  display: inline-grid;
-  grid-auto-flow: column;
+// The Z/G sort buttons fill their track and sit over the readouts' right edge.
+.methodSort {
   justify-content: end;
-  align-items: center;
-  gap: var(--space-1);
   width: 100%;
-  padding: 0;
-  border: none;
-  background: none;
-  color: inherit;
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
-  cursor: pointer;
-
-  &[data-active="true"] {
-    color: var(--color-accent);
-  }
-
-  &:focus-visible {
-    @include control-focus-ring;
-  }
 }
 
 // Whatever labels the x direction, sitting over the chart track.
@@ -244,12 +224,12 @@
     grid-area: player;
   }
 
-  .sortButton[data-method="z"],
+  .methodSort[data-method="z"],
   .readout[data-method="z"] {
     grid-area: z;
   }
 
-  .sortButton[data-method="g"],
+  .methodSort[data-method="g"],
   .readout[data-method="g"] {
     grid-area: g;
   }

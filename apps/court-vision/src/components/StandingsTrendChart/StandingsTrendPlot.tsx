@@ -11,13 +11,14 @@ import {
   type TooltipPayloadEntry,
 } from "recharts";
 
-import { CHART_CHROME } from "@vision/ui/charts/palette";
-import { NBA_TEAMS, type TeamAbbreviation } from "@/lib/teams/meta";
+import { CHART_CHROME, chartAxisProps } from "@vision/ui/charts/palette";
+import { ListTooltip } from "@/components/ListTooltip/ListTooltip";
 import { usePrefersReducedMotion } from "@vision/ui/hooks/usePrefersReducedMotion";
 import { useTheme, type Theme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
+import { THEME_META } from "@vision/ui/theme/themes";
+import { contrastRatio } from "@/lib/teams/color";
+import { teamColorsFor, type TeamAbbreviation } from "@/lib/teams/meta";
 import { type WinsRow } from "@vision/core/series/teamTrend";
-
-import styles from "@/components/StandingsTrendChart/StandingsTrendChart.module.scss";
 
 export type StandingsTrendPlotProps = {
   teams: ReadonlyArray<{ abbr: TeamAbbreviation; name: string }>;
@@ -27,22 +28,24 @@ export type StandingsTrendPlotProps = {
   onHover: (args: { abbr: TeamAbbreviation | null }) => void;
 };
 
-// Relative luminance of a #rrggbb hex, 0 (black) – 1 (white).
-const luminance = (hex: string): number => {
-  const value = Number.parseInt(hex.slice(1), 16);
-  const channel = (shift: number): number => ((value >> shift) & 0xff) / 255;
-  return 0.2126 * channel(16) + 0.7152 * channel(8) + 0.0722 * channel(0);
-};
+// The extreme each background tone sits near. Judging a line against it rather
+// than a theme's exact surface keeps every dark theme (high contrast's pure
+// black included) on one rule.
+const BACKDROP_BY_TONE = { dark: "#000000", light: "#FFFFFF" } as const;
+
+// Below this a primary is all but the backdrop's own color. It only catches
+// the near-black and near-white primaries (BKN), never a merely dark navy.
+const MIN_LINE_CONTRAST = 1.2;
 
 // Team primary color, swapping to secondary when the primary would vanish
-// against the theme background (e.g. BKN's black line on the dark theme).
+// against the theme's background tone (BKN's black line on any dark theme).
 export const lineColorFor = ({ abbr, theme }: { abbr: TeamAbbreviation; theme: Theme }): string => {
-  const team = NBA_TEAMS.find((entry) => entry.abbreviation === abbr);
-  if (team === undefined) return "#888888";
-  const primaryLum = luminance(team.primary);
-  if (theme === "dark" && primaryLum < 0.08) return team.secondary;
-  if (theme === "light" && primaryLum > 0.85) return team.secondary;
-  return team.primary;
+  const team = teamColorsFor({ team: abbr });
+  if (team === null) return "#888888";
+  const tone = THEME_META.find((meta) => meta.id === theme)?.tone ?? "dark";
+  return contrastRatio({ a: team.primary, b: BACKDROP_BY_TONE[tone] }) < MIN_LINE_CONTRAST
+    ? team.secondary
+    : team.primary;
 };
 
 const MAX_TOOLTIP_ROWS = 6;
@@ -71,25 +74,16 @@ function ChartTooltip({ highlighted, active, label, payload }: ChartTooltipProps
   const remaining = sorted.length - visible.length;
 
   return (
-    <div className={styles.tooltip}>
-      <p className={styles.tooltipDate}>Game {label ?? ""}</p>
-      <ul className={styles.tooltipList}>
-        {visible.map((entry) => (
-          <li key={String(entry.name)} className={styles.tooltipRow}>
-            <span
-              aria-hidden="true"
-              className={styles.swatch}
-              style={{ background: entry.color }}
-            />
-            <span>{entry.name}</span>
-            <span className={styles.tooltipValue}>
-              {typeof entry.value === "number" ? entry.value : "—"}
-            </span>
-          </li>
-        ))}
-        {!!remaining && <li className={styles.tooltipMore}>+{remaining} more</li>}
-      </ul>
-    </div>
+    <ListTooltip
+      title={`Game ${label ?? ""}`}
+      entries={visible.map((entry) => ({
+        key: String(entry.name),
+        name: String(entry.name ?? ""),
+        color: entry.color,
+        value: typeof entry.value === "number" ? String(entry.value) : "—",
+      }))}
+      more={remaining}
+    />
   );
 }
 
@@ -98,29 +92,25 @@ function ChartTooltip({ highlighted, active, label, payload }: ChartTooltipProps
 // sizes, the same box the loading placeholder holds.
 export function StandingsTrendPlot({ teams, rows, active, onHover }: StandingsTrendPlotProps) {
   const { theme } = useTheme();
-  const chrome = CHART_CHROME;
   const prefersReducedMotion = usePrefersReducedMotion();
 
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart data={[...rows]} margin={{ top: 8, right: 12, bottom: 4, left: 0 }}>
-        <CartesianGrid stroke={chrome.grid} strokeDasharray="3 3" vertical={false} />
+        <CartesianGrid stroke={CHART_CHROME.grid} strokeDasharray="3 3" vertical={false} />
         <XAxis
+          {...chartAxisProps({ rule: "axis" })}
           dataKey="game"
           type="number"
           domain={[1, "dataMax"]}
-          stroke={chrome.axis}
-          tick={{ fill: chrome.axis, fontSize: 12 }}
           allowDecimals={false}
           minTickGap={24}
         />
-        <YAxis
-          stroke={chrome.axis}
-          tick={{ fill: chrome.axis, fontSize: 12 }}
-          allowDecimals={false}
-          width={32}
+        <YAxis {...chartAxisProps({ rule: "axis" })} allowDecimals={false} width={32} />
+        <Tooltip
+          content={<ChartTooltip highlighted={active} />}
+          cursor={{ stroke: CHART_CHROME.axis }}
         />
-        <Tooltip content={<ChartTooltip highlighted={active} />} cursor={{ stroke: chrome.axis }} />
         {teams.map((team) => {
           const color = lineColorFor({ abbr: team.abbr, theme });
           const emphasized = active === null || active === team.abbr;

@@ -28,7 +28,13 @@ import {
   standingsGainDenominators,
   valuePlayers,
 } from "@vision/sport-basketball/engine";
-import { type FantasyProfileLog } from "@vision/sport-basketball/types";
+import {
+  type Category,
+  type FantasyProfileLog,
+  type MethodWeights,
+  type PoolStats,
+  type ValuationConfig,
+} from "@vision/sport-basketball/types";
 
 import { type FantasyTeamPlayer, type RosterSlot } from "@/lib/fantasyTeams/types";
 import {
@@ -40,13 +46,7 @@ import {
 import { buildStatSeries, type CumulativeSourceLog } from "@/lib/stats/cumulative";
 import { type StatMode } from "@/lib/stats/searchParams";
 import { buildTeamStats, rankTeams, type TeamBoxTotals } from "@/lib/teams/stats";
-import {
-  type Category,
-  type FantasyStatLine,
-  type MethodWeights,
-  type PoolStats,
-  type ValuationConfig,
-} from "@/lib/valuation/types";
+import { type FantasyStatLine } from "@/lib/valuation/types";
 
 // Golden master for the sport-descriptor refactor of the valuation engine.
 //

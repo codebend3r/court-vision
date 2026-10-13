@@ -3,30 +3,16 @@
 import { unstable_cache } from "next/cache";
 
 import { isActionArray, isActionInt } from "@vision/core/util/argGuards";
+import { PLAYERS_CACHE_OPTIONS } from "@/lib/cache";
 import { prisma } from "@/lib/prisma";
+import { SEASON_TYPE } from "@/lib/stats/season";
 import { latestSeason } from "@/lib/valuation/season";
 import {
+  GAME_LOG_SELECT,
   MAX_TREND_PLAYERS,
   type FantasyTrendLog,
   type FantasyTrendLogsResult,
 } from "@/lib/valuation/trendLogs";
-
-const logSelect = {
-  playerId: true,
-  gameDate: true,
-  minutes: true,
-  pts: true,
-  reb: true,
-  ast: true,
-  stl: true,
-  blk: true,
-  fg3m: true,
-  tov: true,
-  fgm: true,
-  fga: true,
-  ftm: true,
-  fta: true,
-};
 
 const isPlayerId = (value: unknown): value is number => isActionInt(value) && value > 0;
 
@@ -40,27 +26,23 @@ const fetchLogs = async ({
   playerIds: readonly number[];
 }): Promise<PlayerTrendLog[]> => {
   const rows = await prisma.playerGameLog.findMany({
-    where: { playerId: { in: [...playerIds] }, season, seasonType: "Regular Season" },
+    where: { playerId: { in: [...playerIds] }, season, seasonType: SEASON_TYPE },
     orderBy: { gameDate: "asc" },
-    select: logSelect,
+    select: { playerId: true, ...GAME_LOG_SELECT },
   });
   return rows.map(({ gameDate, ...rest }) => ({ ...rest, gameDate: gameDate.toISOString() }));
 };
 
-// Keyed by the season and the page's ids (sorted, so the key is the same
-// however the page is ordered). The first page under the default sort is
-// what most visitors open, and that one entry answers all of them. Same tag
-// and revalidate window as the other players caches, so one sync
-// invalidation busts every surface.
+// Keyed by the season and the page's ids, sorted so the key is the same
+// however the page is ordered. The first page under the default sort is what
+// most visitors open, and that one entry answers all of them. Same tag and
+// revalidate window as the other players caches, so one sync invalidation
+// busts every surface.
 const cachedLogs = unstable_cache(
-  (season: string, idsKey: string) =>
-    fetchLogs({ season, playerIds: idsKey.split(",").map(Number) }),
+  (season: string, sortedIds: readonly number[]) => fetchLogs({ season, playerIds: sortedIds }),
   ["fantasy:trend-logs"],
-  { revalidate: 300, tags: ["players"] },
+  PLAYERS_CACHE_OPTIONS,
 );
-
-const idsKeyOf = ({ playerIds }: { playerIds: readonly number[] }): string =>
-  [...playerIds].sort((a, b) => a - b).join(",");
 
 // Intentionally public: the Players Fantasy tab works signed out. This action
 // only reads NBA box scores, never account data or writes. Its security-scan
@@ -86,7 +68,10 @@ export const loadFantasyTrendLogs = async ({
     const rows =
       season === null || playerIds.length === 0
         ? []
-        : await cachedLogs(season, idsKeyOf({ playerIds }));
+        : await cachedLogs(
+            season,
+            playerIds.toSorted((a, b) => a - b),
+          );
     const players = playerIds.map((playerId) => ({
       playerId,
       logs: rows

@@ -81,7 +81,7 @@ describe("FantasyValueView chart layout loading", () => {
     renderView({ searchParams: "?layout=categories" });
 
     expect(screen.getByRole("status")).toHaveTextContent("Loading category charts");
-    expect(await screen.findByRole("list", { name: "Fantasy value charts" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Fantasy value charts" })).toBeInTheDocument();
     expect(screen.queryByText("Loading category charts")).not.toBeInTheDocument();
   });
 });
@@ -252,7 +252,8 @@ describe("FantasyValueView layouts", () => {
   it("renders one chart row per player instead of the table under layout=categories", async () => {
     renderView({ searchParams: "?layout=categories" });
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
-    const list = await screen.findByRole("list", { name: "Fantasy value charts" });
+    const charts = within(await screen.findByRole("region", { name: "Fantasy value charts" }));
+    const list = charts.getByRole("list", { name: "Players" });
     expect(within(list).getAllByRole("listitem")).toHaveLength(lines.length);
     expect(screen.getByText("Showing 1–6 of 6")).toBeInTheDocument();
   });
@@ -266,7 +267,7 @@ describe("FantasyValueView layouts", () => {
 
     expect(updates.at(-1)).toContain("layout=categories");
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
-    expect(await screen.findByRole("list", { name: "Fantasy value charts" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Fantasy value charts" })).toBeInTheDocument();
   });
 
   it("sorts from the chart headers with the same URL state as the table", async () => {
@@ -277,7 +278,7 @@ describe("FantasyValueView layouts", () => {
       onUrlUpdate: (event) => updates.push(event.queryString),
     });
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
-    await screen.findByRole("list", { name: "Fantasy value charts" });
+    await screen.findByRole("region", { name: "Fantasy value charts" });
 
     await user.click(screen.getByRole("button", { name: /G-Score/ }));
 
@@ -336,7 +337,8 @@ describe("FantasyValueView rolling layout", () => {
   it("loads the page's game logs once and draws rolling lines for filled windows", async () => {
     const { container } = await renderRolling();
 
-    const list = await screen.findByRole("list", { name: "Fantasy value trends" });
+    const trends = within(await screen.findByRole("region", { name: "Fantasy value trends" }));
+    const list = trends.getByRole("list", { name: "Players" });
     await waitFor(() => expect(container.querySelectorAll(".recharts-line")).toHaveLength(4));
     expect(within(list).getAllByRole("listitem")).toHaveLength(lines.length);
     expect(loadFantasyTrendLogs).toHaveBeenCalledTimes(1);

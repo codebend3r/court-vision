@@ -62,9 +62,9 @@ describe("isFantasyTrendLogsResult", () => {
 describe("toDatedLogs", () => {
   it("revives the serialized game dates", () => {
     const [dated] = toDatedLogs({ logs: [trendLog()] });
-    expect(dated?.gameDate).toBeInstanceOf(Date);
-    expect(dated?.gameDate.toISOString()).toBe("2026-01-05T00:00:00.000Z");
-    expect(dated?.stats.pts).toBe(30);
+    expect(dated?.gameDate ?? null).toBeInstanceOf(Date);
+    expect(dated?.gameDate.toISOString() ?? null).toBe("2026-01-05T00:00:00.000Z");
+    expect(dated?.stats.pts ?? null).toBe(30);
   });
 });
 

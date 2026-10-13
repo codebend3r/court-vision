@@ -1,8 +1,8 @@
-import { isRecord } from "@vision/core/util/record";
-import { type DatedLog, type WindowLog } from "@vision/sport-basketball/types";
+import { isRecord, recordFromKeys } from "@vision/core/util/record";
+import { BASKETBALL_VALUED_STATS } from "@vision/sport-basketball/descriptor";
+import { type DatedLog, type StatKey, type WindowLog } from "@vision/sport-basketball/types";
 
 import { PAGE_SIZES } from "@/lib/players/searchParams";
-import { type StatKey } from "@/lib/valuation/types";
 
 // One request covers the page in view, so the cap is the largest page size.
 export const MAX_TREND_PLAYERS = Math.max(...PAGE_SIZES);
@@ -10,22 +10,18 @@ export const MAX_TREND_PLAYERS = Math.max(...PAGE_SIZES);
 // A game log as the database stores it: the flat box score plus minutes.
 export type BasketballLogRow = Record<StatKey, number> & { minutes: number };
 
+// The PlayerGameLog columns a rolling trend reads: the date, minutes and every
+// valued stat. Shared by every query that feeds toWindowLog.
+export const GAME_LOG_SELECT = {
+  gameDate: true,
+  minutes: true,
+  ...recordFromKeys({ keys: BASKETBALL_VALUED_STATS, value: (): true => true }),
+};
+
 // The engine's view of a stored game: minutes are basketball's playing time.
 export const toWindowLog = ({ row }: { row: BasketballLogRow }): WindowLog => ({
   playingTime: row.minutes,
-  stats: {
-    pts: row.pts,
-    reb: row.reb,
-    ast: row.ast,
-    stl: row.stl,
-    blk: row.blk,
-    fg3m: row.fg3m,
-    tov: row.tov,
-    fgm: row.fgm,
-    fga: row.fga,
-    ftm: row.ftm,
-    fta: row.fta,
-  },
+  stats: recordFromKeys({ keys: BASKETBALL_VALUED_STATS, value: (key) => row[key] }),
 });
 
 // A game log as it crosses the server-action boundary: the date travels as an
@@ -38,20 +34,7 @@ export type FantasyTrendLogsResult =
   | { status: "ok"; players: FantasyTrendPlayerLogs[] }
   | { status: "error" };
 
-const LOG_NUMBER_KEYS: readonly (StatKey | "minutes")[] = [
-  "minutes",
-  "pts",
-  "reb",
-  "ast",
-  "stl",
-  "blk",
-  "fg3m",
-  "tov",
-  "fgm",
-  "fga",
-  "ftm",
-  "fta",
-];
+const LOG_NUMBER_KEYS: readonly (StatKey | "minutes")[] = ["minutes", ...BASKETBALL_VALUED_STATS];
 
 const isFantasyTrendLog = (value: unknown): value is FantasyTrendLog =>
   isRecord(value) &&

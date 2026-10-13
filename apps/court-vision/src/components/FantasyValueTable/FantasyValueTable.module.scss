@@ -47,47 +47,12 @@
   gap: var(--space-2);
 }
 
-// Sort triggers are buttons (client-side sorting), styled like the other
-// tabs' sort links.
-.sortButton {
-  display: inline-grid;
-  grid-auto-flow: column;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 0;
-  border: none;
-  background: none;
-  color: inherit;
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
-  cursor: pointer;
-
-  &[data-active="true"] {
-    color: var(--color-accent);
-  }
-
-  &:focus-visible {
-    @include control-focus-ring;
-  }
-}
-
-// Keyed off an explicit class rather than nth-child: the star column shifts
-// every index, and only when signed in.
-.table th.statHeader .sortButton {
+// A method column's sort button fills its header and right-aligns over the
+// numbers. Keyed off an explicit class rather than nth-child: the star column
+// shifts every index, and only when signed in.
+.statSort {
   width: 100%;
   justify-content: end;
-}
-
-// SGP ships blocked (no denominators source yet): a muted placeholder column
-// whose header tooltip explains why.
-.blockedHeader {
-  color: var(--color-text-muted);
-}
-
-.blockedCell {
-  color: var(--color-text-muted);
-  opacity: 0.7;
 }
 
 // Fixed 20rem width, independent of the column. Preferred placement is above
@@ -197,11 +162,5 @@
 // Announced by screen readers, invisible on screen — the column needs a name
 // but not a label taking up row width.
 .visuallyHidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+  @include visually-hidden;
 }

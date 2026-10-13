@@ -1,24 +1,41 @@
 "use client";
 
-import { ChangeEvent, FocusEvent, useEffect, useRef } from "react";
+import { ChangeEvent, FocusEvent } from "react";
 
 import {
+  GAME_RANGE_LABELS,
   isPlayerGameRange,
   isPlayerStatMode,
   MAX_QUERY_LENGTH,
+  PLAYER_GAME_RANGES,
   type PlayerGameRange,
   type PlayerStatMode,
 } from "@/lib/players/searchParams";
+import { useDebouncedQuery } from "@/lib/players/useDebouncedQuery";
 import {
-  CATEGORY_KEYS,
   CATEGORY_META,
   DEFAULT_POINTS_SCORING,
   methodMeta,
   SCORED_KEYS,
 } from "@vision/sport-basketball/engine";
 import { isWeightedMethodKey, METHOD_KEY_BY_WEIGHTED } from "@vision/core/valuation/registry";
-import { clampScore, snapWeight, type FantasySortKey } from "@/lib/valuation/searchParams";
-import { type Category, type ScoringSettings, type ScoringStatKey } from "@/lib/valuation/types";
+import { Disclosure } from "@vision/ui/components/Disclosure/Disclosure";
+import {
+  LEAGUE_BOUNDS,
+  normalizeCount,
+  normalizeScore,
+  normalizeWeight,
+  SCORE_BOUNDS,
+  SCORING_LABELS,
+  WEIGHT_BOUNDS,
+  withoutWeight,
+} from "@/lib/leagues/settings";
+import { type FantasySortKey } from "@/lib/valuation/searchParams";
+import {
+  type Category,
+  type ScoringSettings,
+  type ScoringStatKey,
+} from "@vision/sport-basketball/types";
 
 import styles from "@/components/FantasyControls/FantasyControls.module.scss";
 
@@ -47,39 +64,6 @@ export type FantasyControlsProps = {
   onChange: (change: FantasyControlsChange) => void;
 };
 
-// The scoring table is keyed by raw stat, so it needs its own labels — the
-// category meta covers 3PM as "tpm" and has no entry for a points-league line.
-const SCORING_LABELS: Record<ScoringStatKey, string> = {
-  pts: "PTS",
-  reb: "REB",
-  ast: "AST",
-  stl: "STL",
-  blk: "BLK",
-  fg3m: "3PM",
-  tov: "TOV",
-};
-
-const DEBOUNCE_MS = 300;
-const TEAMS_MIN = 2;
-const TEAMS_MAX = 30;
-const SLOTS_MIN = 1;
-const SLOTS_MAX = 25;
-
-const withoutWeight = ({
-  weights,
-  category,
-}: {
-  weights: Partial<Record<Category, number>>;
-  category: Category;
-}): Partial<Record<Category, number>> =>
-  CATEGORY_KEYS.reduce<Partial<Record<Category, number>>>((acc, key) => {
-    const weight = weights[key];
-    return key === category || weight === undefined ? acc : { ...acc, [key]: weight };
-  }, {});
-
-const clampInt = ({ value, min, max }: { value: number; min: number; max: number }): number =>
-  Number.isSafeInteger(value) ? Math.min(max, Math.max(min, value)) : min;
-
 export function FantasyControls({
   q,
   range,
@@ -97,33 +81,10 @@ export function FantasyControls({
   const weightTarget = isWeightedMethodKey(sort)
     ? methodMeta({ key: METHOD_KEY_BY_WEIGHTED[sort] })
     : undefined;
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latestQ = useRef(q);
-
-  useEffect(() => {
-    latestQ.current = q;
-  }, [q]);
-
-  useEffect(
-    () => () => {
-      if (debounceRef.current !== null) {
-        clearTimeout(debounceRef.current);
-      }
-    },
-    [],
-  );
-
-  const onSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { value } = event.target;
-    if (debounceRef.current !== null) {
-      clearTimeout(debounceRef.current);
-    }
-    debounceRef.current = setTimeout(() => {
-      const trimmed = value.trim().slice(0, MAX_QUERY_LENGTH);
-      if (trimmed === latestQ.current) return;
-      onChange({ q: trimmed, page: 1 });
-    }, DEBOUNCE_MS);
-  };
+  const search = useDebouncedQuery({
+    q,
+    onCommit: ({ q: query }) => onChange({ q: query, page: 1 }),
+  });
 
   const onPunt = ({ category }: { category: Category }) => {
     const cleared = withoutWeight({ weights, category });
@@ -141,7 +102,7 @@ export function FantasyControls({
   const onWeightBlur =
     ({ category }: { category: Category }) =>
     (event: FocusEvent<HTMLInputElement>) => {
-      const snapped = snapWeight(Number.parseFloat(event.target.value));
+      const snapped = normalizeWeight({ raw: event.target.value });
       const cleared = withoutWeight({ weights, category });
       onChange({ w: snapped === 1 ? cleared : { ...cleared, [category]: snapped } });
     };
@@ -149,15 +110,15 @@ export function FantasyControls({
   const onScoringBlur =
     ({ stat }: { stat: ScoringStatKey }) =>
     (event: FocusEvent<HTMLInputElement>) => {
-      const parsed = Number.parseFloat(event.target.value);
-      const score = Number.isFinite(parsed) ? clampScore(parsed) : DEFAULT_POINTS_SCORING[stat];
-      onChange({ s: { ...scoring, [stat]: score } });
+      onChange({ s: { ...scoring, [stat]: normalizeScore({ raw: event.target.value, stat }) } });
     };
 
+  // A cleared box falls back to the standard league (12 teams, 13 slots), the
+  // same answer the league form, the server, and the URL parser give.
   const onLeagueBlur =
-    ({ field, min, max }: { field: "teams" | "slots"; min: number; max: number }) =>
+    ({ field }: { field: "teams" | "slots" }) =>
     (event: FocusEvent<HTMLInputElement>) => {
-      const value = clampInt({ value: Number.parseInt(event.target.value, 10), min, max });
+      const value = normalizeCount({ raw: event.target.value, bounds: LEAGUE_BOUNDS[field] });
       onChange(field === "teams" ? { teams: value } : { slots: value });
     };
 
@@ -170,7 +131,7 @@ export function FantasyControls({
         <input
           type="search"
           defaultValue={q}
-          onChange={onSearchChange}
+          onChange={search.onChange}
           placeholder="Search players…"
           aria-label="Search players"
           maxLength={MAX_QUERY_LENGTH}
@@ -187,12 +148,11 @@ export function FantasyControls({
             aria-label="Game range"
             className={styles.select}
           >
-            <option value="all">All games</option>
-            <option value="last5">Last 5 games</option>
-            <option value="last10">Last 10 games</option>
-            <option value="last20">Last 20 games</option>
-            <option value="last40">Last 40 games</option>
-            <option value="last60">Last 60 games</option>
+            {PLAYER_GAME_RANGES.map((gameRange) => (
+              <option key={gameRange} value={gameRange}>
+                {GAME_RANGE_LABELS[gameRange]}
+              </option>
+            ))}
           </select>
         </label>
         <label className={styles.filterLabel}>
@@ -251,13 +211,11 @@ export function FantasyControls({
         ))}
       </span>
 
-      <details className={styles.disclosure}>
-        <summary className={styles.summary}>
-          <span className={styles.chevron} aria-hidden="true">
-            ▸
-          </span>
-          Weights{!!weightTarget && ` — ${weightTarget.label}`}
-        </summary>
+      <Disclosure
+        className={styles.disclosure}
+        summaryClassName={styles.summary}
+        summary={<>Weights{!!weightTarget && ` — ${weightTarget.label}`}</>}
+      >
         <span className={styles.disclosureBody}>
           <span className={styles.hint}>
             {weightTarget
@@ -274,9 +232,9 @@ export function FantasyControls({
               <input
                 key={`${sort}:${meta.key}:${weights[meta.key] ?? 1}`}
                 type="number"
-                min={0}
-                max={2}
-                step={0.25}
+                min={WEIGHT_BOUNDS.min}
+                max={WEIGHT_BOUNDS.max}
+                step={WEIGHT_BOUNDS.step}
                 defaultValue={weights[meta.key] ?? 1}
                 onBlur={onWeightBlur({ category: meta.key })}
                 disabled={!weightTarget}
@@ -293,15 +251,9 @@ export function FantasyControls({
             Reset
           </button>
         </span>
-      </details>
+      </Disclosure>
 
-      <details className={styles.disclosure}>
-        <summary className={styles.summary}>
-          <span className={styles.chevron} aria-hidden="true">
-            ▸
-          </span>
-          Scoring
-        </summary>
+      <Disclosure className={styles.disclosure} summaryClassName={styles.summary} summary="Scoring">
         <span className={styles.disclosureBody}>
           <span className={styles.hint}>
             Fantasy points per stat in a points league. Drives the PL Linear column only; the
@@ -313,8 +265,8 @@ export function FantasyControls({
               <input
                 key={`${stat}:${scoring[stat]}`}
                 type="number"
-                min={-10}
-                max={10}
+                min={SCORE_BOUNDS.min}
+                max={SCORE_BOUNDS.max}
                 step={0.5}
                 defaultValue={scoring[stat]}
                 onBlur={onScoringBlur({ stat })}
@@ -330,15 +282,9 @@ export function FantasyControls({
             Reset
           </button>
         </span>
-      </details>
+      </Disclosure>
 
-      <details className={styles.disclosure}>
-        <summary className={styles.summary}>
-          <span className={styles.chevron} aria-hidden="true">
-            ▸
-          </span>
-          League
-        </summary>
+      <Disclosure className={styles.disclosure} summaryClassName={styles.summary} summary="League">
         <span className={styles.disclosureBody}>
           <span className={styles.hint}>
             Sets the pool size and the VORP replacement rank (teams × roster slots).
@@ -348,10 +294,10 @@ export function FantasyControls({
             <input
               key={`teams:${teams}`}
               type="number"
-              min={TEAMS_MIN}
-              max={TEAMS_MAX}
+              min={LEAGUE_BOUNDS.teams.min}
+              max={LEAGUE_BOUNDS.teams.max}
               defaultValue={teams}
-              onBlur={onLeagueBlur({ field: "teams", min: TEAMS_MIN, max: TEAMS_MAX })}
+              onBlur={onLeagueBlur({ field: "teams" })}
               className={styles.stepper}
             />
           </label>
@@ -360,15 +306,15 @@ export function FantasyControls({
             <input
               key={`slots:${slots}`}
               type="number"
-              min={SLOTS_MIN}
-              max={SLOTS_MAX}
+              min={LEAGUE_BOUNDS.slots.min}
+              max={LEAGUE_BOUNDS.slots.max}
               defaultValue={slots}
-              onBlur={onLeagueBlur({ field: "slots", min: SLOTS_MIN, max: SLOTS_MAX })}
+              onBlur={onLeagueBlur({ field: "slots" })}
               className={styles.stepper}
             />
           </label>
         </span>
-      </details>
+      </Disclosure>
     </section>
   );
 }

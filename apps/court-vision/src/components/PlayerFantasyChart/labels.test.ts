@@ -1,27 +1,46 @@
 import { describe, expect, it } from "bun:test";
 
-import { formatSigned, METHOD_LABELS } from "@/components/PlayerFantasyChart/labels";
+import {
+  METHOD_KEYS,
+  METHOD_LABELS,
+  methodColors,
+  symmetricDomain,
+} from "@/components/PlayerFantasyChart/labels";
+import { getSeriesPalette } from "@vision/ui/charts/palette";
 
-describe("formatSigned", () => {
-  it("prefixes a positive value with a plus sign", () => {
-    expect(formatSigned(1.44)).toBe("+1.4");
-  });
-
-  it("keeps the minus sign on a negative value", () => {
-    expect(formatSigned(-2.06)).toBe("-2.1");
-  });
-
-  it("leaves zero unsigned", () => {
-    expect(formatSigned(0)).toBe("0.0");
-  });
-
-  it("always prints one decimal", () => {
-    expect(formatSigned(3)).toBe("+3.0");
+describe("METHOD_LABELS", () => {
+  it("names both series, in palette slot order", () => {
+    expect(METHOD_KEYS).toEqual(["z", "g"]);
+    expect(METHOD_LABELS).toEqual({ z: "Z-Score", g: "G-Score" });
   });
 });
 
-describe("METHOD_LABELS", () => {
-  it("names both series", () => {
-    expect(METHOD_LABELS).toEqual({ z: "Z-Score", g: "G-Score" });
+describe("methodColors", () => {
+  it("takes the theme's first two series colours", () => {
+    const palette = getSeriesPalette({ theme: "light" });
+
+    expect(methodColors({ theme: "light" })).toEqual({ z: palette[0], g: palette[1] });
+  });
+});
+
+describe("symmetricDomain", () => {
+  it("is symmetric around zero at the widest Z or G", () => {
+    expect(
+      symmetricDomain({
+        points: [
+          { z: 2.4, g: 1.9 },
+          { z: -1.2, g: -3.5 },
+        ],
+      }),
+    ).toEqual([-3.5, 3.5]);
+  });
+
+  it("keeps one standard deviation of headroom for near-average points", () => {
+    expect(symmetricDomain({ points: [{ z: 0.2, g: 0.16 }] })).toEqual([-1, 1]);
+    expect(symmetricDomain({ points: [] })).toEqual([-1, 1]);
+  });
+
+  it("reads a missing value as zero", () => {
+    expect(symmetricDomain({ points: [{ z: null, g: -2 }] })).toEqual([-2, 2]);
   });
 });

@@ -4,15 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 const getProfile = vi.fn();
 const getWatchlistPlayers = vi.fn();
 const getWatchlistCount = vi.fn();
-const getZTrendSeries = vi.fn();
-const getGTrendSeries = vi.fn();
+const getTrendSeries = vi.fn();
 const getConferenceStandings = vi.fn();
 const getActiveLeague = vi.fn();
 const getLeagueTeams = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({ getProfile: () => getProfile() }));
 vi.mock("@/lib/watchlist/queries", () => ({ getWatchlistPlayers, getWatchlistCount }));
-vi.mock("@/lib/watchlist/trendLoader", () => ({ getZTrendSeries, getGTrendSeries }));
+vi.mock("@/lib/watchlist/trendLoader", () => ({ getTrendSeries }));
 vi.mock("@/lib/standings/loader", () => ({ getConferenceStandings }));
 vi.mock("@/lib/leagues/queries", () => ({ getActiveLeague: () => getActiveLeague() }));
 vi.mock("@/lib/leagues/teamQueries", () => ({
@@ -32,13 +31,11 @@ beforeEach(() => {
   getProfile.mockReset();
   getWatchlistPlayers.mockReset();
   getWatchlistCount.mockReset();
-  getZTrendSeries.mockReset();
-  getGTrendSeries.mockReset();
+  getTrendSeries.mockReset();
   getConferenceStandings.mockReset();
   getWatchlistPlayers.mockResolvedValue([]);
   getWatchlistCount.mockResolvedValue(0);
-  getZTrendSeries.mockResolvedValue([]);
-  getGTrendSeries.mockResolvedValue([]);
+  getTrendSeries.mockResolvedValue({ z: [], g: [] });
   getConferenceStandings.mockResolvedValue(null);
   getActiveLeague.mockReset().mockResolvedValue(null);
   getLeagueTeams.mockReset().mockResolvedValue([]);
@@ -210,13 +207,14 @@ describe("Home", () => {
     getProfile.mockResolvedValue({ username: "steve" });
     const players = [summary({ playerId: 1, fullName: "Jalen Brunson" })];
     getWatchlistPlayers.mockResolvedValue(players);
-    getZTrendSeries.mockResolvedValue([{ playerId: 1, fullName: "Jalen Brunson", points: [] }]);
-    getGTrendSeries.mockResolvedValue([{ playerId: 1, fullName: "Jalen Brunson", points: [] }]);
+    const series = [{ playerId: 1, fullName: "Jalen Brunson", points: [] }];
+    getTrendSeries.mockResolvedValue({ z: series, g: series });
 
     await renderHome();
 
-    expect(getZTrendSeries).toHaveBeenCalledWith({ players });
-    expect(getGTrendSeries).toHaveBeenCalledWith({ players });
+    // One read feeds both charts.
+    expect(getTrendSeries).toHaveBeenCalledTimes(1);
+    expect(getTrendSeries).toHaveBeenCalledWith({ players });
     expect(screen.getByRole("heading", { name: "Z-Score Trend" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "G-Score Trend" })).toBeInTheDocument();
   });
