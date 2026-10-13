@@ -1,10 +1,14 @@
 @use "@/styles/mixins" as *;
 
-.page {
-  @include page-shell;
+.panel {
+  @include panel-shell;
 }
 
-.scope {
+.title {
+  @include panel-title;
+}
+
+.empty {
   margin: 0;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);

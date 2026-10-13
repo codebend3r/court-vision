@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { DashboardPanel } from "@/components/DashboardPanel/DashboardPanel";
 import { HomeStandingsPanel } from "@/components/HomeStandingsPanel/HomeStandingsPanel";
 import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { ReadoutCard, ReadoutRow } from "@vision/ui/components/ReadoutCard/ReadoutCard";
@@ -7,10 +8,10 @@ import { HomeStarredPanel } from "@/components/HomeStarredPanel/HomeStarredPanel
 import { HomeTeamPanel } from "@/components/HomeTeamPanel/HomeTeamPanel";
 import { WatchlistTrendChart } from "@/components/WatchlistTrendChart/WatchlistTrendChart";
 import { getProfile } from "@/lib/auth/session";
+import { featuredTeam } from "@/lib/fantasyTeams/featured";
 import { getActiveLeague } from "@/lib/leagues/queries";
 import { getLeagueTeams } from "@/lib/leagues/teamQueries";
 import { getConferenceStandings } from "@/lib/standings/loader";
-import { formatLeagueMeta } from "@/lib/leagues/format";
 import { HOMEPAGE_WATCHLIST_LIMIT, MAX_WATCHLIST } from "@/lib/watchlist/constants";
 import { getWatchlistCount, getWatchlistPlayers } from "@/lib/watchlist/queries";
 import { ROLLING_WINDOW_GAMES } from "@vision/core/valuation/rolling";
@@ -35,10 +36,10 @@ export default async function Home() {
     getActiveLeague(),
   ]);
   const teams = league === null ? [] : await getLeagueTeams({ leagueId: league.id });
-  // Readout figures: first roster's fill and the East ladder's leader.
-  const firstTeam = teams[0] ?? null;
-  const filledSlots =
-    firstTeam === null ? 0 : firstTeam.slots.filter((slot) => slot.player !== null).length;
+  // Picked once so the Roster readout and the Your Team panel describe the
+  // same team: the newest, the roster a manager is most likely still filling.
+  const team = featuredTeam({ teams });
+  const filledSlots = team === null ? 0 : team.slots.filter((slot) => slot.player !== null).length;
   const eastLeader = standings?.east[0] ?? null;
   // Both charts track exactly the players the panel above lists.
   const { z: zSeries, g: gSeries } = await getTrendSeries({ players });
@@ -55,15 +56,13 @@ export default async function Home() {
         <ReadoutCard label="Watchlist" value={count} note={`of ${MAX_WATCHLIST} slots`} />
         <ReadoutCard
           label="Roster"
-          value={firstTeam === null ? "—" : `${filledSlots}/${firstTeam.slots.length}`}
-          note={firstTeam?.name ?? "no teams yet"}
-          sentiment={
-            firstTeam !== null && filledSlots === firstTeam.slots.length ? "up" : "neutral"
-          }
+          value={team === null ? "—" : `${filledSlots}/${team.slots.length}`}
+          note={team?.name ?? "no teams yet"}
+          sentiment={team !== null && filledSlots === team.slots.length ? "up" : "neutral"}
         />
         <ReadoutCard
           label="League"
-          value={league === null ? "—" : formatLeagueMeta({ league }).split(" · ")[0]}
+          value={league === null ? "—" : `${league.teamCount}-team`}
           note={league?.name ?? "create a league"}
         />
         <ReadoutCard
@@ -76,32 +75,28 @@ export default async function Home() {
       </ReadoutRow>
       <div className={styles.dashboardGrid}>
         <HomeStarredPanel players={players} count={count} className={styles.panelCardLeft} />
-        <HomeTeamPanel teams={teams} className={styles.panelCardRight} />
+        <HomeTeamPanel team={team} className={styles.panelCardRight} />
         <HomeStandingsPanel standings={standings} className={styles.panelCardFar} />
-        <section
-          className={`${styles.chartCard} ${styles.chartCardLeft}`}
-          aria-labelledby="home-z-trend-title"
+        <DashboardPanel
+          id="home-z-trend-title"
+          title="Z-Score Trend"
+          className={styles.chartCardLeft}
         >
-          <h2 id="home-z-trend-title" className={styles.cardTitle}>
-            Z-Score Trend
-          </h2>
           <WatchlistTrendChart
             series={zSeries}
             caption={`Rolling ${ROLLING_WINDOW_GAMES}-game z-score against this season's player pool. Zero is league-average value.`}
           />
-        </section>
-        <section
-          className={`${styles.chartCard} ${styles.chartCardRight}`}
-          aria-labelledby="home-g-trend-title"
+        </DashboardPanel>
+        <DashboardPanel
+          id="home-g-trend-title"
+          title="G-Score Trend"
+          className={styles.chartCardRight}
         >
-          <h2 id="home-g-trend-title" className={styles.cardTitle}>
-            G-Score Trend
-          </h2>
           <WatchlistTrendChart
             series={gSeries}
             caption={`Rolling ${ROLLING_WINDOW_GAMES}-game G-score: the z-score damped by each category's game-to-game volatility. Zero is league-average value.`}
           />
-        </section>
+        </DashboardPanel>
       </div>
     </main>
   );

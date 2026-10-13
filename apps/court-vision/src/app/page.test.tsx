@@ -162,6 +162,48 @@ describe("Home", () => {
     );
   });
 
+  it("features the newest team in both the Roster readout and the Your Team panel", async () => {
+    getProfile.mockResolvedValue({ username: "steve" });
+    getActiveLeague.mockResolvedValue({
+      id: "league-1",
+      name: "Bench Mob League",
+      slug: "bench-mob-league",
+      scoringType: "h2h_categories",
+      teamCount: 12,
+      rosterSlots: 13,
+      scoringConfig: { categories: ["pts", "reb", "ast"] },
+      createdAt: "2026-07-01T00:00:00.000Z",
+      updatedAt: "2026-07-01T00:00:00.000Z",
+    });
+    // teamQueries returns teams oldest first.
+    getLeagueTeams.mockResolvedValue([
+      {
+        id: "a",
+        name: "Old Guard",
+        slug: "old-guard",
+        createdAt: "2026-07-01T00:00:00.000Z",
+        slots: [],
+      },
+      {
+        id: "b",
+        name: "New Blood",
+        slug: "new-blood",
+        createdAt: "2026-07-23T00:00:00.000Z",
+        slots: [],
+      },
+    ]);
+
+    await renderHome();
+
+    expect(screen.getByRole("link", { name: "New Blood" })).toHaveAttribute(
+      "href",
+      "/my-teams/new-blood",
+    );
+    expect(screen.getAllByText("New Blood")).toHaveLength(2);
+    expect(screen.queryByText("Old Guard")).not.toBeInTheDocument();
+    expect(screen.getByText("12-team")).toBeInTheDocument();
+  });
+
   it("shows the conference standings ladders for a signed-in user", async () => {
     getProfile.mockResolvedValue({ username: "steve" });
     getConferenceStandings.mockResolvedValue({

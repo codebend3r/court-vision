@@ -43,14 +43,6 @@
   }
 }
 
-.cardTitle {
-  @include panel-title;
-}
-
-.chartCard {
-  @include panel-shell;
-}
-
 // The charts split the row under the panels: z-score in tracks 1–3, g-score
 // in 4–6. Once the grid falls back to auto-fit each chart takes the full
 // width instead — a time series squeezed into a 240px column is unreadable.

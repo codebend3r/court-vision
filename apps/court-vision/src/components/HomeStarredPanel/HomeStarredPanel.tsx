@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { DashboardPanel, DashboardPanelEmpty } from "@/components/DashboardPanel/DashboardPanel";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { StarButton } from "@/components/StarButton/StarButton";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
@@ -20,18 +21,12 @@ export type HomeStarredPanelProps = {
 // is actionable.
 export function HomeStarredPanel({ players, count, className }: HomeStarredPanelProps) {
   return (
-    <section
-      className={[styles.panel, className].filter(Boolean).join(" ")}
-      aria-labelledby="home-watchlist-title"
-    >
-      <h2 id="home-watchlist-title" className={styles.title}>
-        Starred Players
-      </h2>
+    <DashboardPanel id="home-watchlist-title" title="Starred Players" className={className}>
       {players.length === 0 ? (
-        <p className={styles.empty}>
+        <DashboardPanelEmpty>
           You aren&apos;t watching any players yet — star players from the{" "}
           <Link href="/players">Players</Link> page.
-        </p>
+        </DashboardPanelEmpty>
       ) : (
         <>
           <ul className={styles.list}>
@@ -61,6 +56,6 @@ export function HomeStarredPanel({ players, count, className }: HomeStarredPanel
           </Link>
         </>
       )}
-    </section>
+    </DashboardPanel>
   );
 }

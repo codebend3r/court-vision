@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import { type ReactNode, use, useEffect, useState } from "react";
 
 import { PlayersPager, type PlayersPagerProps } from "@/components/PlayersPager/PlayersPager";
+import { type RegularSearchParams } from "@/lib/players/searchParams";
 
 const replace = vi.fn();
 
@@ -39,21 +40,37 @@ function PendingNavigation({ children }: { children: ReactNode }) {
   );
 }
 
-const defaultProps: PlayersPagerProps = {
+const regularParams: RegularSearchParams = {
   q: "",
   page: 1,
   size: 50,
-  totalPages: 1,
   sort: "pts",
   dir: "desc",
   range: "all",
   mode: "average",
   minimums: true,
+  tab: "regular",
 };
+
+type PagerOverrides = {
+  page?: number;
+  totalPages?: number;
+  params?: Partial<RegularSearchParams>;
+};
+
+const pagerProps = ({
+  page = 1,
+  totalPages = 1,
+  params = {},
+}: PagerOverrides = {}): PlayersPagerProps => ({
+  params: { ...regularParams, ...params },
+  page,
+  totalPages,
+});
 
 describe("PlayersPager", () => {
   it("navigates to the next page, preserving size", () => {
-    render(<PlayersPager {...defaultProps} page={2} size={25} totalPages={3} />);
+    render(<PlayersPager {...pagerProps({ page: 2, totalPages: 3, params: { size: 25 } })} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
 
@@ -62,7 +79,7 @@ describe("PlayersPager", () => {
   });
 
   it("navigates to the previous page", () => {
-    render(<PlayersPager {...defaultProps} page={2} totalPages={3} />);
+    render(<PlayersPager {...pagerProps({ page: 2, totalPages: 3 })} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Prev" }));
 
@@ -71,7 +88,9 @@ describe("PlayersPager", () => {
   });
 
   it("preserves a non-default sort and dir on navigation", () => {
-    render(<PlayersPager {...defaultProps} sort="lastName" dir="asc" totalPages={3} />);
+    render(
+      <PlayersPager {...pagerProps({ totalPages: 3, params: { sort: "lastName", dir: "asc" } })} />,
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
 
@@ -80,19 +99,21 @@ describe("PlayersPager", () => {
   });
 
   it("disables the Previous button on the first page", () => {
-    render(<PlayersPager {...defaultProps} page={1} totalPages={3} />);
+    render(<PlayersPager {...pagerProps({ page: 1, totalPages: 3 })} />);
 
     expect(screen.getByRole("button", { name: "Prev" })).toBeDisabled();
   });
 
   it("disables the Next button on the last page", () => {
-    render(<PlayersPager {...defaultProps} page={3} totalPages={3} />);
+    render(<PlayersPager {...pagerProps({ page: 3, totalPages: 3 })} />);
 
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
   });
 
   it("changes the page size and resets to page 1, preserving other filters", () => {
-    render(<PlayersPager {...defaultProps} page={4} range="last20" totalPages={9} />);
+    render(
+      <PlayersPager {...pagerProps({ page: 4, totalPages: 9, params: { range: "last20" } })} />,
+    );
 
     fireEvent.change(screen.getByLabelText("Page size"), { target: { value: "25" } });
 
@@ -101,14 +122,20 @@ describe("PlayersPager", () => {
   });
 
   it("labels the page size control", () => {
-    render(<PlayersPager {...defaultProps} size={25} />);
+    render(<PlayersPager {...pagerProps({ params: { size: 25 } })} />);
 
     const select = screen.getByLabelText("Page size");
     expect(select).toHaveValue("25");
   });
 
   it("includes the tab when navigating to another page", () => {
-    render(<PlayersPager {...defaultProps} tab="advanced" sort="pie" totalPages={3} />);
+    render(
+      <PlayersPager
+        params={{ ...regularParams, tab: "advanced", sort: "pie" }}
+        page={1}
+        totalPages={3}
+      />,
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
 
@@ -116,16 +143,16 @@ describe("PlayersPager", () => {
   });
 
   it("leaves the status region empty when nothing is pending", () => {
-    render(<PlayersPager {...defaultProps} />);
+    render(<PlayersPager {...pagerProps()} />);
 
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 
   describe("while the navigation is pending", () => {
-    const renderPending = (props: Partial<PlayersPagerProps> = {}) =>
+    const renderPending = (props: PagerOverrides = {}) =>
       render(
         <PendingNavigation>
-          <PlayersPager {...defaultProps} {...props} />
+          <PlayersPager {...pagerProps(props)} />
         </PendingNavigation>,
       );
 

@@ -1,45 +1,51 @@
 import { useId } from "react";
 
 import { formatOrdinal } from "@vision/core/util/format";
-import type { RankTone, SeasonAverageStat } from "@/lib/players/seasonAverages";
+import type { RankTone } from "@vision/core/series/leaders";
 
 import styles from "@/components/SeasonStatCard/SeasonStatCard.module.scss";
+
+// One readout on the card. `rank` is where the stat sits on its leaderboard
+// and how many players that board counts; a stat with no leaderboard (a
+// career line, an advanced average) has none and shows no pill.
+export type SeasonStat = {
+  key: string;
+  label: string;
+  value: string;
+  rank?: { position: number; tone: RankTone; eligibleCount: number };
+};
 
 type RankTier = "first" | "elite" | "strong" | "regular";
 
 // Tint only ranks that read as achievements; neutral-toned stats (turnovers)
 // keep the plain pill however high they sit on the leaderboard.
-const rankTier = ({ rank, tone }: { rank: number; tone: RankTone }): RankTier =>
+const rankTier = ({ position, tone }: { position: number; tone: RankTone }): RankTier =>
   tone === "neutral"
     ? "regular"
-    : rank === 1
+    : position === 1
       ? "first"
-      : rank <= 5
+      : position <= 5
         ? "elite"
-        : rank <= 20
+        : position <= 20
           ? "strong"
           : "regular";
 
 // The headline readout card the player page opens each view with: season
 // averages, advanced averages, or fantasy value, all in one shape. The rank
-// pill names the scope it ranks in and the tooltip the pool it counts.
+// pill names its place in the NBA and the tooltip the pool it counts. Callers
+// render it only when they have stats to show.
 export function SeasonStatCard({
   season,
   stats,
   title = "Season averages",
-  rankScope = "in NBA",
   poolNoun = "qualified players",
 }: {
   season: string;
-  stats: SeasonAverageStat[];
+  stats: readonly SeasonStat[];
   title?: string;
-  rankScope?: string;
   poolNoun?: string;
 }) {
   const titleId = useId();
-  if (!stats.length) {
-    return null;
-  }
 
   return (
     <section className={styles.card} aria-labelledby={titleId}>
@@ -54,13 +60,13 @@ export function SeasonStatCard({
           <div key={stat.key} className={styles.stat}>
             <dt className={styles.label}>{stat.label}</dt>
             <dd className={styles.value}>{stat.value}</dd>
-            {stat.rank !== null && (
+            {!!stat.rank && (
               <dd
                 className={styles.rank}
-                data-tier={rankTier({ rank: stat.rank, tone: stat.rankTone })}
-                title={`${formatOrdinal({ value: stat.rank })} of ${stat.eligibleCount} ${poolNoun}`}
+                data-tier={rankTier(stat.rank)}
+                title={`${formatOrdinal({ value: stat.rank.position })} of ${stat.rank.eligibleCount} ${poolNoun}`}
               >
-                {formatOrdinal({ value: stat.rank })} {rankScope}
+                {formatOrdinal({ value: stat.rank.position })} in NBA
               </dd>
             )}
           </div>

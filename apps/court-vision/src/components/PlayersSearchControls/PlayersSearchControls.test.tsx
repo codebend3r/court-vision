@@ -6,6 +6,7 @@ import {
   PlayersSearchControls,
   type PlayersSearchControlsProps,
 } from "@/components/PlayersSearchControls/PlayersSearchControls";
+import { type AdvancedSearchParams, type RegularSearchParams } from "@/lib/players/searchParams";
 
 const replace = vi.fn();
 
@@ -47,15 +48,23 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const defaultProps: PlayersSearchControlsProps = {
+const regularParams: RegularSearchParams = {
   q: "",
+  page: 1,
   size: 50,
   sort: "pts",
   dir: "desc",
   range: "all",
   mode: "average",
   minimums: true,
+  tab: "regular",
 };
+
+const advancedParams: AdvancedSearchParams = { ...regularParams, tab: "advanced", sort: "pie" };
+
+const controlsProps = (params: Partial<RegularSearchParams> = {}): PlayersSearchControlsProps => ({
+  params: { ...regularParams, ...params },
+});
 
 const advance = (ms: number) => {
   act(() => {
@@ -65,7 +74,7 @@ const advance = (ms: number) => {
 
 describe("PlayersSearchControls", () => {
   it("debounces rapid keystrokes into a single navigation after 300ms", () => {
-    render(<PlayersSearchControls {...defaultProps} />);
+    render(<PlayersSearchControls {...controlsProps()} />);
 
     const input = screen.getByLabelText("Search players");
     fireEvent.change(input, { target: { value: "c" } });
@@ -79,7 +88,7 @@ describe("PlayersSearchControls", () => {
   });
 
   it("does not navigate at 299ms but fires on the next millisecond", () => {
-    render(<PlayersSearchControls {...defaultProps} />);
+    render(<PlayersSearchControls {...controlsProps()} />);
 
     const input = screen.getByLabelText("Search players");
     fireEvent.change(input, { target: { value: "cur" } });
@@ -92,7 +101,7 @@ describe("PlayersSearchControls", () => {
   });
 
   it("does not navigate when the trimmed value equals the current q", () => {
-    render(<PlayersSearchControls {...defaultProps} q="cur" />);
+    render(<PlayersSearchControls {...controlsProps({ q: "cur" })} />);
 
     const input = screen.getByLabelText("Search players");
     fireEvent.change(input, { target: { value: "cur" } });
@@ -103,18 +112,18 @@ describe("PlayersSearchControls", () => {
   });
 
   it("changes the game range and stat display while preserving the other filter", () => {
-    const { rerender } = render(<PlayersSearchControls {...defaultProps} mode="total" />);
+    const { rerender } = render(<PlayersSearchControls {...controlsProps({ mode: "total" })} />);
 
     fireEvent.change(screen.getByLabelText("Game range"), { target: { value: "last20" } });
     expect(replace).toHaveBeenLastCalledWith("/players?range=last20&mode=total");
 
-    rerender(<PlayersSearchControls {...defaultProps} range="last20" />);
+    rerender(<PlayersSearchControls {...controlsProps({ range: "last20" })} />);
     fireEvent.change(screen.getByLabelText("Stat display"), { target: { value: "total" } });
     expect(replace).toHaveBeenLastCalledWith("/players?range=last20&mode=total");
   });
 
   it("writes minimums=0 to the URL when qualifying minimums is turned off", () => {
-    render(<PlayersSearchControls {...defaultProps} />);
+    render(<PlayersSearchControls {...controlsProps()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Off" }));
 
@@ -123,7 +132,7 @@ describe("PlayersSearchControls", () => {
   });
 
   it("clears the minimums param when turned back on", () => {
-    render(<PlayersSearchControls {...defaultProps} minimums={false} />);
+    render(<PlayersSearchControls {...controlsProps({ minimums: false })} />);
 
     fireEvent.click(screen.getByRole("button", { name: "On" }));
 
@@ -132,14 +141,14 @@ describe("PlayersSearchControls", () => {
   });
 
   it("marks the active minimums keycap pressed", () => {
-    render(<PlayersSearchControls {...defaultProps} />);
+    render(<PlayersSearchControls {...controlsProps()} />);
 
     expect(screen.getByRole("button", { name: "On" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "Off" })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("cancels a pending debounce timer on unmount", () => {
-    const { unmount } = render(<PlayersSearchControls {...defaultProps} />);
+    const { unmount } = render(<PlayersSearchControls {...controlsProps()} />);
 
     const input = screen.getByLabelText("Search players");
     fireEvent.change(input, { target: { value: "cur" } });
@@ -151,7 +160,7 @@ describe("PlayersSearchControls", () => {
   });
 
   it("skips navigation when q catches up while the timer is pending", () => {
-    const { rerender } = render(<PlayersSearchControls {...defaultProps} />);
+    const { rerender } = render(<PlayersSearchControls {...controlsProps()} />);
 
     const input = screen.getByLabelText("Search players");
     // Fire change event to "cur" — debounce timer now pending. Do NOT advance yet.
@@ -159,7 +168,7 @@ describe("PlayersSearchControls", () => {
 
     // Rerender with q="cur" (props catch up) while the timer is still pending.
     // This updates latestQ.current to "cur" via the useEffect.
-    rerender(<PlayersSearchControls {...defaultProps} q="cur" />);
+    rerender(<PlayersSearchControls {...controlsProps({ q: "cur" })} />);
 
     // Now advance the timer. The callback should check latestQ.current === "cur"
     // and skip navigation. Under the old buggy code (using stale closure q=""),
@@ -170,7 +179,7 @@ describe("PlayersSearchControls", () => {
   });
 
   it("cancels pending debounce timer on immediate navigation (game range)", () => {
-    render(<PlayersSearchControls {...defaultProps} />);
+    render(<PlayersSearchControls {...controlsProps()} />);
 
     const input = screen.getByLabelText("Search players");
     const select = screen.getByLabelText("Game range");
@@ -190,21 +199,21 @@ describe("PlayersSearchControls", () => {
   });
 
   it("shows the stat display select and minimums keycaps on the regular tab", () => {
-    render(<PlayersSearchControls {...defaultProps} tab="regular" />);
+    render(<PlayersSearchControls {...controlsProps({ tab: "regular" })} />);
 
     expect(screen.getByLabelText("Stat display")).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Qualifying minimums" })).toBeInTheDocument();
   });
 
   it("hides the stat display select and qualifying minimums keycaps on the advanced tab", () => {
-    render(<PlayersSearchControls {...defaultProps} tab="advanced" />);
+    render(<PlayersSearchControls params={advancedParams} />);
 
     expect(screen.queryByLabelText("Stat display")).not.toBeInTheDocument();
     expect(screen.queryByRole("group", { name: "Qualifying minimums" })).not.toBeInTheDocument();
   });
 
   it("includes the tab in the search navigation href", () => {
-    render(<PlayersSearchControls {...defaultProps} tab="advanced" sort="pie" />);
+    render(<PlayersSearchControls params={advancedParams} />);
 
     const input = screen.getByLabelText("Search players");
     fireEvent.change(input, { target: { value: "cur" } });
@@ -220,10 +229,10 @@ describe("PlayersSearchControls", () => {
       vi.useRealTimers();
     });
 
-    const renderPending = (props: Partial<PlayersSearchControlsProps> = {}) =>
+    const renderPending = (props: Partial<RegularSearchParams> = {}) =>
       render(
         <PendingNavigation>
-          <PlayersSearchControls {...defaultProps} {...props} />
+          <PlayersSearchControls {...controlsProps(props)} />
         </PendingNavigation>,
       );
 
@@ -285,7 +294,7 @@ describe("PlayersSearchControls", () => {
   });
 
   it("leaves the status region empty when nothing is pending", () => {
-    render(<PlayersSearchControls {...defaultProps} />);
+    render(<PlayersSearchControls {...controlsProps()} />);
 
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });

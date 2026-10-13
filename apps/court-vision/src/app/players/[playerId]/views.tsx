@@ -5,13 +5,11 @@ import { AdvancedStatsLegend } from "@/components/AdvancedStatsLegend/AdvancedSt
 import { FantasyValueLegend } from "@/components/FantasyValueLegend/FantasyValueLegend";
 import { PlayerAdvancedChart } from "@/components/PlayerAdvancedChart/PlayerAdvancedChart";
 import { PlayerFantasyChart } from "@/components/PlayerFantasyChart/PlayerFantasyChart";
-import type {
-  PlayerGameLogTableProps,
-  PlayerGameLogTableRow,
-} from "@/components/PlayerGameLogTable/PlayerGameLogTable";
+import type { GameLogRow } from "@/components/PlayerGameLogTable/gameLogColumns";
+import type { PlayerGameLogTableProps } from "@/components/PlayerGameLogTable/PlayerGameLogTable";
 import { PlayerStatChart } from "@/components/PlayerStatChart/PlayerStatChart";
 import { PlayerStatFilters } from "@/components/PlayerStatFilters/PlayerStatFilters";
-import { SeasonStatCard } from "@/components/SeasonStatCard/SeasonStatCard";
+import { SeasonStatCard, type SeasonStat } from "@/components/SeasonStatCard/SeasonStatCard";
 import { getProfile } from "@/lib/auth/session";
 import { SEASON_TYPE } from "@/lib/stats/season";
 import { getActiveLeague } from "@/lib/leagues/queries";
@@ -25,6 +23,7 @@ import {
   type SeasonAverageStat,
   type SeasonStatTotals,
 } from "@/lib/players/seasonAverages";
+import { formatSigned } from "@vision/core/util/format";
 import { getSeasonStatsPool } from "@/lib/players/seasonPool";
 import { prisma } from "@/lib/prisma";
 import {
@@ -66,7 +65,7 @@ type ViewContext = PlayerViewArgs & {
   windowGames: number | null;
   windowLabel: string;
   windowLogs: PlayerGameLog[];
-  rows: Array<PlayerGameLogTableRow & Pick<PlayerGameLog, "gameId">>;
+  rows: Array<GameLogRow & Pick<PlayerGameLog, "gameId">>;
 };
 
 type PlayerViewResult = {
@@ -75,11 +74,42 @@ type PlayerViewResult = {
   gameLog: PlayerGameLogTableProps;
 };
 
+// A leaderboard line as card readouts: a career line has no leaderboard, so
+// its stats carry no rank.
+const toSeasonStat = (stat: SeasonAverageStat): SeasonStat => ({
+  key: stat.key,
+  label: stat.label,
+  value: stat.value,
+  rank:
+    stat.rank === null
+      ? undefined
+      : { position: stat.rank, tone: stat.rankTone, eligibleCount: stat.eligibleCount },
+});
+
+// The fantasy view with nothing to value: no card, no charts, the box-score
+// log, and a line on why.
+const fantasyEmptyView = ({
+  message,
+  rows,
+}: {
+  message: string;
+  rows: ViewContext["rows"];
+}): PlayerViewResult => ({
+  card: null,
+  content: (
+    <>
+      <PlayerStatFilters modes={[]} />
+      <p className={styles.empty}>{message}</p>
+    </>
+  ),
+  gameLog: { view: "regular", rows },
+});
+
 const loadRegularView = async (context: ViewContext): Promise<PlayerViewResult> => {
   const { playerId, selection, isCareer, seasonRows, seasonLabel, windowLogs, mode, rows } =
     context;
   const totals = isCareer ? aggregateCareerTotals({ rows: seasonRows, playerId }) : null;
-  const stats = isCareer
+  const line = isCareer
     ? totals === null
       ? []
       : buildCareerAverageLine({ totals })
@@ -87,6 +117,7 @@ const loadRegularView = async (context: ViewContext): Promise<PlayerViewResult> 
         rows: await getSeasonStatsPool({ season: selection, seasonType: SEASON_TYPE }),
         playerId,
       }) ?? []);
+  const stats = line.map(toSeasonStat);
   return {
     card: stats.length > 0 && (
       <SeasonStatCard
@@ -101,7 +132,7 @@ const loadRegularView = async (context: ViewContext): Promise<PlayerViewResult> 
         <PlayerStatChart series={buildStatSeries({ logs: windowLogs, mode })} mode={mode} />
       </>
     ),
-    gameLog: { rows },
+    gameLog: { view: "regular", rows },
   };
 };
 
@@ -122,13 +153,10 @@ const loadAdvancedView = async (context: ViewContext): Promise<PlayerViewResult>
   const windowAdvanced = advancedLogs.filter((row) => gameIds.has(row.gameId));
   const averages = averageAdvancedLogs({ logs: windowAdvanced });
   const stats = ADVANCED_STAT_META.filter((meta) => averages[meta.key] !== null).map(
-    (meta): SeasonAverageStat => ({
+    (meta): SeasonStat => ({
       key: meta.key,
       label: meta.label,
       value: formatAdvancedStat({ key: meta.key, value: averages[meta.key] }),
-      rank: null,
-      rankTone: "leader",
-      eligibleCount: 0,
     }),
   );
   const advancedMode = toAdvancedMode({ mode });
@@ -169,19 +197,11 @@ const loadFantasyView = async (context: ViewContext): Promise<PlayerViewResult> 
   const { playerId, selection, isCareer, seasonLabel, windowLabel, windowGames, span, logs, rows } =
     context;
   if (isCareer || logs.length === 0) {
-    return {
-      card: null,
-      content: (
-        <>
-          <PlayerStatFilters modes={[]} />
-          <p className={styles.empty}>
-            Fantasy value is measured against a single season&apos;s player pool. Pick a season to
-            see it.
-          </p>
-        </>
-      ),
-      gameLog: { rows },
-    };
+    return fantasyEmptyView({
+      message:
+        "Fantasy value is measured against a single season's player pool. Pick a season to see it.",
+      rows,
+    });
   }
   const range = rangeForSpan({ span });
   const [lines, league, profile] = await Promise.all([
@@ -209,26 +229,20 @@ const loadFantasyView = async (context: ViewContext): Promise<PlayerViewResult> 
     windowGames,
   });
   if (fantasy === null) {
-    return {
-      card: null,
-      content: (
-        <>
-          <PlayerStatFilters modes={[]} />
-          <p className={styles.empty}>
-            No fantasy value for this timeframe: the player has no appearances in it.
-          </p>
-        </>
-      ),
-      gameLog: { rows },
-    };
+    return fantasyEmptyView({
+      message: "No fantasy value for this timeframe: the player has no appearances in it.",
+      rows,
+    });
   }
-  const stats = fantasy.readouts.map((readout): SeasonAverageStat => ({
+  // Points are a total, not a value over average, so they print unsigned.
+  const stats = fantasy.readouts.map((readout): SeasonStat => ({
     key: readout.key,
     label: readout.label,
-    value: `${readout.key !== "points" && readout.value > 0 ? "+" : ""}${readout.value.toFixed(1)}`,
-    rank: readout.rank,
-    rankTone: "leader",
-    eligibleCount: readout.of,
+    value:
+      readout.key === "points"
+        ? readout.value.toFixed(1)
+        : formatSigned({ value: readout.value, digits: 1 }),
+    rank: { position: readout.rank, tone: "leader", eligibleCount: readout.of },
   }));
   return {
     card: stats.length > 0 && (
