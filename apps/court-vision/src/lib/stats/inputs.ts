@@ -76,8 +76,8 @@ export type GameLogInput = {
   opponentAbbr: string | null;
   homeAway: "home" | "away";
   winLoss: string | null;
-  teamScore?: number | null;
-  opponentScore?: number | null;
+  teamScore: number | null;
+  opponentScore: number | null;
   minutes: number;
   fgm: number;
   fga: number;

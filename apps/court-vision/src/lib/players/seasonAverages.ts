@@ -7,35 +7,40 @@ import {
   percentage,
   perGame,
 } from "@vision/core/series/leaders";
+import { recordFromKeys } from "@vision/core/util/record";
 
-export type SeasonStatTotals = {
-  playerId: number;
-  gamesPlayed: number;
-  minutes: number;
-  fgm: number;
-  fga: number;
-  fg3m: number;
-  fg3a: number;
-  ftm: number;
-  fta: number;
-  reb: number;
-  ast: number;
-  stl: number;
-  blk: number;
-  tov: number;
-  pts: number;
-};
+import { MIN_FG3M, MIN_FGM, MIN_FTM } from "@/lib/players/minimums";
+
+// Every summable total on a season row.
+const SEASON_TOTAL_KEYS = [
+  "gamesPlayed",
+  "minutes",
+  "fgm",
+  "fga",
+  "fg3m",
+  "fg3a",
+  "ftm",
+  "fta",
+  "reb",
+  "ast",
+  "stl",
+  "blk",
+  "tov",
+  "pts",
+] as const;
+
+export type SeasonStatTotals = { playerId: number } & Record<
+  (typeof SEASON_TOTAL_KEYS)[number],
+  number
+>;
 
 export type { RankTone } from "@vision/core/series/leaders";
 export type SeasonAverageStat = LeaderStat;
 
 // NBA-style statistical minimums so tiny samples cannot top a leaderboard:
 // per-game averages need a floor of games played, percentages need made
-// volume (the official 300 FGM / 82 3PM / 125 FTM qualifiers).
+// volume (the official percentage-leader qualifiers).
 const MIN_GAMES = 20;
-const MIN_FGM = 300;
-const MIN_FG3M = 82;
-const MIN_FTM = 125;
 
 const formatAverage = (value: number): string => value.toFixed(1);
 const formatPercent = (value: number): string => `${value.toFixed(1)}%`;
@@ -114,42 +119,13 @@ export const aggregateCareerTotals = (args: {
   if (own.length === 0) {
     return null;
   }
-  return own.reduce<SeasonStatTotals>(
-    (totals, row) => ({
-      playerId: args.playerId,
-      gamesPlayed: totals.gamesPlayed + row.gamesPlayed,
-      minutes: totals.minutes + row.minutes,
-      fgm: totals.fgm + row.fgm,
-      fga: totals.fga + row.fga,
-      fg3m: totals.fg3m + row.fg3m,
-      fg3a: totals.fg3a + row.fg3a,
-      ftm: totals.ftm + row.ftm,
-      fta: totals.fta + row.fta,
-      reb: totals.reb + row.reb,
-      ast: totals.ast + row.ast,
-      stl: totals.stl + row.stl,
-      blk: totals.blk + row.blk,
-      tov: totals.tov + row.tov,
-      pts: totals.pts + row.pts,
+  return {
+    playerId: args.playerId,
+    ...recordFromKeys({
+      keys: SEASON_TOTAL_KEYS,
+      value: (key) => own.reduce((sum, row) => sum + row[key], 0),
     }),
-    {
-      playerId: args.playerId,
-      gamesPlayed: 0,
-      minutes: 0,
-      fgm: 0,
-      fga: 0,
-      fg3m: 0,
-      fg3a: 0,
-      ftm: 0,
-      fta: 0,
-      reb: 0,
-      ast: 0,
-      stl: 0,
-      blk: 0,
-      tov: 0,
-      pts: 0,
-    },
-  );
+  };
 };
 
 // Career averages are league-wide only in principle; ranking a player against

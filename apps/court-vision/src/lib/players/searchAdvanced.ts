@@ -1,60 +1,31 @@
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
+import { recordFromKeys } from "@vision/core/util/record";
 
-import { compareByName, compareByNameAscending, matchesQuery, pageOf } from "@/lib/players/search";
+import { playerRowSchema, splitPlayerRow, type PlayerIdentity } from "@/lib/players/identity";
+import { rankRows, type Page } from "@/lib/players/rank";
 import {
   ADVANCED_METRIC_KEYS,
   gamesForRange,
   isAdvancedMetricKey,
   type AdvancedMetricKey,
+  type AdvancedSearchParams,
   type PlayerGameRange,
-  type PlayersSearchParams,
 } from "@/lib/players/searchParams";
+import { HAS_GAME_LOGS, LATEST_SEASON_JOIN, PLAYER_IDENTITY_COLUMNS } from "@/lib/players/sql";
 
 export type PlayerAdvancedStats = Record<AdvancedMetricKey, number | null> & {
   gamesWithData: number;
 };
 
-export type AdvancedPlayerRow = {
-  id: number;
-  firstName: string;
-  lastName: string;
-  fullName: string;
-  teamAbbr: string | null;
-  position: string | null;
-  nbaPersonId: number | null;
-  stats: PlayerAdvancedStats;
-};
+export type AdvancedPlayerRow = PlayerIdentity & { stats: PlayerAdvancedStats };
 
-export type PlayersAdvancedSearchResult = {
-  rows: AdvancedPlayerRow[];
-  total: number;
-  page: number;
-};
+export type PlayersAdvancedSearchResult = Page<AdvancedPlayerRow>;
 
 // A full season tops out at 82 regular-season games (postseason is excluded
 // from the sync); 100 leaves comfortable margin without an unbounded fetch.
 const ADVANCED_GAME_LOG_FETCH_LIMIT = 100;
-
-const emptyAdvancedStats = (): PlayerAdvancedStats => ({
-  pie: null,
-  pace: null,
-  assistPercentage: null,
-  assistRatio: null,
-  assistToTurnover: null,
-  defensiveRating: null,
-  defensiveReboundPercentage: null,
-  effectiveFieldGoalPercentage: null,
-  netRating: null,
-  offensiveRating: null,
-  offensiveReboundPercentage: null,
-  reboundPercentage: null,
-  trueShootingPercentage: null,
-  turnoverRatio: null,
-  usagePercentage: null,
-  gamesWithData: 0,
-});
 
 const average = (values: readonly number[]): number | null =>
   values.length === 0 ? null : values.reduce((sum, value) => sum + value, 0) / values.length;
@@ -69,67 +40,18 @@ export const averageAdvancedLogs = ({
 }: {
   logs: readonly Record<AdvancedMetricKey, number | null>[];
 }): PlayerAdvancedStats => {
-  const gamesWithData =
-    logs.length === 0
-      ? 0
-      : Math.max(
-          ...ADVANCED_METRIC_KEYS.map((key) => logs.filter((log) => log[key] !== null).length),
-        );
-  return ADVANCED_METRIC_KEYS.reduce<PlayerAdvancedStats>(
-    (stats, key) => ({
-      ...stats,
-      [key]: average(
-        logs.map((log) => log[key]).filter((value): value is number => value !== null),
-      ),
-    }),
-    { ...emptyAdvancedStats(), gamesWithData },
-  );
+  const recorded = (key: AdvancedMetricKey): number[] =>
+    logs.map((log) => log[key]).filter((value): value is number => value !== null);
+  return {
+    ...recordFromKeys({ keys: ADVANCED_METRIC_KEYS, value: (key) => average(recorded(key)) }),
+    gamesWithData:
+      logs.length === 0 ? 0 : Math.max(...ADVANCED_METRIC_KEYS.map((key) => recorded(key).length)),
+  };
 };
 
-const advancedPoolRowSchema = z.object({
-  id: z.number(),
-  firstName: z.string(),
-  lastName: z.string(),
-  fullName: z.string(),
-  teamAbbr: z.string().nullable(),
-  position: z.string().nullable(),
-  nbaPersonId: z.number().nullable(),
+const advancedPoolRowSchema = playerRowSchema.extend({
   gamesWithData: z.number(),
-  pie: z.number().nullable(),
-  pace: z.number().nullable(),
-  assistPercentage: z.number().nullable(),
-  assistRatio: z.number().nullable(),
-  assistToTurnover: z.number().nullable(),
-  defensiveRating: z.number().nullable(),
-  defensiveReboundPercentage: z.number().nullable(),
-  effectiveFieldGoalPercentage: z.number().nullable(),
-  netRating: z.number().nullable(),
-  offensiveRating: z.number().nullable(),
-  offensiveReboundPercentage: z.number().nullable(),
-  reboundPercentage: z.number().nullable(),
-  trueShootingPercentage: z.number().nullable(),
-  turnoverRatio: z.number().nullable(),
-  usagePercentage: z.number().nullable(),
-});
-
-const toAdvancedPlayerRow = ({
-  id,
-  firstName,
-  lastName,
-  fullName,
-  teamAbbr,
-  position,
-  nbaPersonId,
-  ...stats
-}: z.infer<typeof advancedPoolRowSchema>): AdvancedPlayerRow => ({
-  id,
-  firstName,
-  lastName,
-  fullName,
-  teamAbbr,
-  position,
-  nbaPersonId,
-  stats,
+  ...recordFromKeys({ keys: ADVANCED_METRIC_KEYS, value: () => z.number().nullable() }),
 });
 
 // Per-player advanced averages for a range, aggregated in SQL. A lastN range
@@ -147,15 +69,9 @@ export const fetchAdvancedPool = async ({
   const gameLimit = gamesForRange({ range }) ?? ADVANCED_GAME_LOG_FETCH_LIMIT;
   const scopeToLatestSeason = range === "all";
   const rows: unknown = await prisma.$queryRaw`
-    SELECT p.id, p."firstName", p."lastName", p."fullName", p."teamAbbr", p.position,
-           p."nbaPersonId", a.*
+    SELECT ${PLAYER_IDENTITY_COLUMNS}, a.*
     FROM "Player" p
-    LEFT JOIN LATERAL (
-      SELECT ss.season FROM "PlayerSeasonStats" ss
-      WHERE ss."playerId" = p.id AND ss."seasonType" = 'Regular Season'
-      ORDER BY ss.season DESC
-      LIMIT 1
-    ) s ON true
+    ${LATEST_SEASON_JOIN}
     CROSS JOIN LATERAL (
       SELECT GREATEST(
                count(l.pie), count(l.pace), count(l."assistPercentage"), count(l."assistRatio"),
@@ -188,9 +104,9 @@ export const fetchAdvancedPool = async ({
       ) l
       WHERE NOT ${scopeToLatestSeason} OR l.season = s.season
     ) a
-    WHERE EXISTS (SELECT 1 FROM "PlayerGameLog" g WHERE g."playerId" = p.id)
+    WHERE ${HAS_GAME_LOGS}
   `;
-  return z.array(advancedPoolRowSchema).parse(rows).map(toAdvancedPlayerRow);
+  return z.array(advancedPoolRowSchema).parse(rows).map(splitPlayerRow);
 };
 
 // Filters, orders and pages an advanced pool in memory. Metric sorts sink
@@ -200,29 +116,21 @@ export const rankAdvancedPlayers = ({
   args,
 }: {
   pool: readonly AdvancedPlayerRow[];
-  args: PlayersSearchParams;
+  args: AdvancedSearchParams;
 }): PlayersAdvancedSearchResult => {
-  const { q, page, size, sort, dir } = args;
-  const candidates = pool.filter((row) => matchesQuery({ fullName: row.fullName, q }));
-  if (!isAdvancedMetricKey(sort)) {
-    const nameSort = sort === "lastName" ? "lastName" : "firstName";
-    const ordered = candidates.toSorted((a, b) => compareByName({ a, b, sort: nameSort, dir }));
-    return pageOf({ rows: ordered, page, size });
-  }
-  const ordered = candidates.toSorted((a, b) => {
-    const aValue = a.stats[sort];
-    const bValue = b.stats[sort];
-    const aIsNull = aValue === null ? 1 : 0;
-    const bIsNull = bValue === null ? 1 : 0;
-    if (aIsNull !== bIsNull) return aIsNull - bIsNull;
-    const difference = (aValue ?? 0) - (bValue ?? 0);
-    if (difference !== 0) return dir === "asc" ? difference : -difference;
-    return compareByNameAscending({ a, b });
+  const { q, page, size, dir, sort } = args;
+  return rankRows({
+    rows: pool,
+    nameOf: (row) => row,
+    q,
+    page,
+    size,
+    dir,
+    order: isAdvancedMetricKey(sort)
+      ? {
+          by: "value",
+          valueOf: ({ stats }) => ({ sink: stats[sort] === null, value: stats[sort] ?? 0 }),
+        }
+      : { by: "name", sort },
   });
-  return pageOf({ rows: ordered, page, size });
 };
-
-export const searchPlayersAdvanced = async (
-  args: PlayersSearchParams,
-): Promise<PlayersAdvancedSearchResult> =>
-  rankAdvancedPlayers({ pool: await fetchAdvancedPool({ range: args.range }), args });

@@ -73,10 +73,10 @@ export function PlayerAdvancedChart({
       .filter((key) => active.includes(key))
       .map((key): MetricMeta<AdvancedMetricKey> => ({
         key,
-        label: advancedStatMeta(key)?.label ?? key,
+        label: advancedStatMeta({ key }).label,
         color: colorOf(key),
       })),
-    isPercent: panel.keys.every((key) => advancedStatMeta(key)?.kind === "percentage"),
+    isPercent: panel.keys.every((key) => advancedStatMeta({ key }).kind === "percentage"),
   })).filter((panel) => panel.metas.length > 0);
 
   return (

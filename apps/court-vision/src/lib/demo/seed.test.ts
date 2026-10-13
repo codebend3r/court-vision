@@ -112,7 +112,7 @@ describe("seedDemo", () => {
     ]);
     const fetchTeamGames = vi.spyOn(endpoints, "fetchTeamGames").mockResolvedValue(fakeGames);
     const upsertPlayers = vi.spyOn(persist, "upsertPlayers").mockResolvedValue(6);
-    const upsertGameLogs = vi.spyOn(persist, "upsertGameLogs").mockResolvedValue(15);
+    const replaceGameLogs = vi.spyOn(persist, "replaceGameLogs").mockResolvedValue(15);
     const upsertSeasonStats = vi.spyOn(persist, "upsertSeasonStats").mockResolvedValue(5);
     const markActiveRoster = vi.spyOn(persist, "markActiveRoster").mockResolvedValue(5);
 
@@ -121,7 +121,7 @@ describe("seedDemo", () => {
     expect(summary).toEqual({ players: 6, seasonStats: 5, gameLogs: 15, advancedGameLogs: 0 });
 
     expect(upsertPlayers).toHaveBeenCalledTimes(1);
-    const playerInputs = upsertPlayers.mock.calls[0]?.[0] ?? [];
+    const playerInputs = upsertPlayers.mock.calls[0]?.[0]?.players ?? [];
     expect(playerInputs).toHaveLength(6);
     expect(playerInputs).toEqual(
       expect.arrayContaining([
@@ -143,11 +143,9 @@ describe("seedDemo", () => {
     );
 
     expect(fetchTeamGames).toHaveBeenCalledTimes(5);
-    expect(fetchTeamGames).toHaveBeenCalledWith(
-      expect.objectContaining({ teamId: 18, throttleMs: 13000 }),
-    );
+    expect(fetchTeamGames).toHaveBeenCalledWith(expect.objectContaining({ teamId: 18 }));
 
-    expect(upsertGameLogs).toHaveBeenCalledTimes(1);
+    expect(replaceGameLogs).toHaveBeenCalledTimes(1);
     expect(upsertSeasonStats).toHaveBeenCalledTimes(1);
     // Only the five profiled players make the demo's rosters, not Bob Extra.
     const activeIds = markActiveRoster.mock.calls[0]?.[0]?.playerIds ?? [];
@@ -162,7 +160,7 @@ describe("seedDemo", () => {
     ]);
     vi.spyOn(endpoints, "fetchTeamGames").mockResolvedValue(fakeGames);
     vi.spyOn(persist, "upsertPlayers").mockResolvedValue(6);
-    vi.spyOn(persist, "upsertGameLogs").mockResolvedValue(15);
+    vi.spyOn(persist, "replaceGameLogs").mockResolvedValue(15);
     vi.spyOn(persist, "upsertSeasonStats").mockResolvedValue(5);
     vi.spyOn(persist, "markActiveRoster").mockResolvedValue(5);
     const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -184,7 +182,7 @@ describe("seedDemo", () => {
     );
     vi.spyOn(endpoints, "fetchTeamGames").mockResolvedValue(fakeGames);
     vi.spyOn(persist, "upsertPlayers").mockResolvedValue(4);
-    vi.spyOn(persist, "upsertGameLogs").mockResolvedValue(0);
+    vi.spyOn(persist, "replaceGameLogs").mockResolvedValue(0);
     vi.spyOn(persist, "upsertSeasonStats").mockResolvedValue(0);
 
     await expect(seedDemo({ deps: { apiKey: "k" } })).rejects.toThrow(
@@ -205,7 +203,7 @@ describe("seedDemo", () => {
     ]);
     vi.spyOn(endpoints, "fetchTeamGames").mockResolvedValue(fakeGames);
     vi.spyOn(persist, "upsertPlayers").mockResolvedValue(6);
-    vi.spyOn(persist, "upsertGameLogs").mockResolvedValue(0);
+    vi.spyOn(persist, "replaceGameLogs").mockResolvedValue(0);
     vi.spyOn(persist, "upsertSeasonStats").mockResolvedValue(0);
 
     await expect(seedDemo({ deps: { apiKey: "k" } })).rejects.toThrow(

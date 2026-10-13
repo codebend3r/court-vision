@@ -1,6 +1,8 @@
 import { unstable_cache } from "next/cache";
 
+import { PLAYERS_CACHE_OPTIONS } from "@/lib/cache";
 import { prisma } from "@/lib/prisma";
+import { SEASON_TYPE } from "@/lib/stats/season";
 import { type TeamGameResult } from "@vision/core/series/teamTrend";
 
 import { buildTeamStats, type TeamSeasonStats } from "@/lib/teams/stats";
@@ -11,9 +13,11 @@ export type TeamsData = {
   results: TeamGameResult[];
 };
 
-const latestSeason = async (): Promise<string | null> => {
+// The newest season with game logs. Unlike valuation's latestSeason, which
+// reads season aggregates, this reads the logs the team tables are built from.
+const latestGameLogSeason = async (): Promise<string | null> => {
   const row = await prisma.playerGameLog.findFirst({
-    where: { seasonType: "Regular Season" },
+    where: { seasonType: SEASON_TYPE },
     orderBy: { season: "desc" },
     select: { season: true },
   });
@@ -21,9 +25,9 @@ const latestSeason = async (): Promise<string | null> => {
 };
 
 const fetchTeams = async (): Promise<TeamsData> => {
-  const season = await latestSeason();
+  const season = await latestGameLogSeason();
   if (season === null) return { season: null, stats: [], results: [] };
-  const where = { season, seasonType: "Regular Season" };
+  const where = { season, seasonType: SEASON_TYPE };
   // One row per (team, game) carries the final score and result; the groupBy
   // sums every player's box score into team totals.
   const [gameRows, boxRows] = await Promise.all([
@@ -78,12 +82,11 @@ const fetchTeams = async (): Promise<TeamsData> => {
 };
 
 // Same cache regime as the players loaders: tag-shared invalidation, 300s.
-const cachedTeams = unstable_cache(() => fetchTeams(), ["teams:stats"], {
-  revalidate: 300,
-  tags: ["players"],
-});
-
-export const getTeamStats = (): Promise<TeamsData> => cachedTeams();
+export const getTeamStats = unstable_cache(
+  (): Promise<TeamsData> => fetchTeams(),
+  ["teams:stats"],
+  PLAYERS_CACHE_OPTIONS,
+);
 
 export type TeamRosterPlayer = {
   id: number;
@@ -119,10 +122,11 @@ const fetchRoster = (abbr: string): Promise<TeamRosterPlayer[]> =>
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
   });
 
-const cachedRoster = unstable_cache((abbr: string) => fetchRoster(abbr), ["team:roster"], {
-  revalidate: 300,
-  tags: ["players"],
-});
+const cachedRoster = unstable_cache(
+  (abbr: string) => fetchRoster(abbr),
+  ["team:roster"],
+  PLAYERS_CACHE_OPTIONS,
+);
 
 export const getTeamRoster = ({ abbr }: { abbr: string }): Promise<TeamRosterPlayer[]> =>
   cachedRoster(abbr);

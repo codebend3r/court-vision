@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
-import { NBA_TEAMS } from "@/components/TeamChip/TeamChip";
+import { NBA_TEAMS } from "@/lib/teams/meta";
 import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 
 import DesignPage from "@/app/design/page";

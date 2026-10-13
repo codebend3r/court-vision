@@ -1,3 +1,5 @@
+import { recordFromKeys } from "@vision/core/util/record";
+
 import { ADVANCED_METRIC_KEYS, type AdvancedMetricKey } from "@/lib/players/searchParams";
 import type { StatMode } from "@/lib/stats/searchParams";
 
@@ -36,41 +38,15 @@ export type AdvancedPoint = Record<AdvancedMetricKey, number | null> & {
 type Running = { sum: number; count: number };
 type RunningByKey = Record<AdvancedMetricKey, Running>;
 
-const EMPTY_RUNNING: RunningByKey = {
-  pie: { sum: 0, count: 0 },
-  pace: { sum: 0, count: 0 },
-  assistPercentage: { sum: 0, count: 0 },
-  assistRatio: { sum: 0, count: 0 },
-  assistToTurnover: { sum: 0, count: 0 },
-  defensiveRating: { sum: 0, count: 0 },
-  defensiveReboundPercentage: { sum: 0, count: 0 },
-  effectiveFieldGoalPercentage: { sum: 0, count: 0 },
-  netRating: { sum: 0, count: 0 },
-  offensiveRating: { sum: 0, count: 0 },
-  offensiveReboundPercentage: { sum: 0, count: 0 },
-  reboundPercentage: { sum: 0, count: 0 },
-  trueShootingPercentage: { sum: 0, count: 0 },
-  turnoverRatio: { sum: 0, count: 0 },
-  usagePercentage: { sum: 0, count: 0 },
-};
+const EMPTY_RUNNING: RunningByKey = recordFromKeys({
+  keys: ADVANCED_METRIC_KEYS,
+  value: () => ({ sum: 0, count: 0 }),
+});
 
-const NULL_METRICS: Record<AdvancedMetricKey, number | null> = {
-  pie: null,
-  pace: null,
-  assistPercentage: null,
-  assistRatio: null,
-  assistToTurnover: null,
-  defensiveRating: null,
-  defensiveReboundPercentage: null,
-  effectiveFieldGoalPercentage: null,
-  netRating: null,
-  offensiveRating: null,
-  offensiveReboundPercentage: null,
-  reboundPercentage: null,
-  trueShootingPercentage: null,
-  turnoverRatio: null,
-  usagePercentage: null,
-};
+const NULL_METRICS: Record<AdvancedMetricKey, number | null> = recordFromKeys({
+  keys: ADVANCED_METRIC_KEYS,
+  value: () => null,
+});
 
 // One game's fifteen metrics from a stored advanced row, without its ids and
 // dates: what the game log needs, and nothing more to serialize.

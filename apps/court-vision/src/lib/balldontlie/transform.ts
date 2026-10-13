@@ -5,27 +5,28 @@ import {
   SeasonAggregateLog,
   SeasonStatsInput,
 } from "@/lib/stats/inputs";
+import { SEASON_TYPE, seasonLabel } from "@/lib/stats/season";
 import { blankToNull, parseGameDate, parseMinutes } from "@vision/core/util/parse";
 
-import { SEASON_TYPE, seasonLabelFromYear } from "@/lib/balldontlie/constants";
 import { BdlAdvancedStat, BdlGame, BdlPlayer, BdlStat } from "@/lib/balldontlie/schemas";
 
-export const parseHeightInches = (value: string | null | undefined): number | null => {
-  const match = /^(\d+)\s*-\s*(\d+)$/.exec((value ?? "").trim());
+// Balldontlie writes height as feet-inches ("6-4").
+const parseHeightInches = ({ height }: { height: string | null | undefined }): number | null => {
+  const match = /^(\d+)\s*-\s*(\d+)$/.exec((height ?? "").trim());
   if (match === null) return null;
   const feet = Number(match[1]);
   const inches = Number(match[2]);
   return inches < 12 ? feet * 12 + inches : null;
 };
 
-export const parseWeightLbs = (value: string | null | undefined): number | null => {
-  const normalized = (value ?? "").trim();
+const parseWeightLbs = ({ weight }: { weight: string | null | undefined }): number | null => {
+  const normalized = (weight ?? "").trim();
   if (!/^\d+$/.test(normalized)) return null;
-  const weight = Number(normalized);
-  return weight > 0 ? weight : null;
+  const pounds = Number(normalized);
+  return pounds > 0 ? pounds : null;
 };
 
-export type GameContext = {
+type GameContext = {
   homeAway: "home" | "away";
   opponentAbbr: string | null;
   winLoss: string | null;
@@ -34,6 +35,10 @@ export type GameContext = {
   matchup: string;
   gameDate: Date;
 };
+
+// 0-0 means the game has not been played yet, so it has no score or result.
+export const isGamePlayed = (game: BdlGame): boolean =>
+  game.home_team_score > 0 || game.visitor_team_score > 0;
 
 export const deriveGameContext = (args: {
   game: BdlGame;
@@ -47,8 +52,7 @@ export const deriveGameContext = (args: {
   const opponentAbbr = teamAbbrById.get(opponentTeamId) ?? null;
   const teamScore = homeAway === "home" ? game.home_team_score : game.visitor_team_score;
   const opponentScore = homeAway === "home" ? game.visitor_team_score : game.home_team_score;
-  // 0-0 means the game has not been played, so there is no score to keep.
-  const played = teamScore > 0 || opponentScore > 0;
+  const played = isGamePlayed(game);
   const winLoss = teamScore > opponentScore ? "W" : teamScore < opponentScore ? "L" : null;
   const separator = homeAway === "away" ? "@" : "vs.";
   return {
@@ -62,10 +66,13 @@ export const deriveGameContext = (args: {
   };
 };
 
-export const toPlayerInputs = (
-  stats: BdlStat[],
-  teamAbbrById: Map<number, string>,
-): PlayerInput[] => {
+export const toPlayerInputs = ({
+  stats,
+  teamAbbrById,
+}: {
+  stats: BdlStat[];
+  teamAbbrById: Map<number, string>;
+}): PlayerInput[] => {
   const byId = stats.reduce((acc, stat) => {
     const player = stat.player;
     const rawTeamId = player.team_id ?? null;
@@ -103,7 +110,7 @@ export const toGameLogInput = (args: {
     gameId: String(game.id),
     // Each row carries its own season (the start year), so a multi-season
     // fetch stamps every log with the season it belongs to.
-    season: seasonLabelFromYear(game.season),
+    season: seasonLabel({ startYear: game.season }),
     seasonType: SEASON_TYPE,
     teamId: team.id,
     teamAbbr: team.abbreviation,
@@ -131,7 +138,11 @@ export const toGameLogInput = (args: {
   };
 };
 
-export const aggregateSeasonStats = (logs: SeasonAggregateLog[]): SeasonStatsInput[] => {
+export const aggregateSeasonStats = ({
+  logs,
+}: {
+  logs: SeasonAggregateLog[];
+}): SeasonStatsInput[] => {
   // Keyed by player AND season so a multi-season backfill aggregates each
   // season separately instead of collapsing a career into one row.
   const byPlayer = logs.reduce((acc, log) => {
@@ -190,7 +201,7 @@ export const toAdvancedGameLogInput = (args: { stat: BdlAdvancedStat }): Advance
     playerId: stat.player.id,
     gameId: String(game.id),
     gameDate: parseGameDate({ value: game.date }),
-    season: seasonLabelFromYear(game.season),
+    season: seasonLabel({ startYear: game.season }),
     seasonType: SEASON_TYPE,
     teamId: team.id,
     teamAbbr: team.abbreviation,
@@ -223,8 +234,8 @@ export const toPlayerInput = (args: { player: BdlPlayer }): PlayerInput => {
     teamAbbr: player.team?.abbreviation ?? null,
     position: blankToNull({ value: player.position }),
     jerseyNumber: blankToNull({ value: player.jersey_number }),
-    heightInches: parseHeightInches(player.height),
-    weightLbs: parseWeightLbs(player.weight),
+    heightInches: parseHeightInches({ height: player.height }),
+    weightLbs: parseWeightLbs({ weight: player.weight }),
     college: blankToNull({ value: player.college }),
     country: blankToNull({ value: player.country }),
     draftYear: player.draft_year ?? null,

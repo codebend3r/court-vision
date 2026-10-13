@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "bun:test";
 
+import { Prisma } from "@generated/prisma/client";
+
 import type { PlayerPoolRow, PlayerStats } from "@/lib/players/search";
-import type { PlayersSearchParams } from "@/lib/players/searchParams";
+import type { RegularSearchParams } from "@/lib/players/searchParams";
+import { SEASON_TYPE } from "@/lib/stats/season";
 
 const queryRaw = vi.fn<(strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>>();
 
@@ -9,10 +12,9 @@ vi.mock("@/lib/prisma", () => ({
   prisma: { $queryRaw: queryRaw },
 }));
 
-const { compareByName, fetchRegularPool, matchesQuery, pageOf, rankPlayers, searchPlayers } =
-  await import("@/lib/players/search");
+const { fetchRegularPool, rankPlayers } = await import("@/lib/players/search");
 
-const defaultParams: PlayersSearchParams = {
+const defaultParams: RegularSearchParams = {
   q: "",
   page: 1,
   size: 25,
@@ -83,6 +85,13 @@ const sqlRow = ({
   pts,
 });
 
+// The first query, with its shared fragments spliced back in, the way Prisma
+// composes it: the full SQL text and every bound value in order.
+const firstQuery = (): Prisma.Sql => {
+  const [strings, ...values] = queryRaw.mock.calls[0] ?? [];
+  return Prisma.sql(strings ?? [], ...values);
+};
+
 const idsOf = (rows: readonly { id: number }[]): number[] => rows.map((row) => row.id);
 
 describe("fetchRegularPool", () => {
@@ -90,14 +99,13 @@ describe("fetchRegularPool", () => {
     queryRaw.mockReset();
   });
 
-  it("reads the latest season aggregate for the all range, with no window parameter", async () => {
+  it("reads the latest regular-season aggregate for the all range, with no window", async () => {
     queryRaw.mockResolvedValue([sqlRow({ id: 1, pts: 2000, gamesPlayed: 70 })]);
 
     const pool = await fetchRegularPool({ range: "all" });
 
-    const [strings, ...values] = queryRaw.mock.calls[0] ?? [];
-    expect(strings?.join("?")).toContain('"PlayerSeasonStats"');
-    expect(values).toEqual([]);
+    expect(firstQuery().sql).toContain('"PlayerSeasonStats"');
+    expect(firstQuery().values).toEqual([SEASON_TYPE]);
     expect(pool).toEqual([
       {
         id: 1,
@@ -117,9 +125,8 @@ describe("fetchRegularPool", () => {
 
     const pool = await fetchRegularPool({ range: "last10" });
 
-    const [strings, ...values] = queryRaw.mock.calls[0] ?? [];
-    expect(strings?.join("?")).toContain('"PlayerGameLog"');
-    expect(values).toEqual([10]);
+    expect(firstQuery().sql).toContain('"PlayerGameLog"');
+    expect(firstQuery().values).toEqual([10]);
     expect(pool[0]?.stats).toEqual({ ...zeroStats, gamesPlayed: 10, pts: 300 });
   });
 
@@ -296,67 +303,48 @@ describe("rankPlayers", () => {
   });
 });
 
-describe("searchPlayers", () => {
-  beforeEach(() => {
-    queryRaw.mockReset();
+describe("rankPlayers star order", () => {
+  const starredParams: RegularSearchParams = {
+    ...defaultParams,
+    size: 50,
+    sort: "starredAt",
+    tab: "starred",
+  };
+
+  it("restores star order when the pool holds the rows in another order", () => {
+    const pool = [poolRow({ id: 3 }), poolRow({ id: 7 })];
+
+    const result = rankPlayers({ pool, args: { ...starredParams, playerIds: [7, 3] } });
+
+    expect(idsOf(result.rows)).toEqual([7, 3]);
   });
 
-  it("ranks the pool for the requested range", async () => {
-    queryRaw.mockResolvedValue([
-      sqlRow({ id: 1, pts: 100, gamesPlayed: 10 }),
-      sqlRow({ id: 2, pts: 300, gamesPlayed: 10 }),
-    ]);
+  it("orders a watchlist longer than a page by star order before cutting the page", () => {
+    // Twelve stars, newest first, with names in the opposite order: a name
+    // sort would put the oldest stars on page 1.
+    const playerIds = Array.from({ length: 12 }, (_, index) => 12 - index);
+    const pool = playerIds.map((id) =>
+      poolRow({ id, firstName: "Al", lastName: `Name${id + 10}` }),
+    );
+    const args = { ...starredParams, size: 10, playerIds };
 
-    const result = await searchPlayers({ ...defaultParams, sort: "pts", range: "last10" });
+    const first = rankPlayers({ pool, args });
+    const second = rankPlayers({ pool, args: { ...args, page: 2 } });
+    const oldestFirst = rankPlayers({ pool, args: { ...args, dir: "asc" } });
+
+    expect(idsOf(first.rows)).toEqual([12, 11, 10, 9, 8, 7, 6, 5, 4, 3]);
+    expect(idsOf(second.rows)).toEqual([2, 1]);
+    expect(idsOf(oldestFirst.rows)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  });
+
+  it("ties every row, so names decide, when there is no watchlist to order by", () => {
+    const pool = [
+      poolRow({ id: 1, firstName: "Bo", lastName: "Zed" }),
+      poolRow({ id: 2, firstName: "Al", lastName: "Abe" }),
+    ];
+
+    const result = rankPlayers({ pool, args: { ...starredParams, tab: "regular" } });
 
     expect(idsOf(result.rows)).toEqual([2, 1]);
-    expect(queryRaw.mock.calls[0]?.slice(1)).toEqual([10]);
-  });
-
-  it("short-circuits an empty id list without querying", async () => {
-    const result = await searchPlayers({ ...defaultParams, playerIds: [] });
-
-    expect(result).toEqual({ rows: [], total: 0, page: 1 });
-    expect(queryRaw).not.toHaveBeenCalled();
-  });
-});
-
-describe("matchesQuery", () => {
-  it("matches every name for an empty query", () => {
-    expect(matchesQuery({ fullName: "Stephen Curry", q: "" })).toBe(true);
-  });
-
-  it("matches a case-insensitive substring and rejects a miss", () => {
-    expect(matchesQuery({ fullName: "Stephen Curry", q: "phen cu" })).toBe(true);
-    expect(matchesQuery({ fullName: "Stephen Curry", q: "james" })).toBe(false);
-  });
-});
-
-describe("compareByName", () => {
-  it("falls back to id ascending for identical names in either direction", () => {
-    const a = { id: 2, firstName: "Jalen", lastName: "Williams" };
-    const b = { id: 1, firstName: "Jalen", lastName: "Williams" };
-
-    expect(compareByName({ a, b, sort: "lastName", dir: "asc" })).toBeGreaterThan(0);
-    expect(compareByName({ a, b, sort: "lastName", dir: "desc" })).toBeGreaterThan(0);
-  });
-});
-
-describe("pageOf", () => {
-  it("slices the requested page", () => {
-    expect(pageOf({ rows: [1, 2, 3, 4, 5], page: 2, size: 2 })).toEqual({
-      rows: [3, 4],
-      total: 5,
-      page: 2,
-    });
-  });
-
-  it("clamps to the last page and reports page 1 for an empty list", () => {
-    expect(pageOf({ rows: [1, 2, 3], page: 5, size: 2 })).toEqual({
-      rows: [3],
-      total: 3,
-      page: 2,
-    });
-    expect(pageOf({ rows: [], page: 3, size: 2 })).toEqual({ rows: [], total: 0, page: 1 });
   });
 });

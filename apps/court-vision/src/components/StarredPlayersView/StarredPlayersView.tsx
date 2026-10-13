@@ -1,16 +1,16 @@
 import Link from "next/link";
 
-import { PlayersTable } from "@/components/PlayersTable/PlayersTable";
+import { PlayersTable, regularColumns } from "@/components/PlayersTable/PlayersTable";
 import { getUser } from "@/lib/auth/session";
 import { searchPlayers } from "@/lib/players/searchCached";
-import { type PlayersSearchParams } from "@/lib/players/searchParams";
+import { type RegularSearchParams } from "@/lib/players/searchParams";
 import { MAX_WATCHLIST } from "@/lib/watchlist/constants";
 import { getWatchlistPlayerIds } from "@/lib/watchlist/queries";
 
 import styles from "@/components/StarredPlayersView/StarredPlayersView.module.scss";
 
 export type StarredPlayersViewProps = {
-  params: PlayersSearchParams;
+  params: RegularSearchParams;
   showCounter: boolean;
 };
 
@@ -36,17 +36,8 @@ export async function StarredPlayersView({ params, showCounter }: StarredPlayers
     );
   }
 
+  // The ids arrive newest star first; ranking reads star order from them.
   const { rows, total, page } = await searchPlayers({ ...params, playerIds });
-  // Star order lives in the id list, not the stats query. The set is capped at
-  // 50, so applying it here beats teaching the query a join order it otherwise
-  // never needs.
-  const ordered =
-    params.sort === "starredAt"
-      ? [...rows].sort((a, b) => {
-          const difference = playerIds.indexOf(a.id) - playerIds.indexOf(b.id);
-          return params.dir === "asc" ? -difference : difference;
-        })
-      : rows;
 
   return (
     <section className={styles.view}>
@@ -55,7 +46,13 @@ export async function StarredPlayersView({ params, showCounter }: StarredPlayers
           {playerIds.length} / {MAX_WATCHLIST} starred
         </p>
       )}
-      <PlayersTable variant="regular" rows={ordered} params={params} page={page} isSignedIn />
+      <PlayersTable
+        rows={rows}
+        columns={regularColumns({ mode: params.mode })}
+        params={params}
+        page={page}
+        isSignedIn
+      />
       <p className={styles.summary}>
         {total === 1 ? "1 starred player" : `${total} starred players`}
       </p>

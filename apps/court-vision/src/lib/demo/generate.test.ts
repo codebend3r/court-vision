@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { SEASON_LABEL, SEASON_TYPE } from "@/lib/balldontlie/constants";
+import { SEASON_LABEL, SEASON_TYPE } from "@/lib/stats/season";
 import { BdlGame } from "@/lib/balldontlie/schemas";
 
 import { generateGameLogs } from "@/lib/demo/generate";

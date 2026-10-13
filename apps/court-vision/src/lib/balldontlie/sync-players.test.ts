@@ -45,10 +45,12 @@ describe("syncPlayers", () => {
     const summary = await syncPlayers();
 
     expect(summary).toEqual({ fetched: 2, upserted: 2, active: 2 });
-    expect(upsertPlayers).toHaveBeenCalledWith([
-      expect.objectContaining({ id: 1057262817, teamAbbr: "WAS", draftYear: 2026 }),
-      expect.objectContaining({ id: 115, teamAbbr: "GSW" }),
-    ]);
+    expect(upsertPlayers).toHaveBeenCalledWith({
+      players: [
+        expect.objectContaining({ id: 1057262817, teamAbbr: "WAS", draftYear: 2026 }),
+        expect.objectContaining({ id: 115, teamAbbr: "GSW" }),
+      ],
+    });
     expect(markActiveRoster).toHaveBeenCalledWith({ playerIds: [1057262817, 115] });
   });
 
@@ -69,23 +71,16 @@ describe("syncPlayers", () => {
     expect(order).toEqual(["upsert", "mark"]);
   });
 
-  it("logs each page of the active list", async () => {
-    vi.spyOn(endpoints, "fetchActivePlayers").mockImplementation(async ({ deps } = {}) => {
-      deps?.onPage?.({
-        endpoint: "players/active",
-        page: 1,
-        pageRows: 1,
-        totalRows: 1,
-        nextCursor: null,
-      });
-      return [rookie];
-    });
+  it("hands its logger to the paginator so each page of the active list is logged", async () => {
+    const fetchActivePlayers = vi
+      .spyOn(endpoints, "fetchActivePlayers")
+      .mockResolvedValue([rookie]);
     vi.spyOn(persist, "upsertPlayers").mockResolvedValue(1);
     vi.spyOn(persist, "markActiveRoster").mockResolvedValue(1);
     const logger = vi.fn();
 
     await syncPlayers({ logger });
 
-    expect(logger).toHaveBeenCalledWith("active players page 1: 1 rows total (final page)");
+    expect(fetchActivePlayers).toHaveBeenCalledWith({ deps: expect.objectContaining({ logger }) });
   });
 });

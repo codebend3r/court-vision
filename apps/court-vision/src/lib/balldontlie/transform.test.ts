@@ -4,13 +4,12 @@ import { GameLogInput } from "@/lib/stats/inputs";
 
 import {
   aggregateSeasonStats,
-  parseHeightInches,
-  parseWeightLbs,
   toAdvancedGameLogInput,
   toGameLogInput,
   toPlayerInputs,
   toPlayerInput,
   deriveGameContext,
+  isGamePlayed,
 } from "@/lib/balldontlie/transform";
 import { BdlAdvancedStat, BdlStat } from "@/lib/balldontlie/schemas";
 
@@ -79,7 +78,7 @@ const awayStat: BdlStat = {
 
 describe("toPlayerInputs", () => {
   it("dedupes players by id and resolves team abbreviation", () => {
-    const players = toPlayerInputs([homeStat, { ...homeStat, id: 99 }], teamAbbrById);
+    const players = toPlayerInputs({ stats: [homeStat, { ...homeStat, id: 99 }], teamAbbrById });
     expect(players).toHaveLength(1);
     expect(players[0]).toEqual({
       id: 115,
@@ -98,7 +97,7 @@ describe("toPlayerInputs", () => {
       ...homeStat,
       player: { id: 7, first_name: "Free", last_name: "Agent", position: "", jersey_number: null },
     };
-    const [player] = toPlayerInputs([orphan], teamAbbrById);
+    const [player] = toPlayerInputs({ stats: [orphan], teamAbbrById });
     expect(player.teamId).toBeNull();
     expect(player.teamAbbr).toBeNull();
     expect(player.position).toBeNull();
@@ -151,6 +150,28 @@ describe("deriveGameContext", () => {
     const unplayed = { ...game, home_team_score: 0, visitor_team_score: 0 };
     const ctx = deriveGameContext({ game: unplayed, teamId: 18, teamAbbr: "MIN", teamAbbrById });
     expect(ctx).toMatchObject({ winLoss: null, teamScore: null, opponentScore: null });
+  });
+});
+
+describe("isGamePlayed", () => {
+  const game = {
+    id: 1,
+    date: "2025-10-22",
+    season: 2025,
+    home_team_id: 18,
+    visitor_team_id: 2,
+    home_team_score: 0,
+    visitor_team_score: 0,
+    postseason: false,
+  };
+
+  it("treats a 0-0 game as not yet played", () => {
+    expect(isGamePlayed(game)).toBe(false);
+  });
+
+  it("treats a game with any score as played", () => {
+    expect(isGamePlayed({ ...game, home_team_score: 101 })).toBe(true);
+    expect(isGamePlayed({ ...game, visitor_team_score: 99 })).toBe(true);
   });
 });
 
@@ -245,7 +266,7 @@ describe("toGameLogInput inactive rows", () => {
   it("does not count an inactive row toward gamesPlayed", () => {
     const logs = [homeStat, inactiveStat].map((stat) => toGameLogInput({ stat, teamAbbrById }));
 
-    const [season] = aggregateSeasonStats(logs);
+    const [season] = aggregateSeasonStats({ logs });
 
     expect(season.gamesPlayed).toBe(1);
     expect(season.pts).toBe(29);
@@ -258,7 +279,7 @@ describe("aggregateSeasonStats", () => {
     const logs: GameLogInput[] = [homeStat, awayStat].map((stat) =>
       toGameLogInput({ stat, teamAbbrById }),
     );
-    const [season] = aggregateSeasonStats(logs);
+    const [season] = aggregateSeasonStats({ logs });
     expect(season).toMatchObject({
       playerId: 115,
       season: "2025-26",
@@ -281,7 +302,7 @@ describe("aggregateSeasonStats", () => {
     const logs: GameLogInput[] = [homeStat, awayStat, dnpStat].map((stat) =>
       toGameLogInput({ stat, teamAbbrById }),
     );
-    const [season] = aggregateSeasonStats(logs);
+    const [season] = aggregateSeasonStats({ logs });
     // Three logs, but the DNP does not count as a game played.
     expect(season.gamesPlayed).toBe(2);
     // Totals and minutes still include the DNP (which contributes zeros).
@@ -300,7 +321,7 @@ describe("aggregateSeasonStats across seasons", () => {
       },
       teamAbbrById,
     });
-    const rows = aggregateSeasonStats([current, historic]);
+    const rows = aggregateSeasonStats({ logs: [current, historic] });
     expect(rows).toHaveLength(2);
     const seasons = rows.map((row) => row.season).sort();
     expect(seasons).toEqual(["2020-21", "2025-26"]);
@@ -435,15 +456,25 @@ describe("toPlayerInput", () => {
   });
 });
 
-describe("player measurement parsing", () => {
+describe("toPlayerInput measurements", () => {
+  const measured = ({ height, weight }: { height: string; weight: string }) =>
+    toPlayerInput({ player: { id: 1, first_name: "Test", last_name: "Player", height, weight } });
+
   it("normalizes feet/inches and pounds", () => {
-    expect(parseHeightInches("6-2")).toBe(74);
-    expect(parseWeightLbs("185")).toBe(185);
+    expect(measured({ height: "6-2", weight: "185" })).toMatchObject({
+      heightInches: 74,
+      weightLbs: 185,
+    });
   });
 
   it("returns null for blank or malformed measurements", () => {
-    expect(parseHeightInches("")).toBeNull();
-    expect(parseHeightInches("6-12")).toBeNull();
-    expect(parseWeightLbs("unknown")).toBeNull();
+    expect(measured({ height: "", weight: "unknown" })).toMatchObject({
+      heightInches: null,
+      weightLbs: null,
+    });
+    expect(measured({ height: "6-12", weight: "0" })).toMatchObject({
+      heightInches: null,
+      weightLbs: null,
+    });
   });
 });

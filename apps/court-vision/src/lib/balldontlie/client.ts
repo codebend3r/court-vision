@@ -4,7 +4,7 @@ import { BDL_BASE_URL, getApiKey } from "@/lib/balldontlie/constants";
 
 export type BdlParamValue = string | string[];
 
-export type BdlFetchOptions = {
+type BdlFetchOptions = {
   endpoint: string;
   params?: Record<string, BdlParamValue>;
   apiKey?: string;

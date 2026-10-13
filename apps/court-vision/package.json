@@ -15,7 +15,6 @@
     "perf:budget": "bun run scripts/perf-budget.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "sync:nba": "bun run src/lib/nba/sync.ts",
     "sync:bdl": "bun run src/lib/balldontlie/sync.ts",
     "sync:players": "bun run src/lib/balldontlie/sync-players.ts",
     "sync:nightly": "bun run src/lib/balldontlie/sync-nightly.ts",

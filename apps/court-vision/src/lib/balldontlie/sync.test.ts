@@ -93,64 +93,76 @@ describe("syncBalldontlie", () => {
     vi.spyOn(endpoints, "fetchAllStats").mockResolvedValue([statRow]);
     vi.spyOn(endpoints, "fetchAllAdvancedStats").mockResolvedValue([advancedRow]);
     const upsertPlayers = vi.spyOn(persist, "upsertPlayers").mockResolvedValue(1);
-    const upsertGameLogs = vi.spyOn(persist, "upsertGameLogs").mockResolvedValue(1);
+    const replaceGameLogs = vi.spyOn(persist, "replaceGameLogs").mockResolvedValue(1);
     const upsertSeasonStats = vi.spyOn(persist, "upsertSeasonStats").mockResolvedValue(1);
-    const upsertAdvancedGameLogs = vi.spyOn(persist, "upsertAdvancedGameLogs").mockResolvedValue(1);
+    const replaceAdvancedGameLogs = vi
+      .spyOn(persist, "replaceAdvancedGameLogs")
+      .mockResolvedValue(1);
 
     const summary = await syncBalldontlie({ deps: { apiKey: "k" } });
 
     expect(summary).toEqual({ players: 1, seasonStats: 1, gameLogs: 1, advancedGameLogs: 1 });
-    expect(upsertPlayers).toHaveBeenCalledWith([
-      expect.objectContaining({ id: 115, teamAbbr: "GSW" }),
-    ]);
-    expect(upsertGameLogs).toHaveBeenCalledWith([
-      expect.objectContaining({ gameId: "18422", opponentAbbr: "BOS", homeAway: "home" }),
-    ]);
-    expect(upsertSeasonStats).toHaveBeenCalledWith([
-      expect.objectContaining({ playerId: 115, gamesPlayed: 1, pts: 29 }),
-    ]);
-    expect(upsertAdvancedGameLogs).toHaveBeenCalledWith([
-      expect.objectContaining({ playerId: 115, gameId: "18422", pie: 0.152 }),
-    ]);
+    expect(upsertPlayers).toHaveBeenCalledWith({
+      players: [expect.objectContaining({ id: 115, teamAbbr: "GSW" })],
+    });
+    expect(replaceGameLogs).toHaveBeenCalledWith({
+      rows: [expect.objectContaining({ gameId: "18422", opponentAbbr: "BOS", homeAway: "home" })],
+    });
+    expect(upsertSeasonStats).toHaveBeenCalledWith({
+      rows: [expect.objectContaining({ playerId: 115, gamesPlayed: 1, pts: 29 })],
+    });
+    expect(replaceAdvancedGameLogs).toHaveBeenCalledWith({
+      rows: [expect.objectContaining({ playerId: 115, gameId: "18422", pie: 0.152 })],
+    });
+  });
+
+  it("writes nothing for a season whose advanced fetch fails", async () => {
+    vi.spyOn(endpoints, "fetchAllStats").mockResolvedValue([statRow]);
+    vi.spyOn(endpoints, "fetchAllAdvancedStats").mockRejectedValue(
+      new Error("Balldontlie request failed (503) for stats/advanced"),
+    );
+    const upsertPlayers = vi.spyOn(persist, "upsertPlayers").mockResolvedValue(0);
+    const replaceGameLogs = vi.spyOn(persist, "replaceGameLogs").mockResolvedValue(0);
+
+    await expect(syncBalldontlie({ deps: { apiKey: "k" } })).rejects.toThrow("503");
+    expect(upsertPlayers).not.toHaveBeenCalled();
+    expect(replaceGameLogs).not.toHaveBeenCalled();
   });
 
   it("loops the requested seasons sequentially, oldest first", async () => {
     const fetchAllStats = vi
       .spyOn(endpoints, "fetchAllStats")
-      .mockImplementation(async ({ season } = {}) =>
-        season === "2020" ? [statRow2020] : [statRow],
-      );
+      .mockImplementation(async ({ season } = {}) => (season === 2020 ? [statRow2020] : [statRow]));
     const fetchAllAdvancedStats = vi
       .spyOn(endpoints, "fetchAllAdvancedStats")
       .mockImplementation(async ({ season } = {}) =>
-        season === "2020" ? [advancedRow2020] : [advancedRow],
+        season === 2020 ? [advancedRow2020] : [advancedRow],
       );
     vi.spyOn(persist, "upsertPlayers").mockResolvedValue(1);
-    const upsertGameLogs = vi.spyOn(persist, "upsertGameLogs").mockResolvedValue(1);
+    const replaceGameLogs = vi.spyOn(persist, "replaceGameLogs").mockResolvedValue(1);
     vi.spyOn(persist, "upsertSeasonStats").mockResolvedValue(1);
-    const upsertAdvancedGameLogs = vi.spyOn(persist, "upsertAdvancedGameLogs").mockResolvedValue(1);
+    const replaceAdvancedGameLogs = vi
+      .spyOn(persist, "replaceAdvancedGameLogs")
+      .mockResolvedValue(1);
 
     const summary = await syncBalldontlie({
       deps: { apiKey: "k" },
-      seasons: ["2020", "2025"],
+      seasons: [2020, 2025],
     });
 
     // One fetch per season per endpoint, in the given order.
-    expect(fetchAllStats.mock.calls.map(([args]) => args?.season)).toEqual(["2020", "2025"]);
-    expect(fetchAllAdvancedStats.mock.calls.map(([args]) => args?.season)).toEqual([
-      "2020",
-      "2025",
-    ]);
+    expect(fetchAllStats.mock.calls.map(([args]) => args?.season)).toEqual([2020, 2025]);
+    expect(fetchAllAdvancedStats.mock.calls.map(([args]) => args?.season)).toEqual([2020, 2025]);
     // Each season persists its own rows stamped with its own label.
-    expect(upsertGameLogs).toHaveBeenNthCalledWith(1, [
-      expect.objectContaining({ season: "2020-21" }),
-    ]);
-    expect(upsertGameLogs).toHaveBeenNthCalledWith(2, [
-      expect.objectContaining({ season: "2025-26" }),
-    ]);
-    expect(upsertAdvancedGameLogs).toHaveBeenNthCalledWith(1, [
-      expect.objectContaining({ season: "2020-21" }),
-    ]);
+    expect(replaceGameLogs).toHaveBeenNthCalledWith(1, {
+      rows: [expect.objectContaining({ season: "2020-21" })],
+    });
+    expect(replaceGameLogs).toHaveBeenNthCalledWith(2, {
+      rows: [expect.objectContaining({ season: "2025-26" })],
+    });
+    expect(replaceAdvancedGameLogs).toHaveBeenNthCalledWith(1, {
+      rows: [expect.objectContaining({ season: "2020-21" })],
+    });
     // Counts accumulate across seasons.
     expect(summary).toEqual({ players: 2, seasonStats: 2, gameLogs: 2, advancedGameLogs: 2 });
   });

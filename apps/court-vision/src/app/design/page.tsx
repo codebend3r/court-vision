@@ -1,6 +1,7 @@
 import { ChartPaletteSwatches } from "@/components/ChartPaletteSwatches/ChartPaletteSwatches";
 import { Switch } from "@vision/ui/components/Switch/Switch";
-import { NBA_TEAMS, TeamChip } from "@/components/TeamChip/TeamChip";
+import { TeamChip } from "@/components/TeamChip/TeamChip";
+import { NBA_TEAMS } from "@/lib/teams/meta";
 import { TokenSwatch } from "@vision/ui/components/TokenSwatch/TokenSwatch";
 
 import styles from "@/app/design/page.module.scss";

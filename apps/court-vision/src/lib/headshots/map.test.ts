@@ -58,10 +58,12 @@ const toFullPlayerRow = (row: OurPlayerRow): FullPlayerRow => ({
 
 const findMany = vi.fn<(arg: unknown) => Promise<FullPlayerRow[]>>();
 const update = vi.fn<(arg: unknown) => Promise<unknown>>();
+const $transaction = vi.fn((operations: readonly Promise<unknown>[]) => Promise.all(operations));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     player: { findMany, update },
+    $transaction,
   },
 }));
 
@@ -103,6 +105,8 @@ describe("mapHeadshots", () => {
     const result = await mapHeadshots();
 
     expect(result).toEqual({ matched: 2, unmatched: [] });
+    // Every match writes in the same transaction.
+    expect($transaction).toHaveBeenCalledTimes(1);
     expect(update).toHaveBeenCalledTimes(2);
     expect(update).toHaveBeenCalledWith({
       where: { id: 10 },

@@ -13,7 +13,7 @@ import { PlayerStatChart } from "@/components/PlayerStatChart/PlayerStatChart";
 import { PlayerStatFilters } from "@/components/PlayerStatFilters/PlayerStatFilters";
 import { SeasonStatCard } from "@/components/SeasonStatCard/SeasonStatCard";
 import { getProfile } from "@/lib/auth/session";
-import { SEASON_TYPE } from "@/lib/balldontlie/constants";
+import { SEASON_TYPE } from "@/lib/stats/season";
 import { getActiveLeague } from "@/lib/leagues/queries";
 import { ADVANCED_STAT_META, formatAdvancedStat } from "@/lib/players/advancedStatMeta";
 import { averageAdvancedLogs } from "@/lib/players/searchAdvanced";

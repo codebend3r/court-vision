@@ -47,7 +47,8 @@ describe("searchCached", () => {
   });
 
   it("ranks the regular pool for the requested range with the full params", async () => {
-    const params = parsePlayersSearchParams({ range: "last10", sort: "reb", page: "3" });
+    const params = parsePlayersSearchParams({ raw: { range: "last10", sort: "reb", page: "3" } });
+    if (params.tab === "advanced") throw new Error("expected the regular tab");
     const pool = [{ id: 1 }];
     const result = { rows: [], total: 0, page: 1 };
     fetchRegularPool.mockResolvedValue(pool);
@@ -58,19 +59,19 @@ describe("searchCached", () => {
     expect(rankPlayers).toHaveBeenCalledWith({ pool, args: params });
   });
 
-  it("short-circuits an empty watchlist without reading the pool", async () => {
-    const params = parsePlayersSearchParams({ tab: "starred" });
+  it("hands a watchlist's ids to the ranker with the params", async () => {
+    const params = parsePlayersSearchParams({ raw: { tab: "starred" } });
+    if (params.tab === "advanced") throw new Error("expected the starred tab");
+    fetchRegularPool.mockResolvedValue([]);
 
-    await expect(searchPlayers({ ...params, playerIds: [] })).resolves.toEqual({
-      rows: [],
-      total: 0,
-      page: 1,
-    });
-    expect(fetchRegularPool).not.toHaveBeenCalled();
+    await searchPlayers({ ...params, playerIds: [7, 3] });
+
+    expect(rankPlayers).toHaveBeenCalledWith({ pool: [], args: { ...params, playerIds: [7, 3] } });
   });
 
   it("ranks the advanced pool for the requested range with the full params", async () => {
-    const params = parsePlayersSearchParams({ tab: "advanced", range: "last5" });
+    const params = parsePlayersSearchParams({ raw: { tab: "advanced", range: "last5" } });
+    if (params.tab !== "advanced") throw new Error("expected the advanced tab");
     const pool = [{ id: 2 }];
     const result = { rows: [], total: 0, page: 1 };
     fetchAdvancedPool.mockResolvedValue(pool);

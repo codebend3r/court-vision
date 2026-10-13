@@ -40,7 +40,7 @@ export const bdlPlayerSchema = z.object({
 
 export type BdlPlayer = z.infer<typeof bdlPlayerSchema>;
 
-export const bdlGameSchema = z.object({
+const bdlGameSchema = z.object({
   id: z.number(),
   date: z.string(),
   season: z.number(),

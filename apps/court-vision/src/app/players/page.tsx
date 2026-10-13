@@ -5,7 +5,11 @@ import { FantasyValueView } from "@/components/FantasyValueView/FantasyValueView
 import { PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { PlayersPager } from "@/components/PlayersPager/PlayersPager";
 import { PlayersSearchControls } from "@/components/PlayersSearchControls/PlayersSearchControls";
-import { PlayersTable } from "@/components/PlayersTable/PlayersTable";
+import {
+  ADVANCED_COLUMNS,
+  PlayersTable,
+  regularColumns,
+} from "@/components/PlayersTable/PlayersTable";
 import { PlayersTabs } from "@/components/PlayersTabs/PlayersTabs";
 import { StarredPlayersView } from "@/components/StarredPlayersView/StarredPlayersView";
 import { getProfile, getUser } from "@/lib/auth/session";
@@ -24,9 +28,6 @@ import styles from "@/app/players/page.module.scss";
 export const dynamic = "force-dynamic";
 
 type RawSearchParams = Record<string, string | string[] | undefined>;
-
-const firstValue = (value: string | string[] | undefined): string | undefined =>
-  Array.isArray(value) ? value[0] : value;
 
 const totalPagesOf = ({ total, size }: { total: number; size: number }): number =>
   Math.max(1, Math.ceil(total / size));
@@ -112,17 +113,7 @@ export default async function PlayersPage({
   searchParams: Promise<RawSearchParams>;
 }) {
   const raw = await searchParams;
-  const params = parsePlayersSearchParams({
-    q: firstValue(raw.q),
-    page: firstValue(raw.page),
-    size: firstValue(raw.size),
-    sort: firstValue(raw.sort),
-    dir: firstValue(raw.dir),
-    range: firstValue(raw.range),
-    mode: firstValue(raw.mode),
-    minimums: firstValue(raw.minimums),
-    tab: firstValue(raw.tab),
-  });
+  const params = parsePlayersSearchParams({ raw });
 
   // Every tab renders star controls, and a star is only actionable with an
   // account; signed out, StarButton links to sign-in instead. Signed in, the
@@ -169,7 +160,7 @@ export default async function PlayersPage({
       <PlayersScreen params={params}>
         <PlayersResults params={params} total={total} page={page}>
           <PlayersTable
-            variant="advanced"
+            columns={ADVANCED_COLUMNS}
             rows={rows}
             params={params}
             page={page}
@@ -196,7 +187,7 @@ export default async function PlayersPage({
     <PlayersScreen params={params}>
       <PlayersResults params={params} total={total} page={page}>
         <PlayersTable
-          variant="regular"
+          columns={regularColumns({ mode: params.mode })}
           rows={rows}
           params={params}
           page={page}

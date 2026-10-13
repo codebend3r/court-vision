@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "bun:test";
 
 import type { FetchImpl } from "@vision/core/util/fetchImpl";
+import type { Logger } from "@vision/core/util/logger";
 
 import {
   fetchAllAdvancedStats,
@@ -8,7 +9,8 @@ import {
   fetchStandings,
   fetchTeams,
 } from "@/lib/balldontlie/endpoints";
-import { SEASON_YEAR } from "@/lib/balldontlie/constants";
+import { THROTTLE_MS } from "@/lib/balldontlie/constants";
+import { SEASON_START_YEAR } from "@/lib/stats/season";
 
 const jsonResponse = (body: unknown): Response =>
   new Response(JSON.stringify(body), {
@@ -56,7 +58,7 @@ describe("fetchTeams", () => {
         meta: {},
       }),
     );
-    const teams = await fetchTeams({ apiKey: "k", fetchImpl });
+    const teams = await fetchTeams({ deps: { apiKey: "k", fetchImpl } });
     expect(teams).toEqual([{ id: 1, abbreviation: "ATL", full_name: "Atlanta Hawks" }]);
     expect(fetchImpl.mock.calls[0]?.[0]?.toString() ?? "").toContain("/teams");
   });
@@ -67,7 +69,7 @@ describe("fetchTeams", () => {
         data: [{ id: 1, abbreviation: "ATL", full_name: "Atlanta Hawks" }],
       }),
     );
-    const teams = await fetchTeams({ apiKey: "k", fetchImpl });
+    const teams = await fetchTeams({ deps: { apiKey: "k", fetchImpl } });
     expect(teams).toEqual([{ id: 1, abbreviation: "ATL", full_name: "Atlanta Hawks" }]);
   });
 });
@@ -108,7 +110,7 @@ describe("fetchStandings", () => {
     ]);
     const url = fetchImpl.mock.calls[0]?.[0]?.toString() ?? "";
     expect(url).toContain("/standings");
-    expect(url).toContain(`season=${SEASON_YEAR}`);
+    expect(url).toContain(`season=${SEASON_START_YEAR}`);
   });
 });
 
@@ -125,39 +127,40 @@ describe("fetchAllStats", () => {
     expect(stats).toHaveLength(2);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(sleep).toHaveBeenCalledTimes(1);
+    expect(sleep).toHaveBeenCalledWith(THROTTLE_MS);
     const firstUrl = fetchImpl.mock.calls[0]?.[0]?.toString() ?? "";
     const secondUrl = fetchImpl.mock.calls[1]?.[0]?.toString() ?? "";
-    expect(firstUrl).toContain(`seasons[]=${SEASON_YEAR}`);
+    expect(firstUrl).toContain(`seasons[]=${SEASON_START_YEAR}`);
     expect(firstUrl).toContain("postseason=false");
     expect(firstUrl).not.toContain("cursor=");
     expect(secondUrl).toContain("cursor=2");
   });
 
-  it("reports per-page progress through onPage", async () => {
+  it("logs per-page progress through the client logger", async () => {
     const fetchImpl = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(jsonResponse({ data: [statRow(1, 10)], meta: { next_cursor: 2 } }))
       .mockResolvedValueOnce(jsonResponse({ data: [statRow(2, 11)], meta: {} }));
     const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
-    const onPage = vi.fn();
+    const logger = vi.fn<Logger>();
 
-    await fetchAllStats({ deps: { apiKey: "k", fetchImpl, sleep, onPage } });
+    await fetchAllStats({ deps: { apiKey: "k", fetchImpl, sleep, logger } });
 
-    expect(onPage).toHaveBeenCalledTimes(2);
-    expect(onPage).toHaveBeenNthCalledWith(1, {
-      endpoint: "stats",
-      page: 1,
-      pageRows: 1,
-      totalRows: 1,
-      nextCursor: 2,
-    });
-    expect(onPage).toHaveBeenNthCalledWith(2, {
-      endpoint: "stats",
-      page: 2,
-      pageRows: 1,
-      totalRows: 2,
-      nextCursor: null,
-    });
+    expect(logger.mock.calls).toEqual([
+      ["stats page 1: 1 rows total"],
+      ["stats page 2: 2 rows total (final page)"],
+    ]);
+  });
+
+  it("drops playoff rows the API sends despite postseason=false", async () => {
+    const playoff = { ...statRow(2, 11), game: { ...statRow(2, 11).game, postseason: true } };
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(jsonResponse({ data: [statRow(1, 10), playoff], meta: {} }));
+
+    const stats = await fetchAllStats({ deps: { apiKey: "k", fetchImpl } });
+
+    expect(stats.map((stat) => stat.id)).toEqual([1]);
   });
 
   it("requests an overridden season", async () => {
@@ -165,7 +168,7 @@ describe("fetchAllStats", () => {
       .fn<typeof fetch>()
       .mockResolvedValue(jsonResponse({ data: [statRow(1, 10)], meta: {} }));
 
-    await fetchAllStats({ deps: { apiKey: "k", fetchImpl }, season: "2020" });
+    await fetchAllStats({ deps: { apiKey: "k", fetchImpl }, season: 2020 });
 
     expect(fetchImpl.mock.calls[0]?.[0]?.toString() ?? "").toContain("seasons[]=2020");
   });
@@ -233,37 +236,40 @@ describe("fetchAllAdvancedStats", () => {
     const firstUrl = fetchImpl.mock.calls[0]?.[0]?.toString() ?? "";
     const secondUrl = fetchImpl.mock.calls[1]?.[0]?.toString() ?? "";
     expect(firstUrl).toContain("/stats/advanced?");
-    expect(firstUrl).toContain(`seasons[]=${SEASON_YEAR}`);
+    expect(firstUrl).toContain(`seasons[]=${SEASON_START_YEAR}`);
     expect(firstUrl).toContain("postseason=false");
     expect(firstUrl).not.toContain("cursor=");
     expect(secondUrl).toContain("cursor=2");
   });
 
-  it("reports per-page progress through onPage with the stats/advanced label", async () => {
+  it("logs per-page progress under the stats/advanced endpoint", async () => {
     const fetchImpl = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(jsonResponse({ data: [advancedRow(1, 10)], meta: { next_cursor: 2 } }))
       .mockResolvedValueOnce(jsonResponse({ data: [advancedRow(2, 11)], meta: {} }));
     const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
-    const onPage = vi.fn();
+    const logger = vi.fn<Logger>();
 
-    await fetchAllAdvancedStats({ deps: { apiKey: "k", fetchImpl, sleep, onPage } });
+    await fetchAllAdvancedStats({ deps: { apiKey: "k", fetchImpl, sleep, logger } });
 
-    expect(onPage).toHaveBeenCalledTimes(2);
-    expect(onPage).toHaveBeenNthCalledWith(1, {
-      endpoint: "stats/advanced",
-      page: 1,
-      pageRows: 1,
-      totalRows: 1,
-      nextCursor: 2,
-    });
-    expect(onPage).toHaveBeenNthCalledWith(2, {
-      endpoint: "stats/advanced",
-      page: 2,
-      pageRows: 1,
-      totalRows: 2,
-      nextCursor: null,
-    });
+    expect(logger.mock.calls).toEqual([
+      ["stats/advanced page 1: 1 rows total"],
+      ["stats/advanced page 2: 2 rows total (final page)"],
+    ]);
+  });
+
+  it("drops playoff rows the API sends despite postseason=false", async () => {
+    const playoff = {
+      ...advancedRow(2, 11),
+      game: { ...advancedRow(2, 11).game, postseason: true },
+    };
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(jsonResponse({ data: [advancedRow(1, 10), playoff], meta: {} }));
+
+    const stats = await fetchAllAdvancedStats({ deps: { apiKey: "k", fetchImpl } });
+
+    expect(stats.map((stat) => stat.id)).toEqual([1]);
   });
 
   it("rejects a page response missing meta entirely", async () => {
@@ -291,7 +297,7 @@ describe("fetchAllAdvancedStats", () => {
       .fn<typeof fetch>()
       .mockResolvedValue(jsonResponse({ data: [advancedRow(1, 10)], meta: {} }));
 
-    await fetchAllAdvancedStats({ deps: { apiKey: "k", fetchImpl }, season: "2020" });
+    await fetchAllAdvancedStats({ deps: { apiKey: "k", fetchImpl }, season: 2020 });
 
     expect(fetchImpl.mock.calls[0]?.[0]?.toString() ?? "").toContain("seasons[]=2020");
   });
@@ -314,7 +320,7 @@ describe("fetchAllPlayers", () => {
     team: { id: 18, abbreviation: "MIN" },
   };
 
-  it("paginates with cursor until next_cursor is null and honors throttleMs", async () => {
+  it("paginates with cursor until next_cursor is null at the standard throttle", async () => {
     const pageOne = { data: [playerRow], meta: { next_cursor: 25, per_page: 100 } };
     const pageTwo = { data: [{ ...playerRow, id: 2, team: null }], meta: { next_cursor: null } };
     const fetchImpl = vi
@@ -324,33 +330,24 @@ describe("fetchAllPlayers", () => {
     const sleep = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined);
 
     const { fetchAllPlayers } = await import("@/lib/balldontlie/endpoints");
-    const players = await fetchAllPlayers({
-      deps: { fetchImpl, sleep, apiKey: "k" },
-      throttleMs: 13000,
-    });
+    const players = await fetchAllPlayers({ deps: { fetchImpl, sleep, apiKey: "k" } });
 
     expect(players).toHaveLength(2);
     expect(fetchImpl.mock.calls[0]?.[0]?.toString() ?? "").toContain("/players?per_page=100");
     expect(fetchImpl.mock.calls[1]?.[0]?.toString() ?? "").toContain("cursor=25");
-    expect(sleep).toHaveBeenCalledWith(13000);
+    expect(sleep).toHaveBeenCalledWith(THROTTLE_MS);
   });
 
-  it("reports player pagination progress", async () => {
+  it("logs player pagination progress", async () => {
     const fetchImpl = vi
       .fn<typeof fetch>()
       .mockResolvedValue(jsonResponse({ data: [playerRow], meta: { next_cursor: null } }));
-    const onPage = vi.fn();
+    const logger = vi.fn<Logger>();
 
     const { fetchAllPlayers } = await import("@/lib/balldontlie/endpoints");
-    await fetchAllPlayers({ deps: { fetchImpl, apiKey: "k", onPage } });
+    await fetchAllPlayers({ deps: { fetchImpl, apiKey: "k", logger } });
 
-    expect(onPage).toHaveBeenCalledWith({
-      endpoint: "players",
-      page: 1,
-      pageRows: 1,
-      totalRows: 1,
-      nextCursor: null,
-    });
+    expect(logger).toHaveBeenCalledWith("players page 1: 1 rows total (final page)");
   });
 
   it("rejects rows that fail the player schema", async () => {
@@ -407,22 +404,16 @@ describe("fetchActivePlayers", () => {
     expect(sleep).toHaveBeenCalledTimes(1);
   });
 
-  it("reports progress under the active endpoint's name", async () => {
+  it("logs progress under the active endpoint's name", async () => {
     const fetchImpl = vi
       .fn<FetchImpl>()
       .mockResolvedValue(jsonResponse({ data: [rookieRow], meta: { next_cursor: null } }));
-    const onPage = vi.fn();
+    const logger = vi.fn();
 
     const { fetchActivePlayers } = await import("@/lib/balldontlie/endpoints");
-    await fetchActivePlayers({ deps: { fetchImpl, apiKey: "k", onPage } });
+    await fetchActivePlayers({ deps: { fetchImpl, apiKey: "k", logger } });
 
-    expect(onPage).toHaveBeenCalledWith({
-      endpoint: "players/active",
-      page: 1,
-      pageRows: 1,
-      totalRows: 1,
-      nextCursor: null,
-    });
+    expect(logger).toHaveBeenCalledWith("players/active page 1: 1 rows total (final page)");
   });
 });
 
@@ -459,7 +450,7 @@ describe("fetchTeamGames", () => {
     expect(games).toEqual([expectedGame]);
     const url = fetchImpl.mock.calls[0][0];
     expect(url).toContain("/games?");
-    expect(url).toContain(`seasons[]=${SEASON_YEAR}`);
+    expect(url).toContain(`seasons[]=${SEASON_START_YEAR}`);
     expect(url).toContain("team_ids[]=18");
     expect(url).toContain("postseason=false");
   });

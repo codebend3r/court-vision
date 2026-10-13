@@ -7,8 +7,8 @@ import {
   CONFERENCE_BY_DIVISION,
   CONFERENCES,
   DIVISIONS,
-  TEAM_META,
-  type TeamMeta,
+  NBA_TEAMS,
+  type NbaTeam,
 } from "@/lib/teams/meta";
 import { getTeamStats } from "@/lib/teams/loader";
 import { loadTeamsSearchParams, TEAMS_VIEWS, type TeamsView } from "@/lib/teams/searchParams";
@@ -27,7 +27,7 @@ const VIEW_LABELS: Record<TeamsView, string> = {
 
 type RawSearchParams = Record<string, string | string[] | undefined>;
 
-type TeamRow = TeamMeta & { stats?: TeamSeasonStats };
+type TeamRow = NbaTeam & { stats?: TeamSeasonStats };
 
 const formatRecord = (stats?: TeamSeasonStats): string =>
   stats === undefined ? "—" : `${stats.wins}–${stats.losses}`;
@@ -49,9 +49,9 @@ export default async function TeamsPage({
   const { view } = await loadTeamsSearchParams(searchParams);
   const { season, stats, results } = await getTeamStats();
   const statsByAbbr = new Map(stats.map((team) => [team.abbr, team]));
-  const rows: TeamRow[] = TEAM_META.map((team) => ({
+  const rows: TeamRow[] = NBA_TEAMS.map((team) => ({
     ...team,
-    stats: statsByAbbr.get(team.abbr),
+    stats: statsByAbbr.get(team.abbreviation),
   }));
 
   const groups: ReadonlyArray<{ title: string; teams: TeamRow[] }> =
@@ -97,9 +97,9 @@ export default async function TeamsPage({
             <h2 className={styles.groupTitle}>{group.title}</h2>
             <ol className={styles.teamList}>
               {group.teams.map((team) => (
-                <li key={team.abbr}>
+                <li key={team.abbreviation}>
                   <Link href={`/team?is=${team.slug}`} className={styles.teamRow}>
-                    <TeamChip team={team.abbr} size="sm" />
+                    <TeamChip team={team.abbreviation} size="sm" />
                     <span className={styles.teamName}>{team.name}</span>
                     <span className={styles.record}>{formatRecord(team.stats)}</span>
                     <span className={styles.winPct}>
@@ -117,10 +117,10 @@ export default async function TeamsPage({
             </ol>
             <StandingsTrendChart
               title={group.title}
-              teams={group.teams.map((team) => ({ abbr: team.abbr, name: team.name }))}
+              teams={group.teams.map((team) => ({ abbr: team.abbreviation, name: team.name }))}
               rows={buildCumulativeWins({
                 results,
-                abbrs: group.teams.map((team) => team.abbr),
+                abbrs: group.teams.map((team) => team.abbreviation),
               })}
             />
           </section>

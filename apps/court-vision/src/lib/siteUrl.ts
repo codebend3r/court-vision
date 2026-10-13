@@ -29,7 +29,7 @@ function toOrigin(value: string | null | undefined): string | null {
   }
 }
 
-export function siteOriginFromEnv(): string | null {
+function siteOriginFromEnv(): string | null {
   return (
     toOrigin(process.env.NEXT_PUBLIC_SITE_URL) ??
     toOrigin(process.env.DEPLOY_PRIME_URL) ??

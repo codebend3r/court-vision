@@ -1,7 +1,11 @@
 import { describe, expect, it } from "bun:test";
 
-import { ADVANCED_STAT_META, formatAdvancedStat } from "@/lib/players/advancedStatMeta";
-import { ADVANCED_METRIC_KEYS } from "@/lib/players/searchParams";
+import {
+  ADVANCED_STAT_META,
+  advancedStatMeta,
+  formatAdvancedStat,
+} from "@/lib/players/advancedStatMeta";
+import { ADVANCED_METRIC_KEYS, type AdvancedMetricKey } from "@/lib/players/searchParams";
 
 describe("ADVANCED_STAT_META", () => {
   it("covers every advanced metric key exactly once", () => {
@@ -20,6 +24,10 @@ describe("ADVANCED_STAT_META", () => {
     });
   });
 
+  it("lists the metrics in ADVANCED_METRIC_KEYS order", () => {
+    expect(ADVANCED_STAT_META.map((meta) => meta.key)).toEqual([...ADVANCED_METRIC_KEYS]);
+  });
+
   it("has unique labels", () => {
     const labels = ADVANCED_STAT_META.map((meta) => meta.label);
     expect(new Set(labels).size).toBe(labels.length);
@@ -28,7 +36,7 @@ describe("ADVANCED_STAT_META", () => {
 
 describe("ADVANCED_STAT_META kinds", () => {
   it("marks every share-of-something metric as a percentage and the rest as ratings", () => {
-    const kindOf = (key: string) => ADVANCED_STAT_META.find((meta) => meta.key === key)?.kind;
+    const kindOf = (key: AdvancedMetricKey) => advancedStatMeta({ key }).kind;
     expect(kindOf("pie")).toBe("percentage");
     expect(kindOf("assistPercentage")).toBe("percentage");
     expect(kindOf("defensiveReboundPercentage")).toBe("percentage");
@@ -44,6 +52,16 @@ describe("ADVANCED_STAT_META kinds", () => {
     expect(kindOf("netRating")).toBe("rating");
     expect(kindOf("offensiveRating")).toBe("rating");
     expect(kindOf("turnoverRatio")).toBe("rating");
+  });
+});
+
+describe("advancedStatMeta", () => {
+  it("looks a metric's metadata up by key", () => {
+    expect(advancedStatMeta({ key: "trueShootingPercentage" })).toMatchObject({
+      key: "trueShootingPercentage",
+      label: "TS%",
+      kind: "percentage",
+    });
   });
 });
 

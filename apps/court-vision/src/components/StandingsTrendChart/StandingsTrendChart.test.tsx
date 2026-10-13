@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, it } from "bun:test";
 
 import { StandingsTrendChart } from "@/components/StandingsTrendChart/StandingsTrendChart";
-import { type TeamAbbreviation } from "@/components/TeamChip/TeamChip";
+import { type TeamAbbreviation } from "@/lib/teams/meta";
 import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 
 const teams = [

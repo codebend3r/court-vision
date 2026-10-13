@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 
 import { restoreEnv, stubEnv } from "@vision/testing/env";
 
-import { resolveSiteOrigin, siteOriginFromEnv } from "@/lib/siteUrl";
+import { resolveSiteOrigin } from "@/lib/siteUrl";
 
 afterEach(() => {
   restoreEnv();
@@ -15,10 +15,14 @@ function clearSiteEnv(): void {
   ["NEXT_PUBLIC_SITE_URL", "DEPLOY_PRIME_URL", "URL"].forEach((key) => stubEnv({ key, value: "" }));
 }
 
-describe("siteOriginFromEnv", () => {
-  it("returns null when no deployment variable is set", () => {
+// With no request origin, the configured origin is the answer whenever one is
+// set, and the localhost fallback marks "nothing configured".
+const FALLBACK = "http://localhost:3000";
+
+describe("resolveSiteOrigin from the deployment variables", () => {
+  it("falls back when no deployment variable is set", () => {
     clearSiteEnv();
-    expect(siteOriginFromEnv()).toBeNull();
+    expect(resolveSiteOrigin()).toBe(FALLBACK);
   });
 
   it("lets NEXT_PUBLIC_SITE_URL win over the Netlify defaults", () => {
@@ -27,7 +31,7 @@ describe("siteOriginFromEnv", () => {
     stubEnv({ key: "DEPLOY_PRIME_URL", value: "https://deploy-preview-9--cv.netlify.app" });
     stubEnv({ key: "NEXT_PUBLIC_SITE_URL", value: "https://courtvision.example" });
 
-    expect(siteOriginFromEnv()).toBe("https://courtvision.example");
+    expect(resolveSiteOrigin()).toBe("https://courtvision.example");
   });
 
   it("prefers the branch deploy URL over the production URL", () => {
@@ -35,7 +39,7 @@ describe("siteOriginFromEnv", () => {
     stubEnv({ key: "URL", value: "https://court-vizion.netlify.app" });
     stubEnv({ key: "DEPLOY_PRIME_URL", value: "https://deploy-preview-9--cv.netlify.app" });
 
-    expect(siteOriginFromEnv()).toBe("https://deploy-preview-9--cv.netlify.app");
+    expect(resolveSiteOrigin()).toBe("https://deploy-preview-9--cv.netlify.app");
   });
 
   it("falls through a blank value to the next variable", () => {
@@ -43,14 +47,14 @@ describe("siteOriginFromEnv", () => {
     stubEnv({ key: "NEXT_PUBLIC_SITE_URL", value: "   " });
     stubEnv({ key: "URL", value: "https://court-vizion.netlify.app" });
 
-    expect(siteOriginFromEnv()).toBe("https://court-vizion.netlify.app");
+    expect(resolveSiteOrigin()).toBe("https://court-vizion.netlify.app");
   });
 
   it("reduces a configured value with a path to its bare origin", () => {
     clearSiteEnv();
     stubEnv({ key: "NEXT_PUBLIC_SITE_URL", value: "https://courtvision.example/players?tab=1" });
 
-    expect(siteOriginFromEnv()).toBe("https://courtvision.example");
+    expect(resolveSiteOrigin()).toBe("https://courtvision.example");
   });
 
   it("ignores a value that is not a parseable absolute URL", () => {
@@ -58,14 +62,14 @@ describe("siteOriginFromEnv", () => {
     stubEnv({ key: "NEXT_PUBLIC_SITE_URL", value: "courtvision.example" });
     stubEnv({ key: "URL", value: "https://court-vizion.netlify.app" });
 
-    expect(siteOriginFromEnv()).toBe("https://court-vizion.netlify.app");
+    expect(resolveSiteOrigin()).toBe("https://court-vizion.netlify.app");
   });
 
   it("ignores a non-http scheme", () => {
     clearSiteEnv();
     stubEnv({ key: "NEXT_PUBLIC_SITE_URL", value: "javascript:alert(1)" });
 
-    expect(siteOriginFromEnv()).toBeNull();
+    expect(resolveSiteOrigin()).toBe(FALLBACK);
   });
 });
 
@@ -88,12 +92,12 @@ describe("resolveSiteOrigin", () => {
 
   it("falls back to localhost when there is no origin at all", () => {
     clearSiteEnv();
-    expect(resolveSiteOrigin({ requestOrigin: null })).toBe("http://localhost:3000");
-    expect(resolveSiteOrigin()).toBe("http://localhost:3000");
+    expect(resolveSiteOrigin({ requestOrigin: null })).toBe(FALLBACK);
+    expect(resolveSiteOrigin()).toBe(FALLBACK);
   });
 
   it("rejects a request origin that is not a parseable http URL", () => {
     clearSiteEnv();
-    expect(resolveSiteOrigin({ requestOrigin: "null" })).toBe("http://localhost:3000");
+    expect(resolveSiteOrigin({ requestOrigin: "null" })).toBe(FALLBACK);
   });
 });

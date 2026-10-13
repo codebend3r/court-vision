@@ -57,8 +57,8 @@ describe("getConferenceStandings", () => {
 
     const result = await getConferenceStandings();
 
-    expect(result?.east.map((team) => team.teamId)).toEqual([3, 1]);
-    expect(result?.west.map((team) => team.teamId)).toEqual([2]);
+    expect(result?.east.map((team) => team.teamId) ?? null).toEqual([3, 1]);
+    expect(result?.west.map((team) => team.teamId) ?? null).toEqual([2]);
   });
 
   it("returns null instead of throwing when the standings fetch fails", async () => {
@@ -77,7 +77,7 @@ describe("getConferenceStandings", () => {
 
     const retried = await getConferenceStandings();
 
-    expect(retried?.east.map((team) => team.teamId)).toEqual([1]);
+    expect(retried?.east.map((team) => team.teamId) ?? null).toEqual([1]);
     expect(fetchStandings).toHaveBeenCalledTimes(2);
   });
 
