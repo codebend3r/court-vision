@@ -69,7 +69,7 @@ async function isConfirmed(attempt: ConfirmAttempt): Promise<boolean> {
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams, origin } = request.nextUrl;
-  const next = safeNextPath(searchParams.get("next"));
+  const next = safeNextPath({ next: searchParams.get("next") });
   const confirmed = await isConfirmed(readAttempt(searchParams));
 
   return NextResponse.redirect(new URL(confirmed ? next : "/login?error=confirm", origin));

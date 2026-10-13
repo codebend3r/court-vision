@@ -9,8 +9,8 @@ const DEFAULT_PATH = "/";
 // origin comparison the URL parser answers for us.
 const BASE_ORIGIN = "https://placeholder.invalid";
 
-export function safeNextPath(raw: string | null | undefined): string {
-  if (typeof raw !== "string" || raw.length === 0) {
+export function safeNextPath({ next }: { next: string | null | undefined }): string {
+  if (typeof next !== "string" || next.length === 0) {
     return DEFAULT_PATH;
   }
 
@@ -19,7 +19,7 @@ export function safeNextPath(raw: string | null | undefined): string {
   // clears every string guard, then collapses to "//evil.com" and resolves
   // cross-origin. Remove those characters first so the guards below, and the
   // parser, see the same string the browser will.
-  const stripped = raw.replace(/[\t\n\r]/g, "");
+  const stripped = next.replace(/[\t\n\r]/g, "");
 
   // Must be an absolute path, and must not be protocol-relative (`//`) or use a
   // backslash the browser normalizes to `/` (`/\`), both of which escape origin.

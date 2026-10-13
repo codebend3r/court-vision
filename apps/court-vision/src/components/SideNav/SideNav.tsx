@@ -24,6 +24,8 @@ type NavEntry = {
   href: string;
   label: string;
   icon: NavIconName;
+  // Other routes that belong to this section (Teams owns the /team detail).
+  aliases?: readonly string[];
 };
 
 type NavGroup = {
@@ -37,7 +39,7 @@ const NAV_GROUPS: NavGroup[] = [
     entries: [
       { href: "/", label: "Home", icon: "home" },
       { href: "/players", label: "Players", icon: "players" },
-      { href: "/teams", label: "Teams", icon: "teams" },
+      { href: "/teams", label: "Teams", icon: "teams", aliases: ["/team"] },
     ],
   },
   {
@@ -71,13 +73,13 @@ function NavIcon({ name }: { name: NavIconName }) {
   );
 }
 
+// A section owns its own route and every route nested under it, so
+// /players/1234 keeps Players lit. Home ("/") only ever matches itself.
+const isWithin = ({ pathname, href }: { pathname: string; href: string }): boolean =>
+  pathname === href || pathname.startsWith(`${href}/`);
+
 const isEntryActive = ({ entry, pathname }: { entry: NavEntry; pathname: string }): boolean =>
-  pathname === entry.href ||
-  // /team (the detail page) belongs to Teams; nested routes to their section.
-  (entry.href === "/teams" && pathname === "/team") ||
-  (entry.href === "/my-teams" && pathname.startsWith("/my-teams/")) ||
-  (entry.href === "/leagues" && pathname.startsWith("/leagues/")) ||
-  (entry.href === "/players" && pathname.startsWith("/players/"));
+  [entry.href, ...(entry.aliases ?? [])].some((href) => isWithin({ pathname, href }));
 
 function NavItem({ entry, pathname }: { entry: NavEntry; pathname: string }) {
   const active = isEntryActive({ entry, pathname });

@@ -8,7 +8,7 @@ const NOTICE_MESSAGES = {
     "That confirmation link didn't work — it may have expired or already been used. Sign in below and we'll send you a fresh one.",
 } as const;
 
-export type LoginNoticeCode = keyof typeof NOTICE_MESSAGES;
+type LoginNoticeCode = keyof typeof NOTICE_MESSAGES;
 
 // Object.hasOwn, not `in`: `in` walks the prototype chain, so "toString" and
 // "constructor" would both pass as valid codes.

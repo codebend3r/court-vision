@@ -1,13 +1,12 @@
-import { type WatchlistActionResult } from "@/lib/watchlist/types";
+import { isRecord } from "@vision/core/util/record";
 
-const hasCount = (record: Record<string, unknown>): boolean => typeof record.count === "number";
+import { type WatchlistActionResult } from "@/lib/watchlist/types";
 
 // Positional, unlike the repo's object-parameter default: a type predicate
 // cannot reference an element of a binding pattern (TS1230), so a guard has to
 // name its parameter. Matches isPlayersTab / isCategory elsewhere in the repo.
 export const isWatchlistActionResult = (value: unknown): value is WatchlistActionResult => {
-  if (typeof value !== "object" || value === null) return false;
-  const record: Record<string, unknown> = { ...value };
-  if (record.status === "ok" || record.status === "limit") return hasCount(record);
-  return record.status === "unauthenticated" || record.status === "error";
+  if (!isRecord(value)) return false;
+  if (value.status === "ok" || value.status === "limit") return typeof value.count === "number";
+  return value.status === "unauthenticated" || value.status === "error";
 };

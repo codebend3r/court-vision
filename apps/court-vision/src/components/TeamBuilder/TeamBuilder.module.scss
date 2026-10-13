@@ -69,29 +69,13 @@
   @include error-callout;
 }
 
+// The primary action: a full-width keycap that presses in.
 .save {
-  display: inline-flex;
-  align-items: center;
+  @include keycap;
   justify-content: center;
-  gap: var(--space-2);
-  width: 100%;
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-accent);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-accent);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
 
-  &:disabled {
-    border-color: var(--color-border);
-    color: var(--color-text-muted);
-    cursor: not-allowed;
-  }
-
-  &:focus-visible {
-    @include control-focus-ring;
+  &:active:not(:disabled) {
+    @include keycap-press;
   }
 }
 
@@ -112,26 +96,10 @@
   padding: var(--space-2) var(--space-3);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
-  cursor: pointer;
-  list-style: none;
-
-  &::-webkit-details-marker {
-    display: none;
-  }
 
   &:hover {
     color: var(--color-text);
   }
-}
-
-.chevron {
-  color: var(--color-accent);
-  font-size: var(--font-size-xs);
-  transition: transform var(--duration-fast) var(--ease-out);
-}
-
-.settings[open] .chevron {
-  transform: rotate(90deg);
 }
 
 .settingsBody {
@@ -275,20 +243,10 @@
   font-size: var(--font-size-xs);
 }
 
+// Destructive, so the danger keycap; it opens a confirm before anything goes.
 .slotRemove {
-  padding: 0 var(--space-1);
-  border: none;
-  background: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
-
-  &:hover {
-    color: var(--color-loss);
-  }
-
-  &:focus-visible {
-    @include control-focus-ring;
-  }
+  @include keycap;
+  @include keycap-danger;
 }
 
 .searchColumn {
@@ -412,90 +370,6 @@
   font-size: var(--font-size-xs);
 }
 
-.modalOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: grid;
-  place-items: center;
-  background: color-mix(in srgb, var(--color-bg) 70%, transparent);
-}
-
-.modal {
-  display: grid;
-  gap: var(--space-3);
-  width: min(24rem, calc(100vw - var(--space-8)));
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-}
-
-.modalTitle {
-  margin: 0;
-  font-size: var(--font-size-lg);
-}
-
-.modalBody {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
-.modalActions {
-  display: grid;
-  grid-auto-flow: column;
-  justify-content: end;
-  gap: var(--space-2);
-}
-
-.modalCancel {
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-
-  &:focus-visible {
-    @include control-focus-ring;
-  }
-}
-
-.modalConfirm {
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-loss);
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--color-loss);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-
-  &:focus-visible {
-    @include control-focus-ring;
-  }
-}
-
 .cardAdd {
-  width: 1.75rem;
-  height: 1.75rem;
-  border: 1px solid var(--color-accent);
-  border-radius: var(--radius-full);
-  background: none;
-  color: var(--color-accent);
-  font-size: var(--font-size-md);
-  line-height: 1;
-  cursor: pointer;
-
-  &:disabled {
-    border-color: var(--color-border);
-    color: var(--color-text-muted);
-    cursor: not-allowed;
-  }
-
-  &:focus-visible {
-    @include control-focus-ring;
-  }
+  @include keycap;
 }

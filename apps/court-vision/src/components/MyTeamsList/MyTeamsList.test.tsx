@@ -1,6 +1,7 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
+import { type ReactNode, use, useEffect, useState } from "react";
 
 const deleteLeagueTeamMock = vi.fn();
 
@@ -20,12 +21,35 @@ import { teamNameToSlug } from "@vision/core/roster/slug";
 import { type FantasyTeam, type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
 
 beforeEach(() => {
-  deleteLeagueTeamMock.mockReset().mockResolvedValue({ status: "ok-deleted" });
+  deleteLeagueTeamMock.mockReset().mockResolvedValue({ status: "ok" });
   push.mockClear();
-  refresh.mockClear();
+  refresh.mockReset();
 });
 
 afterEach(cleanup);
+
+// A refresh that never lands: suspending on it inside the transition that
+// called `refresh` holds that transition pending, so the optimistic list is
+// observable before the server's new `teams` arrive.
+const unresolvedRefresh = new Promise<never>(() => {});
+
+function AwaitRefresh() {
+  use(unresolvedRefresh);
+  return null;
+}
+
+function PendingRefresh({ children }: { children: ReactNode }) {
+  const [hasRefreshed, setHasRefreshed] = useState(false);
+  useEffect(() => {
+    refresh.mockImplementation(() => setHasRefreshed(true));
+  }, []);
+  return (
+    <>
+      {children}
+      {hasRefreshed && <AwaitRefresh />}
+    </>
+  );
+}
 
 const team = ({ id, name, slug }: { id: string; name: string; slug?: string }): FantasyTeam => ({
   id,
@@ -90,8 +114,42 @@ describe("MyTeamsList", () => {
     render(<MyTeamsList teams={[team({ id: "a", name: "Bench Mob" })]} leagueName="League" />);
     await user.click(screen.getByRole("button", { name: "Delete team" }));
     expect(deleteLeagueTeamMock).toHaveBeenCalledWith({ teamId: "a" });
-    await waitFor(() => expect(screen.getByText(/No fantasy teams yet/)).toBeInTheDocument());
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+  });
+
+  it("keeps a deleted team gone while the refreshed list is on its way", async () => {
+    render(
+      <PendingRefresh>
+        <MyTeamsList
+          teams={[team({ id: "a", name: "Bench Mob" }), team({ id: "b", name: "Second Unit" })]}
+          leagueName="League"
+        />
+      </PendingRefresh>,
+    );
+    const [firstDelete] = screen.getAllByRole("button", { name: "Delete team" });
+    await act(async () => {
+      fireEvent.click(firstDelete);
+    });
+    await waitFor(() =>
+      expect(screen.queryByRole("link", { name: "Bench Mob" })).not.toBeInTheDocument(),
+    );
     expect(refresh).toHaveBeenCalled();
+    // Still gone a beat later: the pending refresh holds the optimistic list.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    expect(screen.queryByRole("link", { name: "Bench Mob" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Second Unit" })).toBeInTheDocument();
+  });
+
+  it("keeps the team visible and shows an alert when the delete throws", async () => {
+    deleteLeagueTeamMock.mockReset().mockRejectedValue(new Error("network down"));
+    const user = userEvent.setup();
+    render(<MyTeamsList teams={[team({ id: "a", name: "Bench Mob" })]} leagueName="League" />);
+    await user.click(screen.getByRole("button", { name: "Delete team" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not delete the team — try again.",
+    );
+    expect(screen.getByRole("link", { name: "Bench Mob" })).toBeInTheDocument();
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it("keeps the team visible and shows an alert when the delete fails", async () => {
@@ -113,7 +171,7 @@ describe("MyTeamsList", () => {
     expect(screen.getByRole("link", { name: "Beta" })).toHaveAttribute("href", "/my-teams/alpha");
   });
 
-  it("re-syncs local state when the teams prop changes", () => {
+  it("follows the teams prop when the server sends a new list", () => {
     const { rerender } = render(
       <MyTeamsList teams={[team({ id: "a", name: "Bench Mob" })]} leagueName="League" />,
     );

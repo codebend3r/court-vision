@@ -72,8 +72,8 @@ describe("updatePreferences", () => {
   it("omits undefined fields from update data", async () => {
     const result = await updatePreferences({ fontScale: "lg" });
     expect(result).toEqual({ status: "ok" });
-    const callArgs = update.mock.calls[0]?.[0];
-    expect(callArgs?.data).not.toHaveProperty("preferredFormula");
+    const callArgs = update.mock.calls[0]?.[0] ?? null;
+    expect(callArgs?.data ?? null).not.toHaveProperty("preferredFormula");
   });
 
   it("allows null preferredFormula (clearing preference)", async () => {

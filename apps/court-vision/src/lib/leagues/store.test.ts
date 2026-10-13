@@ -1,4 +1,10 @@
-import { describe, expect, it, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, it, vi } from "bun:test";
+
+import { type SetActiveLeagueResult } from "@/lib/leagues/types";
+
+const setActiveLeague = vi.fn<(args: { leagueId: string }) => Promise<SetActiveLeagueResult>>();
+
+vi.mock("@/lib/leagues/actions", () => ({ setActiveLeague }));
 
 import { useLeaguesStore } from "@/lib/leagues/store";
 import { type LeagueSummary } from "@/lib/leagues/types";
@@ -16,6 +22,7 @@ const league = ({ id, name }: { id: string; name: string }): LeagueSummary => ({
 });
 
 beforeEach(() => {
+  setActiveLeague.mockReset().mockResolvedValue({ status: "ok" });
   useLeaguesStore.setState({ leagues: [], activeLeagueId: null });
 });
 
@@ -32,7 +39,7 @@ describe("useLeaguesStore", () => {
     const alpha = league({ id: "a", name: "Alpha" });
     useLeaguesStore.getState().hydrate({ leagues: [alpha], activeLeagueId: "a" });
     useLeaguesStore.getState().upsert({ league: { ...alpha, name: "Renamed" } });
-    expect(useLeaguesStore.getState().leagues[0]?.name).toBe("Renamed");
+    expect(useLeaguesStore.getState().leagues[0]?.name ?? null).toBe("Renamed");
     useLeaguesStore.getState().upsert({ league: league({ id: "b", name: "Beta" }) });
     expect(useLeaguesStore.getState().leagues).toHaveLength(2);
   });
@@ -44,5 +51,46 @@ describe("useLeaguesStore", () => {
     useLeaguesStore.getState().remove({ leagueId: "a" });
     expect(useLeaguesStore.getState().leagues).toHaveLength(0);
     expect(useLeaguesStore.getState().activeLeagueId).toBe(null);
+  });
+});
+
+describe("switchActiveLeague", () => {
+  beforeEach(() => {
+    useLeaguesStore.getState().hydrate({
+      leagues: [league({ id: "a", name: "Alpha" }), league({ id: "b", name: "Beta" })],
+      activeLeagueId: "a",
+    });
+  });
+
+  it("flips the active league before the action answers, then keeps it", async () => {
+    const switching = useLeaguesStore.getState().switchActiveLeague({ leagueId: "b" });
+    expect(useLeaguesStore.getState().activeLeagueId).toBe("b");
+    expect(await switching).toEqual({ status: "ok" });
+    expect(setActiveLeague).toHaveBeenCalledWith({ leagueId: "b" });
+    expect(useLeaguesStore.getState().activeLeagueId).toBe("b");
+  });
+
+  it("puts the previous league back when the action fails", async () => {
+    setActiveLeague.mockResolvedValue({ status: "error" });
+    const result = await useLeaguesStore.getState().switchActiveLeague({ leagueId: "b" });
+    expect(result).toEqual({ status: "error" });
+    expect(useLeaguesStore.getState().activeLeagueId).toBe("a");
+  });
+
+  it("puts the previous league back when the action throws", async () => {
+    setActiveLeague.mockRejectedValue(new Error("network down"));
+    const result = await useLeaguesStore.getState().switchActiveLeague({ leagueId: "b" });
+    expect(result).toEqual({ status: "error" });
+    expect(useLeaguesStore.getState().activeLeagueId).toBe("a");
+  });
+
+  it("leaves a later switch in place when an earlier one fails", async () => {
+    const failing = Promise.withResolvers<SetActiveLeagueResult>();
+    setActiveLeague.mockReturnValueOnce(failing.promise);
+    const first = useLeaguesStore.getState().switchActiveLeague({ leagueId: "b" });
+    useLeaguesStore.getState().setActive({ leagueId: "c" });
+    failing.resolve({ status: "error" });
+    expect(await first).toEqual({ status: "error" });
+    expect(useLeaguesStore.getState().activeLeagueId).toBe("c");
   });
 });

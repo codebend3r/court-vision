@@ -5,7 +5,7 @@ import { PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { getProfile } from "@/lib/auth/session";
 import { fallbackActiveLeagueId, getLeagues } from "@/lib/leagues/queries";
 
-import styles from "@/app/leagues/page.module.scss";
+import styles from "@/app/leagues/leagues.module.scss";
 
 export const dynamic = "force-dynamic";
 

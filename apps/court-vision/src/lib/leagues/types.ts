@@ -3,18 +3,9 @@ import { type LeagueScoringConfig } from "@vision/sport-basketball/types";
 
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 
-// Scoring payloads stored in League.scoringConfig (Json column), discriminated
-// externally by League.scoringType and validated by lib/leagues/guards. The
-// shapes are the shared engine's, bound to basketball.
-export { type LeagueScoringType } from "@vision/core/league/scoring";
-export {
-  type H2hCategoriesConfig,
-  type H2hPointsConfig,
-  type LeagueScoringConfig,
-  type RotoConfig,
-} from "@vision/sport-basketball/types";
-
 // Serializable league shape crossing the RSC boundary (dates as ISO strings).
+// `scoringConfig` is discriminated by `scoringType` and validated by the
+// sport engine's scoring-config guards.
 export type LeagueSummary = {
   id: string;
   name: string;
@@ -46,12 +37,16 @@ export type SetActiveLeagueResult =
   | { status: "unauthenticated" }
   | { status: "error" };
 
-// Mirrors LeagueMutationResult: server actions cross the RSC boundary, so
-// errors are a result union, not throws.
-export type LeagueTeamActionResult =
+// Mirror LeagueMutationResult / LeagueDeleteResult: server actions cross the
+// RSC boundary, so errors are a result union, not throws.
+export type LeagueTeamSaveResult =
   | { status: "ok"; team: FantasyTeam }
-  | { status: "ok-deleted" }
   | { status: "invalid" }
+  | { status: "unauthenticated" }
+  | { status: "error" };
+
+export type LeagueTeamDeleteResult =
+  | { status: "ok" }
   | { status: "unauthenticated" }
   | { status: "error" };
 

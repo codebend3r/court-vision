@@ -64,8 +64,8 @@ model Profile {
 
 // A League Container: one user's fantasy league with its own teams, starred
 // players, and scoring setup. scoringConfig's shape depends on scoringType and
-// is validated by lib/leagues/guards.ts. The 10-league cap is enforced in
-// lib/leagues/actions.ts, inside a transaction.
+// is validated by the sport engine's parseScoringConfig. The 10-league cap is
+// enforced in lib/leagues/actions.ts, inside a transaction.
 model League {
   id            String                  @id @default(cuid())
   profileId     String                  @db.Uuid

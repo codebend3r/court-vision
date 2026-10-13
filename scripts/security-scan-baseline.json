@@ -14,7 +14,7 @@
     {
       "rule": "server-action-unauthenticated",
       "file": "apps/court-vision/src/lib/auth/signup.ts",
-      "reason": "isUsernameTaken backs the signup form and must work signed out, so the missing session check is correct. It does need rate limiting, tracked separately as a username-enumeration finding."
+      "reason": "signUp and resendConfirmation back the signup and sign-in forms and must work signed out, so the missing session check is correct. isUsernameTaken moved to lib/auth/usernameTaken.ts and is no longer an action; /api/username-available still needs rate limiting, tracked separately as a username-enumeration finding."
     },
     {
       "rule": "server-action-unauthenticated",

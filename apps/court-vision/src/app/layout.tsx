@@ -1,50 +1,28 @@
-import { Chakra_Petch, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import type { Metadata } from "next";
 import Script from "next/script";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { ReactNode } from "react";
 
-import { LeaguesHydrator } from "@/components/LeaguesHydrator/LeaguesHydrator";
 import { LegacyTeamsMigrator } from "@/components/LegacyTeamsMigrator/LegacyTeamsMigrator";
+import { SessionHydrator } from "@/components/SessionHydrator/SessionHydrator";
 import { SideNav } from "@/components/SideNav/SideNav";
 import { SiteFooter } from "@/components/SiteFooter/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader/SiteHeader";
 import { WatchlistAlert } from "@/components/WatchlistAlert/WatchlistAlert";
-import { RosteredHydrator } from "@/components/RosteredHydrator/RosteredHydrator";
-import { WatchlistHydrator } from "@/components/WatchlistHydrator/WatchlistHydrator";
 import { getProfile } from "@/lib/auth/session";
 import { fallbackActiveLeagueId, getLeagues } from "@/lib/leagues/queries";
 import { getRosteredPlayerIds } from "@/lib/leagues/teamQueries";
 import { fontScaleOf } from "@/lib/settings/guards";
 import { resolveSiteOrigin } from "@/lib/siteUrl";
 import { getWatchlistPlayerIds } from "@/lib/watchlist/queries";
+import { MAIN_CONTENT_ID, SkipLink } from "@vision/ui/components/SkipLink/SkipLink";
 import { ThemeInitScript } from "@vision/ui/components/ThemeInitScript/ThemeInitScript";
 import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
+import { FONT_VARIABLES } from "@vision/ui/fonts/fonts";
 
 import "@/styles/globals.scss";
 
 import styles from "@/app/layout.module.scss";
-
-const displayFont = Chakra_Petch({
-  weight: ["400", "500", "700"],
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-display-next",
-});
-
-const bodyFont = IBM_Plex_Sans({
-  weight: ["400", "500", "600"],
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-body-next",
-});
-
-const monoFont = IBM_Plex_Mono({
-  weight: ["400", "500"],
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-mono-next",
-});
 
 const description = "Find fantasy basketball players trending in the categories you care about.";
 
@@ -100,7 +78,7 @@ export default async function RootLayout({
       lang="en"
       suppressHydrationWarning
       data-font-scale={fontScaleOf({ profile })}
-      className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}
+      className={FONT_VARIABLES}
     >
       <head>
         <ThemeInitScript />
@@ -113,13 +91,14 @@ export default async function RootLayout({
         <Script src="/meta.js" strategy="afterInteractive" />
         <NuqsAdapter>
           <ThemeProvider>
-            <a href="#main-content" className={styles.skipLink}>
-              Skip to main content
-            </a>
+            <SkipLink />
             <SiteHeader />
-            <WatchlistHydrator playerIds={watchlistPlayerIds} />
-            <RosteredHydrator playerIds={rosteredPlayerIds} />
-            <LeaguesHydrator leagues={leagues} activeLeagueId={activeLeagueId} />
+            <SessionHydrator
+              watchlistPlayerIds={watchlistPlayerIds}
+              rosteredPlayerIds={rosteredPlayerIds}
+              leagues={leagues}
+              activeLeagueId={activeLeagueId}
+            />
             {!!profile && <LegacyTeamsMigrator />}
             <WatchlistAlert />
             <div className={styles.shell}>
@@ -133,7 +112,7 @@ export default async function RootLayout({
               {/* Skip-link target. Sits on the wrapper rather than each page's
                   <main> so every route gets it from one place. tabIndex -1
                   makes it programmatically focusable without adding a tab stop. */}
-              <div id="main-content" tabIndex={-1} className={styles.content}>
+              <div id={MAIN_CONTENT_ID} tabIndex={-1} className={styles.content}>
                 {children}
               </div>
             </div>

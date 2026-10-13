@@ -18,13 +18,13 @@ const RESERVED = new Set([
   "support",
 ]);
 
-export function normalizeUsername(value: string): string {
-  return value.trim().toLowerCase();
+export function normalizeUsername({ username }: { username: string }): string {
+  return username.trim().toLowerCase();
 }
 
 export const usernameSchema = z
   .string()
-  .transform(normalizeUsername)
+  .transform((username) => normalizeUsername({ username }))
   .pipe(
     z
       .string()

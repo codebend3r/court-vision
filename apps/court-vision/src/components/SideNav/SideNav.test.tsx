@@ -60,4 +60,28 @@ describe("SideNav", () => {
     render(<SideNav />);
     expect(screen.getByRole("link", { name: "My Teams" })).toHaveAttribute("aria-current", "page");
   });
+
+  it("keeps Leagues active on a league's own page", () => {
+    pathnameMock.current = "/leagues/bench-mob";
+    render(<SideNav />);
+    expect(screen.getByRole("link", { name: "Leagues" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("lights exactly one entry, and never Home off the root", () => {
+    pathnameMock.current = "/players/1234";
+    render(<SideNav />);
+    expect(
+      screen.getAllByRole("link").filter((link) => link.getAttribute("aria-current") === "page"),
+    ).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("does not light a section for a route that merely shares its prefix", () => {
+    // /team is Teams' alias, but /teams must not light it twice, and /my-teams
+    // must not light Teams at all.
+    pathnameMock.current = "/my-teams";
+    render(<SideNav />);
+    expect(screen.getByRole("link", { name: "Teams" })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("link", { name: "My Teams" })).toHaveAttribute("aria-current", "page");
+  });
 });

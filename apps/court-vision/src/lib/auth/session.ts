@@ -3,7 +3,7 @@ import type { User } from "@supabase/supabase-js";
 import { cache } from "react";
 
 import { prisma } from "@/lib/prisma";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { getSupabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
 // Both reads are wrapped in React `cache` so they dedupe per request. The
@@ -13,7 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 const loadUser = async (): Promise<User | null> => {
   // Auth is optional locally; without Supabase env there is no session, so skip
   // the client (which would otherwise throw) and treat the request as signed out.
-  if (!isSupabaseConfigured()) {
+  if (getSupabaseEnv() === null) {
     return null;
   }
   const supabase = await createClient();

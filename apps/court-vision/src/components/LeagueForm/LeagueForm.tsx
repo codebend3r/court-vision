@@ -5,27 +5,38 @@ import { type ChangeEvent, type FocusEvent, type FormEvent, useState } from "rea
 
 import { createLeague, updateLeague } from "@/lib/leagues/actions";
 import {
-  defaultScoringConfig,
-  isH2hCategoriesConfig,
-  isH2hPointsConfig,
-  isLeagueScoringType,
-  isRotoConfig,
-  parseScoringConfig,
-} from "@/lib/leagues/guards";
+  type CountBounds,
+  LEAGUE_BOUNDS,
+  normalizeCount,
+  normalizeScore,
+  normalizeWeight,
+  SCORING_LABELS,
+  SCORING_TYPE_LABELS,
+  SCORING_TYPES,
+  WEIGHT_BOUNDS,
+  withoutWeight,
+} from "@/lib/leagues/settings";
 import { useLeaguesStore } from "@/lib/leagues/store";
-import {
-  type LeagueScoringConfig,
-  type LeagueScoringType,
-  type LeagueSummary,
-} from "@/lib/leagues/types";
+import { type LeagueSummary } from "@/lib/leagues/types";
+import { MAX_LEAGUES } from "@vision/core/league/constants";
+import { isLeagueScoringType, type LeagueScoringType } from "@vision/core/league/scoring";
 import {
   CATEGORY_KEYS,
   CATEGORY_META,
   DEFAULT_POINTS_SCORING,
+  defaultScoringConfig,
+  isH2hCategoriesConfig,
+  isH2hPointsConfig,
+  isRotoConfig,
+  parseScoringConfig,
   SCORED_KEYS,
 } from "@vision/sport-basketball/engine";
-import { clampScore, snapWeight } from "@/lib/valuation/searchParams";
-import { type Category, type ScoringSettings, type ScoringStatKey } from "@/lib/valuation/types";
+import {
+  type Category,
+  type LeagueScoringConfig,
+  type ScoringSettings,
+  type ScoringStatKey,
+} from "@vision/sport-basketball/types";
 
 import styles from "@/components/LeagueForm/LeagueForm.module.scss";
 
@@ -43,56 +54,12 @@ type LeagueFormState = {
   scoring: ScoringSettings;
 };
 
-const SCORING_TYPE_OPTIONS: ReadonlyArray<{ value: LeagueScoringType; label: string }> = [
-  { value: "h2h_categories", label: "H2H Categories" },
-  { value: "h2h_points", label: "H2H Points" },
-  { value: "roto", label: "Rotisserie" },
-];
+type CountField = "teamCount" | "rosterSlots";
 
-// The scoring table is keyed by raw stat, so it needs its own labels — the
-// category meta covers 3PM as "tpm" and has no entry for a points-league line.
-const SCORING_LABELS: Record<ScoringStatKey, string> = {
-  pts: "PTS",
-  reb: "REB",
-  ast: "AST",
-  stl: "STL",
-  blk: "BLK",
-  fg3m: "3PM",
-  tov: "TOV",
+const COUNT_BOUNDS: Record<CountField, CountBounds> = {
+  teamCount: LEAGUE_BOUNDS.teams,
+  rosterSlots: LEAGUE_BOUNDS.slots,
 };
-
-const TEAMS_MIN = 2;
-const TEAMS_MAX = 30;
-const TEAMS_DEFAULT = 12;
-const SLOTS_MIN = 1;
-const SLOTS_MAX = 25;
-const SLOTS_DEFAULT = 13;
-
-// Mirrors the server's clamp (lib/leagues/actions.ts): an unparsable/cleared
-// field falls back to the same 12/13 defaults, not the field's minimum.
-const clampInt = ({
-  value,
-  min,
-  max,
-  fallback,
-}: {
-  value: number;
-  min: number;
-  max: number;
-  fallback: number;
-}): number => (Number.isSafeInteger(value) ? Math.min(max, Math.max(min, value)) : fallback);
-
-const withoutWeight = ({
-  weights,
-  category,
-}: {
-  weights: Partial<Record<Category, number>>;
-  category: Category;
-}): Partial<Record<Category, number>> =>
-  CATEGORY_KEYS.reduce<Partial<Record<Category, number>>>((acc, key) => {
-    const weight = weights[key];
-    return key === category || weight === undefined ? acc : { ...acc, [key]: weight };
-  }, {});
 
 const buildInitialState = ({ league }: { league: LeagueSummary | null }): LeagueFormState => {
   const scoringType = league?.scoringType ?? "h2h_categories";
@@ -103,8 +70,8 @@ const buildInitialState = ({ league }: { league: LeagueSummary | null }): League
   return {
     name: league?.name ?? "",
     scoringType,
-    teamCount: league?.teamCount ?? 12,
-    rosterSlots: league?.rosterSlots ?? 13,
+    teamCount: league?.teamCount ?? LEAGUE_BOUNDS.teams.fallback,
+    rosterSlots: league?.rosterSlots ?? LEAGUE_BOUNDS.slots.fallback,
     categories:
       isH2hCategoriesConfig(config) || isRotoConfig(config)
         ? config.categories
@@ -119,7 +86,7 @@ const errorMessageFor = ({
 }: {
   status: "limit" | "invalid" | "unauthenticated" | "error";
 }): string => {
-  if (status === "limit") return "You already have 10 leagues.";
+  if (status === "limit") return `You already have ${MAX_LEAGUES} leagues.`;
   if (status === "invalid") return "Check the league name and settings.";
   return "Something went wrong — try again.";
 };
@@ -131,35 +98,17 @@ const errorMessageFor = ({
 // exists purely so this lookup works, and only covers the fields that are
 // committed on blur; the name/scoringType/category-checkbox fields are
 // already controlled, so `state` for those is never stale.
-const readCount = ({
-  formData,
-  field,
-  min,
-  max,
-  fallback,
-}: {
-  formData: FormData;
-  field: string;
-  min: number;
-  max: number;
-  fallback: number;
-}): number => {
-  const raw = formData.get(field);
-  const parsed = typeof raw === "string" ? Number.parseInt(raw, 10) : NaN;
-  return clampInt({ value: parsed, min, max, fallback });
-};
+const readCount = ({ formData, field }: { formData: FormData; field: CountField }): number =>
+  normalizeCount({
+    raw: formData.get(field),
+    bounds: COUNT_BOUNDS[field],
+  });
 
-const readWeight = ({ formData, category }: { formData: FormData; category: Category }): number => {
-  const raw = formData.get(`weight:${category}`);
-  const parsed = typeof raw === "string" ? Number.parseFloat(raw) : NaN;
-  return snapWeight(parsed);
-};
+const readWeight = ({ formData, category }: { formData: FormData; category: Category }): number =>
+  normalizeWeight({ raw: formData.get(`weight:${category}`) });
 
-const readScore = ({ formData, stat }: { formData: FormData; stat: ScoringStatKey }): number => {
-  const raw = formData.get(`scoring:${stat}`);
-  const parsed = typeof raw === "string" ? Number.parseFloat(raw) : NaN;
-  return Number.isFinite(parsed) ? clampScore(parsed) : DEFAULT_POINTS_SCORING[stat];
-};
+const readScore = ({ formData, stat }: { formData: FormData; stat: ScoringStatKey }): number =>
+  normalizeScore({ raw: formData.get(`scoring:${stat}`), stat });
 
 // Builds the type-specific config from the live form, dropping weight entries
 // equal to 1 (the default) so the stored config stays minimal.
@@ -205,23 +154,11 @@ export function LeagueForm({ league }: LeagueFormProps) {
   };
 
   const onCountBlur =
-    ({
-      field,
-      min,
-      max,
-      fallback,
-    }: {
-      field: "teamCount" | "rosterSlots";
-      min: number;
-      max: number;
-      fallback: number;
-    }) =>
+    ({ field }: { field: CountField }) =>
     (event: FocusEvent<HTMLInputElement>) => {
-      const value = clampInt({
-        value: Number.parseInt(event.target.value, 10),
-        min,
-        max,
-        fallback,
+      const value = normalizeCount({
+        raw: event.target.value,
+        bounds: COUNT_BOUNDS[field],
       });
       setState((prev) => ({ ...prev, [field]: value }));
     };
@@ -240,7 +177,7 @@ export function LeagueForm({ league }: LeagueFormProps) {
   const onWeightBlur =
     ({ category }: { category: Category }) =>
     (event: FocusEvent<HTMLInputElement>) => {
-      const snapped = snapWeight(Number.parseFloat(event.target.value));
+      const snapped = normalizeWeight({ raw: event.target.value });
       setState((prev) => ({
         ...prev,
         weights:
@@ -253,8 +190,7 @@ export function LeagueForm({ league }: LeagueFormProps) {
   const onScoringBlur =
     ({ stat }: { stat: ScoringStatKey }) =>
     (event: FocusEvent<HTMLInputElement>) => {
-      const parsed = Number.parseFloat(event.target.value);
-      const score = Number.isFinite(parsed) ? clampScore(parsed) : DEFAULT_POINTS_SCORING[stat];
+      const score = normalizeScore({ raw: event.target.value, stat });
       setState((prev) => ({ ...prev, scoring: { ...prev.scoring, [stat]: score } }));
     };
 
@@ -270,20 +206,8 @@ export function LeagueForm({ league }: LeagueFormProps) {
     // press — which submits before that field's blur fires — never discards
     // whatever was typed.
     const formData = new FormData(event.currentTarget);
-    const teamCount = readCount({
-      formData,
-      field: "teamCount",
-      min: TEAMS_MIN,
-      max: TEAMS_MAX,
-      fallback: TEAMS_DEFAULT,
-    });
-    const rosterSlots = readCount({
-      formData,
-      field: "rosterSlots",
-      min: SLOTS_MIN,
-      max: SLOTS_MAX,
-      fallback: SLOTS_DEFAULT,
-    });
+    const teamCount = readCount({ formData, field: "teamCount" });
+    const rosterSlots = readCount({ formData, field: "rosterSlots" });
     setIsSubmitting(true);
     setErrorMessage(null);
     const payload = {
@@ -329,17 +253,17 @@ export function LeagueForm({ league }: LeagueFormProps) {
       <fieldset className={styles.fieldset}>
         <legend className={styles.legend}>Scoring</legend>
         <div className={styles.radioGroup}>
-          {SCORING_TYPE_OPTIONS.map((option) => (
-            <label key={option.value} className={styles.radioLabel}>
+          {SCORING_TYPES.map((scoringType) => (
+            <label key={scoringType} className={styles.radioLabel}>
               <input
                 type="radio"
                 name="scoringType"
-                value={option.value}
-                checked={state.scoringType === option.value}
+                value={scoringType}
+                checked={state.scoringType === scoringType}
                 onChange={onScoringTypeChange}
                 className={styles.radio}
               />
-              {option.label}
+              {SCORING_TYPE_LABELS[scoringType]}
             </label>
           ))}
         </div>
@@ -351,16 +275,11 @@ export function LeagueForm({ league }: LeagueFormProps) {
           <input
             type="number"
             name="teamCount"
-            min={TEAMS_MIN}
-            max={TEAMS_MAX}
+            min={LEAGUE_BOUNDS.teams.min}
+            max={LEAGUE_BOUNDS.teams.max}
             key={`teams:${state.teamCount}`}
             defaultValue={state.teamCount}
-            onBlur={onCountBlur({
-              field: "teamCount",
-              min: TEAMS_MIN,
-              max: TEAMS_MAX,
-              fallback: TEAMS_DEFAULT,
-            })}
+            onBlur={onCountBlur({ field: "teamCount" })}
             className={styles.input}
           />
         </label>
@@ -369,16 +288,11 @@ export function LeagueForm({ league }: LeagueFormProps) {
           <input
             type="number"
             name="rosterSlots"
-            min={SLOTS_MIN}
-            max={SLOTS_MAX}
+            min={LEAGUE_BOUNDS.slots.min}
+            max={LEAGUE_BOUNDS.slots.max}
             key={`slots:${state.rosterSlots}`}
             defaultValue={state.rosterSlots}
-            onBlur={onCountBlur({
-              field: "rosterSlots",
-              min: SLOTS_MIN,
-              max: SLOTS_MAX,
-              fallback: SLOTS_DEFAULT,
-            })}
+            onBlur={onCountBlur({ field: "rosterSlots" })}
             className={styles.input}
           />
         </label>
@@ -429,9 +343,9 @@ export function LeagueForm({ league }: LeagueFormProps) {
                       <input
                         type="number"
                         name={`weight:${meta.key}`}
-                        min={0}
-                        max={2}
-                        step={0.25}
+                        min={WEIGHT_BOUNDS.min}
+                        max={WEIGHT_BOUNDS.max}
+                        step={WEIGHT_BOUNDS.step}
                         key={`${meta.key}:${state.weights[meta.key] ?? 1}`}
                         defaultValue={state.weights[meta.key] ?? 1}
                         onBlur={onWeightBlur({ category: meta.key })}

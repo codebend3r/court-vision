@@ -5,9 +5,14 @@ import { useRouter } from "next/navigation";
 import { type FocusEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 
 import styles from "@/components/LeagueSwitcher/LeagueSwitcher.module.scss";
-import { setActiveLeague } from "@/lib/leagues/actions";
 import { formatLeagueMeta } from "@/lib/leagues/format";
-import { useActiveLeague, useLeagues, useLeaguesStore } from "@/lib/leagues/store";
+import {
+  SWITCH_LEAGUE_ERROR,
+  useActiveLeague,
+  useLeagues,
+  useLeaguesStore,
+} from "@/lib/leagues/store";
+import { useDismiss } from "@vision/ui/hooks/useDismiss";
 
 // Active-league picker in the side menu. Optimistic: the store flips first so
 // every league-scoped surface updates instantly; router.refresh() re-renders
@@ -31,47 +36,29 @@ export function LeagueSwitcher() {
   }, [open, leagues, active]);
 
   // Click/pointer outside the switcher closes the menu.
-  useEffect(() => {
-    if (!open) return;
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target;
-      if (switcherRef.current === null) return;
-      if (target instanceof Node && switcherRef.current.contains(target)) return;
-      setOpen(false);
-    };
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [open]);
+  useDismiss({ open, ref: switcherRef, onDismiss: () => setOpen(false) });
 
   if (leagues.length === 0) return null;
 
   const pick = ({ leagueId }: { leagueId: string }) => {
-    const previousActiveId = useLeaguesStore.getState().activeLeagueId;
-    useLeaguesStore.getState().setActive({ leagueId });
     setOpen(false);
     triggerRef.current?.focus();
-    void setActiveLeague({ leagueId })
+    void useLeaguesStore
+      .getState()
+      .switchActiveLeague({ leagueId })
       .then((result) => {
         if (result.status !== "ok") {
-          // Revert the optimistic flip; re-read fresh rather than reuse a
-          // pre-flip store snapshot, in case something else changed it
-          // meanwhile (mirrors LeagueList.setActive).
-          useLeaguesStore.setState({ activeLeagueId: previousActiveId });
-          setErrorMessage("Could not switch leagues — try again.");
+          setErrorMessage(SWITCH_LEAGUE_ERROR);
           return;
         }
         setErrorMessage(null);
         router.refresh();
-      })
-      .catch(() => {
-        useLeaguesStore.setState({ activeLeagueId: previousActiveId });
-        setErrorMessage("Could not switch leagues — try again.");
       });
   };
 
   const itemCount = leagues.length + 1;
 
-  const focusItem = (index: number) => {
+  const focusItem = ({ index }: { index: number }) => {
     const wrapped = ((index % itemCount) + itemCount) % itemCount;
     itemRefs.current[wrapped]?.focus();
   };
@@ -90,16 +77,16 @@ export function LeagueSwitcher() {
     const currentIndex = itemRefs.current.findIndex((item) => item === document.activeElement);
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      focusItem(currentIndex === -1 ? 0 : currentIndex + 1);
+      focusItem({ index: currentIndex === -1 ? 0 : currentIndex + 1 });
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
-      focusItem(currentIndex === -1 ? itemCount - 1 : currentIndex - 1);
+      focusItem({ index: currentIndex === -1 ? itemCount - 1 : currentIndex - 1 });
     } else if (event.key === "Home") {
       event.preventDefault();
-      focusItem(0);
+      focusItem({ index: 0 });
     } else if (event.key === "End") {
       event.preventDefault();
-      focusItem(itemCount - 1);
+      focusItem({ index: itemCount - 1 });
     } else if (event.key === "Escape") {
       event.preventDefault();
       setOpen(false);

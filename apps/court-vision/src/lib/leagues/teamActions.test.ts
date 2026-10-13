@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "bun:test";
 const leagueFindFirst = vi.fn();
 const leagueTeamFindMany = vi.fn();
 const leagueTeamCreate = vi.fn();
+const leagueTeamCreateManyAndReturn = vi.fn();
 const leagueTeamUpdateMany = vi.fn();
 const leagueTeamFindUnique = vi.fn();
 const leagueTeamDeleteMany = vi.fn();
@@ -16,6 +17,7 @@ const tx = {
   leagueTeam: {
     findMany: leagueTeamFindMany,
     create: leagueTeamCreate,
+    createManyAndReturn: leagueTeamCreateManyAndReturn,
     updateMany: leagueTeamUpdateMany,
     findUnique: leagueTeamFindUnique,
     count: leagueTeamCount,
@@ -79,6 +81,7 @@ beforeEach(() => {
   leagueFindFirst.mockReset();
   leagueTeamFindMany.mockReset();
   leagueTeamCreate.mockReset();
+  leagueTeamCreateManyAndReturn.mockReset();
   leagueTeamUpdateMany.mockReset();
   leagueTeamFindUnique.mockReset();
   leagueTeamDeleteMany.mockReset();
@@ -92,6 +95,10 @@ beforeEach(() => {
   leagueFindFirst.mockResolvedValue({ id: "league-1" });
   leagueTeamFindMany.mockResolvedValue([]);
   leagueTeamCreate.mockResolvedValue({ id: "team-1" });
+  leagueTeamCreateManyAndReturn.mockResolvedValue([
+    { id: "new-1", slug: "bench-mob" },
+    { id: "new-2", slug: "bench-mob-2" },
+  ]);
   leagueTeamUpdateMany.mockResolvedValue({ count: 1 });
   leagueTeamFindUnique.mockResolvedValue(teamRow);
   leagueTeamDeleteMany.mockResolvedValue({ count: 1 });
@@ -215,6 +222,17 @@ describe("saveLeagueTeam", () => {
     expect(leagueFindFirst).not.toHaveBeenCalled();
   });
 
+  it("returns error (not an unhandled rejection) when the ownership lookup throws", async () => {
+    leagueFindFirst.mockRejectedValueOnce(new Error("db error"));
+    const result = await saveLeagueTeam({
+      leagueId: "league-1",
+      teamId: null,
+      name: "Test",
+      slots,
+    });
+    expect(result).toEqual({ status: "error" });
+  });
+
   it("returns error on database exception", async () => {
     leagueTeamCreate.mockRejectedValueOnce(new Error("db error"));
     const result = await saveLeagueTeam({
@@ -230,7 +248,7 @@ describe("saveLeagueTeam", () => {
 describe("deleteLeagueTeam", () => {
   it("deletes an owned team", async () => {
     const result = await deleteLeagueTeam({ teamId: "team-1" });
-    expect(result).toEqual({ status: "ok-deleted" });
+    expect(result).toEqual({ status: "ok" });
     expect(leagueTeamDeleteMany).toHaveBeenCalledWith({
       where: { id: "team-1", profileId: profile.id },
     });
@@ -239,7 +257,7 @@ describe("deleteLeagueTeam", () => {
   it("is idempotent for an already-gone or unowned team (0 rows deleted)", async () => {
     leagueTeamDeleteMany.mockResolvedValueOnce({ count: 0 });
     const result = await deleteLeagueTeam({ teamId: "forged" });
-    expect(result).toEqual({ status: "ok-deleted" });
+    expect(result).toEqual({ status: "ok" });
   });
 
   it("returns unauthenticated when no profile", async () => {
@@ -289,14 +307,14 @@ describe("importLegacyTeams", () => {
     ensureDefaultLeague.mockResolvedValue(null);
     const result = await importLegacyTeams({ teams: legacyTeams });
     expect(result).toEqual({ status: "unauthenticated" });
-    expect(leagueTeamCreate).not.toHaveBeenCalled();
+    expect(leagueTeamCreateManyAndReturn).not.toHaveBeenCalled();
   });
 
   it("returns error (not an unhandled rejection) when ensureDefaultLeague throws", async () => {
     ensureDefaultLeague.mockRejectedValue(new Error("session lookup failed"));
     const result = await importLegacyTeams({ teams: legacyTeams });
     expect(result).toEqual({ status: "error" });
-    expect(leagueTeamCreate).not.toHaveBeenCalled();
+    expect(leagueTeamCreateManyAndReturn).not.toHaveBeenCalled();
   });
 
   it("passes the already-resolved profile through to ensureDefaultLeague", async () => {
@@ -309,13 +327,13 @@ describe("importLegacyTeams", () => {
     const result = await importLegacyTeams({ teams: legacyTeams });
     expect(result).toEqual({ status: "skipped" });
     expect(leagueTeamCount).toHaveBeenCalledWith({ where: { leagueId: "league-1" } });
-    expect(leagueTeamCreate).not.toHaveBeenCalled();
+    expect(leagueTeamCreateManyAndReturn).not.toHaveBeenCalled();
   });
 
   it("returns ok without writing anything for an empty team list", async () => {
     const result = await importLegacyTeams({ teams: [] });
     expect(result).toEqual({ status: "ok" });
-    expect(leagueTeamCreate).not.toHaveBeenCalled();
+    expect(leagueTeamCreateManyAndReturn).not.toHaveBeenCalled();
   });
 
   it("rejects a payload over the 50-team cap without touching the session", async () => {
@@ -369,32 +387,51 @@ describe("importLegacyTeams", () => {
     expect(getProfile).not.toHaveBeenCalled();
   });
 
-  it("creates every team with a collision-proof slug and its slots in one transaction", async () => {
-    leagueTeamCreate.mockResolvedValueOnce({ id: "new-1" }).mockResolvedValueOnce({ id: "new-2" });
-    const result = await importLegacyTeams({ teams: legacyTeams });
+  it("creates every team with a collision-proof, trimmed slug in one batch", async () => {
+    const result = await importLegacyTeams({
+      teams: legacyTeams.map((team, index) =>
+        index === 0 ? { ...team, name: "  Bench Mob " } : team,
+      ),
+    });
     expect(result).toEqual({ status: "ok" });
-    expect(leagueTeamCreate).toHaveBeenNthCalledWith(1, {
-      data: { leagueId: "league-1", profileId: profile.id, name: "Bench Mob", slug: "bench-mob" },
+    expect(leagueTeamCreateManyAndReturn).toHaveBeenCalledTimes(1);
+    expect(leagueTeamCreateManyAndReturn).toHaveBeenCalledWith({
+      data: [
+        { leagueId: "league-1", profileId: profile.id, name: "Bench Mob", slug: "bench-mob" },
+        { leagueId: "league-1", profileId: profile.id, name: "Bench Mob", slug: "bench-mob-2" },
+      ],
+      select: { id: true, slug: true },
     });
-    expect(leagueTeamCreate).toHaveBeenNthCalledWith(2, {
-      data: {
-        leagueId: "league-1",
-        profileId: profile.id,
-        name: "Bench Mob",
-        slug: "bench-mob-2",
-      },
-    });
-    expect(leagueTeamSlotCreateMany).toHaveBeenNthCalledWith(1, {
+    expect(leagueTeamCreate).not.toHaveBeenCalled();
+  });
+
+  it("writes every team's slots in one statement, matched to its row by slug", async () => {
+    // RETURNING order is not promised, so the rows come back reversed here.
+    leagueTeamCreateManyAndReturn.mockResolvedValueOnce([
+      { id: "new-2", slug: "bench-mob-2" },
+      { id: "new-1", slug: "bench-mob" },
+    ]);
+    await importLegacyTeams({ teams: legacyTeams });
+    expect(leagueTeamSlotCreateMany).toHaveBeenCalledTimes(1);
+    expect(leagueTeamSlotCreateMany).toHaveBeenCalledWith({
       data: [
         { teamId: "new-1", profileId: profile.id, slotType: "PG", position: 0, playerId: 7 },
         { teamId: "new-1", profileId: profile.id, slotType: "UTIL", position: 1, playerId: null },
+        { teamId: "new-2", profileId: profile.id, slotType: "PG", position: 0, playerId: 7 },
+        { teamId: "new-2", profileId: profile.id, slotType: "UTIL", position: 1, playerId: null },
       ],
     });
-    expect(leagueTeamSlotCreateMany).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns error when a created team comes back without its row", async () => {
+    leagueTeamCreateManyAndReturn.mockResolvedValueOnce([{ id: "new-1", slug: "bench-mob" }]);
+    const result = await importLegacyTeams({ teams: legacyTeams });
+    expect(result).toEqual({ status: "error" });
+    expect(leagueTeamSlotCreateMany).not.toHaveBeenCalled();
   });
 
   it("returns error on database exception", async () => {
-    leagueTeamCreate.mockRejectedValueOnce(new Error("db error"));
+    leagueTeamCreateManyAndReturn.mockRejectedValueOnce(new Error("db error"));
     const result = await importLegacyTeams({ teams: legacyTeams });
     expect(result).toEqual({ status: "error" });
   });

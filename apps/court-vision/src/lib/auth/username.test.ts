@@ -4,7 +4,7 @@ import { isValidUsername, normalizeUsername, usernameSchema } from "@/lib/auth/u
 
 describe("username", () => {
   it("normalizes case and trims", () => {
-    expect(normalizeUsername("  SteveN_1 ")).toBe("steven_1");
+    expect(normalizeUsername({ username: "  SteveN_1 " })).toBe("steven_1");
   });
 
   it("accepts a valid username", () => {

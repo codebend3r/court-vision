@@ -27,3 +27,57 @@
   @include micro-label;
   font-weight: var(--font-weight-semibold);
 }
+
+// The sign-in and sign-up forms share one body.
+.form {
+  display: grid;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 22rem;
+
+  // Primary action: an engaged keycap at rest that presses into its shadow.
+  button[type="submit"] {
+    @include keycap;
+    @include keycap-engaged;
+    justify-content: center;
+
+    &:active:not(:disabled, [aria-disabled="true"]) {
+      @include keycap-press;
+    }
+
+    // Sign-up blocks its button with aria-disabled so it stays focusable; it
+    // dims the way a disabled keycap does.
+    &[aria-disabled="true"] {
+      opacity: var(--control-disabled-opacity);
+      cursor: not-allowed;
+    }
+  }
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+
+  span {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+  }
+
+  input {
+    @include control-field;
+  }
+}
+
+.error {
+  color: var(--color-accent-strong);
+  font-size: var(--font-size-sm);
+}
+
+.alt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+
+  a {
+    text-decoration: underline;
+  }
+}
