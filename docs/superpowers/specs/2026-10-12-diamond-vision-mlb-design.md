@@ -51,11 +51,12 @@ The MLB Stats API supplies what Balldontlie does not, one request per player
 rather than in bulk: headshots, MLBAM ids, and fielding-based position data
 for two-way players.
 
-**Unverified.** The local `BALLDONTLIE_API_KEY` returned 401 on 2026-10-12
-(even for NBA; the GitHub Actions secret still works), so no Balldontlie MLB
-field was confirmed live. Phase 1 starts with a 48-hour trial that checks the
-`/mlb/v1/stats` fields, their nulls, and the position strings against the
-mapping below before anything is built on them.
+**Verified 2026-10-13 with Court Vision's NBA GOAT key:** `/mlb/v1/teams` (a
+free endpoint) answers 200, but `/mlb/v1/stats` answers 401. The key works
+across sports, and the per-game stats need an MLB tier of their own. No
+`/mlb/v1/stats` field has been seen live yet. Phase 1 starts with a 48-hour
+trial that checks those fields, their nulls, and the position strings against
+the mapping below before anything is built on them.
 
 ### Endpoints
 
