@@ -4,6 +4,7 @@ import { type ReactNode } from "react";
 import { LinkPending } from "@vision/ui/components/LinkPending/LinkPending";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PositionTag } from "@/components/PositionTag/PositionTag";
+import { RosteredMarker } from "@/components/RosteredMarker/RosteredMarker";
 import { StarButton } from "@/components/StarButton/StarButton";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { ADVANCED_STAT_META, type AdvancedStatMeta } from "@/lib/players/advancedStatMeta";
@@ -132,6 +133,7 @@ function PlayerCell({ row }: { row: PlayerIdentity }) {
         <Link href={`/players/${row.id}`} className={styles.playerName}>
           {row.fullName}
         </Link>
+        <RosteredMarker playerId={row.id} />
         <span className={styles.playerTags}>
           {!!row.teamAbbr && <TeamChip team={row.teamAbbr} size="sm" />}
           {!!row.position && <PositionTag position={row.position} className={styles.position} />}

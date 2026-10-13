@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
+import { RosteredMarker } from "@/components/RosteredMarker/RosteredMarker";
 import { StarButton } from "@/components/StarButton/StarButton";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { FANTASY_METHODS, methodMeta } from "@vision/sport-basketball/engine";
@@ -175,6 +176,7 @@ export function FantasyValueTable({ rows, sort, dir, isSignedIn, onSort }: Fanta
                     teamAbbr={row.teamAbbr}
                   />
                   <Link href={`/players/${row.playerId}`}>{row.firstName}</Link>
+                  <RosteredMarker playerId={row.playerId} />
                 </span>
               </td>
               <td data-sort-active={sort === "lastName" || undefined}>
