@@ -1,0 +1,45 @@
+.prose {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 60ch;
+
+  p {
+    margin: 0;
+  }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+  }
+
+  a {
+    text-decoration: underline;
+  }
+}
+
+.emphasisGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.emphasisSample,
+.emphasisBold,
+.emphasisItalic,
+.emphasisBoldItalic {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.emphasisBold {
+  font-weight: var(--font-weight-bold);
+}
+
+.emphasisItalic {
+  font-style: italic;
+}
+
+.emphasisBoldItalic {
+  font-weight: var(--font-weight-bold);
+  font-style: italic;
+}

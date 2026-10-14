@@ -1,59 +1,5 @@
 @use "@/styles/mixins" as *;
 
-// Footer bar inside the table wrapper (spec §7): rows-per-page, centred page
-// count in mono, then the Prev/Next keycaps.
-.pager {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  border-top: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-
-  &[data-pending="true"] {
-    opacity: 0.6;
-  }
-}
-
-.pageCount {
-  justify-self: center;
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
-
-.buttons {
-  display: grid;
-  grid-auto-flow: column;
-  gap: var(--space-2);
-}
-
-.pagerButton {
-  @include keycap;
-}
-
-.sizeLabel {
-  display: grid;
-  grid-auto-flow: column;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.select {
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-control-bg);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-
-  &:focus-visible {
-    @include control-focus-ring;
-    border-color: var(--color-control-accent);
-  }
-}
-
 // Announces an in-flight page change to screen readers; invisible on screen,
 // where the pending dim already says it.
 .status {

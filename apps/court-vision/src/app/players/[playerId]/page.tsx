@@ -9,7 +9,6 @@ import { SeasonSelect } from "@/components/SeasonSelect/SeasonSelect";
 import { StarButton } from "@/components/StarButton/StarButton";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { getUser } from "@/lib/auth/session";
-import { SEASON_LABEL, SEASON_TYPE } from "@/lib/stats/season";
 import {
   formatBirthDate,
   formatDraft,
@@ -17,8 +16,10 @@ import {
   formatHeight,
   formatWeight,
 } from "@vision/core/util/format";
+import { isPresentFact } from "@/lib/players/facts";
 import { prisma } from "@/lib/prisma";
 import { CAREER, loadStatFilters, resolveSeasonSelection } from "@/lib/stats/searchParams";
+import { SEASON_LABEL, SEASON_START_YEAR, SEASON_TYPE } from "@/lib/stats/season";
 import { loadPlayerView } from "@/app/players/[playerId]/views";
 
 import styles from "@/app/players/[playerId]/page.module.scss";
@@ -77,7 +78,7 @@ export default async function PlayerPage({
   const newestSeason = playerSeasons[0] ?? null;
   const oldestSeason = playerSeasons[playerSeasons.length - 1] ?? null;
   // The card labels the career with its actual data span (the backfill only
-  // reaches 2020-21), so a veteran's card doesn't imply a full career.
+  // reaches back to 2016-17), so a veteran's card doesn't imply a full career.
   const careerSpanLabel =
     !!oldestSeason && oldestSeason !== newestSeason
       ? `${oldestSeason} to ${newestSeason ?? ""}`
@@ -94,10 +95,6 @@ export default async function PlayerPage({
     span,
   });
 
-  const isPresentFact = (fact: {
-    label: string;
-    value: string | null;
-  }): fact is { label: string; value: string } => !!fact.value;
   const facts = [
     { label: "Height", value: formatHeight({ heightInches: player.heightInches }) },
     { label: "Weight", value: formatWeight({ weightLbs: player.weightLbs }) },
@@ -116,7 +113,7 @@ export default async function PlayerPage({
       label: "Experience",
       value: formatExperience({
         draftYear: player.draftYear,
-        seasonStartYear: Number.parseInt(SEASON_LABEL, 10),
+        seasonStartYear: SEASON_START_YEAR,
       }),
     },
   ].filter(isPresentFact);

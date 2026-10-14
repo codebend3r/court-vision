@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
 
 import { NBA_TEAMS } from "@/lib/teams/meta";
@@ -8,81 +8,73 @@ import DesignPage from "@/app/design/page";
 
 afterEach(cleanup);
 
+const renderPage = () =>
+  render(
+    <ThemeProvider>
+      <DesignPage />
+    </ThemeProvider>,
+  );
+
+const SECTION_LINKS = [
+  ["Colors", "#colors"],
+  ["Chart palettes", "#chart-palettes"],
+  ["Team chips", "#team-chips"],
+  ["Typography", "#typography"],
+  ["Typefaces", "#typefaces"],
+  ["Headings", "#headings"],
+  ["Font weights", "#font-weights"],
+  ["Body text", "#body-text"],
+  ["Spacing", "#spacing"],
+  ["Radius", "#radius"],
+  ["Form controls", "#form-controls"],
+  ["Buttons", "#buttons"],
+];
+
 describe("DesignPage", () => {
-  it("links to every design system section", () => {
-    render(
-      <ThemeProvider>
-        <DesignPage />
-      </ThemeProvider>,
-    );
+  it("opens with the page header as its one h1", () => {
+    renderPage();
+
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole("heading", { level: 1, name: "Design system" })).toBeInTheDocument();
+  });
+
+  it("links to every design system section, each of which exists", () => {
+    renderPage();
 
     const nav = screen.getByRole("navigation", { name: "Design system sections" });
-    const links = Array.from(nav.querySelectorAll("a"));
+    const links = within(nav).getAllByRole("link");
 
-    expect(links).toHaveLength(12);
-    expect(links.map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
-      ["Colors", "#colors"],
-      ["Chart palettes", "#chart-palettes"],
-      ["Team chips", "#team-chips"],
-      ["Typography", "#typography"],
-      ["Typefaces", "#typefaces"],
-      ["Headings", "#headings"],
-      ["Font weights", "#font-weights"],
-      ["Body text", "#body-text"],
-      ["Spacing", "#spacing"],
-      ["Radius", "#radius"],
-      ["Form controls", "#form-controls"],
-      ["Buttons", "#buttons"],
-    ]);
-
-    for (const link of links) {
-      expect(document.querySelector(link.getAttribute("href") ?? "")).toBeInTheDocument();
-    }
+    expect(links.map((link) => [link.textContent, link.getAttribute("href")])).toEqual(
+      SECTION_LINKS,
+    );
+    links.map((link) =>
+      expect(document.querySelector(link.getAttribute("href") ?? "")).toBeInTheDocument(),
+    );
   });
 
-  it("catalogs every button variation standalone and in groups", () => {
-    render(
-      <ThemeProvider>
-        <DesignPage />
-      </ThemeProvider>,
-    );
+  it("titles every section with an h2 named like its nav link", () => {
+    renderPage();
 
-    ["Primary", "Secondary", "Ghost", "Danger", "Retro chip", "Retro dashed"].map((name) => {
-      expect(screen.getByRole("button", { name })).toBeInTheDocument();
-    });
-    expect(screen.getByRole("group", { name: "Retro chip group" })).toBeInTheDocument();
+    SECTION_LINKS.map(([label]) =>
+      expect(screen.getByRole("heading", { level: 2, name: label })).toBeInTheDocument(),
+    );
+  });
+
+  it("catalogs one specimen per keycap mixin, standalone and in groups", () => {
+    renderPage();
+
+    ["Keycap", "Engaged", "Danger", "Press"].map((name) =>
+      expect(screen.getByRole("button", { name })).toBeInTheDocument(),
+    );
+    expect(screen.getByRole("group", { name: "Toggle group" })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Action group" })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Pager group" })).toBeInTheDocument();
-    // Retro chips expose a pressed (pushed-in) state.
-    expect(screen.getAllByRole("button", { name: "Pressed", pressed: true }).length).toBe(2);
-  });
-
-  it("renders the eleven section headings", () => {
-    render(
-      <ThemeProvider>
-        <DesignPage />
-      </ThemeProvider>,
-    );
-
-    expect(screen.getByRole("heading", { name: "Colors" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Chart palettes" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Team chips" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Typography" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Typefaces" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Headings" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Font weights" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Body text" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Spacing" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Radius" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Form controls" })).toBeInTheDocument();
+    // Only the toggle specimen shows a pressed state.
+    expect(screen.getAllByRole("button", { name: "Pressed", pressed: true })).toHaveLength(1);
   });
 
   it("renders regular, bold, and italic body-text specimens", () => {
-    render(
-      <ThemeProvider>
-        <DesignPage />
-      </ThemeProvider>,
-    );
+    renderPage();
 
     expect(screen.getByText("Regular weight, roman")).toBeInTheDocument();
     expect(screen.getByText("Bold weight")).toBeInTheDocument();
@@ -91,11 +83,7 @@ describe("DesignPage", () => {
   });
 
   it("renders a chip for every NBA team", () => {
-    render(
-      <ThemeProvider>
-        <DesignPage />
-      </ThemeProvider>,
-    );
+    renderPage();
 
     const chips = NBA_TEAMS.map((team) => screen.getByTitle(team.name));
 
@@ -105,51 +93,39 @@ describe("DesignPage", () => {
   });
 
   it("renders both typeface family names in the typeface and weight sections", () => {
-    render(
-      <ThemeProvider>
-        <DesignPage />
-      </ThemeProvider>,
-    );
+    renderPage();
 
     expect(screen.getAllByText("Chakra Petch — display")).toHaveLength(2);
     expect(screen.getAllByText("IBM Plex Sans — body")).toHaveLength(2);
   });
 
   it("renders all 8 color token names", () => {
-    render(
-      <ThemeProvider>
-        <DesignPage />
-      </ThemeProvider>,
-    );
+    renderPage();
 
-    expect(screen.getByText("--color-bg")).toBeInTheDocument();
-    expect(screen.getByText("--color-surface")).toBeInTheDocument();
-    expect(screen.getByText("--color-border")).toBeInTheDocument();
-    expect(screen.getByText("--color-text")).toBeInTheDocument();
-    expect(screen.getByText("--color-text-muted")).toBeInTheDocument();
-    expect(screen.getByText("--color-accent")).toBeInTheDocument();
-    expect(screen.getByText("--color-accent-strong")).toBeInTheDocument();
-    expect(screen.getByText("--color-highlight")).toBeInTheDocument();
+    [
+      "--color-bg",
+      "--color-surface",
+      "--color-border",
+      "--color-text",
+      "--color-text-muted",
+      "--color-accent",
+      "--color-accent-strong",
+      "--color-highlight",
+    ].map((token) => expect(screen.getByText(token)).toBeInTheDocument());
   });
 
-  it("renders one heading sample per level h1 to h5", () => {
-    render(
-      <ThemeProvider>
-        <DesignPage />
-      </ThemeProvider>,
-    );
+  it("renders the h1 specimen without a second h1, then one heading sample per level h2 to h5", () => {
+    renderPage();
 
-    const samples = screen.getAllByRole("heading", { name: "Fourth quarter comeback" });
-    const levels = samples.map((sample) => sample.tagName);
-    expect(levels).toEqual(["H1", "H2", "H3", "H4", "H5"]);
+    const headings = within(
+      screen.getByRole("heading", { name: "Headings" }).closest("section") ?? document.body,
+    );
+    const samples = headings.getAllByText("Fourth quarter comeback");
+    expect(samples.map((sample) => sample.tagName)).toEqual(["P", "H2", "H3", "H4", "H5"]);
   });
 
   it("renders font weight samples for both families", () => {
-    render(
-      <ThemeProvider>
-        <DesignPage />
-      </ThemeProvider>,
-    );
+    renderPage();
 
     expect(screen.getByText("--font-weight-bold (700)")).toBeInTheDocument();
     expect(screen.getByText("--font-weight-semibold (600)")).toBeInTheDocument();
@@ -159,11 +135,7 @@ describe("DesignPage", () => {
   });
 
   it("renders the form control specimens", () => {
-    render(
-      <ThemeProvider>
-        <DesignPage />
-      </ThemeProvider>,
-    );
+    renderPage();
 
     expect(screen.getAllByRole("checkbox")).toHaveLength(3);
     expect(screen.getAllByRole("radio")).toHaveLength(3);

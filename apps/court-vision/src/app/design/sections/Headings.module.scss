@@ -1,0 +1,28 @@
+@use "@/styles/mixins" as *;
+
+.headingStack {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.headingRow {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.headingSample {
+  margin: 0;
+}
+
+// The h1 as every page shows it: the global heading face plus its extrusion,
+// at PageHeader's title size.
+.titleSample {
+  @include retro-extrude;
+
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.1;
+  letter-spacing: var(--tracking-tight);
+}

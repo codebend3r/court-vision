@@ -3,7 +3,7 @@ import { StarredPlayersView } from "@/components/StarredPlayersView/StarredPlaye
 import { getActiveLeague } from "@/lib/leagues/queries";
 import { parseStarredSearchParams, type RawSearchParams } from "@/lib/players/searchParams";
 
-import styles from "@/app/watchlist/page.module.scss";
+import styles from "@/styles/leagueScopedPage.module.scss";
 
 export const dynamic = "force-dynamic";
 

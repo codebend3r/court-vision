@@ -9,14 +9,21 @@ import {
   ADVANCED_COLUMNS,
   PlayersTable,
   regularColumns,
+  type StatColumn,
 } from "@/components/PlayersTable/PlayersTable";
 import { PlayersTabs } from "@/components/PlayersTabs/PlayersTabs";
 import { StarredPlayersView } from "@/components/StarredPlayersView/StarredPlayersView";
 import { getProfile, getUser } from "@/lib/auth/session";
 import { buildLeagueSeed } from "@/lib/leagues/fantasyDefaults";
 import { getActiveLeague } from "@/lib/leagues/queries";
+import { type PlayerIdentity } from "@/lib/players/identity";
+import { type Page } from "@/lib/players/rank";
 import { searchPlayers, searchPlayersAdvanced } from "@/lib/players/searchCached";
-import { parsePlayersSearchParams, type PlayersSearchParams } from "@/lib/players/searchParams";
+import {
+  parsePlayersSearchParams,
+  type PlayersSearchParams,
+  type RawSearchParams,
+} from "@/lib/players/searchParams";
 import { getFantasyPool } from "@/lib/valuation/loader";
 import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
 
@@ -25,8 +32,6 @@ import { PLAYERS_PAGE_HEADER } from "@/app/players/header";
 import styles from "@/app/players/page.module.scss";
 
 export const dynamic = "force-dynamic";
-
-type RawSearchParams = Record<string, string | string[] | undefined>;
 
 const totalPagesOf = ({ total, size }: { total: number; size: number }): number =>
   Math.max(1, Math.ceil(total / size));
@@ -62,20 +67,20 @@ function PlayersScreen({ params, children }: { params: PlayersSearchParams; chil
 }
 
 // The table tabs (regular and advanced) share everything around the table:
-// the same controls, the same counter, the same empty state. Only the query,
-// the table variant, and the advanced legend differ, and those stay in the
-// callers because `variant` and `rows` are a discriminated pair on
-// PlayersTable; collapsing them here would need a cast to reunite.
-function PlayersResults({
+// the same controls, the same counter, the same empty state, the same pager.
+// Only the query, the columns, and the advanced legend (`children`) differ.
+function PlayersResults<Row extends PlayerIdentity>({
   params,
-  total,
-  page,
+  result: { rows, total, page },
+  columns,
+  isSignedIn,
   children,
 }: {
   params: PlayersSearchParams;
-  total: number;
-  page: number;
-  children: ReactNode;
+  result: Page<Row>;
+  columns: readonly StatColumn<Row>[];
+  isSignedIn: boolean;
+  children?: ReactNode;
 }) {
   const rangeStart = total === 0 ? 0 : (page - 1) * params.size + 1;
   const rangeEnd = Math.min(total, page * params.size);
@@ -85,24 +90,33 @@ function PlayersResults({
   // dim, and keying on it would refade (and interrupt) on every keystroke.
   const resultsKey = `${params.tab}:${params.sort}:${params.dir}:${params.range}:${params.mode}:${params.page}`;
   return (
-    <>
-      <PlayersSearchControls
-        q={params.q}
-        size={params.size}
-        sort={params.sort}
-        dir={params.dir}
-        range={params.range}
-        mode={params.mode}
-        minimums={params.minimums}
-        tab={params.tab}
-      />
+    <PlayersScreen params={params}>
+      <PlayersSearchControls params={params} />
       <section className={styles.results} key={resultsKey}>
         <p className={styles.summary}>
           {renderSummary({ total, q: params.q, rangeStart, rangeEnd })}
         </p>
-        {total > 0 && children}
+        {total > 0 && (
+          <>
+            <PlayersTable
+              rows={rows}
+              columns={columns}
+              params={params}
+              page={page}
+              isSignedIn={isSignedIn}
+              footer={
+                <PlayersPager
+                  params={params}
+                  page={page}
+                  totalPages={totalPagesOf({ total, size: params.size })}
+                />
+              }
+            />
+            {children}
+          </>
+        )}
       </section>
-    </>
+    </PlayersScreen>
   );
 }
 
@@ -129,9 +143,10 @@ export default async function PlayersPage({
   }
 
   if (params.tab === "fantasy") {
-    // Fantasy owns its URL state via nuqs; only `range` selects server data.
-    // Everything else (weights, exclusions, sort, paging) computes client-side
-    // in FantasyValueView from this one cached pool payload.
+    // Fantasy owns the rest of its URL state client-side via nuqs; only
+    // `range`, parsed by the same list parser, selects server data. Everything
+    // else (weights, exclusions, sort, paging) computes in FantasyValueView
+    // from this one cached pool payload.
     const [lines, league, profile, isSignedIn] = await Promise.all([
       getFantasyPool({ range: params.range }),
       getActiveLeague(),
@@ -150,55 +165,26 @@ export default async function PlayersPage({
   }
 
   if (params.tab === "advanced") {
-    const [{ rows, total, page }, isSignedIn] = await Promise.all([
-      searchPlayersAdvanced(params),
-      signedIn(),
-    ]);
+    const [result, isSignedIn] = await Promise.all([searchPlayersAdvanced(params), signedIn()]);
     return (
-      <PlayersScreen params={params}>
-        <PlayersResults params={params} total={total} page={page}>
-          <PlayersTable
-            columns={ADVANCED_COLUMNS}
-            rows={rows}
-            params={params}
-            page={page}
-            isSignedIn={isSignedIn}
-            footer={
-              <PlayersPager
-                {...params}
-                page={page}
-                totalPages={totalPagesOf({ total, size: params.size })}
-              />
-            }
-          />
-          <AdvancedStatsLegend />
-        </PlayersResults>
-      </PlayersScreen>
+      <PlayersResults
+        params={params}
+        result={result}
+        columns={ADVANCED_COLUMNS}
+        isSignedIn={isSignedIn}
+      >
+        <AdvancedStatsLegend />
+      </PlayersResults>
     );
   }
 
-  const [{ rows, total, page }, isSignedIn] = await Promise.all([
-    searchPlayers(params),
-    signedIn(),
-  ]);
+  const [result, isSignedIn] = await Promise.all([searchPlayers(params), signedIn()]);
   return (
-    <PlayersScreen params={params}>
-      <PlayersResults params={params} total={total} page={page}>
-        <PlayersTable
-          columns={regularColumns({ mode: params.mode })}
-          rows={rows}
-          params={params}
-          page={page}
-          isSignedIn={isSignedIn}
-          footer={
-            <PlayersPager
-              {...params}
-              page={page}
-              totalPages={totalPagesOf({ total, size: params.size })}
-            />
-          }
-        />
-      </PlayersResults>
-    </PlayersScreen>
+    <PlayersResults
+      params={params}
+      result={result}
+      columns={regularColumns({ mode: params.mode })}
+      isSignedIn={isSignedIn}
+    />
   );
 }

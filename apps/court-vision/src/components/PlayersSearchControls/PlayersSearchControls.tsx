@@ -1,37 +1,29 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChangeEvent, useEffect, useOptimistic, useRef, useTransition } from "react";
+import { ChangeEvent, useOptimistic, useTransition } from "react";
 
+import { MIN_FG3M, MIN_FGM, MIN_FTM } from "@/lib/players/minimums";
 import {
   buildPlayersHref,
+  GAME_RANGE_LABELS,
   isPlayerGameRange,
   isPlayerStatMode,
   MAX_QUERY_LENGTH,
-  type AdvancedSortKey,
-  type PlayerSortKey,
+  PLAYER_GAME_RANGES,
   type PlayerGameRange,
   type PlayerStatMode,
-  type PlayersTab,
-  type SortDirection,
+  type PlayersSearchParams,
 } from "@/lib/players/searchParams";
+import { useDebouncedQuery } from "@/lib/players/useDebouncedQuery";
 
 import { InfoTip } from "@vision/ui/components/InfoTip/InfoTip";
 
 import styles from "@/components/PlayersSearchControls/PlayersSearchControls.module.scss";
 
 export type PlayersSearchControlsProps = {
-  q: string;
-  size: number;
-  sort: PlayerSortKey | AdvancedSortKey;
-  dir: SortDirection;
-  range: PlayerGameRange;
-  mode: PlayerStatMode;
-  minimums: boolean;
-  tab?: PlayersTab;
+  params: PlayersSearchParams;
 };
-
-const DEBOUNCE_MS = 300;
 
 // The filters a control click changes. Held optimistically so the select or
 // keycap shows the user's choice the moment it's made, instead of snapping
@@ -47,36 +39,14 @@ const applyFilterChange = (
   change: Partial<FilterSelection>,
 ): FilterSelection => ({ ...current, ...change });
 
-export function PlayersSearchControls({
-  q,
-  size,
-  sort,
-  dir,
-  range,
-  mode,
-  minimums,
-  tab = "regular",
-}: PlayersSearchControlsProps) {
+export function PlayersSearchControls({ params }: PlayersSearchControlsProps) {
+  const { q, range, mode, minimums, tab } = params;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   // Reverts to the props once the navigation's transition settles, so the
   // server's parsed params always have the final word.
   const [selection, setSelection] = useOptimistic({ range, mode, minimums }, applyFilterChange);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latestQ = useRef(q);
-
-  useEffect(() => {
-    latestQ.current = q;
-  }, [q]);
-
-  useEffect(
-    () => () => {
-      if (debounceRef.current !== null) {
-        clearTimeout(debounceRef.current);
-      }
-    },
-    [],
-  );
+  const search = useDebouncedQuery({ q, onCommit: ({ q: query }) => navigate({ query }) });
 
   // Builds from the optimistic selection, not the props, so a second change
   // made before the first lands keeps the first instead of undoing it.
@@ -87,37 +57,17 @@ export function PlayersSearchControls({
     query?: string;
     change?: Partial<FilterSelection>;
   }) => {
-    if (debounceRef.current !== null) {
-      clearTimeout(debounceRef.current);
-      debounceRef.current = null;
-    }
+    search.cancel();
     const href = buildPlayersHref({
+      ...params,
       q: query,
       page: 1,
-      size,
-      sort,
-      dir,
-      tab,
       ...applyFilterChange(selection, change),
     });
     startTransition(() => {
       setSelection(change);
       router.replace(href);
     });
-  };
-
-  const onSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { value } = event.target;
-    if (debounceRef.current !== null) {
-      clearTimeout(debounceRef.current);
-    }
-    debounceRef.current = setTimeout(() => {
-      const trimmed = value.trim().slice(0, MAX_QUERY_LENGTH);
-      if (trimmed === latestQ.current) {
-        return;
-      }
-      navigate({ query: trimmed });
-    }, DEBOUNCE_MS);
   };
 
   const onRangeChange = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -144,7 +94,7 @@ export function PlayersSearchControls({
         <input
           type="search"
           defaultValue={q}
-          onChange={onSearchChange}
+          onChange={search.onChange}
           placeholder="Search players…"
           aria-label="Search players"
           maxLength={MAX_QUERY_LENGTH}
@@ -158,12 +108,11 @@ export function PlayersSearchControls({
             aria-label="Game range"
             className={styles.select}
           >
-            <option value="all">All games</option>
-            <option value="last5">Last 5 games</option>
-            <option value="last10">Last 10 games</option>
-            <option value="last20">Last 20 games</option>
-            <option value="last40">Last 40 games</option>
-            <option value="last60">Last 60 games</option>
+            {PLAYER_GAME_RANGES.map((gameRange) => (
+              <option key={gameRange} value={gameRange}>
+                {GAME_RANGE_LABELS[gameRange]}
+              </option>
+            ))}
           </select>
         </label>
         {tab === "regular" && (
@@ -206,11 +155,11 @@ export function PlayersSearchControls({
               </span>
               <dl className={styles.infoList}>
                 <dt>FG%</dt>
-                <dd>300 made field goals</dd>
+                <dd>{`${MIN_FGM} made field goals`}</dd>
                 <dt>3P%</dt>
-                <dd>82 made threes</dd>
+                <dd>{`${MIN_FG3M} made threes`}</dd>
                 <dt>FT%</dt>
-                <dd>125 made free throws</dd>
+                <dd>{`${MIN_FTM} made free throws`}</dd>
                 <dt>Per game</dt>
                 <dd>70% of the selected span (58 of 82 games)</dd>
               </dl>

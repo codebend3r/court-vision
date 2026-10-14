@@ -1,0 +1,16 @@
+// Labels and groupings several design-page sections share.
+
+.specimenName {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+.controlGroup {
+  display: grid;
+  gap: var(--space-2);
+}
