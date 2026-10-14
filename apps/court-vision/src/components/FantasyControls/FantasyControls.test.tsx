@@ -102,6 +102,30 @@ describe("FantasyControls", () => {
     expect(onChange).toHaveBeenCalledWith({ teams: 30 });
   });
 
+  it("falls back to the standard league when a league box is cleared", async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderControls({ teams: 8, slots: 10 });
+    await user.clear(screen.getByRole("spinbutton", { name: "Teams" }));
+    await user.tab();
+    expect(onChange).toHaveBeenCalledWith({ teams: 12 });
+    await user.clear(screen.getByRole("spinbutton", { name: "Roster slots" }));
+    await user.tab();
+    expect(onChange).toHaveBeenCalledWith({ slots: 13 });
+  });
+
+  it("restores a stat's default score when its scoring box is cleared", async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderControls();
+    const scoringSection = [...document.querySelectorAll("details")].find((element) =>
+      (element.querySelector("summary")?.textContent ?? "").includes("Scoring"),
+    );
+    if (!(scoringSection instanceof HTMLElement)) throw new Error("scoring section not found");
+    const reb = within(scoringSection).getByRole("spinbutton", { name: "REB" });
+    await user.clear(reb);
+    await user.tab();
+    expect(onChange).toHaveBeenCalledWith({ s: DEFAULT_POINTS_SCORING });
+  });
+
   it("explains what weights and league settings apply to", () => {
     renderControls();
     expect(screen.getByText(/Applies to the Z-Score column only/)).toBeInTheDocument();

@@ -19,7 +19,6 @@ import { searchPlayers, searchPlayersAdvanced } from "@/lib/players/searchCached
 import { parsePlayersSearchParams, type PlayersSearchParams } from "@/lib/players/searchParams";
 import { getFantasyPool } from "@/lib/valuation/loader";
 import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
-import { loadFantasySearchParams } from "@/lib/valuation/searchParams";
 
 import { PLAYERS_PAGE_HEADER } from "@/app/players/header";
 
@@ -133,9 +132,8 @@ export default async function PlayersPage({
     // Fantasy owns its URL state via nuqs; only `range` selects server data.
     // Everything else (weights, exclusions, sort, paging) computes client-side
     // in FantasyValueView from this one cached pool payload.
-    const { range } = await loadFantasySearchParams(raw);
     const [lines, league, profile, isSignedIn] = await Promise.all([
-      getFantasyPool({ range }),
+      getFantasyPool({ range: params.range }),
       getActiveLeague(),
       getProfile(),
       signedIn(),

@@ -102,14 +102,19 @@ describe("getFantasyPool", () => {
     ]);
   });
 
-  it("binds the season and the window, with no window for the whole season", async () => {
+  it("binds the season, season type and window, with no window for the whole season", async () => {
     queryRaw.mockResolvedValue([]);
 
     await getFantasyPool({ range: "last5", season: "2024-25" });
     await getFantasyPool({ range: "all", season: "2024-25" });
 
-    expect(queryRaw.mock.calls[0]?.slice(1)).toEqual(["2024-25", 5, 5]);
-    expect(queryRaw.mock.calls[1]?.slice(1)).toEqual(["2024-25", null, null]);
+    expect(queryRaw.mock.calls[0]?.slice(1) ?? []).toEqual(["2024-25", "Regular Season", 5, 5]);
+    expect(queryRaw.mock.calls[1]?.slice(1) ?? []).toEqual([
+      "2024-25",
+      "Regular Season",
+      null,
+      null,
+    ]);
   });
 
   it("values the latest season when none is requested", async () => {
@@ -118,7 +123,7 @@ describe("getFantasyPool", () => {
 
     await getFantasyPool({ range: "all" });
 
-    expect(queryRaw.mock.calls[0]?.[1]).toBe("2025-26");
+    expect(queryRaw.mock.calls[0]?.[1] ?? null).toBe("2025-26");
   });
 
   it("returns an empty pool without querying logs when no season has data", async () => {

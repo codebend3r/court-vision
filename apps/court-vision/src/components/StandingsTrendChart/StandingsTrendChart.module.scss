@@ -9,14 +9,8 @@
 // Announced by screen readers, invisible on screen — the chart's own axes
 // and legend already carry the visible summary.
 .summary {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
+  @include visually-hidden;
   margin: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
 }
 
 // The box owns the plot's size: the client-only chart and its loading
@@ -66,52 +60,4 @@
 
 .legendName {
   color: var(--color-text);
-}
-
-.tooltip {
-  display: grid;
-  gap: var(--space-1);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  font-size: var(--font-size-sm);
-}
-
-.tooltipDate {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-}
-
-.tooltipList {
-  display: grid;
-  gap: var(--space-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.tooltipRow {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-text);
-}
-
-.swatch {
-  width: 0.625rem;
-  height: 0.625rem;
-  border-radius: var(--radius-full);
-}
-
-.tooltipValue {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
-
-.tooltipMore {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
 }

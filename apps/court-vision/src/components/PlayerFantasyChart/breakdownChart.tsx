@@ -4,20 +4,18 @@ import { type ReactElement } from "react";
 import { Rectangle, type BarShapeProps, type RectangleProps, type TooltipPayload } from "recharts";
 
 import {
-  formatSigned,
+  METHOD_KEYS,
   METHOD_LABELS,
-  type MethodKey,
+  type MethodColors,
 } from "@/components/PlayerFantasyChart/labels";
+import { SeriesTooltip } from "@/components/SeriesTooltip/SeriesTooltip";
+import { formatRate, formatSigned } from "@vision/core/util/format";
 import { type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
-
-import styles from "@/components/PlayerFantasyChart/PlayerFantasyChart.module.scss";
 
 // Per-game display beside a category's score: counting stats to one decimal,
 // ratio categories as the make rate the Fantasy tab prints (".480").
-const formatPerGame = (entry: FantasyCategoryBreakdown): string =>
-  entry.kind === "ratio"
-    ? entry.perGame.toFixed(3).replace(/^0(?=\.)/, "")
-    : entry.perGame.toFixed(1);
+const formatPerGame = ({ entry }: { entry: FantasyCategoryBreakdown }): string =>
+  entry.kind === "ratio" ? formatRate({ value: entry.perGame }) : entry.perGame.toFixed(1);
 
 // A bar's rounded end belongs at the data end. Recharts applies `radius` to
 // the same rectangle corners whichever way the bar grows, so a negative bar
@@ -43,7 +41,7 @@ export type BreakdownTooltipProps = {
   active?: boolean;
   payload?: TooltipPayload;
   breakdown: readonly FantasyCategoryBreakdown[];
-  colors: Record<MethodKey, string>;
+  colors: MethodColors;
 };
 
 // The hovered category's full name and per-game line over its Z and G. Shared
@@ -67,18 +65,18 @@ export function BreakdownTooltip({
   }
 
   return (
-    <div className={styles.tooltip}>
-      <p className={styles.tooltipHeader}>
-        {entry.fullName} · {formatPerGame(entry)} per game
-      </p>
-      <p className={styles.tooltipRow}>
-        <span className={styles.dot} style={{ backgroundColor: colors.z }} />
-        {METHOD_LABELS.z}: {formatSigned(entry.z)}
-      </p>
-      <p className={styles.tooltipRow}>
-        <span className={styles.dot} style={{ backgroundColor: colors.g }} />
-        {METHOD_LABELS.g}: {formatSigned(entry.g)}
-      </p>
-    </div>
+    <SeriesTooltip
+      header={
+        <>
+          {entry.fullName} · {formatPerGame({ entry })} per game
+        </>
+      }
+      rows={METHOD_KEYS.map((key) => ({
+        key,
+        label: METHOD_LABELS[key],
+        color: colors[key],
+        value: formatSigned({ value: entry[key], digits: 1 }),
+      }))}
+    />
   );
 }

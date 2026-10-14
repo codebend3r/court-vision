@@ -14,7 +14,7 @@ import { formatLeagueMeta } from "@/lib/leagues/format";
 import { HOMEPAGE_WATCHLIST_LIMIT, MAX_WATCHLIST } from "@/lib/watchlist/constants";
 import { getWatchlistCount, getWatchlistPlayers } from "@/lib/watchlist/queries";
 import { ROLLING_WINDOW_GAMES } from "@vision/core/valuation/rolling";
-import { getGTrendSeries, getZTrendSeries } from "@/lib/watchlist/trendLoader";
+import { getTrendSeries } from "@/lib/watchlist/trendLoader";
 
 import styles from "@/app/page.module.scss";
 
@@ -41,10 +41,7 @@ export default async function Home() {
     firstTeam === null ? 0 : firstTeam.slots.filter((slot) => slot.player !== null).length;
   const eastLeader = standings?.east[0] ?? null;
   // Both charts track exactly the players the panel above lists.
-  const [zSeries, gSeries] = await Promise.all([
-    getZTrendSeries({ players }),
-    getGTrendSeries({ players }),
-  ]);
+  const { z: zSeries, g: gSeries } = await getTrendSeries({ players });
 
   return (
     <main className={styles.page}>

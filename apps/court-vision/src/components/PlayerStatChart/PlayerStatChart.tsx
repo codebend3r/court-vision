@@ -13,15 +13,18 @@ import {
   Undo2,
   type LucideIcon,
 } from "lucide-react";
-import { parseAsBoolean, parseAsString, useQueryState } from "nuqs";
 
 import type { CumulativePoint } from "@/lib/stats/cumulative";
 import type { StatMode } from "@/lib/stats/searchParams";
 import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 import { MetricLineChart } from "@/components/MetricLineChart/MetricLineChart";
-import { Switch } from "@vision/ui/components/Switch/Switch";
+import { ChartPanel } from "@/components/SeriesChart/ChartPanel";
+import { GamesMissedSwitch, useShowDnp } from "@/components/SeriesChart/GamesMissedSwitch";
+import { SeriesChips } from "@/components/SeriesChart/SeriesChips";
+import { useSeriesSelection } from "@/components/SeriesChart/useSeriesSelection";
 
 import styles from "@/components/PlayerStatChart/PlayerStatChart.module.scss";
+import chartStyles from "@/components/SeriesChart/SeriesChart.module.scss";
 import {
   DEFAULT_ACTIVE_KEYS,
   getStatMeta,
@@ -30,11 +33,6 @@ import {
   type StatMeta,
   type StatPanel,
 } from "@/components/PlayerStatChart/statMeta";
-
-const isStatKey = (value: string): value is StatKey => STAT_KEYS.some((key) => key === value);
-
-const parseVisibleStats = (value: string | null): StatKey[] =>
-  value === null ? DEFAULT_ACTIVE_KEYS : value.split(",").filter(isStatKey);
 
 // Raw per-game values and totals are whole-number counts; averages and per-36
 // rates keep one decimal.
@@ -76,16 +74,12 @@ const STAT_ICONS: Record<StatKey, LucideIcon> = {
 export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; mode: StatMode }) {
   const { theme } = useTheme();
   const statMeta = getStatMeta({ theme });
-  const [stats, setStats] = useQueryState("stats", parseAsString);
-  const [showDnp, setShowDnp] = useQueryState("dnp", parseAsBoolean.withDefault(false));
-  const active = parseVisibleStats(stats);
-
-  const toggle = (key: StatKey) => {
-    const next = active.includes(key)
-      ? active.filter((activeKey) => activeKey !== key)
-      : [...active, key];
-    void setStats(next.join(","));
-  };
+  const selection = useSeriesSelection({
+    param: "stats",
+    keys: STAT_KEYS,
+    defaults: DEFAULT_ACTIVE_KEYS,
+  });
+  const { showDnp } = useShowDnp();
 
   // Per-36 minutes would plot as the constant 36, so MIN sits out that mode.
   const isDisabled = (meta: StatMeta): boolean => mode === "per36" && meta.key === "min";
@@ -93,17 +87,12 @@ export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; m
   const visibleStatMeta =
     mode === "game" ? statMeta.filter((meta) => meta.panel === "counting") : statMeta;
   const countingActive = visibleStatMeta.filter(
-    (meta) => meta.panel === "counting" && active.includes(meta.key) && !isDisabled(meta),
+    (meta) =>
+      meta.panel === "counting" && selection.isActive({ key: meta.key }) && !isDisabled(meta),
   );
   const shootingActive = visibleStatMeta.filter(
-    (meta) => meta.panel === "shooting" && active.includes(meta.key),
+    (meta) => meta.panel === "shooting" && selection.isActive({ key: meta.key }),
   );
-
-  // One-shot bulk toggle: clearing everything lets the user focus on a single
-  // stat without clicking every chip off first.
-  const hasActive = active.length > 0;
-  const toggleAll = () =>
-    void setStats(hasActive ? "" : visibleStatMeta.map((meta) => meta.key).join(","));
 
   const formatPanelValue =
     (panel: StatPanel) =>
@@ -111,40 +100,29 @@ export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; m
       formatValue({ value, panel, mode });
 
   return (
-    <div className={styles.root}>
-      <div className={styles.chips}>
-        {visibleStatMeta.map((meta) => {
+    <div className={chartStyles.root}>
+      <SeriesChips
+        selection={selection}
+        all={visibleStatMeta.map((meta) => meta.key)}
+        chips={visibleStatMeta.map((meta) => {
           const Icon = STAT_ICONS[meta.key];
-          return (
-            <button
-              key={meta.key}
-              type="button"
-              aria-pressed={active.includes(meta.key) && !isDisabled(meta)}
-              disabled={isDisabled(meta)}
-              onClick={() => toggle(meta.key)}
-              className={styles.chip}
-            >
+          return {
+            key: meta.key,
+            label: meta.label,
+            disabled: isDisabled(meta),
+            mark: (
               <span className={styles.statIcon} style={{ color: meta.color }} aria-hidden="true">
                 <Icon size={16} strokeWidth={2} />
               </span>
-              {meta.label}
-            </button>
-          );
+            ),
+          };
         })}
-        <button type="button" onClick={toggleAll} className={styles.chipAction}>
-          {hasActive ? "Clear all" : "Select all"}
-        </button>
-      </div>
-
-      <Switch
-        label="Games missed"
-        checked={showDnp}
-        onChange={({ checked }) => void setShowDnp(checked)}
       />
 
+      <GamesMissedSwitch />
+
       <div className={styles.panels}>
-        <section className={styles.panel}>
-          <h3 className={styles.panelTitle}>{COUNTING_TITLE_BY_MODE[mode]}</h3>
+        <ChartPanel title={COUNTING_TITLE_BY_MODE[mode]}>
           {!!countingActive.length ? (
             <MetricLineChart
               metas={countingActive}
@@ -153,13 +131,12 @@ export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; m
               formatValue={formatPanelValue("counting")}
             />
           ) : (
-            <p className={styles.emptyHint}>Select a stat to plot</p>
+            <p className={chartStyles.emptyHint}>Select a stat to plot</p>
           )}
-        </section>
+        </ChartPanel>
 
         {!!shootingActive.length && (
-          <section className={styles.panel}>
-            <h3 className={styles.panelTitle}>Shooting percentages</h3>
+          <ChartPanel title="Shooting percentages">
             <MetricLineChart
               metas={shootingActive}
               series={series}
@@ -167,7 +144,7 @@ export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; m
               showDnp={showDnp}
               formatValue={formatPanelValue("shooting")}
             />
-          </section>
+          </ChartPanel>
         )}
       </div>
     </div>

@@ -4,90 +4,63 @@ import Link from "next/link";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { RosteredMarker } from "@/components/RosteredMarker/RosteredMarker";
+import { SortButton } from "@/components/SortButton/SortButton";
 import { StarButton } from "@/components/StarButton/StarButton";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
-import { methodMeta } from "@vision/sport-basketball/engine";
-import { type FantasyMethodKey } from "@vision/core/valuation/types";
+import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
+import { formatSigned } from "@vision/core/util/format";
+import { type FantasyMethodMeta } from "@vision/core/valuation/registry";
+import { isNameSort } from "@/lib/players/rank";
+import { type FantasyTableRow, type ListSortProps } from "@/lib/valuation/fantasyRows";
 import { type FantasySortKey } from "@/lib/valuation/searchParams";
-import { type FantasyPlayerValues, type FantasyStatLine } from "@/lib/valuation/types";
 
 import styles from "@/components/FantasyValueTable/FantasyValueTable.module.scss";
 
-export type FantasyTableRow = FantasyStatLine & { values: FantasyPlayerValues; rank: number };
-
-export type FantasyValueTableProps = {
+export type FantasyValueTableProps = ListSortProps & {
   rows: readonly FantasyTableRow[];
-  sort: FantasySortKey;
-  dir: "asc" | "desc";
-  isSignedIn: boolean;
-  onSort: (args: { sort: FantasySortKey }) => void;
 };
-
-type MethodColumn = {
-  sortKey: FantasySortKey;
-  methodKey: FantasyMethodKey;
-  value: (values: FantasyPlayerValues) => number;
-  signed: boolean;
-};
-
-// One sortable column per method (PRD §9.3).
-const METHOD_COLUMNS: readonly MethodColumn[] = [
-  { sortKey: "z", methodKey: "zscore", value: (values) => values.z, signed: true },
-  { sortKey: "g", methodKey: "gscore", value: (values) => values.g, signed: true },
-  { sortKey: "points", methodKey: "points", value: (values) => values.points, signed: false },
-  { sortKey: "vorp", methodKey: "vorp", value: (values) => values.vorp, signed: true },
-  { sortKey: "pos", methodKey: "positional", value: (values) => values.positional, signed: true },
-  { sortKey: "sgp", methodKey: "sgp", value: (values) => values.sgp, signed: true },
-  { sortKey: "sim", methodKey: "simvalue", value: (values) => values.sim, signed: true },
-];
-
-const formatScore = ({ value, signed }: { value: number; signed: boolean }): string =>
-  signed && value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
 
 export function FantasyValueTable({ rows, sort, dir, isSignedIn, onSort }: FantasyValueTableProps) {
-  const isStatSort = sort !== "firstName" && sort !== "lastName";
+  // Rank only means something when the rows are ordered by a score.
+  const isStatSort = !isNameSort(sort);
 
+  // A method column's header also carries the method's explanation tip.
   const header = ({
     label,
     sortKey,
-    tip,
-    isStatColumn = false,
+    method,
   }: {
     label: string;
     sortKey: FantasySortKey;
-    tip?: { name: string; description: string; whyItMatters: string; formula: string };
-    isStatColumn?: boolean;
+    method?: FantasyMethodMeta;
   }) => {
     const isActive = sort === sortKey;
-    const tipId = tip && `fantasy-tip-${sortKey}`;
+    const tipId = method && `fantasy-tip-${sortKey}`;
     return (
       <th
         key={sortKey}
-        // Marked explicitly rather than by column position: the star column
-        // shifts every index, and only for signed-in users.
-        className={isStatColumn ? styles.statHeader : undefined}
         aria-sort={isActive ? (dir === "asc" ? "ascending" : "descending") : undefined}
         data-sort-active={isActive || undefined}
       >
-        <button
-          type="button"
+        <SortButton
+          label={label}
+          isActive={isActive}
+          dir={dir}
           onClick={() => onSort({ sort: sortKey })}
-          className={styles.sortButton}
-          data-active={isActive ? "true" : "false"}
+          // Marked explicitly rather than by column position: the star column
+          // shifts every index, and only for signed-in users.
+          className={method && styles.statSort}
           aria-describedby={tipId}
-        >
-          {label}
-          {isActive && <span aria-hidden="true">{dir === "asc" ? "▲" : "▼"}</span>}
-        </button>
-        {!!tip && (
+        />
+        {!!method && (
           <span role="tooltip" id={tipId} className={styles.headerTip} hidden>
-            <span className={styles.headerTipName}>{tip.name}</span>
-            <span>{tip.description}</span>
+            <span className={styles.headerTipName}>{`${method.label} — ${method.fullName}`}</span>
+            <span>{method.description}</span>
             <span className={styles.headerTipWhy}>
               <span className={styles.headerTipWhyLabel}>Why it matters</span>
-              {tip.whyItMatters}
+              {method.whyItMatters}
             </span>
-            <span className={styles.headerTipFormula}>{tip.formula}</span>
+            <span className={styles.headerTipFormula}>{method.formula}</span>
           </span>
         )}
       </th>
@@ -116,20 +89,10 @@ export function FantasyValueTable({ rows, sort, dir, isSignedIn, onSort }: Fanta
             {header({ label: "Last name", sortKey: "lastName" })}
             <th>Team</th>
             <th>Position</th>
-            {METHOD_COLUMNS.map((column) => {
-              const meta = methodMeta({ key: column.methodKey });
-              return header({
-                label: meta?.label ?? column.methodKey,
-                sortKey: column.sortKey,
-                isStatColumn: true,
-                tip: meta && {
-                  name: `${meta.label} — ${meta.fullName}`,
-                  description: meta.description,
-                  whyItMatters: meta.whyItMatters,
-                  formula: meta.formula,
-                },
-              });
-            })}
+            {/* One sortable column per registry method (PRD §9.3). */}
+            {FANTASY_METHODS.map((method) =>
+              header({ label: method.label, sortKey: method.sortKey, method }),
+            )}
           </tr>
         </thead>
         <tbody>
@@ -158,16 +121,16 @@ export function FantasyValueTable({ rows, sort, dir, isSignedIn, onSort }: Fanta
               </td>
               <td>{row.teamAbbr === null ? "—" : <TeamChip team={row.teamAbbr} size="sm" />}</td>
               <td>{row.position ?? "—"}</td>
-              {METHOD_COLUMNS.map((column) => {
-                const value = column.value(row.values);
+              {FANTASY_METHODS.map((method) => {
+                const value = row.values[method.valueKey];
                 return (
                   <td
-                    key={column.sortKey}
+                    key={method.sortKey}
                     className={styles.numeric}
-                    data-sort-active={sort === column.sortKey || undefined}
+                    data-sort-active={sort === method.sortKey || undefined}
                     data-negative={value < 0 || undefined}
                   >
-                    {formatScore({ value, signed: column.signed })}
+                    {method.signed ? formatSigned({ value, digits: 1 }) : value.toFixed(1)}
                   </td>
                 );
               })}

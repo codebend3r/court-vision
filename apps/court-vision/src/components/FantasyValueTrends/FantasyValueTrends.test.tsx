@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from "bun:test";
 
 import {
   FantasyValueTrends,
-  trendDomain,
   TrendTooltip,
   type FantasyTrendRow,
 } from "@/components/FantasyValueTrends/FantasyValueTrends";
@@ -68,7 +67,7 @@ describe("FantasyValueTrends", () => {
   it("draws a Z and a G line for every row whose window has filled", () => {
     const { container } = renderTrends();
 
-    const list = screen.getByRole("list", { name: "Fantasy value trends" });
+    const list = screen.getByRole("list", { name: "Players" });
     expect(within(list).getAllByRole("listitem")).toHaveLength(rows.length);
     expect(container.querySelectorAll(".recharts-line")).toHaveLength(2 * 2);
   });
@@ -152,17 +151,29 @@ describe("TrendTooltip", () => {
 
     expect(screen.getByText(/^Game 82 ·/)).toBeInTheDocument();
     expect(screen.getByText("Z-Score: +3.5")).toBeInTheDocument();
-  });
-});
-
-describe("trendDomain", () => {
-  it("is symmetric around zero at the page's widest rolling value", () => {
-    expect(trendDomain({ rows })).toEqual([-3.5, 3.5]);
+    expect(screen.queryByText(/DNP/)).not.toBeInTheDocument();
   });
 
-  it("keeps one standard deviation of headroom for a flat page", () => {
-    expect(trendDomain({ rows: [row({ playerId: 9, z: 0, rank: 1, trend: [] })] })).toEqual([
-      -1, 1,
-    ]);
+  it("dashes a missing score and flags a missed game", () => {
+    const missed: FantasyTrendValue = {
+      gameIndex: 1,
+      gameNumber: 40,
+      gameDate: new Date(Date.UTC(2026, 0, 1)).toISOString(),
+      dnp: true,
+      z: null,
+      g: -0.25,
+    };
+    render(
+      <TrendTooltip
+        active
+        payload={[{ payload: missed, graphicalItemId: "z" }]}
+        trend={[missed]}
+        colors={{ z: "#000", g: "#111" }}
+      />,
+    );
+
+    expect(screen.getByText("Z-Score: —")).toBeInTheDocument();
+    expect(screen.getByText("G-Score: -0.3")).toBeInTheDocument();
+    expect(screen.getByText("DNP / DNP-CD (0 MIN)")).toBeInTheDocument();
   });
 });

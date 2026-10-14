@@ -3,7 +3,7 @@
 import { useMemo, type ReactNode } from "react";
 import { parseAsString, useQueryStates } from "nuqs";
 
-import { formatSigned } from "@/components/PlayerFantasyChart/labels";
+import { formatSigned } from "@vision/core/util/format";
 import { TeamMatchup } from "@/components/TeamMatchup/TeamMatchup";
 import { ADVANCED_STAT_META, formatAdvancedStat } from "@/lib/players/advancedStatMeta";
 import { type AdvancedMetricKey } from "@/lib/players/searchParams";
@@ -83,7 +83,8 @@ const formatDate = (isoDate: string): string =>
 const formatPlusMinus = (value: number | null): string =>
   value === null ? "—" : value > 0 ? `+${value}` : String(value);
 
-const formatScore = (value: number | null): string => (value === null ? "—" : formatSigned(value));
+const formatScore = (value: number | null): string =>
+  value === null ? "—" : formatSigned({ value, digits: 1 });
 
 // The game itself, first on every view.
 const GAME_COLUMNS: readonly Column[] = [

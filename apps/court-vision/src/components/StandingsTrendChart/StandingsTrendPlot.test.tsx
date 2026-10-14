@@ -5,7 +5,8 @@ import {
   lineColorFor,
   StandingsTrendPlot,
 } from "@/components/StandingsTrendChart/StandingsTrendPlot";
-import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
+import { ThemeProvider, type Theme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
+import { NBA_TEAMS } from "@/lib/teams/meta";
 
 afterEach(cleanup);
 
@@ -20,6 +21,23 @@ describe("lineColorFor", () => {
 
   it("keeps a near-black primary on the light theme", () => {
     expect(lineColorFor({ abbr: "BKN", theme: "light" })).toBe("#000000");
+  });
+
+  it("swaps a near-black primary on every dark-toned theme, high contrast included", () => {
+    expect(lineColorFor({ abbr: "BKN", theme: "high-contrast" })).toBe("#FFFFFF");
+    expect(lineColorFor({ abbr: "BKN", theme: "amber-crt" })).toBe("#FFFFFF");
+    expect(lineColorFor({ abbr: "BKN", theme: "colorblind-safe" })).toBe("#FFFFFF");
+    expect(lineColorFor({ abbr: "BKN", theme: "team-accent" })).toBe("#FFFFFF");
+  });
+
+  it("swaps only BKN on a dark theme and no team on the light one", () => {
+    const swapped = ({ theme }: { theme: Theme }) =>
+      NBA_TEAMS.filter(
+        (team) => lineColorFor({ abbr: team.abbreviation, theme }) !== team.primary,
+      ).map((team) => team.abbreviation);
+
+    expect(swapped({ theme: "dark" })).toEqual(["BKN"]);
+    expect(swapped({ theme: "light" })).toEqual([]);
   });
 });
 

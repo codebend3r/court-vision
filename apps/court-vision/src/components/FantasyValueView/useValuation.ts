@@ -9,7 +9,8 @@ import {
 } from "@/lib/valuation/valuationClient";
 import { createValuationPort } from "@/lib/valuation/valuationPort";
 import { type FantasyValuationJob } from "@/lib/valuation/workerProtocol";
-import { type FantasyPlayerValues, type PoolStats } from "@/lib/valuation/types";
+import { type PoolStats } from "@vision/sport-basketball/types";
+import { type FantasyPlayerValues } from "@vision/core/valuation/types";
 
 const valueNow = (job: FantasyValuationJob): SettledValuation => ({ job, ...valuePlayers(job) });
 

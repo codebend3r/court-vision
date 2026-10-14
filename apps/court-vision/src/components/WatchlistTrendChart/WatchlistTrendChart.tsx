@@ -3,9 +3,9 @@
 import dynamic from "next/dynamic";
 
 import { ChartPlaceholder } from "@vision/ui/components/ChartPlaceholder/ChartPlaceholder";
-import { CHART_CHROME } from "@vision/ui/charts/palette";
+import { CHART_CHROME, getTrendPalette } from "@vision/ui/charts/palette";
 import type { WatchlistTrendLine } from "@/components/WatchlistTrendChart/WatchlistTrendPlot";
-import { useTheme, type Theme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
+import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 import { ROLLING_WINDOW_GAMES, type TrendSeries } from "@vision/core/valuation/rolling";
 
 import styles from "@/components/WatchlistTrendChart/WatchlistTrendChart.module.scss";
@@ -28,27 +28,6 @@ export type WatchlistTrendChartProps = {
   // What the plotted number means — rendered as the figure's caption. The
   // chart itself is method-agnostic; z- and g-score instances differ only here.
   caption: string;
-};
-
-// Five solid hues, one per player, in fixed order. Validated with the dataviz
-// six checks on adjacent pairs:
-//   dark  — all checks pass; worst CVD ΔE 8.4 (protan), above the 8 target.
-//   light — darker steps so every 3px line clears 3:1 on white; worst CVD
-//           ΔE 6.6 sits in the 6–8 floor band, which is legal here because each
-//           line is also directly labelled at its right end and named in the
-//           legend, so identity never rests on colour alone.
-const DARK_SERIES = ["#3987e5", "#c98500", "#199e70", "#9085e9", "#d55181"] as const;
-
-// The four new themes share the dark series (all dark-surfaced); each line is
-// directly labelled and named in the legend, so identity never rests on
-// colour alone.
-const SERIES_BY_THEME: Record<Theme, readonly string[]> = {
-  dark: DARK_SERIES,
-  light: ["#2a78d6", "#a86a00", "#0f7d55", "#4a3aa7", "#c2185b"],
-  "high-contrast": DARK_SERIES,
-  "colorblind-safe": DARK_SERIES,
-  "amber-crt": DARK_SERIES,
-  "team-accent": DARK_SERIES,
 };
 
 const seriesKey = ({ playerId }: { playerId: number }): string => `p${playerId}`;
@@ -85,8 +64,7 @@ export const buildRows = ({ series }: { series: readonly TrendSeries[] }): Chart
 
 export function WatchlistTrendChart({ series, caption }: WatchlistTrendChartProps) {
   const { theme } = useTheme();
-  const chrome = CHART_CHROME;
-  const palette = SERIES_BY_THEME[theme];
+  const palette = getTrendPalette({ theme });
 
   const plotted = series.filter((entry) => entry.points.length > 0);
 
@@ -119,7 +97,7 @@ export function WatchlistTrendChart({ series, caption }: WatchlistTrendChartProp
                   y1="4"
                   x2="24"
                   y2="4"
-                  stroke={isPlotted ? palette[index % palette.length] : chrome.axis}
+                  stroke={isPlotted ? palette[index % palette.length] : CHART_CHROME.axis}
                   strokeWidth="3"
                 />
               </svg>

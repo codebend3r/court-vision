@@ -1,35 +1,5 @@
 @use "@/styles/mixins" as *;
 
-.root {
-  display: grid;
-  gap: var(--space-4);
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.chip {
-  @include keycap;
-
-  &[aria-pressed="true"] {
-    @include keycap-engaged;
-  }
-}
-
-// Bulk companion ("all"/"none") rides along without competing with toggles.
-.chipAction {
-  @include keycap;
-  border-style: dashed;
-  color: var(--color-text-muted);
-
-  &:hover:not(:disabled) {
-    color: var(--color-text);
-  }
-}
-
 // The line-key beside each chip label carries the series identity, the way a
 // legend swatch would; the text keeps its own ink.
 .swatch {
@@ -55,23 +25,4 @@
   .panels {
     grid-template-columns: 1fr;
   }
-}
-
-.panel {
-  display: grid;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.panelTitle {
-  @include micro-label;
-  margin: 0;
-  font-weight: var(--font-weight-medium);
-  font-family: var(--font-sans);
-}
-
-.emptyHint {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
 }

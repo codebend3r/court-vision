@@ -3,7 +3,8 @@ import {
   type FantasyValuationJob,
   type ValuationRequest,
 } from "@/lib/valuation/workerProtocol";
-import { type FantasyPlayerValues, type PoolStats } from "@/lib/valuation/types";
+import { type PoolStats } from "@vision/sport-basketball/types";
+import { type FantasyPlayerValues } from "@vision/core/valuation/types";
 
 // The view's side of the worker, narrowed to what the client needs so tests
 // can stand in a fake.

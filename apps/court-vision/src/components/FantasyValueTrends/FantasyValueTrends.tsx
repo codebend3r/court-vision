@@ -13,19 +13,19 @@ import {
 } from "recharts";
 
 import { FantasyChartList } from "@/components/FantasyChartList/FantasyChartList";
-import { type FantasyTableRow } from "@/components/FantasyValueTable/FantasyValueTable";
 import {
-  formatSigned,
+  METHOD_KEYS,
   METHOD_LABELS,
-  type MethodKey,
+  symmetricDomain,
+  type MethodColors,
 } from "@/components/PlayerFantasyChart/labels";
-import { CHART_CHROME, getSeriesPalette } from "@vision/ui/charts/palette";
-import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
-import { type FantasySortKey } from "@/lib/valuation/searchParams";
+import { SeriesTooltip } from "@/components/SeriesTooltip/SeriesTooltip";
+import { CHART_CHROME } from "@vision/ui/charts/palette";
+import { formatSigned } from "@vision/core/util/format";
+import { type FantasyTableRow, type ListSortProps } from "@/lib/valuation/fantasyRows";
 import { type FantasyTrendValue } from "@vision/core/valuation/trend";
 import { ROLLING_WINDOW_GAMES } from "@vision/core/valuation/rolling";
 
-import tooltipStyles from "@/components/MetricLineChart/MetricLineChart.module.scss";
 import styles from "@/components/FantasyValueTrends/FantasyValueTrends.module.scss";
 
 export type FantasyTrendRow = FantasyTableRow & { trend: FantasyTrendValue[] };
@@ -34,20 +34,14 @@ export type FantasyTrendRow = FantasyTableRow & { trend: FantasyTrendValue[] };
 // three states so the layout never jumps.
 export type FantasyTrendStatus = "loading" | "ready" | "error";
 
-export type FantasyValueTrendsProps = {
+export type FantasyValueTrendsProps = ListSortProps & {
   rows: readonly FantasyTrendRow[];
   status: FantasyTrendStatus;
   // How many of each player's most recent games the charts cover.
   windowGames: number;
-  sort: FantasySortKey;
-  dir: "asc" | "desc";
-  isSignedIn: boolean;
-  onSort: (args: { sort: FantasySortKey }) => void;
 };
 
 const CHART_HEIGHT = 48;
-
-const METHOD_KEYS: readonly MethodKey[] = ["z", "g"];
 
 const isScored = (point: FantasyTrendValue): boolean => point.z !== null || point.g !== null;
 
@@ -57,21 +51,6 @@ const isScored = (point: FantasyTrendValue): boolean => point.z !== null || poin
 const plottedPoints = ({ trend }: { trend: readonly FantasyTrendValue[] }): FantasyTrendValue[] => {
   const first = trend.findIndex(isScored);
   return first === -1 ? [] : trend.slice(first);
-};
-
-// One symmetric scale for the whole page, so a star's line and a bench
-// player's line are comparable at a glance; a flat page still gets a standard
-// deviation of headroom rather than magnifying noise.
-export const trendDomain = ({ rows }: { rows: readonly FantasyTrendRow[] }): [number, number] => {
-  const extent = rows.reduce(
-    (max, row) =>
-      row.trend.reduce(
-        (inner, point) => Math.max(inner, Math.abs(point.z ?? 0), Math.abs(point.g ?? 0)),
-        max,
-      ),
-    1,
-  );
-  return [-extent, extent];
 };
 
 // `gameDate` is UTC midnight; rendering it in UTC keeps the date from
@@ -85,7 +64,7 @@ export type TrendTooltipProps = {
   active?: boolean;
   payload?: TooltipPayload;
   trend: readonly FantasyTrendValue[];
-  colors: Record<MethodKey, string>;
+  colors: MethodColors;
 };
 
 // The hovered game, named by its place in the player's season, over its Z
@@ -114,21 +93,19 @@ export function TrendTooltip({
   }
 
   return (
-    <div className={tooltipStyles.tooltip}>
-      <p className={tooltipStyles.tooltipHeader}>
-        Game {point.gameNumber} · {formatDate(point.gameDate)}
-      </p>
-      {METHOD_KEYS.map((key) => {
+    <SeriesTooltip
+      header={`Game ${point.gameNumber} · ${formatDate(point.gameDate)}`}
+      rows={METHOD_KEYS.map((key) => {
         const value = point[key];
-        return (
-          <p key={key} className={tooltipStyles.tooltipRow}>
-            <span className={tooltipStyles.dot} style={{ backgroundColor: colors[key] }} />
-            {METHOD_LABELS[key]}: {value === null ? "—" : formatSigned(value)}
-          </p>
-        );
+        return {
+          key,
+          label: METHOD_LABELS[key],
+          color: colors[key],
+          value: value === null ? "—" : formatSigned({ value, digits: 1 }),
+        };
       })}
-      {point.dnp && <p className={tooltipStyles.tooltipStatus}>DNP / DNP-CD (0 MIN)</p>}
-    </div>
+      status={point.dnp ? "DNP / DNP-CD (0 MIN)" : undefined}
+    />
   );
 }
 
@@ -140,8 +117,10 @@ const describeTrend = ({ row }: { row: FantasyTrendRow }): string => {
     return `${row.fullName} rolling value: not available yet`;
   }
   return (
-    `${row.fullName} rolling value: latest Z ${formatSigned(last.z ?? 0)}, ` +
-    `G ${formatSigned(last.g ?? 0)}, games ${first.gameNumber} to ${last.gameNumber}`
+    `${row.fullName} rolling value: ` +
+    `latest Z ${formatSigned({ value: last.z ?? 0, digits: 1 })}, ` +
+    `G ${formatSigned({ value: last.g ?? 0, digits: 1 })}, ` +
+    `games ${first.gameNumber} to ${last.gameNumber}`
   );
 };
 
@@ -153,16 +132,9 @@ export function FantasyValueTrends({
   rows,
   status,
   windowGames,
-  sort,
-  dir,
-  isSignedIn,
-  onSort,
+  ...listProps
 }: FantasyValueTrendsProps) {
-  const { theme } = useTheme();
-  const chrome = CHART_CHROME;
-  const palette = getSeriesPalette({ theme });
-  const colors: Record<MethodKey, string> = { z: palette[0], g: palette[1] };
-  const domain = trendDomain({ rows });
+  const domain = symmetricDomain({ points: rows.flatMap((row) => row.trend) });
 
   const placeholder = ({ plotted }: { plotted: readonly FantasyTrendValue[] }): string => {
     if (status === "loading") return "Loading rolling value…";
@@ -175,10 +147,7 @@ export function FantasyValueTrends({
       label="Fantasy value trends"
       hint={`Rolling ${ROLLING_WINDOW_GAMES}-game Z and G over each player's last ${windowGames} games, on one scale shared by every row on this page.`}
       rows={rows}
-      sort={sort}
-      dir={dir}
-      isSignedIn={isSignedIn}
-      onSort={onSort}
+      {...listProps}
       busy={status === "loading"}
       notice={
         status === "error" && (
@@ -190,7 +159,7 @@ export function FantasyValueTrends({
       }
       bands={<span>Last {windowGames} games</span>}
       describeChart={describeTrend}
-      renderChart={({ row }) => {
+      renderChart={({ row, colors }) => {
         const plotted = plottedPoints({ trend: row.trend });
         const hint = placeholder({ plotted });
         const first = plotted[0];
@@ -220,10 +189,10 @@ export function FantasyValueTrends({
               >
                 <XAxis dataKey="gameNumber" hide />
                 <YAxis domain={domain} hide />
-                <ReferenceLine y={0} stroke={chrome.axis} />
+                <ReferenceLine y={0} stroke={CHART_CHROME.axis} />
                 <Tooltip
                   content={<TrendTooltip trend={plotted} colors={colors} />}
-                  cursor={{ stroke: chrome.axis, strokeDasharray: "3 3" }}
+                  cursor={{ stroke: CHART_CHROME.axis, strokeDasharray: "3 3" }}
                   allowEscapeViewBox={{ x: false, y: true }}
                   // Lift the bubble over the rows below, which paint later.
                   wrapperStyle={{ zIndex: 30 }}

@@ -5,11 +5,9 @@ import { useValuation } from "@/components/FantasyValueView/useValuation";
 import { DEFAULT_VALUATION_CONFIG, valuePlayers } from "@vision/sport-basketball/engine";
 import { fakeValuationWorker } from "@/lib/valuation/fakeValuationWorker";
 import { makeStatLine } from "@/lib/valuation/fixtures";
-import {
-  type FantasyPlayerValues,
-  type FantasyStatLine,
-  type ValuationConfig,
-} from "@/lib/valuation/types";
+import { type ValuationConfig } from "@vision/sport-basketball/types";
+import { type FantasyPlayerValues } from "@vision/core/valuation/types";
+import { type FantasyStatLine } from "@/lib/valuation/types";
 import { type ValuationPort } from "@/lib/valuation/valuationClient";
 
 afterEach(cleanup);

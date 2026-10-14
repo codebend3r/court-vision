@@ -3,87 +3,51 @@
 import { Bar, BarChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { FantasyChartList } from "@/components/FantasyChartList/FantasyChartList";
-import { type FantasyTableRow } from "@/components/FantasyValueTable/FantasyValueTable";
 import { BreakdownTooltip, SignedBar } from "@/components/PlayerFantasyChart/breakdownChart";
 import {
-  formatSigned,
+  METHOD_KEYS,
   METHOD_LABELS,
-  type MethodKey,
+  symmetricDomain,
 } from "@/components/PlayerFantasyChart/labels";
-import { CHART_CHROME, getSeriesPalette } from "@vision/ui/charts/palette";
-import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
+import { CHART_CHROME } from "@vision/ui/charts/palette";
+import { formatSigned } from "@vision/core/util/format";
 import { type CategoryMeta, type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
-import { type FantasySortKey } from "@/lib/valuation/searchParams";
+import { type FantasyTableRow, type ListSortProps } from "@/lib/valuation/fantasyRows";
 
 import styles from "@/components/FantasyValueCharts/FantasyValueCharts.module.scss";
 
 export type FantasyChartRow = FantasyTableRow & { breakdown: FantasyCategoryBreakdown[] };
 
-export type FantasyValueChartsProps = {
+export type FantasyValueChartsProps = ListSortProps & {
   rows: readonly FantasyChartRow[];
   // The included categories in band order; every row's breakdown follows it.
   categories: readonly Pick<CategoryMeta, "key" | "label">[];
-  sort: FantasySortKey;
-  dir: "asc" | "desc";
-  isSignedIn: boolean;
-  onSort: (args: { sort: FantasySortKey }) => void;
 };
 
 // Short enough to read as a row, tall enough that a two-sigma bar and a
 // half-sigma bar are still visibly different.
 const CHART_HEIGHT = 48;
 
-const METHOD_KEYS: readonly MethodKey[] = ["z", "g"];
-
-// One symmetric scale for the whole page, so a star's bars and a bench
-// player's bars are comparable at a glance. A page of near-average players
-// still gets a standard deviation of headroom rather than magnifying noise.
-export const breakdownDomain = ({
-  rows,
-}: {
-  rows: readonly FantasyChartRow[];
-}): [number, number] => {
-  const extent = rows.reduce(
-    (max, row) =>
-      row.breakdown.reduce(
-        (inner, entry) => Math.max(inner, Math.abs(entry.z), Math.abs(entry.g)),
-        max,
-      ),
-    1,
-  );
-  return [-extent, extent];
-};
-
 const describeBreakdown = ({ row }: { row: FantasyChartRow }): string =>
   `${row.fullName} category breakdown: ${row.breakdown
-    .map((entry) => `${entry.label} Z ${formatSigned(entry.z)} G ${formatSigned(entry.g)}`)
+    .map(
+      (entry) =>
+        `${entry.label} Z ${formatSigned({ value: entry.z, digits: 1 })} ` +
+        `G ${formatSigned({ value: entry.g, digits: 1 })}`,
+    )
     .join(", ")}`;
 
 // The Categories layout: each row carries the player page's category
-// breakdown squashed into one wide, short bar chart.
-export function FantasyValueCharts({
-  rows,
-  categories,
-  sort,
-  dir,
-  isSignedIn,
-  onSort,
-}: FantasyValueChartsProps) {
-  const { theme } = useTheme();
-  const chrome = CHART_CHROME;
-  const palette = getSeriesPalette({ theme });
-  const colors: Record<MethodKey, string> = { z: palette[0], g: palette[1] };
-  const domain = breakdownDomain({ rows });
+// breakdown squashed into one wide, short bar chart, every row on one scale.
+export function FantasyValueCharts({ rows, categories, ...listProps }: FantasyValueChartsProps) {
+  const domain = symmetricDomain({ points: rows.flatMap((row) => row.breakdown) });
 
   return (
     <FantasyChartList
       label="Fantasy value charts"
       hint="Each category's Z and G, on one scale shared by every row on this page."
       rows={rows}
-      sort={sort}
-      dir={dir}
-      isSignedIn={isSignedIn}
-      onSort={onSort}
+      {...listProps}
       bands={
         <span
           className={styles.bandLabels}
@@ -97,7 +61,7 @@ export function FantasyValueCharts({
         </span>
       }
       describeChart={describeBreakdown}
-      renderChart={({ row }) => (
+      renderChart={({ row, colors }) => (
         <ResponsiveContainer
           width="100%"
           height={CHART_HEIGHT}
@@ -114,10 +78,10 @@ export function FantasyValueCharts({
           >
             <XAxis dataKey="label" hide />
             <YAxis domain={domain} hide />
-            <ReferenceLine y={0} stroke={chrome.axis} />
+            <ReferenceLine y={0} stroke={CHART_CHROME.axis} />
             <Tooltip
               content={<BreakdownTooltip breakdown={row.breakdown} colors={colors} />}
-              cursor={{ fill: chrome.grid, fillOpacity: 0.35 }}
+              cursor={{ fill: CHART_CHROME.grid, fillOpacity: 0.35 }}
               allowEscapeViewBox={{ x: false, y: true }}
               // Lift the bubble over the rows below, which paint later.
               wrapperStyle={{ zIndex: 30 }}

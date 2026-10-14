@@ -15,12 +15,12 @@ export { AdvancedStatsLegend } from "@/components/AdvancedStatsLegend/AdvancedSt
 export { ChartPaletteSwatches } from "@/components/ChartPaletteSwatches/ChartPaletteSwatches";
 export { ComingSoonPanel } from "@vision/ui/components/ComingSoonPanel/ComingSoonPanel";
 export { FantasyControls } from "@/components/FantasyControls/FantasyControls";
-export { FantasyPager } from "@/components/FantasyPager/FantasyPager";
 export { FantasyValueLegend } from "@/components/FantasyValueLegend/FantasyValueLegend";
 export { FantasyValueTable } from "@/components/FantasyValueTable/FantasyValueTable";
 export { FantasyValueView } from "@/components/FantasyValueView/FantasyValueView";
 export { InfoTip } from "@vision/ui/components/InfoTip/InfoTip";
 export { MyTeamsList } from "@/components/MyTeamsList/MyTeamsList";
+export { Pager } from "@/components/Pager/Pager";
 export { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 export { PlayerGameLogTable } from "@/components/PlayerGameLogTable/PlayerGameLogTable";
 export { PlayerInsightPanel } from "@/components/PlayerInsightPanel/PlayerInsightPanel";

@@ -1,0 +1,26 @@
+@use "@/styles/mixins" as *;
+
+// Sort triggers are buttons (client-side sorting), styled like the other
+// tabs' sort links: the header's own type, the accent once active.
+.sortButton {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+
+  &[data-active="true"] {
+    color: var(--color-accent);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+  }
+}

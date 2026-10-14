@@ -35,9 +35,9 @@ describe("createValuationClient", () => {
     worker.answer();
 
     expect(onSettle).toHaveBeenCalledTimes(1);
-    const settled = onSettle.mock.calls[0]?.[0];
-    expect(settled?.job).toBe(job);
-    expect(settled?.values.map((value) => value.playerId)).toEqual([1, 2, 3]);
+    const settled = onSettle.mock.calls[0]?.[0] ?? null;
+    expect(settled?.job ?? null).toBe(job);
+    expect(settled?.values.map((value) => value.playerId) ?? null).toEqual([1, 2, 3]);
   });
 
   it("queues only the newest job behind the one in flight", () => {
