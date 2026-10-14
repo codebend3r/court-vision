@@ -1,9 +1,14 @@
-# The Netlify site deploys Court Vision from the repo root (its base
-# directory), so this file lives here rather than in apps/court-vision. These
-# two settings override the Netlify UI: build only Court Vision, not every
-# app in the workspace, and publish its .next directory. The Next runtime
-# reads `relativeAppDir` from that directory's required-server-files.json to
-# find the app inside the monorepo, so the site needs no package directory.
+# The court-vizion Netlify site (court-vizion.netlify.app; court-vision was
+# taken) deploys Court Vision from the repo root (its base directory), so this
+# file lives here rather than in apps/court-vision. These two settings override
+# the Netlify UI: build only Court Vision, not every app in the workspace, and
+# publish its .next directory. The Next runtime reads `relativeAppDir` from
+# that directory's required-server-files.json to find the app inside the
+# monorepo, so the site needs no package directory.
+#
+# The rink-vision and diamond-vision sites do set one (apps/rink-vision,
+# apps/diamond-vision), so Netlify reads that app's own netlify.toml first and
+# never this file.
 [build]
 command = "bun run --cwd apps/court-vision build"
 publish = "apps/court-vision/.next"
