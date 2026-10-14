@@ -3,21 +3,11 @@ import { cache } from "react";
 
 import { getProfile } from "@/lib/auth/session";
 import { DEFAULT_LEAGUE_NAME, DEFAULT_LEAGUE_SLUG } from "@vision/core/league/constants";
-import {
-  defaultScoringConfig,
-  isLeagueScoringType,
-  parseScoringConfig,
-} from "@/lib/leagues/guards";
+import { isLeagueScoringType } from "@vision/core/league/scoring";
+import { defaultScoringConfig, parseScoringConfig } from "@vision/sport-basketball/engine";
 import { type LeagueSummary } from "@/lib/leagues/types";
 import { prisma } from "@/lib/prisma";
-
-// Prisma's unique-constraint code. Same pattern as
-// src/lib/watchlist/actions.ts: losing a create race to a concurrent caller
-// is a "someone else already did it" outcome, not an error.
-const UNIQUE_VIOLATION = "P2002";
-
-const isUniqueViolation = ({ error }: { error: unknown }): boolean =>
-  typeof error === "object" && error !== null && "code" in error && error.code === UNIQUE_VIOLATION;
+import { hasPrismaCode, PRISMA_UNIQUE_VIOLATION } from "@/lib/prismaErrors";
 
 // A stored scoringType predates a rename or was tampered with → treat the
 // league as h2h_categories rather than crash.
@@ -152,8 +142,9 @@ export const ensureDefaultLeague = async ({
     });
     return await activateAndSummarize({ profile, league: created });
   } catch (error) {
-    if (!isUniqueViolation({ error })) throw error;
-    // Lost the create race: a concurrent call for the same profile already
+    if (!hasPrismaCode({ error, code: PRISMA_UNIQUE_VIOLATION })) throw error;
+    // Lost the create race, a "someone else already did it" outcome rather
+    // than an error: a concurrent call for the same profile already
     // created the default league (profileId+slug is unique) between our
     // resolve above and this create. Converge on that winner instead of
     // throwing — re-resolving finds the row the other caller just wrote.

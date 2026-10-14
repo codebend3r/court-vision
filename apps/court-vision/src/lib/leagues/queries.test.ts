@@ -103,7 +103,7 @@ describe("resolveActiveLeague", () => {
       .mockResolvedValueOnce(null) // owner-scoped pointer lookup finds nothing
       .mockResolvedValueOnce(dbLeague({ id: "league-2", slug: "b", updatedAt: new Date() }));
     const league = await resolveActiveLeague({ profile });
-    expect(league?.id).toBe("league-2");
+    expect(league?.id ?? null).toBe("league-2");
     expect(leagueFindFirst).toHaveBeenLastCalledWith({
       where: { profileId: profile.id },
       orderBy: { updatedAt: "desc" },
@@ -141,7 +141,7 @@ describe("ensureDefaultLeague", () => {
       dbLeague({ id: "league-1", slug: "a", updatedAt: new Date() }),
     );
     const league = await ensureDefaultLeague({ profile });
-    expect(league?.id).toBe("league-1");
+    expect(league?.id ?? null).toBe("league-1");
     expect(profileUpdate).not.toHaveBeenCalled();
   });
 
@@ -151,7 +151,7 @@ describe("ensureDefaultLeague", () => {
       dbLeague({ id: "league-2", slug: "b", updatedAt: new Date() }),
     );
     const league = await ensureDefaultLeague({ profile: other });
-    expect(league?.id).toBe("league-2");
+    expect(league?.id ?? null).toBe("league-2");
     expect(profileUpdate).toHaveBeenCalledWith({
       where: { id: other.id },
       data: { activeLeagueId: "league-2" },
@@ -164,7 +164,7 @@ describe("ensureDefaultLeague", () => {
       dbLeague({ id: "new-league", slug: "my-league", updatedAt: new Date() }),
     );
     const league = await ensureDefaultLeague({ profile });
-    expect(league?.id).toBe("new-league");
+    expect(league?.id ?? null).toBe("new-league");
     expect(profileUpdate).toHaveBeenCalledWith({
       where: { id: profile.id },
       data: { activeLeagueId: "new-league" },
@@ -187,7 +187,7 @@ describe("ensureDefaultLeague", () => {
 
     const league = await ensureDefaultLeague({ profile: noPointer });
 
-    expect(league?.id).toBe("winner-league");
+    expect(league?.id ?? null).toBe("winner-league");
     expect(profileUpdate).toHaveBeenCalledWith({
       where: { id: noPointer.id },
       data: { activeLeagueId: "winner-league" },

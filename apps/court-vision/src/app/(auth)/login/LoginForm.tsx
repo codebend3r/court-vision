@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { useId, useState, type FormEvent } from "react";
 
 import { isUnconfirmedEmailError } from "@/lib/auth/loginNotice";
 import { resendConfirmation } from "@/lib/auth/signup";
 import { createClient } from "@/lib/supabase/client";
 
+import authStyles from "@/app/(auth)/auth.module.scss";
 import styles from "@/app/(auth)/login/login.module.scss";
 
 // "offered" only appears once sign-in has told us the account is unconfirmed, so
@@ -40,7 +41,7 @@ export function LoginForm({ next, notice }: { next: string; notice?: string | nu
   const pending = phase !== "idle";
   const confirmationSent = `Confirmation sent to ${email}. Click the link in it to finish setting up your account.`;
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setResend("idle");
@@ -75,10 +76,10 @@ export function LoginForm({ next, notice }: { next: string; notice?: string | nu
   }
 
   return (
-    <form className={styles.form} onSubmit={onSubmit}>
+    <form className={authStyles.form} onSubmit={onSubmit}>
       {/* Rendered on load and read in document order, so it needs no live region. */}
       {!!notice && <p className={styles.notice}>{notice}</p>}
-      <label className={styles.field}>
+      <label className={authStyles.field}>
         <span>Email</span>
         <input
           type="email"
@@ -90,7 +91,7 @@ export function LoginForm({ next, notice }: { next: string; notice?: string | nu
           onChange={(event) => setEmail(event.target.value)}
         />
       </label>
-      <label className={styles.field}>
+      <label className={authStyles.field}>
         <span>Password</span>
         <input
           type="password"
@@ -105,7 +106,7 @@ export function LoginForm({ next, notice }: { next: string; notice?: string | nu
       {/* role="alert" so a failed sign-in is spoken; the id ties it to both
           fields so it is also read when focus returns to them. */}
       {!!error && (
-        <p className={styles.error} id={errorId} role="alert">
+        <p className={authStyles.error} id={errorId} role="alert">
           {error}
         </p>
       )}
@@ -145,7 +146,7 @@ export function LoginForm({ next, notice }: { next: string; notice?: string | nu
           {confirmationSent}
         </p>
       )}
-      <p className={styles.alt}>
+      <p className={authStyles.alt}>
         No account? <Link href="/signup">Create one</Link>
       </p>
     </form>

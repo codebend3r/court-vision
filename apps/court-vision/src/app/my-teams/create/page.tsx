@@ -1,38 +1,24 @@
 import { buildPlayerInsights, DEFAULT_VALUATION_CONFIG } from "@vision/sport-basketball/engine";
-import Link from "next/link";
-import { redirect } from "next/navigation";
-
 import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { TeamBuilder } from "@/components/TeamBuilder/TeamBuilder";
-import { getProfile } from "@/lib/auth/session";
 import { getActiveRosterPlayers } from "@/lib/fantasyTeams/loader";
 import { fantasyPlayersFromPool } from "@/lib/fantasyTeams/players";
-import { getActiveLeague } from "@/lib/leagues/queries";
 import { getFantasyPool } from "@/lib/valuation/loader";
+import { loadMyTeamsLeague, NoLeaguePage } from "@/app/my-teams/myTeamsGate";
 
-import styles from "@/app/my-teams/create/page.module.scss";
+import styles from "@/styles/leagueScopedPage.module.scss";
 
 export const dynamic = "force-dynamic";
 
 export default async function CreateTeamPage() {
-  const profile = await getProfile();
-  if (profile === null) redirect("/login?next=/my-teams");
-
-  const league = await getActiveLeague();
+  const league = await loadMyTeamsLeague();
 
   if (league === null) {
     return (
-      <main className={styles.page}>
-        <PageHeader
-          eyebrow="My league"
-          title="Create team"
-          actions={<PageAction href="/my-teams">My teams</PageAction>}
-        />
-        <p className={styles.scope}>
-          No league yet — <Link href="/leagues/create">create a league</Link> to start building
-          teams.
-        </p>
-      </main>
+      <NoLeaguePage
+        title="Create team"
+        actions={<PageAction href="/my-teams">My teams</PageAction>}
+      />
     );
   }
 
@@ -54,7 +40,7 @@ export default async function CreateTeamPage() {
         description="Fill every slot the league defines — eligibility rules apply as you pick."
         actions={<PageAction href="/my-teams">My teams</PageAction>}
       />
-      <TeamBuilder leagueId={league.id} players={players} insights={insights} />
+      <TeamBuilder leagueId={league.id} team={null} players={players} insights={insights} />
     </main>
   );
 }

@@ -1,4 +1,4 @@
-export type SupabaseEnv = {
+type SupabaseEnv = {
   url: string;
   key: string;
 };
@@ -13,6 +13,15 @@ export function getSupabaseEnv(): SupabaseEnv | null {
   return !!url && !!key ? { url, key } : null;
 }
 
-export function isSupabaseConfigured(): boolean {
-  return getSupabaseEnv() !== null;
+// For the clients that cannot work without auth (the sign-in form, the signup
+// action, the auth routes). They throw when it is off, as `@supabase/ssr` does
+// on a blank url or key, but the message names the variables to set.
+export function requireSupabaseEnv(): SupabaseEnv {
+  const env = getSupabaseEnv();
+  if (env === null) {
+    throw new Error(
+      "Supabase is not configured: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.",
+    );
+  }
+  return env;
 }

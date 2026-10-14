@@ -1,3 +1,4 @@
+import { isRecord } from "@vision/core/util/record";
 import { SLOT_TYPES } from "@vision/sport-basketball/engine";
 import {
   type FantasyTeam,
@@ -9,19 +10,24 @@ import {
 export const isRosterSlotType = (value: string): value is RosterSlotType =>
   SLOT_TYPES.some((type) => type === value);
 
-export const isFantasyTeamPlayer = (value: unknown): value is FantasyTeamPlayer => {
-  if (typeof value !== "object" || value === null) return false;
-  const record: Record<string, unknown> = { ...value };
-  return (
-    typeof record.playerId === "number" &&
-    typeof record.firstName === "string" &&
-    typeof record.lastName === "string" &&
-    typeof record.fullName === "string" &&
-    (record.teamAbbr === null || typeof record.teamAbbr === "string") &&
-    (record.position === null || typeof record.position === "string") &&
-    (record.nbaPersonId === null || typeof record.nbaPersonId === "number")
-  );
-};
+export const isFantasyTeamPlayer = (value: unknown): value is FantasyTeamPlayer =>
+  isRecord(value) &&
+  typeof value.playerId === "number" &&
+  typeof value.firstName === "string" &&
+  typeof value.lastName === "string" &&
+  typeof value.fullName === "string" &&
+  (value.teamAbbr === null || typeof value.teamAbbr === "string") &&
+  (value.position === null || typeof value.position === "string") &&
+  (value.nbaPersonId === null || typeof value.nbaPersonId === "number");
+
+// One roster slot as it arrives untrusted: from a server action's arguments or
+// a legacy localStorage payload.
+export const isRosterSlot = (value: unknown): value is RosterSlot =>
+  isRecord(value) &&
+  typeof value.id === "string" &&
+  typeof value.type === "string" &&
+  isRosterSlotType(value.type) &&
+  (value.player === null || isFantasyTeamPlayer(value.player));
 
 export type LeagueTeamSlotRow = {
   slotType: string;
@@ -40,20 +46,18 @@ const rebuildPlayer = (player: FantasyTeamPlayer): FantasyTeamPlayer => ({
   nbaPersonId: player.nbaPersonId,
 });
 
-const parseLegacySlot = (value: unknown): RosterSlot | null => {
-  if (typeof value !== "object" || value === null) return null;
-  const record: Record<string, unknown> = { ...value };
-  const { id, type, player } = record;
-  if (typeof id !== "string") return null;
-  if (typeof type !== "string" || !isRosterSlotType(type)) return null;
-  if (player !== null && !isFantasyTeamPlayer(player)) return null;
-  return { id, type, player: player === null ? null : rebuildPlayer(player) };
-};
+const parseLegacySlot = (value: unknown): RosterSlot | null =>
+  isRosterSlot(value)
+    ? {
+        id: value.id,
+        type: value.type,
+        player: value.player === null ? null : rebuildPlayer(value.player),
+      }
+    : null;
 
 const parseLegacyTeam = (value: unknown): FantasyTeam | null => {
-  if (typeof value !== "object" || value === null) return null;
-  const record: Record<string, unknown> = { ...value };
-  const { id, name, createdAt, slots } = record;
+  if (!isRecord(value)) return null;
+  const { id, name, createdAt, slots } = value;
   if (typeof id !== "string" || typeof name !== "string" || typeof createdAt !== "string") {
     return null;
   }
@@ -70,12 +74,8 @@ const parseLegacyTeam = (value: unknown): FantasyTeam | null => {
 // into a fresh FantasyTeam[], never the input object. Any malformed team
 // invalidates the whole payload rather than silently dropping it.
 export const parseLegacyTeamsPayload = (value: unknown): FantasyTeam[] | null => {
-  if (typeof value !== "object" || value === null) return null;
-  const record: Record<string, unknown> = { ...value };
-  const { state } = record;
-  if (typeof state !== "object" || state === null) return null;
-  const stateRecord: Record<string, unknown> = { ...state };
-  const { teams } = stateRecord;
+  if (!isRecord(value) || !isRecord(value.state)) return null;
+  const { teams } = value.state;
   if (!Array.isArray(teams)) return null;
   const parsedTeams = teams.map(parseLegacyTeam);
   const validTeams = parsedTeams.filter((team): team is FantasyTeam => team !== null);

@@ -6,7 +6,7 @@ type RosteredState = {
 };
 
 // The players on your teams in the active league. Not persisted, like the
-// watchlist store: RosteredHydrator re-seeds it from the server on every
+// watchlist store: SessionHydrator re-seeds it from the server on every
 // render of the root layout, and saving or deleting a team, or switching
 // league, calls router.refresh(), which re-runs that layout.
 export const useRosteredStore = create<RosteredState>()((set) => ({

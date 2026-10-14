@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import {
   isFantasyTeamPlayer,
+  isRosterSlot,
   isRosterSlotType,
   parseLegacyTeamsPayload,
   rowsToSlots,
@@ -53,6 +54,31 @@ describe("isFantasyTeamPlayer", () => {
     expect(
       isFantasyTeamPlayer({ playerId, firstName, lastName, teamAbbr, position, nbaPersonId }),
     ).toBe(false);
+  });
+});
+
+describe("isRosterSlot", () => {
+  it("accepts a filled slot and an empty one", () => {
+    expect(isRosterSlot({ id: "PG-1", type: "PG", player })).toBe(true);
+    expect(isRosterSlot({ id: "UTIL-1", type: "UTIL", player: null })).toBe(true);
+  });
+
+  it("rejects non-object values", () => {
+    expect(isRosterSlot(null)).toBe(false);
+    expect(isRosterSlot("PG-1")).toBe(false);
+    expect(isRosterSlot(undefined)).toBe(false);
+  });
+
+  it("rejects an unknown slot type or a non-string id", () => {
+    expect(isRosterSlot({ id: "COACH-1", type: "COACH", player: null })).toBe(false);
+    expect(isRosterSlot({ id: 1, type: "PG", player: null })).toBe(false);
+  });
+
+  it("rejects a malformed or missing player", () => {
+    expect(isRosterSlot({ id: "PG-1", type: "PG", player: { ...player, playerId: "7" } })).toBe(
+      false,
+    );
+    expect(isRosterSlot({ id: "PG-1", type: "PG" })).toBe(false);
   });
 });
 
@@ -124,7 +150,7 @@ describe("parseLegacyTeamsPayload", () => {
     };
     const parsed = parseLegacyTeamsPayload(payload);
     expect(parsed).not.toBe(payload.state.teams);
-    expect(parsed?.[0]).not.toBe(payload.state.teams[0]);
+    expect(parsed?.[0] ?? null).not.toBe(payload.state.teams[0]);
   });
 
   it("returns null for null, an empty object, and a non-array teams field", () => {

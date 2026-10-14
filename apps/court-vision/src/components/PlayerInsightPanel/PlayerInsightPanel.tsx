@@ -5,6 +5,7 @@ import { PositionTag } from "@/components/PositionTag/PositionTag";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
 import { type PlayerCategoryInsight, type PlayerInsight } from "@vision/sport-basketball/types";
 import { type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
+import { formatRate, formatSigned } from "@vision/core/util/format";
 
 import styles from "@/components/PlayerInsightPanel/PlayerInsightPanel.module.scss";
 
@@ -14,15 +15,13 @@ export type PlayerInsightPanelProps = {
 };
 
 // A signed, fixed-precision z: "+2.14" / "-0.40". Zero reads as "+0.00".
-const formatSigned = ({ value, digits }: { value: number; digits: number }): string =>
-  `${value >= 0 ? "+" : ""}${value.toFixed(digits)}`;
+const formatZ = ({ value, digits }: { value: number; digits: number }): string =>
+  formatSigned({ value, digits, signZero: true });
 
 // Per-game display: rate categories (FG%/FT%) as a leading-dot rate (".488"),
 // everything else to one decimal.
 const formatPerGame = (category: PlayerCategoryInsight): string =>
-  category.kind === "ratio"
-    ? category.perGame.toFixed(3).replace(/^0(?=\.)/, "")
-    : category.perGame.toFixed(1);
+  category.kind === "ratio" ? formatRate({ value: category.perGame }) : category.perGame.toFixed(1);
 
 const zToneClass = (z: number): string =>
   z > 0.05 ? styles.zPos : z < -0.05 ? styles.zNeg : styles.zFlat;
@@ -85,7 +84,7 @@ export function PlayerInsightPanel({ player, insight }: PlayerInsightPanelProps)
       <dl className={styles.ranks}>
         <div className={styles.rank}>
           <dt>Z-Score</dt>
-          <dd className={zToneClass(insight.z)}>{formatSigned({ value: insight.z, digits: 2 })}</dd>
+          <dd className={zToneClass(insight.z)}>{formatZ({ value: insight.z, digits: 2 })}</dd>
         </div>
         <div className={styles.rank}>
           <dt>Overall</dt>
@@ -119,7 +118,7 @@ export function PlayerInsightPanel({ player, insight }: PlayerInsightPanelProps)
               </th>
               <td className={styles.catValue}>{formatPerGame(category)}</td>
               <td className={`${styles.catZ} ${zToneClass(category.z)}`}>
-                {formatSigned({ value: category.z, digits: 1 })}
+                {formatZ({ value: category.z, digits: 1 })}
               </td>
             </tr>
           ))}

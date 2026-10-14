@@ -1,194 +1,99 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChangeEvent, DragEvent, useMemo, useRef, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 
-import { useFocusTrap } from "@vision/ui/a11y/focusTrap";
+import { ConfirmDialog } from "@vision/ui/components/ConfirmDialog/ConfirmDialog";
+import { Disclosure } from "@vision/ui/components/Disclosure/Disclosure";
 
-import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayerInsightPanel } from "@/components/PlayerInsightPanel/PlayerInsightPanel";
-import { PositionTag } from "@/components/PositionTag/PositionTag";
-import { TeamChip } from "@/components/TeamChip/TeamChip";
+import { RosterColumn } from "@/components/TeamBuilder/RosterColumn";
+import { MIN_QUERY_LENGTH, SearchResults } from "@/components/TeamBuilder/SearchResults";
+import { useRoster } from "@/components/TeamBuilder/useRoster";
 import { type PlayerInsight } from "@vision/sport-basketball/types";
-import {
-  autoAssignSlotId,
-  buildSlots,
-  clampSlotCount,
-  countsFromSlots,
-  DEFAULT_SLOT_COUNTS,
-  eligibleForSlot,
-  resizeSlots,
-  rosterSize,
-  SLOT_META,
-  slotMeta,
-} from "@vision/sport-basketball/engine";
-import { rosteredIds } from "@vision/core/roster/slots";
-import { type SlotKind } from "@vision/core/sport/types";
+import { rosterSize, SLOT_META, slotMeta } from "@vision/sport-basketball/engine";
 import {
   type FantasyTeam,
   type FantasyTeamPlayer,
   type RosterSlot,
-  type RosterSlotType,
-  type SlotCounts,
 } from "@/lib/fantasyTeams/types";
 import { saveLeagueTeam } from "@/lib/leagues/teamActions";
-import { type LeagueTeamActionResult } from "@/lib/leagues/types";
 
 import styles from "@/components/TeamBuilder/TeamBuilder.module.scss";
 
 export type TeamBuilderProps = {
   leagueId: string;
   players: FantasyTeamPlayer[];
-  team?: FantasyTeam | null; // present = edit an existing team in place
-  insights?: PlayerInsight[]; // per-player quick stats + z ranks for the hover panel
+  team: FantasyTeam | null; // present = edit an existing team in place
+  insights: PlayerInsight[]; // per-player quick stats + z ranks for the hover panel
 };
 
-const MAX_RESULTS = 20;
+const GENERIC_ERROR = "Something went wrong — try again.";
 
-const KIND_TITLES: Record<SlotKind, string> = {
-  starter: "Starters",
-  bench: "Bench",
-  injured: "Injured list",
-};
-
-const errorMessageFor = ({
-  status,
-}: {
-  status: Exclude<LeagueTeamActionResult["status"], "ok" | "ok-deleted">;
-}): string =>
-  status === "invalid" ? "Check the team name and roster." : "Something went wrong — try again.";
-
-export function TeamBuilder({ leagueId, players, team = null, insights }: TeamBuilderProps) {
+export function TeamBuilder({ leagueId, players, team, insights }: TeamBuilderProps) {
   const router = useRouter();
+  const roster = useRoster({ team });
 
   const [name, setName] = useState(team?.name ?? "");
-  const [counts, setCounts] = useState<SlotCounts>(() =>
-    team === null ? DEFAULT_SLOT_COUNTS : countsFromSlots({ slots: team.slots }),
-  );
-  const [slots, setSlots] = useState<RosterSlot[]>(() =>
-    team === null ? buildSlots({ counts: DEFAULT_SLOT_COUNTS }) : team.slots,
-  );
   const [query, setQuery] = useState("");
   const [dragging, setDragging] = useState<FantasyTeamPlayer | null>(null);
   const [hoveredPlayer, setHoveredPlayer] = useState<FantasyTeamPlayer | null>(null);
   const [pendingRemoval, setPendingRemoval] = useState<{
-    slotId: string;
+    slot: RosterSlot;
     player: FantasyTeamPlayer;
   } | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [isSaving, startSaving] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const modalRef = useRef<HTMLElement>(null);
-
-  // The removal confirm claims aria-modal but had none of the behaviour: focus
-  // stayed behind it, Tab walked the page underneath, and Escape did nothing.
-  useFocusTrap({
-    containerRef: modalRef,
-    active: pendingRemoval !== null,
-    onEscape: () => setPendingRemoval(null),
-  });
-
-  const rostered = useMemo(() => rosteredIds({ slots }), [slots]);
 
   const insightById = useMemo(
-    () => new Map((insights ?? []).map((insight) => [insight.playerId, insight])),
+    () => new Map(insights.map((insight) => [insight.playerId, insight])),
     [insights],
   );
 
-  const results = useMemo(() => {
-    const trimmed = query.trim().toLowerCase();
-    if (trimmed.length < 2) return [];
-    return players
-      .filter(
-        (player) =>
-          player.firstName.toLowerCase().includes(trimmed) ||
-          player.lastName.toLowerCase().includes(trimmed) ||
-          player.fullName.toLowerCase().includes(trimmed),
-      )
-      .slice(0, MAX_RESULTS);
-  }, [players, query]);
-
-  const canDrop = ({ slot, player }: { slot: RosterSlot; player: FantasyTeamPlayer }): boolean =>
-    slot.player === null &&
-    !rostered.has(player.playerId) &&
-    eligibleForSlot({ slotType: slot.type, position: player.position });
-
-  const assign = ({ slotId, player }: { slotId: string; player: FantasyTeamPlayer }) => {
-    setSlots((current) =>
-      current.map((slot) =>
-        slot.id === slotId &&
-        slot.player === null &&
-        !rosteredIds({ slots: current }).has(player.playerId) &&
-        eligibleForSlot({ slotType: slot.type, position: player.position })
-          ? { ...slot, player }
-          : slot,
-      ),
-    );
-  };
-
-  const clearSlot = ({ slotId }: { slotId: string }) => {
-    setSlots((current) =>
-      current.map((slot) => (slot.id === slotId ? { ...slot, player: null } : slot)),
-    );
+  const onDrop = ({ slot, playerId }: { slot: RosterSlot; playerId: number }) => {
+    const player = players.find((entry) => entry.playerId === playerId) ?? dragging;
+    if (player !== null && roster.canDrop({ slot, player })) {
+      roster.assign({ slotId: slot.id, player });
+    }
+    setDragging(null);
   };
 
   const confirmRemoval = () => {
-    if (pendingRemoval !== null) clearSlot({ slotId: pendingRemoval.slotId });
+    if (pendingRemoval !== null) roster.clearSlot({ slotId: pendingRemoval.slot.id });
     setPendingRemoval(null);
   };
 
-  const onCountChange =
-    ({ type }: { type: RosterSlotType }) =>
-    (event: ChangeEvent<HTMLInputElement>) => {
-      const value = clampSlotCount({ type, value: Number.parseInt(event.target.value, 10) });
-      const next = { ...counts, [type]: value };
-      setCounts(next);
-      setSlots((current) => resizeSlots({ slots: current, counts: next }));
-    };
-
-  const onAdd = ({ player }: { player: FantasyTeamPlayer }) => {
-    const slotId = autoAssignSlotId({ slots, player });
-    if (slotId !== null) assign({ slotId, player });
-  };
-
-  const onDrop =
-    ({ slot }: { slot: RosterSlot }) =>
-    (event: DragEvent<HTMLLIElement>) => {
-      event.preventDefault();
-      const playerId = Number.parseInt(event.dataTransfer.getData("text/plain"), 10);
-      const player = players.find((entry) => entry.playerId === playerId) ?? dragging;
-      if (player !== null && player !== undefined && canDrop({ slot, player })) {
-        assign({ slotId: slot.id, player });
-      }
-      setDragging(null);
-    };
-
+  // A transition, so Save stays disabled while the action runs and comes back
+  // however it ends: a result, or a throw (a dropped connection, a deploy
+  // mid-request) that would otherwise have left it disabled for good.
   const onSave = () => {
     const trimmed = name.trim();
     if (trimmed === "") return;
-    setSaving(true);
     setErrorMessage(null);
-    void saveLeagueTeam({ leagueId, teamId: team?.id ?? null, name: trimmed, slots }).then(
-      (result) => {
-        setSaving(false);
+    startSaving(async () => {
+      try {
+        const result = await saveLeagueTeam({
+          leagueId,
+          teamId: team?.id ?? null,
+          name: trimmed,
+          slots: roster.slots,
+        });
         if (result.status === "ok") {
           router.push("/my-teams");
           router.refresh();
           return;
         }
-        if (result.status === "ok-deleted") {
-          // saveLeagueTeam never actually returns this status — it shares its
-          // result type with deleteLeagueTeam — but the branch keeps
-          // errorMessageFor's param type exhaustively narrowed without a cast.
-          setErrorMessage("Something went wrong — try again.");
-          return;
-        }
-        setErrorMessage(errorMessageFor({ status: result.status }));
-      },
-    );
+        setErrorMessage(
+          result.status === "invalid" ? "Check the team name and roster." : GENERIC_ERROR,
+        );
+      } catch {
+        setErrorMessage(GENERIC_ERROR);
+      }
+    });
   };
 
-  const filled = slots.filter((slot) => slot.player !== null).length;
+  const filled = roster.slots.filter((slot) => slot.player !== null).length;
+  const isSearching = query.trim().length >= MIN_QUERY_LENGTH;
 
   return (
     <section className={styles.builder}>
@@ -207,31 +112,29 @@ export function TeamBuilder({ leagueId, players, team = null, insights }: TeamBu
         </label>
       </section>
 
-      <details className={styles.settings}>
-        <summary className={styles.summary}>
-          <span className={styles.chevron} aria-hidden="true">
-            ▸
-          </span>
-          Roster settings — {rosterSize({ counts })} slots
-        </summary>
+      <Disclosure
+        className={styles.settings}
+        summaryClassName={styles.summary}
+        summary={<>Roster settings — {rosterSize({ counts: roster.counts })} slots</>}
+      >
         <span className={styles.settingsBody}>
           {SLOT_META.map((meta) => (
             <label key={meta.type} className={styles.countLabel} title={meta.fullName}>
               {meta.label}
               <input
-                key={`${meta.type}:${counts[meta.type]}`}
+                key={`${meta.type}:${roster.counts[meta.type]}`}
                 type="number"
                 min={0}
                 max={meta.max}
-                defaultValue={counts[meta.type]}
-                onBlur={onCountChange({ type: meta.type })}
+                defaultValue={roster.counts[meta.type]}
+                onBlur={(event) => roster.setCount({ type: meta.type, raw: event.target.value })}
                 aria-label={`${meta.fullName} slots`}
                 className={styles.countInput}
               />
             </label>
           ))}
         </span>
-      </details>
+      </Disclosure>
 
       <section className={styles.searchBar} aria-label="Player search">
         <input
@@ -245,90 +148,21 @@ export function TeamBuilder({ leagueId, players, team = null, insights }: TeamBu
       </section>
 
       <p className={styles.rosterSummary}>
-        {filled} of {slots.length} slots filled
+        {filled} of {roster.slots.length} slots filled
       </p>
 
       <section className={styles.columns}>
-        <section className={styles.rosterColumn} aria-label="Roster">
-          {(["starter", "bench", "injured"] as const).map((kind) => {
-            const kindSlots = slots.filter((slot) => slotMeta({ type: slot.type }).kind === kind);
-            if (kindSlots.length === 0) return null;
-            return (
-              <section key={kind} className={styles.slotGroup}>
-                <h3 className={styles.slotGroupTitle}>{KIND_TITLES[kind]}</h3>
-                <ul className={styles.slotList}>
-                  {kindSlots.map((slot) => {
-                    const dropState =
-                      dragging === null
-                        ? undefined
-                        : canDrop({ slot, player: dragging })
-                          ? "ok"
-                          : "no";
-                    return (
-                      <li
-                        key={slot.id}
-                        className={styles.slot}
-                        data-drop={dropState}
-                        data-slot-id={slot.id}
-                        onMouseEnter={() => slot.player !== null && setHoveredPlayer(slot.player)}
-                        onFocus={() => slot.player !== null && setHoveredPlayer(slot.player)}
-                        onDragOver={(event) => {
-                          if (dragging !== null && canDrop({ slot, player: dragging })) {
-                            event.preventDefault();
-                          }
-                        }}
-                        onDrop={onDrop({ slot })}
-                      >
-                        <span className={styles.slotType}>
-                          {slotMeta({ type: slot.type }).label}
-                        </span>
-                        {slot.player === null ? (
-                          <span className={styles.slotEmpty}>Empty</span>
-                        ) : (
-                          <span className={styles.slotPlayer}>
-                            <Link
-                              href={`/players/${slot.player.playerId}`}
-                              className={styles.slotPlayerLink}
-                              aria-label={`View ${slot.player.fullName}'s profile`}
-                            >
-                              <PlayerAvatar
-                                fullName={slot.player.fullName}
-                                nbaPersonId={slot.player.nbaPersonId}
-                                size="sm"
-                                teamAbbr={slot.player.teamAbbr}
-                              />
-                              <span className={styles.slotPlayerName}>{slot.player.fullName}</span>
-                              {!!slot.player.position && (
-                                <PositionTag
-                                  position={slot.player.position}
-                                  className={styles.slotPlayerPosition}
-                                />
-                              )}
-                            </Link>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                slot.player !== null &&
-                                setPendingRemoval({ slotId: slot.id, player: slot.player })
-                              }
-                              aria-label={`Remove ${slot.player.fullName}`}
-                              className={styles.slotRemove}
-                            >
-                              ×
-                            </button>
-                          </span>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            );
-          })}
-        </section>
+        <RosterColumn
+          slots={roster.slots}
+          dragging={dragging}
+          canDrop={roster.canDrop}
+          onDrop={onDrop}
+          onHover={({ player }) => setHoveredPlayer(player)}
+          onRemove={({ slot, player }) => setPendingRemoval({ slot, player })}
+        />
 
         <section className={styles.searchColumn} aria-label="Search results">
-          {query.trim().length < 2 && (
+          {!isSearching && (
             <div className={styles.insightColumn}>
               <h3 className={styles.slotGroupTitle}>Quick look</h3>
               <PlayerInsightPanel
@@ -339,66 +173,15 @@ export function TeamBuilder({ leagueId, players, team = null, insights }: TeamBu
               />
             </div>
           )}
-          {query.trim().length >= 2 && results.length === 0 && (
-            <p className={styles.noResults}>No players match “{query.trim()}”.</p>
-          )}
-          <ul className={styles.results}>
-            {results.map((player) => {
-              const onRoster = rostered.has(player.playerId);
-              const target = autoAssignSlotId({ slots, player });
-              return (
-                <li
-                  key={player.playerId}
-                  className={styles.card}
-                  draggable={!onRoster}
-                  data-rostered={onRoster || undefined}
-                  onDragStart={(event) => {
-                    event.dataTransfer.setData("text/plain", String(player.playerId));
-                    event.dataTransfer.effectAllowed = "move";
-                    setDragging(player);
-                  }}
-                  onDragEnd={() => setDragging(null)}
-                >
-                  <PlayerAvatar
-                    fullName={player.fullName}
-                    nbaPersonId={player.nbaPersonId}
-                    size="sm"
-                    teamAbbr={player.teamAbbr}
-                  />
-                  <span className={styles.cardName}>{player.fullName}</span>
-                  {player.teamAbbr !== null && <TeamChip team={player.teamAbbr} size="sm" />}
-                  {player.position !== null ? (
-                    <PositionTag position={player.position} className={styles.cardPosition} />
-                  ) : (
-                    <span className={styles.cardPosition}>—</span>
-                  )}
-                  <Link
-                    href={`/players/${player.playerId}`}
-                    className={styles.cardView}
-                    aria-label={`View ${player.fullName}'s profile`}
-                  >
-                    View player
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => onAdd({ player })}
-                    disabled={onRoster || target === null}
-                    aria-label={`Add ${player.fullName}`}
-                    title={
-                      onRoster
-                        ? "Already on the roster"
-                        : target === null
-                          ? "No eligible open slot"
-                          : `Add to ${target}`
-                    }
-                    className={styles.cardAdd}
-                  >
-                    +
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          <SearchResults
+            query={query}
+            players={players}
+            rostered={roster.rostered}
+            openSlotFor={roster.openSlotFor}
+            onAdd={roster.add}
+            onDragStart={({ player }) => setDragging(player)}
+            onDragEnd={() => setDragging(null)}
+          />
         </section>
       </section>
 
@@ -411,7 +194,7 @@ export function TeamBuilder({ leagueId, players, team = null, insights }: TeamBu
         <button
           type="button"
           onClick={onSave}
-          disabled={name.trim() === "" || saving}
+          disabled={name.trim() === "" || isSaving}
           className={styles.save}
         >
           <svg
@@ -442,43 +225,17 @@ export function TeamBuilder({ leagueId, players, team = null, insights }: TeamBu
       </section>
 
       {pendingRemoval !== null && (
-        <div
-          className={styles.modalOverlay}
-          role="presentation"
-          onClick={() => setPendingRemoval(null)}
+        <ConfirmDialog
+          title={`Remove ${pendingRemoval.player.fullName}?`}
+          confirmLabel="Remove player"
+          destructive
+          onConfirm={confirmRemoval}
+          onCancel={() => setPendingRemoval(null)}
         >
-          <section
-            ref={modalRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="remove-player-title"
-            className={styles.modal}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h2 id="remove-player-title" className={styles.modalTitle}>
-              Remove {pendingRemoval.player.fullName}?
-            </h2>
-            <p className={styles.modalBody}>
-              They&apos;ll come off the{" "}
-              {slotMeta({
-                type: slots.find((slot) => slot.id === pendingRemoval.slotId)?.type ?? "UTIL",
-              }).fullName.toLowerCase()}{" "}
-              slot. You can add them back any time.
-            </p>
-            <span className={styles.modalActions}>
-              <button
-                type="button"
-                onClick={() => setPendingRemoval(null)}
-                className={styles.modalCancel}
-              >
-                Cancel
-              </button>
-              <button type="button" onClick={confirmRemoval} className={styles.modalConfirm}>
-                Remove player
-              </button>
-            </span>
-          </section>
-        </div>
+          They&apos;ll come off the{" "}
+          {slotMeta({ type: pendingRemoval.slot.type }).fullName.toLowerCase()} slot. You can add
+          them back any time.
+        </ConfirmDialog>
       )}
     </section>
   );

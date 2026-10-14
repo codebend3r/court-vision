@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 
 import { signUp } from "@/lib/auth/signup";
 import { isValidUsername, normalizeUsername } from "@/lib/auth/username";
+import { isAvailabilityResponse } from "@/lib/auth/usernameAvailability";
 
+import authStyles from "@/app/(auth)/auth.module.scss";
 import styles from "@/app/(auth)/signup/signup.module.scss";
 
 type Availability = "idle" | "checking" | "available" | "taken";
@@ -22,7 +24,7 @@ export function SignupForm() {
   const usernameStatusId = useId();
   const sentRef = useRef<HTMLDivElement>(null);
 
-  const normalized = normalizeUsername(username);
+  const normalized = normalizeUsername({ username });
   const usernameValid = isValidUsername(normalized);
   const usernameTaken = usernameValid && availability === "taken";
 
@@ -45,8 +47,8 @@ export function SignupForm() {
           `/api/username-available?u=${encodeURIComponent(normalized)}`,
           { signal: controller.signal },
         );
-        const data = await response.json();
-        setAvailability(data?.available === true ? "available" : "taken");
+        const data: unknown = await response.json();
+        setAvailability(isAvailabilityResponse(data) && data.available ? "available" : "taken");
       } catch {
         setAvailability("idle");
       }
@@ -57,7 +59,7 @@ export function SignupForm() {
     };
   }, [normalized, usernameValid]);
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     // The submit button is aria-disabled rather than disabled, so it stays
     // clickable; the rule it advertises is enforced here.
@@ -83,8 +85,8 @@ export function SignupForm() {
   }
 
   return (
-    <form className={styles.form} onSubmit={onSubmit}>
-      <label className={styles.field}>
+    <form className={authStyles.form} onSubmit={onSubmit}>
+      <label className={authStyles.field}>
         <span>Email</span>
         <input
           type="email"
@@ -96,7 +98,7 @@ export function SignupForm() {
           onChange={(event) => setEmail(event.target.value)}
         />
       </label>
-      <label className={styles.field}>
+      <label className={authStyles.field}>
         <span>Username</span>
         <input
           type="text"
@@ -120,7 +122,7 @@ export function SignupForm() {
         {usernameValid && availability === "available" && "Username is available."}
       </p>
       <p className={styles.hint}>3–20 characters: lowercase letters, numbers, underscores.</p>
-      <label className={styles.field}>
+      <label className={authStyles.field}>
         <span>Password</span>
         <input
           type="password"
@@ -133,7 +135,7 @@ export function SignupForm() {
         />
       </label>
       {!!error && (
-        <p className={styles.error} id={errorId} role="alert">
+        <p className={authStyles.error} id={errorId} role="alert">
           {error}
         </p>
       )}
@@ -147,7 +149,7 @@ export function SignupForm() {
       >
         {pending ? "Creating…" : "Create account"}
       </button>
-      <p className={styles.alt}>
+      <p className={authStyles.alt}>
         Have an account? <Link href="/login">Sign in</Link>
       </p>
     </form>
