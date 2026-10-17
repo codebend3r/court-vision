@@ -38,6 +38,7 @@ describe("SyncYahooButton", () => {
     expect(syncYahooLeagueMock).toHaveBeenCalledWith({ leagueId: "league-1" });
     const button = screen.getByRole("button", { name: "Syncing…" });
     expect(button).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("status")).toHaveTextContent(/^Syncing…$/);
 
     // A second press while pending does nothing.
     await user.click(button);
@@ -82,10 +83,26 @@ describe("SyncYahooButton", () => {
     const second = Promise.withResolvers<YahooSyncResult>();
     syncYahooLeagueMock.mockReturnValueOnce(second.promise);
     await user.click(screen.getByRole("button", { name: "Sync with Yahoo" }));
-    // The old message clears while the retry runs, so the repeat is news.
-    await waitFor(() => expect(status).not.toHaveTextContent(failure));
+    // The line reads "Syncing…" while the retry runs, so the repeat is news.
+    await waitFor(() => expect(status).toHaveTextContent(/^Syncing…$/));
 
     second.resolve({ status: "unavailable" });
+    await waitFor(() => expect(status).toHaveTextContent(failure));
+  });
+
+  it("announces a failure that matches the stored sync error", async () => {
+    const user = userEvent.setup();
+    const failure = "Yahoo isn't answering right now; try again in a minute.";
+    const pending = Promise.withResolvers<YahooSyncResult>();
+    syncYahooLeagueMock.mockReturnValueOnce(pending.promise);
+    render(<SyncYahooButton leagueId="league-1" syncedAt={null} syncError={failure} />);
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent(failure);
+
+    await user.click(screen.getByRole("button", { name: "Sync with Yahoo" }));
+    await waitFor(() => expect(status).toHaveTextContent(/^Syncing…$/));
+
+    pending.resolve({ status: "unavailable" });
     await waitFor(() => expect(status).toHaveTextContent(failure));
   });
 

@@ -33,17 +33,24 @@ const failureMessageFor = ({ result }: { result: FailedSync | null }): string =>
     ? yahooFailureMessage({ status: "error" })
     : yahooFailureMessage({ status: result.status });
 
+const SYNCING_TEXT = "Syncing…";
+
 const statusTextFor = ({
+  isPending,
   outcome,
   syncedAt,
   syncError,
   now,
 }: {
+  isPending: boolean;
   outcome: SyncOutcome | null;
   syncedAt: string | null;
   syncError: string | null;
   now: Date;
 }): string => {
+  // The status line changes as a sync starts, so its outcome is always news,
+  // even one that repeats the stored error the line showed before.
+  if (isPending) return SYNCING_TEXT;
   if (outcome === null) return syncError ?? formatSyncedAgo({ syncedAt, now });
   if (outcome.kind === "failed") return outcome.message;
   if (outcome.unmatched.length > 0) return unmatchedSyncMessage({ names: outcome.unmatched });
@@ -67,15 +74,12 @@ export function SyncYahooButton({
   // clock; the server's render and hydration may still differ by a band.
   const [now, setNow] = useState(() => new Date());
 
-  const label = isPending ? "Syncing…" : "Sync with Yahoo";
+  const label = isPending ? SYNCING_TEXT : "Sync with Yahoo";
 
   const sync = () => {
     // aria-disabled, not disabled, while pending: a disabled button drops the
     // focus of the keyboard user who just pressed it.
     if (isPending) return;
-    // Clear the last outcome first, so the same failure twice in a row still
-    // changes the live region and is announced again.
-    setOutcome(null);
     startTransition(async () => {
       const result = await syncYahooLeague({ leagueId }).catch(() => null);
       if (result === null || result.status !== "ok") {
@@ -109,7 +113,7 @@ export function SyncYahooButton({
         className={styles.status}
         suppressHydrationWarning
       >
-        {statusTextFor({ outcome, syncedAt, syncError, now })}
+        {statusTextFor({ isPending, outcome, syncedAt, syncError, now })}
       </p>
     </div>
   );

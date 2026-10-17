@@ -20,7 +20,7 @@ const YAHOO_FAILURE_MESSAGES: Readonly<Record<YahooMessageStatus, string>> = {
     "That's a Yahoo league for another sport. Only Yahoo Fantasy Basketball leagues can be imported.",
   past_season: "Only this season's leagues can be imported.",
   not_found:
-    "Couldn't read this league. If it's private, the commissioner can make it publicly viewable in Yahoo's league settings, or you can import it with the Court Vision extension.",
+    "Couldn't read this league. If it's private, the commissioner can make it publicly viewable in Yahoo's league settings.",
   highscore: "Yahoo Fantasy High Score leagues aren't supported yet.",
   unsupported_scoring: "This league's scoring type isn't supported yet.",
   unavailable: "Yahoo isn't answering right now; try again in a minute.",

@@ -148,7 +148,9 @@ export function MyTeamsList({ teams, leagueName, isImported }: MyTeamsListProps)
   return (
     <section className={styles.list}>
       <p className={styles.scope}>League: {leagueName}</p>
-      {isImported && <p className={styles.note}>Managed in Yahoo. Sync to update.</p>}
+      {isImported && (
+        <p className={styles.note}>Managed in Yahoo. Sync from the Leagues page to update.</p>
+      )}
       {!!errorMessage && (
         <p role="alert" className={styles.error}>
           {errorMessage}

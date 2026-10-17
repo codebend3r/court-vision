@@ -128,7 +128,7 @@ describe("YahooImportForm", () => {
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(
-      "Couldn't read this league. If it's private, the commissioner can make it publicly viewable in Yahoo's league settings, or you can import it with the Court Vision extension.",
+      "Couldn't read this league. If it's private, the commissioner can make it publicly viewable in Yahoo's league settings.",
     );
   });
 

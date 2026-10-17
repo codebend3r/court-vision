@@ -255,7 +255,9 @@ describe("MyTeamsList", () => {
     // The logo-less team gets its initials chip instead.
     expect(screen.getByText("NE")).toBeInTheDocument();
 
-    expect(screen.getAllByText("Managed in Yahoo. Sync to update.")).toHaveLength(1);
+    expect(
+      screen.getAllByText("Managed in Yahoo. Sync from the Leagues page to update."),
+    ).toHaveLength(1);
     expect(screen.getAllByText("League data from Yahoo Fantasy")).toHaveLength(1);
     expect(screen.queryByRole("button", { name: "Delete team" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Better Call Gasol" })).not.toBeInTheDocument();
@@ -273,7 +275,9 @@ describe("MyTeamsList", () => {
       />,
     );
 
-    expect(screen.queryByText("Managed in Yahoo. Sync to update.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Managed in Yahoo. Sync from the Leagues page to update."),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("League data from Yahoo Fantasy")).not.toBeInTheDocument();
     expect(screen.queryByText("Your team")).not.toBeInTheDocument();
   });
@@ -282,6 +286,8 @@ describe("MyTeamsList", () => {
     render(<MyTeamsList teams={[]} leagueName="Game of Courts" isImported />);
 
     expect(screen.queryByRole("link", { name: "create your first team" })).not.toBeInTheDocument();
-    expect(screen.getByText("Managed in Yahoo. Sync to update.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Managed in Yahoo. Sync from the Leagues page to update."),
+    ).toBeInTheDocument();
   });
 });
