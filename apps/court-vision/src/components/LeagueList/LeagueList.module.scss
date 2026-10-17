@@ -18,6 +18,13 @@
   font-size: var(--font-size-sm);
 }
 
+.newLeague {
+  display: flex;
+  flex-wrap: wrap;
+  justify-self: start;
+  gap: var(--space-2);
+}
+
 .create {
   @include keycap;
 
