@@ -55,6 +55,11 @@ const team = ({ id, name, slug }: { id: string; name: string; slug?: string }): 
   id,
   name,
   slug: slug ?? teamNameToSlug({ name }),
+  logoUrl: null,
+  managerName: null,
+  isMine: false,
+  isImported: false,
+  unmatchedBySlotId: {},
   createdAt: "2026-07-23T00:00:00.000Z",
   slots: buildSlots<FantasyTeamPlayer>({ counts: DEFAULT_SLOT_COUNTS }).map((slot) =>
     slot.id === "PG-1"
