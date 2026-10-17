@@ -47,6 +47,7 @@ export const {
   scoreZScore,
   slotMeta,
   standingsGainDenominators,
+  teamCategoryTotals,
   valuePlayers,
 } = basketballEngine;
 
