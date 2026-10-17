@@ -107,6 +107,8 @@ const leagueSchema = z.object({
   scoring_type: z.string(),
   is_highscore: yahooFlagSchema,
   settings: z.object({
+    // Yahoo has been seen to carry the High Score flag here as well as on the league.
+    is_highscore: yahooFlagSchema,
     roster_positions: unwrapped({
       wrapper: z.object({ roster_position: rosterPositionSchema }),
       pick: ({ roster_position }) => roster_position,

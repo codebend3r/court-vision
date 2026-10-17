@@ -23,7 +23,7 @@ const COPY: ReadonlyArray<readonly [YahooMessageStatus, string]> = [
   ["past_season", "Only this season's leagues can be imported."],
   [
     "not_found",
-    "Couldn't read this league. If it's private, the commissioner can make it publicly viewable in Yahoo's league settings, or you can import it with the Court Vision extension.",
+    "Couldn't read this league. If it's private, the commissioner can make it publicly viewable in Yahoo's league settings.",
   ],
   ["highscore", "Yahoo Fantasy High Score leagues aren't supported yet."],
   ["unsupported_scoring", "This league's scoring type isn't supported yet."],
@@ -46,8 +46,10 @@ describe("yahooFailureMessage", () => {
 
   it("explains how to read a private league", () => {
     expect(yahooFailureMessage({ status: "not_found" })).toBe(
-      "Couldn't read this league. If it's private, the commissioner can make it publicly viewable in Yahoo's league settings, or you can import it with the Court Vision extension.",
+      "Couldn't read this league. If it's private, the commissioner can make it publicly viewable in Yahoo's league settings.",
     );
+    // The extension that imports a private league doesn't ship yet.
+    expect(yahooFailureMessage({ status: "not_found" })).not.toContain("extension");
   });
 
   it("uses the spec's copy for each status", () => {

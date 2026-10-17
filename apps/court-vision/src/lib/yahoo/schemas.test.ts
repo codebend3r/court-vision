@@ -65,6 +65,7 @@ describe("yahooLeagueSnapshotSchema", () => {
     const league = yahooLeagueSnapshotSchema.parse(league106344).fantasy_content.league;
 
     expect(league.is_highscore).toBe(false);
+    expect(league.settings.is_highscore).toBe(false);
     expect(league.settings.stat_modifiers).toBeUndefined();
   });
 

@@ -649,7 +649,7 @@ Copy (exact):
   - `SyncYahooButton.test.tsx`: `it("shows syncing, then refreshes")`; `it("announces a sync failure")` (`unavailable` → its message in the live region); `it("shows a throttle notice")`.
   - `LeagueList.test.tsx`: a `yahoo` league card shows a "Yahoo" badge, "Open in Yahoo" (`externalUrl`, `target="_blank"`, `rel="noreferrer"`), the sync button, "Not valued: DD" when `unsupportedCategories` is non-empty, and the credit line "League data from Yahoo Fantasy"; a `manual` card shows none of them. My Teams shows the same credit line for an imported league.
   - `LeagueForm.test.tsx`: `it("only offers a name for an imported league")` with the note "Scoring, teams and roster slots come from Yahoo."
-  - `MyTeamsList.test.tsx`: imported teams show their logo, "Your team" on `isMine` (listed first), "Managed in Yahoo. Sync to update.", no delete button, no edit link, and "Unmatched: <name>" in a slot from `unmatchedBySlotId`.
+  - `MyTeamsList.test.tsx`: imported teams show their logo, "Your team" on `isMine` (listed first), "Managed in Yahoo. Sync from the Leagues page to update.", no delete button, no edit link, and "Unmatched: <name>" in a slot from `unmatchedBySlotId`.
 - [ ] **Step 2: Run** the component tests → FAIL.
 - [ ] **Step 3: Implement.** `my-teams/page.tsx` hides "New team" for an imported active league. `my-teams/create` and `my-teams/[teamSlug]` `redirect("/my-teams")` when the active league (or the team) is imported. Every new piece uses tokens from `@vision/ui` `styles/globals.scss`; fantasy team logos never borrow theme tokens.
 - [ ] **Step 4: Run** → PASS.
