@@ -50,8 +50,12 @@ export const KEY_CHANGED_MESSAGE = "This league's Yahoo key changed; import it a
 // Recorded on a league whose sync loaded but then failed to write.
 export const GENERIC_SYNC_ERROR_MESSAGE = GENERIC_MESSAGE;
 
-// Announced after an import that left some of Yahoo's players unmatched.
-export const unmatchedPlayersMessage = ({ names }: { names: string[] }): string => {
+// Announced after a sync that left some of Yahoo's players unmatched.
+export const unmatchedSyncMessage = ({ names }: { names: string[] }): string => {
   const count = names.length === 1 ? "1 player" : `${names.length} players`;
-  return `Imported. ${count} couldn't be matched: ${names.join(", ")}. They won't count as rostered, so they may show up as free agents.`;
+  return `${count} couldn't be matched: ${names.join(", ")}. They won't count as rostered, so they may show up as free agents.`;
 };
+
+// Announced after an import that left some of Yahoo's players unmatched.
+export const unmatchedPlayersMessage = ({ names }: { names: string[] }): string =>
+  `Imported. ${unmatchedSyncMessage({ names })}`;

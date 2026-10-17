@@ -110,4 +110,18 @@ describe("CreateTeamPage", () => {
 
     expect(screen.getByRole("button", { name: "Add AJ Dybantsa" })).toBeEnabled();
   });
+
+  it("sends an imported league back to My teams", async () => {
+    getActiveLeague.mockResolvedValue({
+      ...league({ id: "league-1", name: "Game of Courts" }),
+      provider: "yahoo",
+      isImported: true,
+    });
+    const thrown = await CreateTeamPage().then(
+      () => null,
+      (error: unknown) => error,
+    );
+    expect(redirectTarget(thrown)).toContain(";/my-teams;");
+    expect(getFantasyPool).not.toHaveBeenCalled();
+  });
 });

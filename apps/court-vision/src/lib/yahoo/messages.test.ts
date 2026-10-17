@@ -5,6 +5,7 @@ import {
   KEY_CHANGED_MESSAGE,
   notValuedMessage,
   unmatchedPlayersMessage,
+  unmatchedSyncMessage,
   YAHOO_URL_HINT,
   yahooFailureMessage,
   type YahooMessageStatus,
@@ -76,6 +77,20 @@ describe("unmatchedPlayersMessage", () => {
   it("counts and lists several unmatched players", () => {
     expect(unmatchedPlayersMessage({ names: ["Jalen Smith", "Kai Jones"] })).toBe(
       "Imported. 2 players couldn't be matched: Jalen Smith, Kai Jones. They won't count as rostered, so they may show up as free agents.",
+    );
+  });
+});
+
+describe("unmatchedSyncMessage", () => {
+  it("names a single player a sync could not match", () => {
+    expect(unmatchedSyncMessage({ names: ["Jalen Smith"] })).toBe(
+      "1 player couldn't be matched: Jalen Smith. They won't count as rostered, so they may show up as free agents.",
+    );
+  });
+
+  it("counts and lists several players a sync could not match", () => {
+    expect(unmatchedSyncMessage({ names: ["Jalen Smith", "Kai Jones"] })).toBe(
+      "2 players couldn't be matched: Jalen Smith, Kai Jones. They won't count as rostered, so they may show up as free agents.",
     );
   });
 });

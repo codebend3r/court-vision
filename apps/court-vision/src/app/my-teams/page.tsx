@@ -25,9 +25,9 @@ export default async function MyTeamsPage() {
         eyebrow="My league"
         title="My teams"
         description={DESCRIPTION}
-        actions={<PageAction href="/my-teams/create">New team</PageAction>}
+        actions={!league.isImported && <PageAction href="/my-teams/create">New team</PageAction>}
       />
-      <MyTeamsList teams={teams} leagueName={league.name} />
+      <MyTeamsList teams={teams} leagueName={league.name} isImported={league.isImported} />
     </main>
   );
 }

@@ -1,5 +1,5 @@
 import { buildPlayerInsights, DEFAULT_VALUATION_CONFIG } from "@vision/sport-basketball/engine";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { TeamBuilder } from "@/components/TeamBuilder/TeamBuilder";
@@ -26,6 +26,10 @@ export default async function EditTeamPage({ params }: { params: Promise<{ teamS
     );
   }
 
+  // An imported league's teams are Yahoo's, so they are read-only: the
+  // My teams list shows them instead of the builder.
+  if (league.isImported) redirect("/my-teams");
+
   // The pool is league-independent, so it loads alongside the team lookup
   // rather than after it. The active roster adds players yet to play.
   const [team, lines, activePlayers] = await Promise.all([
@@ -34,6 +38,7 @@ export default async function EditTeamPage({ params }: { params: Promise<{ teamS
     getActiveRosterPlayers(),
   ]);
   if (team === null) notFound();
+  if (team.isImported) redirect("/my-teams");
 
   const players = fantasyPlayersFromPool({ lines, activePlayers });
   const insights = buildPlayerInsights({ lines, config: DEFAULT_VALUATION_CONFIG });

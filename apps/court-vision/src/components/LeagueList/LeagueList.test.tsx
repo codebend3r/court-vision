@@ -15,6 +15,12 @@ vi.mock("@/lib/leagues/actions", () => ({
   setActiveLeague: (args: { leagueId: string }) => setActiveLeagueMock(args),
 }));
 
+const syncYahooLeagueMock = vi.fn();
+
+vi.mock("@/lib/yahoo/actions", () => ({
+  syncYahooLeague: (args: { leagueId: string }) => syncYahooLeagueMock(args),
+}));
+
 const refreshMock = vi.fn();
 const pushMock = vi.fn();
 
@@ -26,11 +32,12 @@ const league = ({
   id,
   name,
   scoringType = "h2h_categories",
+  ...overrides
 }: {
   id: string;
   name: string;
   scoringType?: LeagueSummary["scoringType"];
-}): LeagueSummary => ({
+} & Partial<LeagueSummary>): LeagueSummary => ({
   id,
   name,
   slug: name.toLowerCase(),
@@ -47,10 +54,27 @@ const league = ({
   unsupportedCategories: [],
   createdAt: "2026-07-31T00:00:00.000Z",
   updatedAt: "2026-07-31T00:00:00.000Z",
+  ...overrides,
 });
+
+const YAHOO_URL = "https://basketball.fantasysports.yahoo.com/nba/106344";
+
+const yahooLeague = (overrides: Partial<LeagueSummary> = {}): LeagueSummary =>
+  league({
+    id: "y",
+    name: "Courts",
+    provider: "yahoo",
+    isImported: true,
+    externalUrl: YAHOO_URL,
+    myTeamId: "team-1",
+    syncedAt: null,
+    unsupportedCategories: ["DD"],
+    ...overrides,
+  });
 
 beforeEach(() => {
   deleteLeagueMock.mockReset().mockResolvedValue({ status: "ok", activeLeagueId: null });
+  syncYahooLeagueMock.mockReset();
   setActiveLeagueMock.mockReset().mockResolvedValue({ status: "ok" });
   refreshMock.mockReset();
   pushMock.mockClear();
@@ -317,5 +341,42 @@ describe("LeagueList", () => {
     );
     render(<LeagueList leagues={leagues} activeLeagueId="id-0" />);
     expect(screen.queryByRole("link", { name: "Import from Yahoo" })).not.toBeInTheDocument();
+  });
+
+  it("marks an imported league's card as Yahoo's, with its link, sync and credit", () => {
+    render(<LeagueList leagues={[yahooLeague()]} activeLeagueId="y" />);
+    const card = cardOf({ name: "Courts" });
+
+    expect(within(card).getByText("Yahoo")).toBeInTheDocument();
+    const yahooLink = within(card).getByRole("link", { name: "Open in Yahoo: Courts" });
+    expect(yahooLink).toHaveAttribute("href", YAHOO_URL);
+    expect(yahooLink).toHaveAttribute("target", "_blank");
+    expect(yahooLink).toHaveAttribute("rel", "noreferrer");
+    expect(yahooLink).toHaveTextContent("Open in Yahoo (opens in new tab)");
+    expect(yahooLink).toHaveAccessibleDescription("(opens in new tab)");
+    expect(within(card).getByRole("button", { name: "Sync with Yahoo: Courts" })).toHaveTextContent(
+      "Sync with Yahoo",
+    );
+    expect(within(card).getByText("Not valued: DD")).toBeInTheDocument();
+    expect(within(card).getByText("League data from Yahoo Fantasy")).toBeInTheDocument();
+  });
+
+  it("leaves the not-valued warning off an imported league that values every category", () => {
+    render(
+      <LeagueList leagues={[yahooLeague({ unsupportedCategories: [] })]} activeLeagueId="y" />,
+    );
+
+    expect(screen.queryByText(/Not valued/)).not.toBeInTheDocument();
+  });
+
+  it("shows none of the Yahoo pieces on a hand-built league's card", () => {
+    render(<LeagueList leagues={[league({ id: "a", name: "Alpha" })]} activeLeagueId="a" />);
+    const card = cardOf({ name: "Alpha" });
+
+    expect(within(card).queryByText("Yahoo")).not.toBeInTheDocument();
+    expect(within(card).queryByRole("link", { name: /Open in Yahoo/ })).not.toBeInTheDocument();
+    expect(within(card).queryByRole("button", { name: /Sync with Yahoo/ })).not.toBeInTheDocument();
+    expect(within(card).queryByText(/Not valued/)).not.toBeInTheDocument();
+    expect(within(card).queryByText("League data from Yahoo Fantasy")).not.toBeInTheDocument();
   });
 });

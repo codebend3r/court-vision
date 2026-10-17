@@ -245,4 +245,34 @@ describe("LeagueForm", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Something went wrong — try again.");
   });
+
+  it("only offers a name for an imported league", async () => {
+    updateLeagueMock.mockResolvedValue({ status: "ok", league });
+    const imported: LeagueSummary = {
+      ...league,
+      provider: "yahoo",
+      isImported: true,
+      externalUrl: "https://basketball.fantasysports.yahoo.com/nba/106344",
+    };
+    const user = userEvent.setup();
+    render(<LeagueForm league={imported} />);
+
+    expect(
+      screen.getByText("Scoring, teams and roster slots come from Yahoo."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+
+    const name = screen.getByLabelText("League name");
+    await user.clear(name);
+    await user.type(name, "Renamed Courts");
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(updateLeagueMock).toHaveBeenCalled());
+    expect(updateLeagueMock).toHaveBeenCalledWith(
+      expect.objectContaining({ leagueId: "league-1", name: "Renamed Courts" }),
+    );
+    expect(pushMock).toHaveBeenCalledWith("/leagues");
+  });
 });

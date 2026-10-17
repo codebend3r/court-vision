@@ -1,0 +1,33 @@
+@use "@/styles/mixins" as *;
+
+// The keycap with its status line beneath; the container decides where the
+// pair sits.
+.sync {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-1);
+}
+
+// Pending is aria-disabled (the button keeps focus), so it borrows the
+// keycap's :disabled look, hover included.
+.button {
+  @include keycap;
+
+  &:active:not([aria-disabled="true"]) {
+    @include keycap-press;
+  }
+
+  &[aria-disabled="true"],
+  &[aria-disabled="true"]:hover {
+    transform: none;
+    box-shadow: none;
+    opacity: var(--control-disabled-opacity);
+    cursor: not-allowed;
+  }
+}
+
+.status {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
