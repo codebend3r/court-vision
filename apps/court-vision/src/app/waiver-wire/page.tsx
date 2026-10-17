@@ -102,6 +102,7 @@ export default async function WaiverWirePage({
               leagueId={league.id}
               syncedAt={league.syncedAt}
               syncError={league.syncError}
+              autoSyncWhenStale
             />
             {!!league.externalUrl && (
               // The hidden note, read as the description, says the link
