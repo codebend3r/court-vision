@@ -101,10 +101,13 @@ const props: WaiverWireViewProps = {
   method: "zscore",
 };
 
-const renderView = ({ searchParams = "?" }: { searchParams?: string } = {}) => {
+const renderView = ({
+  searchParams = "?",
+  overrides = {},
+}: { searchParams?: string; overrides?: Partial<WaiverWireViewProps> } = {}) => {
   const onUrlUpdate = vi.fn<(event: UrlUpdateEvent) => void>();
-  render(<WaiverWireView {...props} />, {
-    wrapper: withNuqsTestingAdapter({ searchParams, onUrlUpdate }),
+  render(<WaiverWireView {...props} {...overrides} />, {
+    wrapper: withNuqsTestingAdapter({ searchParams, onUrlUpdate, hasMemory: true }),
   });
   return { onUrlUpdate };
 };
@@ -224,5 +227,89 @@ describe("WaiverWireView", () => {
     expect(update?.searchParams.get("fa") ?? null).toBe("5");
     expect(update?.searchParams.has("mine") ?? true).toBe(false);
     expect(update?.options.history).toBe("replace");
+  });
+
+  it("windows the cut line again whenever its scope, range or position changes", async () => {
+    const user = userEvent.setup();
+    // Eight more free agents below my weakest, so the window hides some.
+    const deep = Array.from({ length: 8 }, (_, index) =>
+      makeStatLine({
+        playerId: 20 + index,
+        fullName: `Deep ${index}`,
+        position: "G",
+        pts: 60 - index * 5,
+        reb: 20,
+        ast: 10,
+      }),
+    );
+    renderView({
+      searchParams: "?view=cut",
+      overrides: {
+        lines: [...lines, ...deep],
+        activePlayerIds: [...props.activePlayerIds, ...deep.map((line) => line.playerId)],
+      },
+    });
+    const label = () => screen.queryByRole("button", { name: /^Show all/ })?.textContent ?? "none";
+    const expand = async () => {
+      await user.click(screen.getByRole("button", { name: /^Show all/ }));
+      expect(label()).toBe("none");
+    };
+
+    await expand();
+    await user.click(screen.getByRole("button", { name: "Free agents only" }));
+    expect(label()).toMatch(/^Show all/);
+    await user.click(screen.getByRole("button", { name: "My team + free agents" }));
+    expect(label()).toMatch(/^Show all/);
+
+    await expand();
+    const range = screen.getByRole("combobox", { name: "Range" });
+    await user.selectOptions(range, GAME_RANGE_LABELS.last10);
+    expect(label()).toMatch(/^Show all/);
+    await user.selectOptions(range, GAME_RANGE_LABELS.all);
+    expect(label()).toMatch(/^Show all/);
+
+    await expand();
+    await user.click(screen.getByRole("button", { name: "G" }));
+    expect(label()).toMatch(/^Show all/);
+    await user.click(screen.getByRole("button", { name: "All" }));
+    expect(label()).toMatch(/^Show all/);
+  });
+
+  it("collapses the swap board again when its range or position changes", async () => {
+    const user = userEvent.setup();
+    // Thirty guards who all beat my weakest, so the board needs Show all.
+    const guards = Array.from({ length: 30 }, (_, index) =>
+      makeStatLine({
+        playerId: 40 + index,
+        fullName: `Guard ${index}`,
+        position: "G",
+        pts: 700 + index * 10,
+        reb: 200,
+        ast: 200,
+      }),
+    );
+    renderView({
+      overrides: {
+        lines: [...lines, ...guards],
+        activePlayerIds: [...props.activePlayerIds, ...guards.map((line) => line.playerId)],
+      },
+    });
+    const swapPanel = () => screen.getByRole("tabpanel", { name: "Swap board" });
+    const hasShowAll = () => !!within(swapPanel()).queryByRole("button", { name: "Show all" });
+    const expand = async () => {
+      await user.click(within(swapPanel()).getByRole("button", { name: "Show all" }));
+      expect(hasShowAll()).toBe(false);
+    };
+
+    await expand();
+    await user.click(screen.getByRole("button", { name: "G" }));
+    expect(hasShowAll()).toBe(true);
+
+    await expand();
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Range" }),
+      GAME_RANGE_LABELS.last10,
+    );
+    expect(hasShowAll()).toBe(true);
   });
 });

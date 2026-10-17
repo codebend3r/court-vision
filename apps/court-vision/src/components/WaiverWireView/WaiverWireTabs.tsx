@@ -81,7 +81,7 @@ export function WaiverWireTabs({ view, onChange, panels }: WaiverWireTabsProps) 
           );
         })}
       </div>
-      <section
+      <div
         className={styles.tabpanel}
         role="tabpanel"
         id={panelId({ tab: view })}
@@ -89,7 +89,7 @@ export function WaiverWireTabs({ view, onChange, panels }: WaiverWireTabsProps) 
         tabIndex={0}
       >
         {panels[view]}
-      </section>
+      </div>
     </div>
   );
 }

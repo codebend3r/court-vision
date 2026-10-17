@@ -63,6 +63,8 @@ describe("WaiverWireTabs", () => {
     });
 
     const panel = screen.getByRole("tabpanel", { name: "Head-to-head" });
+    // A generic element takes the role; a <section> would have its own overridden.
+    expect(panel.tagName).toBe("DIV");
     expect(panel).toHaveAttribute("aria-labelledby", selected.id);
     expect(selected).toHaveAttribute("aria-controls", panel.id);
     expect(screen.getAllByRole("tabpanel")).toHaveLength(1);

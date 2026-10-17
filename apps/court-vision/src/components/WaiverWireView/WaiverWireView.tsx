@@ -4,6 +4,8 @@ import { type ChangeEvent, type ReactNode, useId, useMemo, useState } from "reac
 import { useQueryStates } from "nuqs";
 
 import { useValuation } from "@/components/FantasyValueView/useValuation";
+import { CutLinePanel } from "@/components/WaiverWireView/CutLinePanel";
+import { SwapBoardPanel } from "@/components/WaiverWireView/SwapBoardPanel";
 import { WaiverWireTabs } from "@/components/WaiverWireView/WaiverWireTabs";
 import {
   GAME_RANGE_LABELS,
@@ -12,7 +14,7 @@ import {
   PLAYER_GAME_RANGES,
 } from "@/lib/players/searchParams";
 import { type FantasyStatLine } from "@/lib/valuation/types";
-import { buildCutLine } from "@/lib/waiverWire/cutLine";
+import { buildCutLine, type CutScope } from "@/lib/waiverWire/cutLine";
 import { buildHeadToHead, headToHeadSummary, resolvePair } from "@/lib/waiverWire/headToHead";
 import { buildWaiverModel, scoreKeysFor } from "@/lib/waiverWire/model";
 import {
@@ -58,7 +60,10 @@ export function WaiverWireView({
 }: WaiverWireViewProps) {
   const rangeId = useId();
   const [query, setQuery] = useQueryStates(waiverWireParsers);
-  const [showAll, setShowAll] = useState(false);
+  // The cut line opens windowed again whenever its scope, range or position
+  // changes. The handlers below clear the expansion; keying it to the list it
+  // expanded also covers changes that arrive through the URL (back button).
+  const [expandedCut, setExpandedCut] = useState<string | null>(null);
   const { valueKey, scoreKey } = scoreKeysFor({ method });
 
   // Scored in a worker. Until it answers, everything below reads the lines,
@@ -132,6 +137,8 @@ export function WaiverWireView({
     [pair, linesById, model, breakdownFor, scoreKey],
   );
 
+  const cutKey = `${query.scope}:${query.range}:${query.pos}`;
+  const showAll = expandedCut === cutKey;
   const cutLine = useMemo(
     () => buildCutLine({ model, scope: query.scope, showAll }),
     [model, query.scope, showAll],
@@ -142,12 +149,20 @@ export function WaiverWireView({
   };
 
   const onPosition = ({ pos }: { pos: WaiverPosition }) => {
+    setExpandedCut(null);
     void setQuery({ pos }, { history: "replace" });
+  };
+
+  const onScope = ({ scope }: { scope: CutScope }) => {
+    setExpandedCut(null);
+    void setQuery({ scope }, { history: "replace" });
   };
 
   const onRange = (event: ChangeEvent<HTMLSelectElement>) => {
     const range = event.target.value;
-    if (isPlayerGameRange(range)) void setQuery({ range });
+    if (!isPlayerGameRange(range)) return;
+    setExpandedCut(null);
+    void setQuery({ range });
   };
 
   // Opening a free agent always measures them against my weakest again.
@@ -155,22 +170,16 @@ export function WaiverWireView({
     void setQuery({ view: "h2h", fa, mine: null }, { history: "replace" });
   };
 
-  // Stand-ins until the swap board, head-to-head and cut line panels land.
+  // Head-to-head is a stand-in until its panel lands.
   const panels: Record<WaiverView, ReactNode> = {
+    // Keyed so a new range or position opens the board collapsed again.
     swap: (
-      <ul className={styles.list}>
-        {board.rows.map((row) => (
-          <li key={row.playerId}>
-            <button
-              type="button"
-              className={styles.pick}
-              onClick={() => onCompare({ fa: row.playerId })}
-            >
-              {row.fullName}
-            </button>
-          </li>
-        ))}
-      </ul>
+      <SwapBoardPanel
+        key={`${query.range}:${query.pos}`}
+        board={board}
+        model={model}
+        onCompare={onCompare}
+      />
     ),
     h2h: (
       <p className={styles.note}>
@@ -178,24 +187,13 @@ export function WaiverWireView({
       </p>
     ),
     cut: (
-      <>
-        <ol className={styles.list}>
-          {cutLine.entries.map((entry) =>
-            entry.kind === "line" ? (
-              <li key="line" className={styles.cutRule}>
-                Cut line · your worst player
-              </li>
-            ) : (
-              <li key={entry.row.playerId}>{entry.row.fullName}</li>
-            ),
-          )}
-        </ol>
-        {!showAll && cutLine.hiddenAbove + cutLine.hiddenBelow > 0 && (
-          <button type="button" className={styles.pick} onClick={() => setShowAll(true)}>
-            Show all
-          </button>
-        )}
-      </>
+      <CutLinePanel
+        cutLine={cutLine}
+        scope={query.scope}
+        onScope={onScope}
+        onShowAll={() => setExpandedCut(cutKey)}
+        onCompare={onCompare}
+      />
     ),
   };
 
@@ -212,13 +210,13 @@ export function WaiverWireView({
             ))}
           </select>
         </label>
-        <fieldset className={styles.positions}>
+        <fieldset className={styles.keycapGroup}>
           <legend className={styles.legend}>Position</legend>
           {WAIVER_POSITIONS.map((pos) => (
             <button
               key={pos}
               type="button"
-              className={styles.position}
+              className={styles.keycap}
               aria-pressed={query.pos === pos}
               onClick={() => onPosition({ pos })}
             >
