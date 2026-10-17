@@ -143,12 +143,16 @@ export const getLeagueTeamBySlug = async ({
 
 // Which slots count as "yours": every team in a hand-built league, only the
 // team you manage in an imported one (the rest belong to your league-mates),
-// and none in an imported league with no team of yours.
-type RosterScope = { team: { leagueId: string } } | { teamId: string };
+// and none in an imported league with no team of yours. The league filter
+// stays on the imported scope too, so a stale `myTeamId` can't reach a team
+// in another league.
+type RosterScope = { team: { leagueId: string } } | { teamId: string; team: { leagueId: string } };
 
 const rosterScope = ({ league }: { league: TeamLeague & { id: string } }): RosterScope | null => {
   if (!isImportedLeague({ league })) return { team: { leagueId: league.id } };
-  return league.myTeamId === null ? null : { teamId: league.myTeamId };
+  return league.myTeamId === null
+    ? null
+    : { teamId: league.myTeamId, team: { leagueId: league.id } };
 };
 
 // Every player on one of your teams in the active league, which the player

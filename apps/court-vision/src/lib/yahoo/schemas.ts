@@ -22,6 +22,27 @@ const idSchema = z.union([z.string().min(1), z.number()]).transform(String);
 
 const numberSchema = z.union([z.number(), z.string().regex(/^-?\d+(\.\d+)?$/)]).transform(Number);
 
+// Links and images Yahoo serves: https only, on Yahoo's own hosts. The league
+// page link is stored and rendered as a link; logos are rendered as images.
+const YAHOO_ASSET_HOSTS: readonly string[] = [
+  "s.yimg.com",
+  "yahoofantasysports-res.cloudinary.com",
+];
+
+const isYahooHostedUrl = ({ value }: { value: string }): boolean => {
+  const url = URL.parse(value);
+  if (url === null || url.protocol !== "https:") return false;
+  return url.hostname.endsWith(".yahoo.com") || YAHOO_ASSET_HOSTS.includes(url.hostname);
+};
+
+const yahooUrlSchema = z.string().refine((value) => isYahooHostedUrl({ value }), {
+  message: "Expected an https URL on a Yahoo host",
+});
+
+// A logo anywhere else is treated as absent rather than failing the snapshot.
+const toYahooLogoUrl = (value: string | undefined): string | undefined =>
+  value !== undefined && isYahooHostedUrl({ value }) ? value : undefined;
+
 // `[{ team }, { team }]` -> `[team, team]`: validates each wrapper, keeps what `pick` returns.
 const unwrapped = <Wrapper extends z.ZodType, Inner>({
   wrapper,
@@ -51,7 +72,10 @@ const teamSchema = z.object({
   name: z.string(),
   team_logos: unwrapped({
     wrapper: z.object({
-      team_logo: z.object({ size: z.string().optional(), url: z.string() }),
+      team_logo: z.object({
+        size: z.string().optional(),
+        url: z.string().transform(toYahooLogoUrl),
+      }),
     }),
     pick: ({ team_logo }) => team_logo,
   }).default([]),
@@ -100,8 +124,8 @@ const leagueSchema = z.object({
   league_key: z.string(),
   league_id: idSchema,
   name: z.string(),
-  url: z.string(),
-  logo_url: absent(z.string()),
+  url: yahooUrlSchema,
+  logo_url: absent(z.string()).transform(toYahooLogoUrl),
   num_teams: numberSchema,
   season: numberSchema,
   scoring_type: z.string(),
