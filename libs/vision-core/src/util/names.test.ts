@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { normalizeName } from "#core/util/names";
+import { nameMatchKey, normalizeName } from "#core/util/names";
 
 describe("normalizeName", () => {
   it("lowercases and strips diacritics", () => {
@@ -13,5 +13,15 @@ describe("normalizeName", () => {
 
   it("is a no-op on names without diacritics or casing", () => {
     expect(normalizeName({ name: "anthony edwards" })).toBe("anthony edwards");
+  });
+});
+
+describe("nameMatchKey", () => {
+  it("reduces names that differ only in punctuation and accents to one key", () => {
+    expect(nameMatchKey({ name: "A.J. Green" })).toBe(nameMatchKey({ name: "AJ Green" }));
+    expect(nameMatchKey({ name: "Egor Dëmin" })).toBe("egor demin");
+    expect(nameMatchKey({ name: "Kristaps Porziņģis" })).toBe("kristaps porzingis");
+    expect(nameMatchKey({ name: "Wendell Carter Jr." })).toBe("wendell carter jr");
+    expect(nameMatchKey({ name: "  De'Aaron   Fox " })).toBe("deaaron fox");
   });
 });
