@@ -5,6 +5,9 @@ import { nameMatchKey } from "@vision/core/util/names";
 
 export type MatchCandidate = { id: number; fullName: string; teamAbbr: string | null };
 export type MatchMethod = "name_team" | "name_only";
+
+export const isMatchMethod = (value: string): value is MatchMethod =>
+  value === "name_team" || value === "name_only";
 export type MatchOutcome =
   | { status: "matched"; playerId: number; method: MatchMethod | "existing" }
   | { status: "unmatched" };
@@ -57,7 +60,15 @@ export type ResolvedPlayers = {
   unmatched: YahooPlayerRef[];
 };
 
-type StoredMapping = { method: string; player: MatchCandidate };
+type StoredMapping = { method: MatchMethod; player: MatchCandidate };
+type Match = { playerId: number; method: MatchMethod };
+type Attempt = {
+  ref: YahooPlayerRef;
+  match: Match | undefined;
+  // True when the stored row's name still agrees with the ref. Such a row is
+  // never deleted, even if the ref then loses a conflict.
+  keepsStored: boolean;
+};
 
 const PLAYER_SELECT = { id: true, fullName: true, teamAbbr: true } as const;
 
@@ -73,20 +84,45 @@ const loadStoredMappings = async ({
     where: { provider: YAHOO_PROVIDER, externalId: { in: [...yahooIds] } },
     include: { player: { select: PLAYER_SELECT } },
   });
-  return new Map(rows.map((row) => [row.externalId, { method: row.method, player: row.player }]));
+  // A row with a method this code doesn't write is treated as absent; the
+  // upsert below overwrites it.
+  return new Map(
+    rows.flatMap((row): [string, StoredMapping][] =>
+      isMatchMethod(row.method)
+        ? [[row.externalId, { method: row.method, player: row.player }]]
+        : [],
+    ),
+  );
+};
+
+// Players already held by a Yahoo id outside this batch. Without this a second
+// Yahoo id could be name-matched to a player that a stored row already owns.
+const loadHeldPlayerIds = async ({
+  playerIds,
+  batchIds,
+}: {
+  playerIds: readonly number[];
+  batchIds: readonly string[];
+}): Promise<ReadonlySet<number>> => {
+  if (!playerIds.length) return new Set();
+  const rows = await prisma.playerExternalId.findMany({
+    where: {
+      provider: YAHOO_PROVIDER,
+      playerId: { in: [...playerIds] },
+      externalId: { notIn: [...batchIds] },
+    },
+    select: { playerId: true },
+  });
+  return new Set(rows.map((row) => row.playerId));
 };
 
 // PlayerExternalId is shared by every profile, so this runs only on the server
-// path, from data the server fetched from Yahoo itself.
-const writeMappings = async ({
+// path, from data the server fetched from Yahoo itself. Deletes go first.
+const persistMappings = async ({
   upserts,
   staleIds,
 }: {
-  upserts: readonly {
-    ref: YahooPlayerRef;
-    playerId: number;
-    method: string;
-  }[];
+  upserts: readonly { ref: YahooPlayerRef; match: Match }[];
   staleIds: readonly string[];
 }): Promise<void> => {
   const operations = [
@@ -97,7 +133,7 @@ const writeMappings = async ({
           }),
         ]
       : []),
-    ...upserts.map(({ ref, playerId, method }) =>
+    ...upserts.map(({ ref, match }) =>
       prisma.playerExternalId.upsert({
         where: {
           provider_externalId: { provider: YAHOO_PROVIDER, externalId: ref.yahooPlayerId },
@@ -105,11 +141,15 @@ const writeMappings = async ({
         create: {
           provider: YAHOO_PROVIDER,
           externalId: ref.yahooPlayerId,
-          playerId,
-          method,
+          playerId: match.playerId,
+          method: match.method,
           eligiblePositions: ref.eligiblePositions,
         },
-        update: { playerId, method, eligiblePositions: ref.eligiblePositions },
+        update: {
+          playerId: match.playerId,
+          method: match.method,
+          eligiblePositions: ref.eligiblePositions,
+        },
       }),
     ),
   ];
@@ -117,9 +157,19 @@ const writeMappings = async ({
   await prisma.$transaction(operations);
 };
 
+const groupByNameKey = ({
+  candidates,
+}: {
+  candidates: readonly MatchCandidate[];
+}): ReadonlyMap<string, readonly MatchCandidate[]> =>
+  candidates.reduce<ReadonlyMap<string, readonly MatchCandidate[]>>((groups, candidate) => {
+    const key = nameMatchKey({ name: candidate.fullName });
+    return new Map(groups).set(key, [...(groups.get(key) ?? []), candidate]);
+  }, new Map());
+
 export const resolveYahooPlayers = async ({
   refs,
-  writeMappings: shouldWrite,
+  writeMappings,
 }: {
   refs: readonly YahooPlayerRef[];
   writeMappings: boolean; // true only on the server path
@@ -127,61 +177,70 @@ export const resolveYahooPlayers = async ({
   // A player on a roster and in the waiver pool arrives twice; resolve it once
   // so it can't be mistaken for two Yahoo players claiming one Court Vision row.
   const uniqueRefs = [...new Map(refs.map((ref) => [ref.yahooPlayerId, ref])).values()];
+  const batchIds = uniqueRefs.map((ref) => ref.yahooPlayerId);
   const [candidates, stored] = await Promise.all([
     loadCandidates(),
-    loadStoredMappings({ yahooIds: uniqueRefs.map((ref) => ref.yahooPlayerId) }),
+    loadStoredMappings({ yahooIds: batchIds }),
   ]);
+  const candidatesByKey = groupByNameKey({ candidates });
 
-  const matches = uniqueRefs.map((ref) => ({
-    ref,
-    outcome: matchPlayer({
+  const attempts = uniqueRefs.map((ref): Attempt => {
+    const row = stored.get(ref.yahooPlayerId);
+    const outcome = matchPlayer({
       ref,
-      candidates,
-      existing: stored.get(ref.yahooPlayerId)?.player ?? null,
-    }),
-  }));
-
-  const claims = matches.reduce<ReadonlyMap<number, number>>(
-    (counts, { outcome }) =>
-      outcome.status === "matched"
-        ? new Map(counts).set(outcome.playerId, (counts.get(outcome.playerId) ?? 0) + 1)
-        : counts,
-    new Map(),
-  );
+      candidates: candidatesByKey.get(nameMatchKey({ name: ref.fullName })) ?? [],
+      existing: row?.player ?? null,
+    });
+    if (outcome.status === "unmatched") return { ref, match: undefined, keepsStored: false };
+    if (outcome.method !== "existing") {
+      return {
+        ref,
+        match: { playerId: outcome.playerId, method: outcome.method },
+        keepsStored: false,
+      };
+    }
+    return {
+      ref,
+      match: row && { playerId: outcome.playerId, method: row.method },
+      keepsStored: true,
+    };
+  });
 
   // A Court Vision player claimed by several refs belongs to none of them.
-  const resolved = matches.map(({ ref, outcome }) =>
-    outcome.status === "matched" && (claims.get(outcome.playerId) ?? 0) === 1
-      ? { ref, outcome }
-      : { ref, outcome: UNMATCHED },
+  const claims = attempts.reduce<ReadonlyMap<number, number>>(
+    (counts, { match }) =>
+      match ? new Map(counts).set(match.playerId, (counts.get(match.playerId) ?? 0) + 1) : counts,
+    new Map(),
+  );
+  const unclaimed = attempts.map((attempt) =>
+    attempt.match && (claims.get(attempt.match.playerId) ?? 0) > 1
+      ? { ...attempt, match: undefined }
+      : attempt,
   );
 
-  const matched = resolved.flatMap(({ ref, outcome }) =>
-    outcome.status === "matched"
-      ? [
-          {
-            ref,
-            playerId: outcome.playerId,
-            method:
-              outcome.method === "existing"
-                ? (stored.get(ref.yahooPlayerId)?.method ?? "name_only")
-                : outcome.method,
-          },
-        ]
-      : [],
+  // Nor may it already belong to a Yahoo id outside this batch.
+  const held = await loadHeldPlayerIds({
+    playerIds: unclaimed.flatMap(({ match }) => (match ? [match.playerId] : [])),
+    batchIds,
+  });
+  const resolved = unclaimed.map((attempt) =>
+    attempt.match && held.has(attempt.match.playerId) ? { ...attempt, match: undefined } : attempt,
   );
 
-  const matchedPlayerIds = new Map(
-    matched.map(({ ref, playerId }) => [ref.yahooPlayerId, playerId]),
-  );
-  const staleIds = uniqueRefs
-    .map((ref) => ref.yahooPlayerId)
-    .filter((id) => stored.has(id) && stored.get(id)?.player.id !== matchedPlayerIds.get(id));
+  const matched = resolved.flatMap(({ ref, match }) => (match ? [{ ref, match }] : []));
+  const byYahooId = new Map(matched.map(({ ref, match }) => [ref.yahooPlayerId, match.playerId]));
 
-  if (shouldWrite) await writeMappings({ upserts: matched, staleIds });
+  if (writeMappings) {
+    // Stale means the stored name no longer agrees (the ref was rematched or
+    // is unmatched), never merely that the ref lost a conflict.
+    const staleIds = resolved
+      .filter(({ ref, keepsStored }) => stored.has(ref.yahooPlayerId) && !keepsStored)
+      .map(({ ref }) => ref.yahooPlayerId);
+    await persistMappings({ upserts: matched, staleIds });
+  }
 
   return {
-    byYahooId: new Map(matched.map(({ ref, playerId }) => [ref.yahooPlayerId, playerId])),
-    unmatched: resolved.flatMap(({ ref, outcome }) => (outcome.status === "matched" ? [] : [ref])),
+    byYahooId,
+    unmatched: resolved.flatMap(({ ref, match }) => (match ? [] : [ref])),
   };
 };
