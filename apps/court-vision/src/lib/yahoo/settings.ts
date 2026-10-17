@@ -150,11 +150,18 @@ export const mapLeagueSettings = ({ league }: { league: YahooLeague }): MappedSe
   const slotLayout = league.settings.roster_positions.flatMap(({ position, count }) =>
     Array.from({ length: count }, () => toSlotType({ position })),
   );
+  const scoring = mapScoring({ league, scoringType });
+  // An empty list would make `parseScoringConfig` swap in the default categories,
+  // silently changing the league's scoring, so refuse it instead.
+  if ("categories" in scoring.scoringConfig && scoring.scoringConfig.categories.length === 0) {
+    return { status: "unsupported", reason: "scoring_type" };
+  }
+
   const rosterSlots = slotLayout.filter((slot) => !NON_ROSTER_SLOTS.includes(slot)).length;
 
   return {
     status: "ok",
-    scoring: mapScoring({ league, scoringType }),
+    scoring,
     slotLayout,
     rosterSlots: clampInt({ value: rosterSlots, ...LEAGUE_BOUNDS.slots }),
     teamCount: clampInt({ value: league.num_teams, ...LEAGUE_BOUNDS.teams }),
