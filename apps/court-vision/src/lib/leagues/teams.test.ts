@@ -6,6 +6,7 @@ import {
   isRosterSlotType,
   parseLegacyTeamsPayload,
   rowsToSlots,
+  rowsToTeamSlots,
   slotsToRows,
 } from "@/lib/leagues/teams";
 import { type RosterSlot } from "@/lib/fantasyTeams/types";
@@ -99,15 +100,36 @@ describe("slot row mapping", () => {
 
   it("rowsToSlots regenerates per-type slot ids in position order", () => {
     const rows = [
-      { slotType: "PG", player },
-      { slotType: "UTIL", player: null },
-      { slotType: "UTIL", player: null },
+      { slotType: "PG", externalPlayerName: null, player },
+      { slotType: "UTIL", externalPlayerName: null, player: null },
+      { slotType: "UTIL", externalPlayerName: null, player: null },
     ];
     expect(rowsToSlots({ rows })).toEqual(slots);
   });
 
   it("rowsToSlots drops rows with unknown slot types", () => {
-    expect(rowsToSlots({ rows: [{ slotType: "COACH", player: null }] })).toEqual([]);
+    expect(
+      rowsToSlots({ rows: [{ slotType: "COACH", externalPlayerName: null, player: null }] }),
+    ).toEqual([]);
+  });
+
+  it("collects unmatched names by slot id", () => {
+    const rows = [
+      { slotType: "PG", externalPlayerName: "Kevin Durant", player },
+      { slotType: "UTIL", externalPlayerName: "Unknown Rookie", player: null },
+      { slotType: "UTIL", externalPlayerName: null, player: null },
+      { slotType: "COACH", externalPlayerName: "Not A Slot", player: null },
+      { slotType: "UTIL", externalPlayerName: "Two-Way Guy", player: null },
+    ];
+    expect(rowsToTeamSlots({ rows })).toEqual({
+      slots: [
+        { id: "PG-1", type: "PG", player },
+        { id: "UTIL-1", type: "UTIL", player: null },
+        { id: "UTIL-2", type: "UTIL", player: null },
+        { id: "UTIL-3", type: "UTIL", player: null },
+      ],
+      unmatchedBySlotId: { "UTIL-1": "Unknown Rookie", "UTIL-3": "Two-Way Guy" },
+    });
   });
 });
 
@@ -139,6 +161,13 @@ describe("parseLegacyTeamsPayload", () => {
           { id: "PG-1", type: "PG", player },
           { id: "UTIL-1", type: "UTIL", player: null },
         ],
+        // A legacy team predates imported leagues, so it carries none of
+        // their fields.
+        logoUrl: null,
+        managerName: null,
+        isMine: false,
+        isImported: false,
+        unmatchedBySlotId: {},
       },
     ]);
   });

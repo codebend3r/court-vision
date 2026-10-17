@@ -25,4 +25,14 @@ export type FantasyTeam = {
   slug: string;
   slots: RosterSlot[];
   createdAt: string; // ISO date
+  // Host-supplied team identity; null for a hand-built team.
+  logoUrl: string | null;
+  managerName: string | null;
+  // The team the user manages in an imported league.
+  isMine: boolean;
+  // Belongs to an imported league, so it can't be edited or deleted here.
+  isImported: boolean;
+  // Slot id → host player name, for imported slots whose player couldn't be
+  // matched to a Court Vision player (the slot's `player` is null).
+  unmatchedBySlotId: Record<string, string>;
 };

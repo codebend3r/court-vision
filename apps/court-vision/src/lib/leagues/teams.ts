@@ -31,6 +31,8 @@ export const isRosterSlot = (value: unknown): value is RosterSlot =>
 
 export type LeagueTeamSlotRow = {
   slotType: string;
+  // The host's name for an imported slot's player; null for a hand-built slot.
+  externalPlayerName: string | null;
   player: FantasyTeamPlayer | null;
 };
 
@@ -67,7 +69,20 @@ const parseLegacyTeam = (value: unknown): FantasyTeam | null => {
   if (validSlots.length !== parsedSlots.length) return null;
   // No DB row exists yet for a legacy team, so there's no real slug to carry
   // over; importLegacyTeams computes a fresh collision-proof one server-side.
-  return { id, name, slug: "", createdAt, slots: validSlots };
+  // A legacy team predates imported leagues, so it carries none of their
+  // fields.
+  return {
+    id,
+    name,
+    slug: "",
+    createdAt,
+    slots: validSlots,
+    logoUrl: null,
+    managerName: null,
+    isMine: false,
+    isImported: false,
+    unmatchedBySlotId: {},
+  };
 };
 
 // Narrows the persisted zustand payload `{ state: { teams: [...] }, version }`
@@ -93,20 +108,34 @@ export const slotsToRows = ({
     playerId: slot.player?.playerId ?? null,
   }));
 
+type TeamSlots = { slots: RosterSlot[]; unmatchedBySlotId: Record<string, string> };
+
 // DB rows (ordered by position) → RosterSlot[]. Ids are regenerated as
-// "<TYPE>-<n>" per type, matching lib/fantasyTeams/slots.ts buildSlots.
-export const rowsToSlots = ({ rows }: { rows: readonly LeagueTeamSlotRow[] }): RosterSlot[] =>
-  rows.reduce<{ counts: Partial<Record<RosterSlotType, number>>; slots: RosterSlot[] }>(
+// "<TYPE>-<n>" per type, matching lib/fantasyTeams/slots.ts buildSlots. An
+// imported slot whose host player matched no Court Vision player keeps the
+// host's name under its slot id, so the roster can still show who's there.
+export const rowsToTeamSlots = ({ rows }: { rows: readonly LeagueTeamSlotRow[] }): TeamSlots => {
+  const { slots, unmatchedBySlotId } = rows.reduce<
+    TeamSlots & { counts: Partial<Record<RosterSlotType, number>> }
+  >(
     (acc, row) => {
       if (!isRosterSlotType(row.slotType)) return acc;
       const ordinal = (acc.counts[row.slotType] ?? 0) + 1;
+      const id = `${row.slotType}-${ordinal}`;
+      const unmatchedName = row.player === null ? row.externalPlayerName : null;
       return {
         counts: { ...acc.counts, [row.slotType]: ordinal },
-        slots: [
-          ...acc.slots,
-          { id: `${row.slotType}-${ordinal}`, type: row.slotType, player: row.player },
-        ],
+        slots: [...acc.slots, { id, type: row.slotType, player: row.player }],
+        unmatchedBySlotId:
+          unmatchedName === null
+            ? acc.unmatchedBySlotId
+            : { ...acc.unmatchedBySlotId, [id]: unmatchedName },
       };
     },
-    { counts: {}, slots: [] },
-  ).slots;
+    { counts: {}, slots: [], unmatchedBySlotId: {} },
+  );
+  return { slots, unmatchedBySlotId };
+};
+
+export const rowsToSlots = ({ rows }: { rows: readonly LeagueTeamSlotRow[] }): RosterSlot[] =>
+  rowsToTeamSlots({ rows }).slots;

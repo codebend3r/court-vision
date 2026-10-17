@@ -3,6 +3,22 @@ import { type LeagueScoringConfig } from "@vision/sport-basketball/types";
 
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 
+// Where a league came from: built by hand in Court Vision, or imported from a
+// fantasy host. An imported league's teams and scoring are the host's, so
+// they're read-only here.
+const LEAGUE_PROVIDERS = ["manual", "yahoo"] as const;
+
+export type LeagueProvider = (typeof LEAGUE_PROVIDERS)[number];
+
+export const isLeagueProvider = (value: string): value is LeagueProvider =>
+  LEAGUE_PROVIDERS.some((provider) => provider === value);
+
+// For display only: a stored provider this build doesn't know reads as a
+// hand-built league. Never lock or scope on this; those decisions test the
+// raw column (`provider !== "manual"`) so an unknown provider fails closed.
+export const toLeagueProvider = ({ value }: { value: string }): LeagueProvider =>
+  isLeagueProvider(value) ? value : "manual";
+
 // Serializable league shape crossing the RSC boundary (dates as ISO strings).
 // `scoringConfig` is discriminated by `scoringType` and validated by the
 // sport engine's scoring-config guards.
@@ -14,6 +30,19 @@ export type LeagueSummary = {
   teamCount: number;
   rosterSlots: number;
   scoringConfig: LeagueScoringConfig;
+  provider: LeagueProvider;
+  // Fail-closed: true for any stored provider other than "manual", including
+  // one this build doesn't know. Teams and scoring are read-only when true.
+  isImported: boolean;
+  // The league's page on its host; null for a hand-built league.
+  externalUrl: string | null;
+  // The LeagueTeam the user manages in an imported league. In an imported
+  // league only this team is "yours"; a hand-built league has none.
+  myTeamId: string | null;
+  syncedAt: string | null; // ISO date of the last successful sync
+  syncError: string | null;
+  // Host categories the engine can't score, kept so the UI can say so.
+  unsupportedCategories: string[];
   createdAt: string;
   updatedAt: string;
 };
