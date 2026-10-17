@@ -17,6 +17,8 @@ extend-exclude = [
   "docs/design/prototypes/*.dc.html",
   # Local knowledge-graph output, regeneratable and untracked.
   "graphify-out/",
+  # Recorded third-party API payloads: real player and team names, no prose.
+  "apps/*/src/lib/*/fixtures/",
 ]
 
 [default.extend-identifiers]
