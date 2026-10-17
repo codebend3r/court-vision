@@ -15,6 +15,10 @@ playwright-report/
 # production
 /apps/*/build/
 
+# WXT (browser extension) generated types + build output
+/apps/*/.wxt/
+/apps/*/.output/
+
 # misc
 .DS_Store
 Thumbs.db

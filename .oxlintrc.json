@@ -11,6 +11,8 @@
     "**/.next/**",
     "apps/*/out/**",
     "apps/*/build/**",
+    "apps/*/.wxt/**",
+    "apps/*/.output/**",
     "**/next-env.d.ts",
     "apps/*/generated/**",
     "apps/*/public/meta.js",
@@ -137,6 +139,36 @@
               {
                 "group": ["../*", "../**", "./*", "./**"],
                 "message": "Relative paths are banned, including co-located siblings. In an app use @/ (its src), @public/, or @generated/; in a lib use its own #<name>/ subpath alias; across packages use a @vision/<name>/ entry point."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "apps/court-vision-extension/src/**/*.{ts,tsx,mts,cts}",
+        "apps/court-vision-extension/src/**/*.{js,jsx,mjs}"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["../*", "../**", "./*", "./**"],
+                "message": "Relative paths are banned, including co-located siblings. In an app use @/ (its src), @public/, or @generated/; in a lib use its own #<name>/ subpath alias; across packages use a @vision/<name>/ entry point."
+              },
+              {
+                "group": [
+                  "*",
+                  "!@/**",
+                  "!@vision/core/**",
+                  "!@vision/yahoo-bridge/**",
+                  "!#imports",
+                  "!bun:test"
+                ],
+                "message": "The extension imports only its own src (@/), @vision/core/ and @vision/yahoo-bridge/ entry points, and WXT's #imports (plus bun:test in tests). Anything else would ship in the extension bundle."
               }
             ]
           }
