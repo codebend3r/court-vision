@@ -252,6 +252,7 @@ describe("WaiverWirePage", () => {
       leagueId: "league-1",
       syncedAt: "2026-10-16T00:00:00.000Z",
       syncError: null,
+      autoSyncWhenStale: true,
     });
     const external = screen.getByRole("link", { name: "Open in Yahoo" });
     expect(external).toHaveAttribute(

@@ -1,6 +1,8 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, setSystemTime, vi } from "bun:test";
+
+import { StrictMode } from "react";
 
 import { type YahooSyncResult } from "@/lib/yahoo/types";
 
@@ -23,7 +25,10 @@ beforeEach(() => {
   refreshMock.mockReset();
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  setSystemTime();
+});
 
 describe("SyncYahooButton", () => {
   it("shows syncing, then refreshes", async () => {
@@ -196,5 +201,212 @@ describe("SyncYahooButton", () => {
       ),
     );
     expect(refreshMock).toHaveBeenCalled();
+  });
+
+  describe("autoSyncWhenStale", () => {
+    const NOW = new Date("2026-10-16T12:00:00.000Z");
+    const minutesAgo = (minutes: number): string =>
+      new Date(NOW.getTime() - minutes * 60_000).toISOString();
+
+    beforeEach(() => {
+      setSystemTime(NOW);
+    });
+
+    it("syncs once on mount when the last sync is older than 15 minutes", async () => {
+      const pending = Promise.withResolvers<YahooSyncResult>();
+      syncYahooLeagueMock.mockReturnValue(pending.promise);
+      render(
+        <SyncYahooButton
+          leagueId="league-1"
+          syncedAt={minutesAgo(16)}
+          syncError={null}
+          autoSyncWhenStale
+        />,
+      );
+
+      await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/^Syncing…$/));
+      expect(syncYahooLeagueMock).toHaveBeenCalledTimes(1);
+      expect(syncYahooLeagueMock).toHaveBeenCalledWith({ leagueId: "league-1" });
+
+      pending.resolve({ status: "ok", syncedAt: NOW.toISOString(), unmatched: [] });
+
+      await waitFor(() => expect(refreshMock).toHaveBeenCalledTimes(1));
+      expect(syncYahooLeagueMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("syncs on mount when the league has never synced", async () => {
+      syncYahooLeagueMock.mockResolvedValue({
+        status: "ok",
+        syncedAt: NOW.toISOString(),
+        unmatched: [],
+      });
+      render(
+        <SyncYahooButton leagueId="league-1" syncedAt={null} syncError={null} autoSyncWhenStale />,
+      );
+
+      await waitFor(() => expect(syncYahooLeagueMock).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(refreshMock).toHaveBeenCalledTimes(1));
+    });
+
+    it("does not auto-sync a fresh league", async () => {
+      render(
+        <SyncYahooButton
+          leagueId="league-1"
+          syncedAt={minutesAgo(14)}
+          syncError={null}
+          autoSyncWhenStale
+        />,
+      );
+
+      // Let any effect flush before asserting nothing happened.
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent("Synced 14 min ago"),
+      );
+      expect(syncYahooLeagueMock).not.toHaveBeenCalled();
+      expect(refreshMock).not.toHaveBeenCalled();
+    });
+
+    it("does not auto-sync without the flag", async () => {
+      render(<SyncYahooButton leagueId="league-1" syncedAt={minutesAgo(60)} syncError={null} />);
+
+      await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Synced"));
+      expect(syncYahooLeagueMock).not.toHaveBeenCalled();
+      expect(refreshMock).not.toHaveBeenCalled();
+    });
+
+    it("does not auto-sync at exactly 15 minutes", async () => {
+      render(
+        <SyncYahooButton
+          leagueId="league-1"
+          syncedAt={minutesAgo(15)}
+          syncError={null}
+          autoSyncWhenStale
+        />,
+      );
+
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent("Synced 15 min ago"),
+      );
+      expect(syncYahooLeagueMock).not.toHaveBeenCalled();
+    });
+
+    it("syncs when the stored sync time cannot be read", async () => {
+      syncYahooLeagueMock.mockResolvedValue({
+        status: "ok",
+        syncedAt: NOW.toISOString(),
+        unmatched: [],
+      });
+      render(
+        <SyncYahooButton
+          leagueId="league-1"
+          syncedAt="garbage"
+          syncError={null}
+          autoSyncWhenStale
+        />,
+      );
+
+      await waitFor(() => expect(syncYahooLeagueMock).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(refreshMock).toHaveBeenCalledTimes(1));
+    });
+
+    it("shows the throttle notice, not a generic error, when the auto-sync is throttled", async () => {
+      syncYahooLeagueMock.mockResolvedValue({ status: "throttled" });
+      render(
+        <SyncYahooButton
+          leagueId="league-1"
+          syncedAt={minutesAgo(30)}
+          syncError={null}
+          autoSyncWhenStale
+        />,
+      );
+
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent("Synced less than a minute ago."),
+      );
+      expect(screen.getByRole("status")).not.toHaveTextContent("Something went wrong");
+      expect(refreshMock).not.toHaveBeenCalled();
+    });
+
+    it("syncs once under StrictMode's double-invoked effects", async () => {
+      syncYahooLeagueMock.mockResolvedValue({
+        status: "ok",
+        syncedAt: NOW.toISOString(),
+        unmatched: [],
+      });
+      render(
+        <StrictMode>
+          <SyncYahooButton
+            leagueId="league-1"
+            syncedAt={minutesAgo(30)}
+            syncError={null}
+            autoSyncWhenStale
+          />
+        </StrictMode>,
+      );
+
+      await waitFor(() => expect(refreshMock).toHaveBeenCalledTimes(1));
+      expect(syncYahooLeagueMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not sync again when re-rendered with new or unchanged props", async () => {
+      syncYahooLeagueMock.mockResolvedValue({
+        status: "ok",
+        syncedAt: NOW.toISOString(),
+        unmatched: [],
+      });
+      const { rerender } = render(
+        <SyncYahooButton
+          leagueId="league-1"
+          syncedAt={minutesAgo(30)}
+          syncError={null}
+          autoSyncWhenStale
+        />,
+      );
+      await waitFor(() => expect(refreshMock).toHaveBeenCalledTimes(1));
+
+      rerender(
+        <SyncYahooButton
+          leagueId="league-1"
+          syncedAt={minutesAgo(1)}
+          syncError={null}
+          autoSyncWhenStale
+        />,
+      );
+      rerender(
+        <SyncYahooButton
+          leagueId="league-1"
+          syncedAt={minutesAgo(30)}
+          syncError={null}
+          autoSyncWhenStale
+        />,
+      );
+
+      await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/Synced/));
+      expect(syncYahooLeagueMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps the stored data and shows the error when the auto-sync fails", async () => {
+      syncYahooLeagueMock.mockResolvedValue({ status: "unavailable" });
+      render(
+        <SyncYahooButton
+          leagueId="league-1"
+          syncedAt={minutesAgo(30)}
+          syncError={null}
+          autoSyncWhenStale
+        />,
+      );
+
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "Yahoo isn't answering right now; try again in a minute.",
+        ),
+      );
+      expect(syncYahooLeagueMock).toHaveBeenCalledTimes(1);
+      expect(refreshMock).not.toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: "Sync with Yahoo" })).toHaveAttribute(
+        "aria-disabled",
+        "false",
+      );
+    });
   });
 });

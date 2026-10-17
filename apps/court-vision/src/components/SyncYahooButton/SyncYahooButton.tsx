@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useId, useState, useTransition } from "react";
+import { useEffect, useEffectEvent, useId, useRef, useState, useTransition } from "react";
 
 import { syncYahooLeague } from "@/lib/yahoo/actions";
+import { YAHOO_STALE_AFTER_MS } from "@/lib/yahoo/constants";
 import { formatSyncedAgo } from "@/lib/yahoo/format";
 import { unmatchedSyncMessage, yahooFailureMessage } from "@/lib/yahoo/messages";
 import { type YahooSyncResult } from "@/lib/yahoo/types";
@@ -16,6 +17,9 @@ export type SyncYahooButtonProps = {
   leagueName?: string;
   syncedAt: string | null;
   syncError: string | null;
+  // Syncs once on mount when the league never synced or last synced more than
+  // YAHOO_STALE_AFTER_MS ago, through the same handler a click uses.
+  autoSyncWhenStale?: boolean;
 };
 
 type FailedSync = Exclude<YahooSyncResult, { status: "ok" }>;
@@ -65,6 +69,7 @@ export function SyncYahooButton({
   leagueName,
   syncedAt,
   syncError,
+  autoSyncWhenStale = false,
 }: SyncYahooButtonProps) {
   const router = useRouter();
   const statusId = useId();
@@ -93,6 +98,23 @@ export function SyncYahooButton({
       });
     });
   };
+
+  // Reads the props and clock as of the mount that fires it, without making
+  // the mount effect depend on them.
+  const autoSync = useEffectEvent(() => {
+    if (!autoSyncWhenStale) return;
+    const syncedMs = syncedAt === null ? Number.NaN : Date.parse(syncedAt);
+    const isStale = Number.isNaN(syncedMs) || now.getTime() - syncedMs > YAHOO_STALE_AFTER_MS;
+    if (isStale) sync();
+  });
+  // React's dev double-invoke runs the effect twice; the ref makes it one sync.
+  const hasAutoSynced = useRef(false);
+
+  useEffect(() => {
+    if (hasAutoSynced.current) return;
+    hasAutoSynced.current = true;
+    autoSync();
+  }, []);
 
   return (
     <div className={styles.sync}>
