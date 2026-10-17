@@ -1,6 +1,10 @@
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { withNuqsTestingAdapter, type UrlUpdateEvent } from "nuqs/adapters/testing";
+import {
+  NuqsTestingAdapter,
+  withNuqsTestingAdapter,
+  type UrlUpdateEvent,
+} from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { type ValuationPort } from "@/lib/valuation/valuationClient";
@@ -139,7 +143,7 @@ describe("WaiverWireView", () => {
     expect(swapNames().toSorted()).toEqual(["Free Center", "Free Forward", "Free Guard"]);
 
     await user.click(screen.getByRole("tab", { name: "Cut line" }));
-    await user.click(screen.getByRole("button", { name: "G" }));
+    await user.click(screen.getByRole("button", { name: "Guards" }));
     await user.click(screen.getByRole("tab", { name: "Head-to-head" }));
 
     expect(post).not.toHaveBeenCalled();
@@ -185,9 +189,9 @@ describe("WaiverWireView", () => {
       "true",
     );
 
-    await user.click(within(group).getByRole("button", { name: "C" }));
+    await user.click(within(group).getByRole("button", { name: "Centers" }));
 
-    expect(within(group).getByRole("button", { name: "C" })).toHaveAttribute(
+    expect(within(group).getByRole("button", { name: "Centers" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -229,6 +233,78 @@ describe("WaiverWireView", () => {
     expect(update?.options.history).toBe("replace");
   });
 
+  it("changes one side of the head-to-head pair through the URL", async () => {
+    const user = userEvent.setup();
+    const { onUrlUpdate } = renderView({ searchParams: "?view=h2h&fa=5" });
+    const panel = screen.getByRole("tabpanel", { name: "Head-to-head" });
+
+    await user.selectOptions(
+      within(panel).getByRole("combobox", { name: "Your player" }),
+      "Mine High",
+    );
+
+    await waitFor(() =>
+      expect(lastUpdate({ onUrlUpdate })?.searchParams.get("mine") ?? null).toBe("2"),
+    );
+    const update = lastUpdate({ onUrlUpdate });
+    expect(update?.searchParams.get("fa") ?? null).toBe("5");
+    expect(update?.options.history).toBe("replace");
+    expect(within(panel).getByText(/^Free Center wins \d of 3$/)).toBeInTheDocument();
+  });
+
+  it("keeps focus on the Head-to-head tab after opening a free agent", async () => {
+    const user = userEvent.setup();
+    renderView();
+
+    await user.click(
+      within(screen.getByRole("tabpanel", { name: "Swap board" })).getByRole("button", {
+        name: "Free Center",
+      }),
+    );
+
+    expect(screen.getByRole("tab", { name: "Head-to-head" })).toHaveFocus();
+  });
+
+  it("describes every free agent's name button with one compare hint", () => {
+    renderView();
+
+    const hint = "Compare head-to-head against your weakest player";
+    expect(screen.getAllByText(hint)).toHaveLength(1);
+    within(screen.getByRole("tabpanel", { name: "Swap board" }))
+      .getAllByRole("button")
+      .map((button) => expect(button).toHaveAccessibleDescription(hint));
+  });
+
+  it("announces what the panel shows after a position change", async () => {
+    const user = userEvent.setup();
+    renderView();
+
+    expect(screen.getByRole("status")).toHaveTextContent("3 free agents beat Mine Low");
+
+    await user.click(screen.getByRole("button", { name: "Centers" }));
+
+    expect(screen.getByRole("status")).toHaveTextContent("1 free agent beats Mine Low");
+
+    await user.click(screen.getByRole("tab", { name: "Head-to-head" }));
+
+    expect(screen.getByRole("status")).toHaveTextContent(/^Free Center wins \d of 3$/);
+
+    await user.click(screen.getByRole("tab", { name: "Cut line" }));
+
+    expect(screen.getByRole("status")).toHaveTextContent(/^\d+ of \d+ players shown$/);
+  });
+
+  it("names the position filters in full", () => {
+    renderView();
+
+    const group = screen.getByRole("group", { name: "Position" });
+    expect(
+      within(group)
+        .getAllByRole("button")
+        .map((button) => button.getAttribute("aria-label") ?? button.textContent),
+    ).toEqual(["All", "Guards", "Forwards", "Centers"]);
+  });
+
   it("windows the cut line again whenever its scope, range or position changes", async () => {
     const user = userEvent.setup();
     // Eight more free agents below my weakest, so the window hides some.
@@ -258,7 +334,7 @@ describe("WaiverWireView", () => {
     await expand();
     await user.click(screen.getByRole("button", { name: "Free agents only" }));
     expect(label()).toMatch(/^Show all/);
-    await user.click(screen.getByRole("button", { name: "My team + free agents" }));
+    await user.click(screen.getByRole("button", { name: "My team and free agents" }));
     expect(label()).toMatch(/^Show all/);
 
     await expand();
@@ -269,10 +345,59 @@ describe("WaiverWireView", () => {
     expect(label()).toMatch(/^Show all/);
 
     await expand();
-    await user.click(screen.getByRole("button", { name: "G" }));
+    await user.click(screen.getByRole("button", { name: "Guards" }));
     expect(label()).toMatch(/^Show all/);
     await user.click(screen.getByRole("button", { name: "All" }));
     expect(label()).toMatch(/^Show all/);
+  });
+
+  it("windows the cut line again after the URL leaves its list and comes back", async () => {
+    const user = userEvent.setup();
+    // Eight more free agents below my weakest, so the window hides some.
+    const deep = Array.from({ length: 8 }, (_, index) =>
+      makeStatLine({
+        playerId: 20 + index,
+        fullName: `Deep ${index}`,
+        position: "G",
+        pts: 60 - index * 5,
+        reb: 20,
+        ast: 10,
+      }),
+    );
+    const viewProps: WaiverWireViewProps = {
+      ...props,
+      lines: [...lines, ...deep],
+      activePlayerIds: [...props.activePlayerIds, ...deep.map((line) => line.playerId)],
+    };
+    // The back and forward buttons, as the adapter's search params changing
+    // underneath the view.
+    const atUrl = ({ searchParams }: { searchParams: string }) => (
+      <NuqsTestingAdapter searchParams={searchParams} hasMemory>
+        <WaiverWireView {...viewProps} />
+      </NuqsTestingAdapter>
+    );
+    const { rerender } = render(atUrl({ searchParams: "?view=cut" }));
+    const hasShowAll = () => !!screen.queryByRole("button", { name: /^Show all/ });
+
+    await user.click(screen.getByRole("button", { name: /^Show all/ }));
+    expect(hasShowAll()).toBe(false);
+
+    rerender(atUrl({ searchParams: "?view=cut&scope=fa" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Free agents only" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      ),
+    );
+    rerender(atUrl({ searchParams: "?view=cut" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "My team and free agents" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      ),
+    );
+
+    expect(hasShowAll()).toBe(true);
   });
 
   it("collapses the swap board again when its range or position changes", async () => {
@@ -295,14 +420,14 @@ describe("WaiverWireView", () => {
       },
     });
     const swapPanel = () => screen.getByRole("tabpanel", { name: "Swap board" });
-    const hasShowAll = () => !!within(swapPanel()).queryByRole("button", { name: "Show all" });
+    const hasShowAll = () => !!within(swapPanel()).queryByRole("button", { name: /^Show all/ });
     const expand = async () => {
-      await user.click(within(swapPanel()).getByRole("button", { name: "Show all" }));
+      await user.click(within(swapPanel()).getByRole("button", { name: /^Show all/ }));
       expect(hasShowAll()).toBe(false);
     };
 
     await expand();
-    await user.click(screen.getByRole("button", { name: "G" }));
+    await user.click(screen.getByRole("button", { name: "Guards" }));
     expect(hasShowAll()).toBe(true);
 
     await expand();

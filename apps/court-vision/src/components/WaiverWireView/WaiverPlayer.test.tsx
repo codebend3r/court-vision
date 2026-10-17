@@ -19,7 +19,16 @@ const renderPlayer = ({
   overrides = {},
 }: { overrides?: Partial<WaiverPlayerProps["player"]> } = {}) => {
   const onCompare = vi.fn<({ fa }: { fa: number }) => void>();
-  render(<WaiverPlayer player={{ ...player, ...overrides }} onCompare={onCompare} />);
+  render(
+    <>
+      <span id="compare-hint">Compare head-to-head against your weakest player</span>
+      <WaiverPlayer
+        player={{ ...player, ...overrides }}
+        onCompare={onCompare}
+        compareHintId="compare-hint"
+      />
+    </>,
+  );
   return { onCompare };
 };
 
@@ -32,6 +41,14 @@ describe("WaiverPlayer", () => {
 
     expect(onCompare).toHaveBeenCalledWith({ fa: 7 });
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it("describes the name button with the shared compare hint", () => {
+    renderPlayer();
+
+    expect(screen.getByRole("button", { name: "Daniel Gafford" })).toHaveAccessibleDescription(
+      "Compare head-to-head against your weakest player",
+    );
   });
 
   it("links one of my players to their page", () => {

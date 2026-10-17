@@ -5,7 +5,7 @@
   gap: var(--space-4);
 
   &[aria-busy="true"] {
-    opacity: 0.6;
+    opacity: 0.85;
   }
 }
 
@@ -85,13 +85,6 @@
   }
 }
 
-// The head-to-head stand-in until its panel lands.
-.note {
-  margin: 0;
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-}
-
 .srOnly {
   @include visually-hidden;
 }
@@ -167,14 +160,25 @@
 }
 
 // Free agents above the cut line. The "Upgrade" tag carries the meaning; the
-// tint only groups the rows.
+// tint only groups the rows. Muted text loses contrast on it, so the row's
+// muted text goes full strength.
 .upgrade {
-  background: color-mix(in srgb, var(--color-win) 9%, transparent);
+  background: color-mix(in srgb, var(--color-win) 5%, transparent);
+
+  .rank,
+  .ownerLabel,
+  .meta {
+    color: var(--color-text);
+  }
 }
 
-.cutLine > td {
+// The marker row's header: a body row, so none of the sticky column header.
+.cutLine > th {
+  position: static;
+  border-top: 1px solid var(--color-border);
   border-bottom: 2px dashed var(--color-accent-strong);
-  color: var(--color-accent-strong);
+  background: none;
+  color: var(--color-text);
   font-family: var(--font-display);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);

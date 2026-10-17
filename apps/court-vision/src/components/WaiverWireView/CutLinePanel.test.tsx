@@ -55,17 +55,20 @@ const cutLine: CutLine = { entries, hiddenAbove: 3, hiddenBelow: 7 };
 const renderPanel = ({
   line = cutLine,
   scope = "all",
-}: { line?: CutLine; scope?: CutScope } = {}) => {
+  showAll = false,
+}: { line?: CutLine; scope?: CutScope; showAll?: boolean } = {}) => {
   const onScope = vi.fn<({ scope }: { scope: CutScope }) => void>();
-  const onShowAll = vi.fn<() => void>();
+  const onShowAll = vi.fn<({ showAll }: { showAll: boolean }) => void>();
   const onCompare = vi.fn<({ fa }: { fa: number }) => void>();
   render(
     <CutLinePanel
       cutLine={line}
       scope={scope}
       onScope={onScope}
+      showAll={showAll}
       onShowAll={onShowAll}
       onCompare={onCompare}
+      compareHintId="compare-hint"
     />,
   );
   return { onScope, onShowAll, onCompare };
@@ -81,6 +84,9 @@ describe("CutLinePanel", () => {
   it("ranks each player in a rank column", () => {
     renderPanel();
 
+    expect(
+      screen.getByRole("table", { name: "Your roster and free agents ranked by value" }),
+    ).toBeInTheDocument();
     expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
       "Rank",
       "Player",
@@ -88,16 +94,16 @@ describe("CutLinePanel", () => {
       "Value",
     ]);
     expect(within(rowOf({ name: "Isaiah Hartenstein" })).getByText("151")).toHaveClass("numeric");
-    expect(within(rowOf({ name: "Yves Missi" })).getByText("-0.51")).toHaveClass("numeric");
+    expect(within(rowOf({ name: "Yves Missi" })).getByText("−0.51")).toHaveClass("numeric");
   });
 
   it("draws the cut line as a labelled row spanning the table", () => {
     renderPanel();
 
-    const line = screen.getByRole("row", { name: "Cut line · your worst player" });
-    const [cell] = within(line).getAllByRole("cell");
-    expect(cell).toHaveAttribute("colspan", "4");
-    expect(cell).toHaveTextContent("Cut line · your worst player");
+    const line = screen.getByRole("row", { name: "Cut line: your worst player" });
+    const header = within(line).getByRole("rowheader");
+    expect(header).toHaveAttribute("colspan", "4");
+    expect(header).toHaveTextContent("Cut line: your worst player");
   });
 
   it("marks your players with You, a link and the leading bar", () => {
@@ -147,11 +153,11 @@ describe("CutLinePanel", () => {
     const group = screen.getByRole("group", { name: "Show" });
     const buttons = within(group).getAllByRole("button");
     expect(buttons.map((button) => button.textContent)).toEqual([
-      "My team + free agents",
+      "My team and free agents",
       "Free agents only",
     ]);
     buttons.map((button) => expect(button).toHaveClass("keycap"));
-    expect(within(group).getByRole("button", { name: "My team + free agents" })).toHaveAttribute(
+    expect(within(group).getByRole("button", { name: "My team and free agents" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -169,9 +175,27 @@ describe("CutLinePanel", () => {
     const user = userEvent.setup();
     const { onShowAll } = renderPanel();
 
-    await user.click(screen.getByRole("button", { name: "Show all (3 above, 7 below)" }));
+    const toggle = screen.getByRole("button", { name: "Show all (3 above, 7 below)" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
 
-    expect(onShowAll).toHaveBeenCalledTimes(1);
+    await user.click(toggle);
+
+    expect(onShowAll).toHaveBeenCalledWith({ showAll: true });
+  });
+
+  it("keeps the toggle as Show fewer once expanded", async () => {
+    const user = userEvent.setup();
+    const { onShowAll } = renderPanel({
+      line: { entries, hiddenAbove: 0, hiddenBelow: 0 },
+      showAll: true,
+    });
+
+    const toggle = screen.getByRole("button", { name: "Show fewer" });
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+    await user.click(toggle);
+
+    expect(onShowAll).toHaveBeenCalledWith({ showAll: false });
   });
 
   it("counts only the side that hides rows", () => {

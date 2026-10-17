@@ -5,6 +5,7 @@ import { type FormEvent, useId, useState, useTransition } from "react";
 
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 import { setMyTeam } from "@/lib/yahoo/actions";
+import { MAIN_CONTENT_ID } from "@vision/ui/components/SkipLink/SkipLink";
 
 import styles from "@/components/MyTeamPicker/MyTeamPicker.module.scss";
 
@@ -14,6 +15,7 @@ export type MyTeamPickerProps = {
 };
 
 const SAVE_FAILED = "Couldn't save your team. Try again.";
+const SAVED = "Team saved.";
 
 // Names the user's own team in an imported league that has none yet, which
 // the Waiver Wire needs before it can compare anyone. A save refreshes the
@@ -24,6 +26,7 @@ export function MyTeamPicker({ leagueId, teams }: MyTeamPickerProps) {
   const errorId = useId();
   const [teamId, setTeamId] = useState(teams[0]?.id ?? "");
   const [failed, setFailed] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const onSave = (event: FormEvent<HTMLFormElement>) => {
@@ -38,7 +41,12 @@ export function MyTeamPicker({ leagueId, teams }: MyTeamPickerProps) {
         startTransition(() => setFailed(true));
         return;
       }
+      // Say so first: the refresh swaps this form out of the page, and with it
+      // the button that had focus, so focus lands on the main content.
+      startTransition(() => setSaved(true));
       router.refresh();
+      const main = document.getElementById(MAIN_CONTENT_ID);
+      if (main) main.focus();
     });
   };
 
@@ -65,6 +73,9 @@ export function MyTeamPicker({ leagueId, teams }: MyTeamPickerProps) {
           Save
         </button>
       </div>
+      <p role="status" className={styles.status}>
+        {saved ? SAVED : ""}
+      </p>
       {failed && (
         <p id={errorId} role="alert" className={styles.error}>
           {SAVE_FAILED}

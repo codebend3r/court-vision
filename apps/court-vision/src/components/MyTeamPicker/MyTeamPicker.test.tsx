@@ -13,6 +13,7 @@ vi.mock("@/lib/yahoo/actions", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: refreshMock }) }));
 
 import { MyTeamPicker } from "@/components/MyTeamPicker/MyTeamPicker";
+import { MAIN_CONTENT_ID } from "@vision/ui/components/SkipLink/SkipLink";
 
 const team = ({ id, name }: { id: string; name: string }): FantasyTeam => ({
   id,
@@ -62,6 +63,25 @@ describe("MyTeamPicker", () => {
     await waitFor(() => expect(refreshMock).toHaveBeenCalled());
     expect(setMyTeam).toHaveBeenCalledWith({ leagueId: "league-1", teamId: "team-5" });
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("announces the save and moves focus to the main content after the refresh", async () => {
+    const user = userEvent.setup();
+    // The layout's focusable wrapper around every route.
+    render(
+      <div id={MAIN_CONTENT_ID} tabIndex={-1}>
+        <MyTeamPicker leagueId="league-1" teams={teams} />
+      </div>,
+    );
+    const main = document.getElementById(MAIN_CONTENT_ID);
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("");
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(main).toHaveFocus());
+    expect(refreshMock).toHaveBeenCalled();
+    expect(status).toHaveTextContent("Team saved.");
   });
 
   it("announces a save the server refused", async () => {

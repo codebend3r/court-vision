@@ -1,11 +1,16 @@
 "use client";
 
-import { type ChangeEvent, type ReactNode, useId, useMemo, useState } from "react";
+import { type ChangeEvent, type ReactNode, useEffect, useId, useMemo, useState } from "react";
 import { useQueryStates } from "nuqs";
 
 import { useValuation } from "@/components/FantasyValueView/useValuation";
 import { CutLinePanel } from "@/components/WaiverWireView/CutLinePanel";
-import { SwapBoardPanel } from "@/components/WaiverWireView/SwapBoardPanel";
+import {
+  HeadToHeadPanel,
+  type HeadToHeadPick,
+  NO_PAIR,
+} from "@/components/WaiverWireView/HeadToHeadPanel";
+import { NO_ROSTER, NO_UPGRADE, SwapBoardPanel } from "@/components/WaiverWireView/SwapBoardPanel";
 import { WaiverWireTabs } from "@/components/WaiverWireView/WaiverWireTabs";
 import {
   GAME_RANGE_LABELS,
@@ -44,8 +49,15 @@ export type WaiverWireViewProps = {
 };
 
 const POSITION_LABELS: Record<WaiverPosition, string> = { all: "All", G: "G", F: "F", C: "C" };
+// The keycaps show the letter; the accessible name spells the group out.
+const POSITION_NAMES: Record<WaiverPosition, string> = {
+  all: "All",
+  G: "Guards",
+  F: "Forwards",
+  C: "Centers",
+};
 
-const NO_PAIR = "Pick a free agent and one of your players to compare.";
+const COMPARE_HINT = "Compare head-to-head against your weakest player";
 
 // Client orchestrator: values the range's pool once, then slices it into the
 // three comparisons. The range, tab, position filter and compared pair live in
@@ -59,10 +71,12 @@ export function WaiverWireView({
   method,
 }: WaiverWireViewProps) {
   const rangeId = useId();
+  const compareHintId = useId();
   const [query, setQuery] = useQueryStates(waiverWireParsers);
   // The cut line opens windowed again whenever its scope, range or position
-  // changes. The handlers below clear the expansion; keying it to the list it
-  // expanded also covers changes that arrive through the URL (back button).
+  // changes, by a control or through the URL (back button): the expansion
+  // names the list it opened, and the effect below drops it once that list is
+  // no longer the one on screen, so coming back to it opens it windowed too.
   const [expandedCut, setExpandedCut] = useState<string | null>(null);
   const { valueKey, scoreKey } = scoreKeysFor({ method });
 
@@ -139,29 +153,49 @@ export function WaiverWireView({
 
   const cutKey = `${query.scope}:${query.range}:${query.pos}`;
   const showAll = expandedCut === cutKey;
+  useEffect(() => {
+    setExpandedCut((current) => (current === cutKey ? current : null));
+  }, [cutKey]);
   const cutLine = useMemo(
     () => buildCutLine({ model, scope: query.scope, showAll }),
     [model, query.scope, showAll],
   );
+
+  // One sentence for the status region: what the open panel now shows.
+  const announcements: Record<WaiverView, () => string> = {
+    swap: () => {
+      if (!board.target) return NO_ROSTER;
+      const count = board.rows.length;
+      if (count === 0) return NO_UPGRADE;
+      return count === 1
+        ? `1 free agent beats ${board.target.fullName}`
+        : `${count} free agents beat ${board.target.fullName}`;
+    },
+    h2h: () => (pair && headToHead ? headToHeadSummary({ pair, result: headToHead }) : NO_PAIR),
+    cut: () => {
+      const visible = cutLine.entries.filter((entry) => entry.kind === "row").length;
+      const total = visible + cutLine.hiddenAbove + cutLine.hiddenBelow;
+      return `${visible} of ${total} players shown`;
+    },
+  };
+  // Quiet while the worker values a new pool; it speaks once the values land.
+  const announcement = valuation.isPending ? "" : announcements[query.view]();
 
   const onView = ({ view }: { view: WaiverView }) => {
     void setQuery({ view }, { history: "replace" });
   };
 
   const onPosition = ({ pos }: { pos: WaiverPosition }) => {
-    setExpandedCut(null);
     void setQuery({ pos }, { history: "replace" });
   };
 
   const onScope = ({ scope }: { scope: CutScope }) => {
-    setExpandedCut(null);
     void setQuery({ scope }, { history: "replace" });
   };
 
   const onRange = (event: ChangeEvent<HTMLSelectElement>) => {
     const range = event.target.value;
     if (!isPlayerGameRange(range)) return;
-    setExpandedCut(null);
     void setQuery({ range });
   };
 
@@ -170,7 +204,11 @@ export function WaiverWireView({
     void setQuery({ view: "h2h", fa, mine: null }, { history: "replace" });
   };
 
-  // Head-to-head is a stand-in until its panel lands.
+  // A select in head-to-head changes one side; the other stays as it is.
+  const onPick = (pick: HeadToHeadPick) => {
+    void setQuery(pick, { history: "replace" });
+  };
+
   const panels: Record<WaiverView, ReactNode> = {
     // Keyed so a new range or position opens the board collapsed again.
     swap: (
@@ -179,20 +217,27 @@ export function WaiverWireView({
         board={board}
         model={model}
         onCompare={onCompare}
+        compareHintId={compareHintId}
       />
     ),
     h2h: (
-      <p className={styles.note}>
-        {pair && headToHead ? headToHeadSummary({ pair, result: headToHead }) : NO_PAIR}
-      </p>
+      <HeadToHeadPanel
+        pair={pair}
+        result={headToHead}
+        freePool={model.freePool}
+        roster={model.roster}
+        onPick={onPick}
+      />
     ),
     cut: (
       <CutLinePanel
         cutLine={cutLine}
         scope={query.scope}
         onScope={onScope}
-        onShowAll={() => setExpandedCut(cutKey)}
+        showAll={showAll}
+        onShowAll={({ showAll: next }) => setExpandedCut(next ? cutKey : null)}
         onCompare={onCompare}
+        compareHintId={compareHintId}
       />
     ),
   };
@@ -218,6 +263,7 @@ export function WaiverWireView({
               type="button"
               className={styles.keycap}
               aria-pressed={query.pos === pos}
+              aria-label={POSITION_NAMES[pos]}
               onClick={() => onPosition({ pos })}
             >
               {POSITION_LABELS[pos]}
@@ -226,6 +272,13 @@ export function WaiverWireView({
         </fieldset>
       </div>
       <WaiverWireTabs view={query.view} onChange={onView} panels={panels} />
+      <p role="status" className={styles.srOnly}>
+        {announcement}
+      </p>
+      {/* Referenced by every free agent's name button; never read on its own. */}
+      <span id={compareHintId} hidden>
+        {COMPARE_HINT}
+      </span>
     </section>
   );
 }

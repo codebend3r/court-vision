@@ -2,6 +2,7 @@
 
 import { WaiverPlayer } from "@/components/WaiverWireView/WaiverPlayer";
 import { type CutLine, type CutLineEntry, type CutScope } from "@/lib/waiverWire/cutLine";
+import { formatValue } from "@/lib/waiverWire/format";
 import { CUT_SCOPES } from "@/lib/waiverWire/searchParams";
 import { type WaiverOwner } from "@/lib/waiverWire/types";
 
@@ -9,11 +10,12 @@ import styles from "@/components/WaiverWireView/WaiverWireView.module.scss";
 
 const COLUMNS = 4;
 
-const LINE_LABEL = "Cut line · your worst player";
+const LINE_LABEL = "Cut line: your worst player";
+const CAPTION = "Your roster and free agents ranked by value";
 const NO_FREE_AGENTS = "No free agents match this range and position.";
 
 const SCOPE_LABELS: Record<CutScope, string> = {
-  all: "My team + free agents",
+  all: "My team and free agents",
   fa: "Free agents only",
 };
 
@@ -27,8 +29,10 @@ export type CutLinePanelProps = {
   cutLine: CutLine;
   scope: CutScope;
   onScope: ({ scope }: { scope: CutScope }) => void;
-  onShowAll: () => void;
+  showAll: boolean;
+  onShowAll: ({ showAll }: { showAll: boolean }) => void;
   onCompare: ({ fa }: { fa: number }) => void;
+  compareHintId: string;
 };
 
 // "Show all (3 above, 7 below)", naming only the sides that hide rows.
@@ -53,7 +57,15 @@ const isFreeAgentEntry = (entry: CutLineEntry): boolean =>
 
 // Tab C: my roster and the free pool ranked together by value, with the line
 // drawn under my lowest-valued player.
-export function CutLinePanel({ cutLine, scope, onScope, onShowAll, onCompare }: CutLinePanelProps) {
+export function CutLinePanel({
+  cutLine,
+  scope,
+  onScope,
+  showAll,
+  onShowAll,
+  onCompare,
+  compareHintId,
+}: CutLinePanelProps) {
   const hasRows = cutLine.entries.some((entry) => entry.kind === "row");
   const hasFreeAgent = cutLine.entries.some(isFreeAgentEntry);
   const hidden = cutLine.hiddenAbove + cutLine.hiddenBelow;
@@ -78,6 +90,7 @@ export function CutLinePanel({ cutLine, scope, onScope, onShowAll, onCompare }: 
       {hasRows && (
         <div className={styles.tableWrapper}>
           <table className={styles.table}>
+            <caption className={styles.srOnly}>{CAPTION}</caption>
             <thead>
               <tr>
                 <th scope="col" className={styles.numeric}>
@@ -94,13 +107,19 @@ export function CutLinePanel({ cutLine, scope, onScope, onShowAll, onCompare }: 
               {cutLine.entries.map((entry) =>
                 entry.kind === "line" ? (
                   <tr key="line" className={styles.cutLine}>
-                    <td colSpan={COLUMNS}>{LINE_LABEL}</td>
+                    <th scope="row" colSpan={COLUMNS}>
+                      {LINE_LABEL}
+                    </th>
                   </tr>
                 ) : (
                   <tr key={entry.row.playerId} className={rowClassName({ entry })}>
                     <td className={`${styles.numeric} ${styles.rank}`}>{entry.row.rank}</td>
                     <td>
-                      <WaiverPlayer player={entry.row} onCompare={onCompare} />
+                      <WaiverPlayer
+                        player={entry.row}
+                        onCompare={onCompare}
+                        compareHintId={compareHintId}
+                      />
                     </td>
                     <td>
                       <span className={styles.owner}>
@@ -108,7 +127,7 @@ export function CutLinePanel({ cutLine, scope, onScope, onShowAll, onCompare }: 
                         {entry.isUpgrade && <span className={styles.upgradeTag}>Upgrade</span>}
                       </span>
                     </td>
-                    <td className={styles.numeric}>{entry.row.value.toFixed(2)}</td>
+                    <td className={styles.numeric}>{formatValue({ value: entry.row.value })}</td>
                   </tr>
                 ),
               )}
@@ -116,9 +135,15 @@ export function CutLinePanel({ cutLine, scope, onScope, onShowAll, onCompare }: 
           </table>
         </div>
       )}
-      {hidden > 0 && (
-        <button type="button" className={styles.keycap} onClick={onShowAll}>
-          {showAllLabel(cutLine)}
+      {/* A disclosure that stays mounted once open, so focus never drops. */}
+      {(hidden > 0 || showAll) && (
+        <button
+          type="button"
+          className={styles.keycap}
+          aria-expanded={showAll}
+          onClick={() => onShowAll({ showAll: !showAll })}
+        >
+          {showAll ? "Show fewer" : showAllLabel(cutLine)}
         </button>
       )}
     </div>
