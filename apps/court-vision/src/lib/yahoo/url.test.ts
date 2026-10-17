@@ -13,6 +13,7 @@ describe("parseYahooLeagueUrl", () => {
     ["an http league URL with a trailing slash", `http://${HOST}/nba/106344/`],
     ["a team page inside the league", `https://${HOST}/nba/106344/5`],
     ["a page inside the league with a query string", `https://${HOST}/nba/106344/players?status=A`],
+    ["an uppercase host", "https://BASKETBALL.FantasySports.Yahoo.com/nba/106344"],
     [
       "a league URL with a query string and a fragment",
       `https://${HOST}/nba/106344?lhst=stand#standings`,
@@ -42,6 +43,8 @@ describe("parseYahooLeagueUrl", () => {
     ["a URL with no league id", `https://${HOST}/nba`],
     ["a URL with a non-numeric league id", `https://${HOST}/nba/abc`],
     ["an id longer than nine digits", "12345678901"],
+    ["a lookalike host under another domain", `https://${HOST}.evil.com/nba/106344`],
+    ["a season-prefixed URL with no league id", `https://${HOST}/2025/nba`],
   ])("rejects input that is not a Yahoo basketball league: %s", (_label, input) => {
     expect(parseYahooLeagueUrl({ input })).toEqual({ status: "invalid" });
   });
