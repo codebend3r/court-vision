@@ -1,0 +1,332 @@
+@use "@/styles/mixins" as *;
+
+.view {
+  display: grid;
+  gap: var(--space-4);
+
+  &[aria-busy="true"] {
+    opacity: 0.85;
+  }
+}
+
+// The shared controls: the range picker, then the position keycaps.
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-4);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.select {
+  @include control-field;
+}
+
+// A fieldset only to group keycaps under their legend; no frame. Holds the
+// position filter and the cut line's scope toggle.
+.keycapGroup {
+  display: grid;
+  grid-auto-flow: column;
+  justify-content: start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.keycap {
+  @include keycap;
+  justify-self: start;
+
+  &[aria-pressed="true"] {
+    @include keycap-engaged;
+  }
+}
+
+// WaiverWireTabs: the keycap tab row over the one rendered panel.
+.tabs {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tab {
+  @include keycap;
+
+  &[aria-selected="true"] {
+    @include keycap-engaged;
+  }
+}
+
+.tabpanel {
+  display: grid;
+  gap: var(--space-3);
+
+  &:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus-ring);
+    outline-offset: var(--space-1);
+  }
+}
+
+.srOnly {
+  @include visually-hidden;
+}
+
+// `.notice`: the players Yahoo named that Court Vision never matched.
+.empty,
+.notice {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+// Swap board: my weakest beside the free agents who beat them. The panels sit
+// side by side when the tab is wide enough and stack when it is not.
+.swap {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.panel {
+  @include panel-shell;
+  min-width: 0;
+}
+
+.panelTitle {
+  @include panel-title;
+}
+
+// A title row with a muted count beside the heading, over one shared rule.
+.panelHead {
+  @include panel-title;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.panelHeading {
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+}
+
+.count {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.tableWrapper {
+  @include table-wrapper;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  @include data-table;
+}
+
+.numeric {
+  @include numeric-cell;
+}
+
+.rank {
+  color: var(--color-text-muted);
+}
+
+// My rows: a solid bar on the leading edge, never a glow.
+.mine > td:first-child {
+  border-inline-start: 3px solid var(--color-accent);
+}
+
+// Free agents above the cut line. The "Upgrade" tag carries the meaning; the
+// tint only groups the rows. Muted text loses contrast on it, so the row's
+// muted text goes full strength.
+.upgrade {
+  background: color-mix(in srgb, var(--color-win) 5%, transparent);
+
+  .rank,
+  .ownerLabel,
+  .meta {
+    color: var(--color-text);
+  }
+
+  // The accent name loses contrast on the tint under the Team-accent theme
+  // (an accent close to the win tone), so the name goes full-strength text
+  // and keeps the underline to still read as pressable.
+  .nameButton {
+    color: var(--color-text);
+    text-decoration: underline;
+  }
+}
+
+// The marker row's header: a body row, so none of the sticky column header.
+.cutLine > th {
+  position: static;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 2px dashed var(--color-accent-strong);
+  background: none;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.owner {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.ownerLabel {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.upgradeTag {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-win);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+// Name cell: the name, its status badges, then team and position.
+.player {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+}
+
+.name {
+  font-weight: var(--font-weight-semibold);
+}
+
+// A free agent's name opens head-to-head. It reads as the name link beside
+// it, not as a keycap, since it sits inline in a table row.
+.nameButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  text-align: start;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+  }
+}
+
+.meta {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.badges {
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+// Status codes as outlined text. The tone colours the border only, so the
+// text keeps body contrast on every theme.
+.badge {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-highlight);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+
+  &[data-tone="sidelined"] {
+    border-color: var(--color-loss);
+  }
+
+  &[data-tone="waivers"] {
+    border-color: var(--color-accent);
+  }
+}
+
+// Category chips: the sign glyph and the hidden "(worse)" carry the meaning;
+// the border tone repeats it.
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-win);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+
+  &[data-improves="false"] {
+    border-color: var(--color-loss);
+  }
+}
+
+.noStats {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.noStatsSummary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.noStatsList {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// Cut line: the scope toggle, the ranked table, then Show all.
+.cut {
+  display: grid;
+  gap: var(--space-3);
+}

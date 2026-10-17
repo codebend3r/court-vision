@@ -60,7 +60,10 @@ export const buildCutLine = ({
 
   const lineIndex = entries.findIndex(isLine);
   const firstUpgrade = entries.findIndex(isUpgradeEntry);
-  const start = firstUpgrade < 0 ? lineIndex : Math.max(0, firstUpgrade - ROWS_ABOVE_FIRST_UPGRADE);
+  // With no upgrade, anchor on the line itself so your bottom players still
+  // show above it instead of the window opening at the line.
+  const anchor = firstUpgrade < 0 ? lineIndex : firstUpgrade;
+  const start = Math.max(0, anchor - ROWS_ABOVE_FIRST_UPGRADE);
   const end = Math.min(entries.length, lineIndex + 1 + ROWS_BELOW_LINE);
 
   return {

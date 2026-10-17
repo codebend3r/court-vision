@@ -3,7 +3,7 @@ import { describe, expect, it } from "bun:test";
 import { type FantasyPlayerValues } from "@vision/core/valuation/types";
 
 import { makeStatLine } from "@/lib/valuation/fixtures";
-import { buildWaiverModel } from "@/lib/waiverWire/model";
+import { buildWaiverModel, scoreKeysFor } from "@/lib/waiverWire/model";
 import { type WaiverLeagueData, type WaiverRosterEntry } from "@/lib/waiverWire/types";
 
 const valued = ({
@@ -40,6 +40,7 @@ const league = (overrides: Partial<WaiverLeagueData>): WaiverLeagueData => ({
   myRoster: [],
   rosteredPlayerIds: [],
   waivers: [],
+  unmatched: [],
   ...overrides,
 });
 
@@ -337,5 +338,20 @@ describe("buildWaiverModel", () => {
     });
 
     expect(ids(model.noStats)).toEqual([1]);
+  });
+});
+
+describe("scoreKeysFor", () => {
+  it("ranks by the method's own value and compares categories on z", () => {
+    expect(scoreKeysFor({ method: "zscore" })).toEqual({ valueKey: "z", scoreKey: "z" });
+    expect(scoreKeysFor({ method: "positional" })).toEqual({
+      valueKey: "positional",
+      scoreKey: "z",
+    });
+    expect(scoreKeysFor({ method: "points" })).toEqual({ valueKey: "points", scoreKey: "z" });
+  });
+
+  it("compares categories on g for the G-Score method", () => {
+    expect(scoreKeysFor({ method: "gscore" })).toEqual({ valueKey: "g", scoreKey: "g" });
   });
 });

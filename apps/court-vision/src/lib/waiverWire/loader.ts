@@ -4,7 +4,7 @@ import { type WaiverLeagueData, type WaiverRosterEntry } from "@/lib/waiverWire/
 
 // What the waiver model needs from the imported league: my roster, everyone
 // rostered anywhere in the league, and the waiver list, each with its injury
-// status. Uncached for the same reason as `getRosteredPlayerIds`: per user,
+// status, plus the slots whose player never matched by name. Uncached for the same reason as `getRosteredPlayerIds`: per user,
 // a few hundred rows, and it must reflect a sync at once.
 export const getWaiverLeagueData = async ({
   leagueId,
@@ -15,12 +15,13 @@ export const getWaiverLeagueData = async ({
 }): Promise<WaiverLeagueData> => {
   const [slots, waivers] = await Promise.all([
     prisma.leagueTeamSlot.findMany({
-      where: { team: { leagueId }, playerId: { not: null } },
+      where: { team: { leagueId } },
       select: {
         playerId: true,
         slotType: true,
         injuryStatus: true,
         teamId: true,
+        externalPlayerName: true,
         player: { select: { fullName: true } },
       },
     }),
@@ -46,9 +47,18 @@ export const getWaiverLeagueData = async ({
       : [],
   );
 
+  // An empty slot has neither a player nor a Yahoo name; only a named one is
+  // an unmatched player.
+  const unmatched = slots.flatMap((slot) =>
+    slot.playerId === null && slot.externalPlayerName !== null
+      ? [{ fullName: slot.externalPlayerName, isMine: slot.teamId === myTeamId }]
+      : [],
+  );
+
   return {
     myRoster,
     rosteredPlayerIds: [...new Set(filled.map((slot) => slot.playerId))],
     waivers,
+    unmatched,
   };
 };

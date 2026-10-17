@@ -12,6 +12,8 @@ const NAV_ICON_PATHS = {
   teams: "M17 8 L24 12 L31 8 L41 14 L36 23 L32 21 V41 H16 V21 L12 23 L7 14 Z",
   myTeams:
     "M9 12 a3 3 0 0 1 3-3 h24 a3 3 0 0 1 3 3 v27 a3 3 0 0 1-3 3 H12 a3 3 0 0 1-3-3 Z M17 22 h14 M17 31 h9",
+  // Two opposed arrows: a free agent in, one of yours out.
+  waiverWire: "M8 16 H38 M30 8 L38 16 L30 24 M40 32 H10 M18 24 L10 32 L18 40",
   leagues: "M15 7 h18 v11 a9 9 0 0 1-18 0 Z M24 27 v7 M17 41 h14",
   starred: "M24 6 L29.5 18 L42 19.5 L33 28 L35.5 41 L24 34.5 L12.5 41 L15 28 L6 19.5 L18.5 18 Z",
   settings:
@@ -46,6 +48,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: "My league",
     entries: [
       { href: "/my-teams", label: "My Teams", icon: "myTeams" },
+      { href: "/waiver-wire", label: "Waiver Wire", icon: "waiverWire" },
       { href: "/leagues", label: "Leagues", icon: "leagues" },
       { href: "/watchlist", label: "Starred", icon: "starred" },
     ],

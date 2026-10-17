@@ -248,14 +248,14 @@ describe("YahooImportForm", () => {
     expect(screen.getByRole("button", { name: "Import league" })).toBeEnabled();
   });
 
-  it("imports the picked team and goes to My Teams", async () => {
+  it("imports the picked team and goes to the Waiver Wire", async () => {
     const user = await findLeague();
 
     const picker = await teamPicker();
     await user.click(within(picker).getByRole("radio", { name: "Newfoundlanders" }));
     await user.click(screen.getByRole("button", { name: "Import league" }));
 
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/my-teams"));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/waiver-wire"));
     expect(importYahooLeagueMock).toHaveBeenCalledWith({
       url: LEAGUE_URL,
       myTeamExternalKey: "478.l.106344.t.5",
@@ -281,9 +281,9 @@ describe("YahooImportForm", () => {
         "Imported. 1 player couldn't be matched: Jalen Smith. They won't count as rostered, so they may show up as free agents.",
       ),
     );
-    expect(screen.getByRole("link", { name: "Go to My Teams" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Go to the Waiver Wire" })).toHaveAttribute(
       "href",
-      "/my-teams",
+      "/waiver-wire",
     );
     expect(pushMock).not.toHaveBeenCalled();
   });
