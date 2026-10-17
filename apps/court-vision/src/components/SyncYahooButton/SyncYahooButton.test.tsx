@@ -201,6 +201,27 @@ describe("SyncYahooButton", () => {
     expect(screen.getByRole("button", { name: "Sync with Yahoo" })).toBeEnabled();
   });
 
+  it("keeps the last sync time under a failed sync's message", async () => {
+    const user = userEvent.setup();
+    syncYahooLeagueMock.mockResolvedValue({ status: "unavailable" });
+    render(
+      <SyncYahooButton {...SERVER_LEAGUE} leagueId="league-1" syncedAt={null} syncError={null} />,
+    );
+    const status = screen.getByRole("status");
+
+    await user.click(screen.getByRole("button", { name: "Sync with Yahoo" }));
+
+    await waitFor(() =>
+      expect(status).toHaveTextContent(
+        /^Yahoo isn't answering right now; try again in a minute\.$/,
+      ),
+    );
+    const syncedTime = screen.getByText("Never synced");
+    expect(!!(status.compareDocumentPosition(syncedTime) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(
+      true,
+    );
+  });
+
   it("announces a sync that throws as a generic failure", async () => {
     const user = userEvent.setup();
     syncYahooLeagueMock.mockRejectedValue(new Error("network down"));
@@ -233,6 +254,8 @@ describe("SyncYahooButton", () => {
     await waitFor(() =>
       expect(screen.getByRole("status")).toHaveTextContent("Synced less than a minute ago."),
     );
+    // The throttle's message is the time, so no second time line follows it.
+    expect(screen.queryByText("Synced just now")).not.toBeInTheDocument();
     expect(refreshMock).not.toHaveBeenCalled();
   });
 

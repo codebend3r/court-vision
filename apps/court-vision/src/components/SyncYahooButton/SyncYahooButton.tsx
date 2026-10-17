@@ -172,9 +172,7 @@ export function SyncYahooButton({
         {statusTextFor({ isPending, outcome, syncedAt, syncError, now })}
       </p>
       {!isPending && outcome !== null && outcome.kind === "failed" && outcome.showsSyncedAt && (
-        <p className={styles.syncedAt} suppressHydrationWarning>
-          {formatSyncedAgo({ syncedAt, now })}
-        </p>
+        <p className={styles.syncedAt}>{formatSyncedAgo({ syncedAt, now })}</p>
       )}
     </div>
   );
