@@ -154,6 +154,10 @@ export function YahooImportForm() {
   const [isPending, startTransition] = useTransition();
   // Which button started the pending request, for its pending label.
   const [pendingMode, setPendingMode] = useState<PreviewMode>("server");
+  // The private-league miss "Try with the extension" is retrying. Clearing the
+  // failure would unmount the button and drop its focus to the body, so it
+  // stays mounted (aria-disabled) on this until the read settles.
+  const [retryUrl, setRetryUrl] = useState<string | null>(null);
   const extensionId = getExtensionId();
   const [extension, setExtension] = useState<ExtensionState>(() =>
     extensionId === null ? "absent" : "unknown",
@@ -236,13 +240,23 @@ export function YahooImportForm() {
     });
   };
 
-  const onFindWithExtension = ({ leagueUrl }: { leagueUrl: string }) => {
+  // `retryUrl` is the missed URL when "Try with the extension" pressed it, and
+  // null from the import button, so a stale retry never shows again.
+  const onFindWithExtension = ({
+    leagueUrl,
+    retryUrl: nextRetryUrl,
+  }: {
+    leagueUrl: string;
+    retryUrl: string | null;
+  }) => {
     if (isPending) return;
     setFailure(null);
     setPendingMode("extension");
+    setRetryUrl(nextRetryUrl);
     startTransition(async () => {
       const result = await previewThroughExtension({ extensionId, url: leagueUrl });
       startTransition(() => {
+        setRetryUrl(null);
         if (result.status !== "ok") {
           setFailure(result);
           return;
@@ -294,6 +308,7 @@ export function YahooImportForm() {
   const missedUrl = failure !== null && failure.status === "server_not_found" ? failure.url : null;
   const isFindingOnServer = isPending && pendingMode === "server";
   const isReadingThroughExtension = isPending && pendingMode === "extension";
+  const tryUrl = missedUrl ?? (isReadingThroughExtension ? retryUrl : null);
 
   return (
     <section className={styles.importer}>
@@ -311,12 +326,14 @@ export function YahooImportForm() {
         </p>
       )}
 
-      {missedUrl !== null && extension === "present" && (
+      {tryUrl !== null && extension === "present" && (
+        // aria-disabled, not disabled, while pending: it stays mounted and
+        // focused while the extension reads the league.
         <button
           type="button"
           className={styles.secondary}
-          onClick={() => onFindWithExtension({ leagueUrl: missedUrl })}
-          disabled={isPending}
+          onClick={() => onFindWithExtension({ leagueUrl: tryUrl, retryUrl: tryUrl })}
+          aria-disabled={isPending}
         >
           Try with the extension
         </button>
@@ -371,7 +388,7 @@ export function YahooImportForm() {
               <button
                 type="button"
                 className={styles.secondary}
-                onClick={() => onFindWithExtension({ leagueUrl: url.trim() })}
+                onClick={() => onFindWithExtension({ leagueUrl: url.trim(), retryUrl: null })}
                 disabled={isPending}
               >
                 {isReadingThroughExtension

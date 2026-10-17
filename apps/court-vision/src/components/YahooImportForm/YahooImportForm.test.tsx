@@ -1,6 +1,7 @@
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
+import { StrictMode } from "react";
 
 import { restoreEnv, stubEnv } from "@vision/testing/env";
 import { type BridgeLeaguePayload } from "@vision/yahoo-bridge/protocol";
@@ -424,15 +425,54 @@ describe("YahooImportForm with the extension", () => {
     expect(screen.getAllByRole("button")).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Find league" })).toBeInTheDocument();
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(fetchLeagueViaExtensionMock).not.toHaveBeenCalled();
+    expect(previewYahooSnapshotMock).not.toHaveBeenCalled();
   });
 
   it("shows no extension controls when the ping fails", async () => {
-    await renderWithExtension({ answers: false });
+    const user = await renderWithExtension({ answers: false });
 
     expect(pingExtensionMock).toHaveBeenCalledTimes(1);
     expect(screen.getAllByRole("button")).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Find league" })).toBeInTheDocument();
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Find league" }));
+    await teamPicker();
+    expect(fetchLeagueViaExtensionMock).not.toHaveBeenCalled();
+    expect(previewYahooSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("pings the extension once under StrictMode's double-invoked effects", async () => {
+    getExtensionIdMock.mockReturnValue(EXTENSION_ID);
+    pingExtensionMock.mockResolvedValue(true);
+
+    render(
+      <StrictMode>
+        <YahooImportForm />
+      </StrictMode>,
+    );
+
+    expect(await screen.findByRole("button", { name: EXTENSION_BUTTON })).toBeInTheDocument();
+    expect(pingExtensionMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("imports a league the server found on the server, even with the extension present", async () => {
+    const user = await renderWithExtension({ answers: true });
+
+    await user.click(screen.getByRole("button", { name: "Find league" }));
+    const picker = await teamPicker();
+    await user.click(within(picker).getByRole("radio", { name: "Newfoundlanders" }));
+    await user.click(screen.getByRole("button", { name: "Import league" }));
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/waiver-wire"));
+    expect(importYahooLeagueMock).toHaveBeenCalledWith({
+      url: LEAGUE_URL,
+      myTeamExternalKey: "478.l.106344.t.5",
+    });
+    expect(importYahooLeagueFromSnapshotMock).not.toHaveBeenCalled();
+    expect(fetchLeagueViaExtensionMock).not.toHaveBeenCalled();
+    expect(previewYahooSnapshotMock).not.toHaveBeenCalled();
   });
 
   it("shows nothing about the extension until the ping answers", async () => {
@@ -571,6 +611,56 @@ describe("YahooImportForm with the extension", () => {
         leagueId: "106344",
       });
       expect(previewYahooSnapshotMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps focus on the try button while the extension reads the league", async () => {
+      previewYahooLeagueMock.mockResolvedValue({ status: "not_found" });
+      const user = await renderWithExtension({ answers: true });
+      await user.click(screen.getByRole("button", { name: "Find league" }));
+      await screen.findByRole("alert");
+      const pending = Promise.withResolvers<ExtensionLeagueResult>();
+      fetchLeagueViaExtensionMock.mockReturnValue(pending.promise);
+
+      const tryButton = screen.getByRole("button", { name: "Try with the extension" });
+      await user.click(tryButton);
+
+      try {
+        expect(tryButton).toBeInTheDocument();
+        expect(tryButton).toHaveAttribute("aria-disabled", "true");
+        expect(tryButton).toHaveFocus();
+        // A second press while it reads does nothing.
+        await user.click(tryButton);
+        expect(fetchLeagueViaExtensionMock).toHaveBeenCalledTimes(1);
+      } finally {
+        pending.resolve({ status: "ok", payload: payload({ tag: "first" }) });
+      }
+      await teamPicker();
+      await waitFor(() => expect(screen.getByText("Which team is yours?")).toHaveFocus());
+    });
+
+    it("drops the try button once its retry settles", async () => {
+      previewYahooLeagueMock.mockResolvedValue({ status: "not_found" });
+      fetchLeagueViaExtensionMock.mockResolvedValue({ status: "failed", reason: "logged_out" });
+      const user = await renderWithExtension({ answers: true });
+      await user.click(screen.getByRole("button", { name: "Find league" }));
+      await screen.findByRole("alert");
+
+      await user.click(screen.getByRole("button", { name: "Try with the extension" }));
+      expect(await screen.findByRole("alert")).toHaveTextContent(/signed in to Yahoo/);
+
+      const pending = Promise.withResolvers<ExtensionLeagueResult>();
+      fetchLeagueViaExtensionMock.mockReturnValue(pending.promise);
+      await user.click(screen.getByRole("button", { name: EXTENSION_BUTTON }));
+
+      try {
+        expect(screen.getByRole("button", { name: "Reading your league…" })).toBeDisabled();
+        expect(
+          screen.queryByRole("button", { name: "Try with the extension" }),
+        ).not.toBeInTheDocument();
+      } finally {
+        pending.resolve({ status: "missing" });
+      }
+      await screen.findByRole("alert");
     });
 
     it("links to the extension when it didn't answer the ping", async () => {

@@ -26,14 +26,9 @@
   }
 }
 
-.status {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
-// The last sync time, kept beneath a failure so the stored data's age stays
-// visible.
+// The status line, and the last sync time kept beneath a failure so the
+// stored data's age stays visible.
+.status,
 .syncedAt {
   margin: 0;
   color: var(--color-text-muted);
