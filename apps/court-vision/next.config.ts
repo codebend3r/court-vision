@@ -12,7 +12,12 @@ import packageJson from "./package.json";
 const workspaceRoot = resolve(import.meta.dirname, "../..");
 
 // Workspace libs ship TypeScript source, not a build, so Next compiles them.
-const workspacePackages = ["@vision/core", "@vision/sport-basketball", "@vision/ui"];
+const workspacePackages = [
+  "@vision/core",
+  "@vision/sport-basketball",
+  "@vision/ui",
+  "@vision/yahoo-bridge",
+];
 
 const nextConfig: NextConfig = {
   turbopack: { root: workspaceRoot },
