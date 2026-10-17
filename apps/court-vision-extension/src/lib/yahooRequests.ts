@@ -12,12 +12,14 @@ export type LeagueFetchResult =
 
 type LeagueFetchError = Extract<LeagueFetchResult, { type: "error" }>;
 
+type Failed = { type: "failed" };
+
 // One request's outcome. Only a JSON body is kept; Yahoo's cookies stay in the
 // browser and never reach the payload.
-type RequestOutcome =
-  | { type: "body"; body: unknown }
-  | { type: "status"; status: number }
-  | { type: "failed" };
+type RequestOutcome = { type: "body"; body: unknown } | { type: "status"; status: number } | Failed;
+
+// The session check's outcome: only the status counts, so its body is never read.
+type ProbeOutcome = Exclude<RequestOutcome, { type: "body" }>;
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
@@ -31,18 +33,22 @@ const waiverPath = ({ leagueId, start }: { leagueId: string; start: number }): s
   `league/nba.l.${leagueId}/players;status=W;start=${start};count=${YAHOO_PAGE_SIZE}`;
 
 const UNAVAILABLE: LeagueFetchError = { type: "error", reason: "unavailable" };
+const FAILED: Failed = { type: "failed" };
 
 /**
- * One GET with the user's Yahoo cookies, timed from the call until its body is
- * read. No retries: the user can press again.
+ * One GET with the user's Yahoo cookies, timed from the call until `read` has
+ * finished with the response. A network error, a timeout or a throw inside
+ * `read` all count as failed. No retries: the user can press again.
  */
-const requestYahoo = async ({
+const timedYahooRequest = async <Outcome>({
   path,
   fetchImpl,
+  read,
 }: {
   path: string;
   fetchImpl: FetchImpl;
-}): Promise<RequestOutcome> => {
+  read: (response: Response) => Promise<Outcome> | Outcome;
+}): Promise<Outcome | Failed> => {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
@@ -51,20 +57,45 @@ const requestYahoo = async ({
       credentials: "include",
       signal: controller.signal,
     });
-    if (!response.ok) return { type: "status", status: response.status };
-    const text = await response.text();
-    try {
-      const body: unknown = JSON.parse(text);
-      return { type: "body", body };
-    } catch {
-      return { type: "failed" };
-    }
+    return await read(response);
   } catch {
-    return { type: "failed" };
+    return FAILED;
   } finally {
     clearTimeout(timer);
   }
 };
+
+// A data request: a non-2xx status, or a 2xx whose body isn't JSON, is no body.
+const requestYahoo = ({
+  path,
+  fetchImpl,
+}: {
+  path: string;
+  fetchImpl: FetchImpl;
+}): Promise<RequestOutcome> =>
+  timedYahooRequest<RequestOutcome>({
+    path,
+    fetchImpl,
+    read: async (response) => {
+      if (!response.ok) return { type: "status", status: response.status };
+      const body: unknown = JSON.parse(await response.text());
+      return { type: "body", body };
+    },
+  });
+
+// The session check: its status, whatever the body says.
+const probeYahoo = ({
+  path,
+  fetchImpl,
+}: {
+  path: string;
+  fetchImpl: FetchImpl;
+}): Promise<ProbeOutcome> =>
+  timedYahooRequest<ProbeOutcome>({
+    path,
+    fetchImpl,
+    read: (response) => ({ type: "status", status: response.status }),
+  });
 
 // The one shape the extension reads: how many players a waiver page holds, to
 // decide whether to ask for the next one. Anything unexpected counts as empty.
@@ -101,17 +132,18 @@ const fetchWaiverPages = async ({
 };
 
 // Yahoo answers 400 both for a league the session can't read and for a caller
-// with no session at all. Asking for the signed-in user's games tells them apart.
+// with no session at all. Asking for the signed-in user's games tells them apart,
+// by status alone: 401 means no session; a 5xx (Yahoo's 999 included), a network
+// error or a timeout means Yahoo couldn't say; any other answer means the session
+// is fine and the league is out of its reach.
 const explainLeague400 = async ({
   fetchImpl,
 }: {
   fetchImpl: FetchImpl;
 }): Promise<LeagueFetchError> => {
-  const probe = await requestYahoo({ path: LOGIN_PROBE_PATH, fetchImpl });
-  if (probe.type === "status" && probe.status === 401) {
-    return { type: "error", reason: "logged_out" };
-  }
-  if (probe.type === "failed") return UNAVAILABLE;
+  const probe = await probeYahoo({ path: LOGIN_PROBE_PATH, fetchImpl });
+  if (probe.type === "failed" || probe.status >= 500) return UNAVAILABLE;
+  if (probe.status === 401) return { type: "error", reason: "logged_out" };
   return { type: "error", reason: "not_found" };
 };
 

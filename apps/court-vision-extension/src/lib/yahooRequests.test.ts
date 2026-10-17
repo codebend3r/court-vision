@@ -164,6 +164,62 @@ describe("fetchLeaguePayload", () => {
     expect(requestedUrls({ fetchImpl })).toEqual([GAME_URL, LEAGUE_URL, LOGIN_PROBE_URL]);
   });
 
+  it("reports not_found when the session check answers 200 with a body that isn't JSON", async () => {
+    const fetchImpl = fetchByUrl({
+      routes: {
+        [GAME_URL]: jsonResponse(gameBody),
+        [LEAGUE_URL]: statusResponse(400),
+        [LOGIN_PROBE_URL]: new Response("<html>Your games</html>", { status: 200 }),
+      },
+    });
+
+    const result = await fetchLeaguePayload({ leagueId: "106344", fetchImpl });
+
+    expect(result).toEqual({ type: "error", reason: "not_found" });
+  });
+
+  it("reports not_found when the session check answers any other non-401 status", async () => {
+    const outcomes = await Promise.all(
+      [302, 400, 403, 404].map((status) =>
+        fetchLeaguePayload({
+          leagueId: "106344",
+          fetchImpl: fetchByUrl({
+            routes: {
+              [GAME_URL]: jsonResponse(gameBody),
+              [LEAGUE_URL]: statusResponse(400),
+              [LOGIN_PROBE_URL]: statusResponse(status),
+            },
+          }),
+        }),
+      ),
+    );
+
+    outcomes.forEach((outcome) => {
+      expect(outcome).toEqual({ type: "error", reason: "not_found" });
+    });
+  });
+
+  it("reports unavailable when the session check answers 503 or 999", async () => {
+    const outcomes = await Promise.all(
+      [503, 999].map((status) =>
+        fetchLeaguePayload({
+          leagueId: "106344",
+          fetchImpl: fetchByUrl({
+            routes: {
+              [GAME_URL]: jsonResponse(gameBody),
+              [LEAGUE_URL]: statusResponse(400),
+              [LOGIN_PROBE_URL]: statusResponse(status),
+            },
+          }),
+        }),
+      ),
+    );
+
+    outcomes.forEach((outcome) => {
+      expect(outcome).toEqual({ type: "error", reason: "unavailable" });
+    });
+  });
+
   it("checks the session only when the league answers 400", async () => {
     const fetchImpl = fetchByUrl({
       routes: {
