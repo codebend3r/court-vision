@@ -176,10 +176,27 @@
   }
 }
 
+// Also styles the extension buttons and the link to the extension's store
+// page, which sits under the failure as a keycap of its own.
 .secondary {
   @include keycap;
+  justify-self: start;
 
-  &:active:not(:disabled) {
+  &:active:not(:disabled, [aria-disabled="true"]) {
     @include keycap-press;
   }
+
+  // "Try with the extension" is aria-disabled while pending, so it keeps
+  // focus; it borrows the keycap's :disabled look, hover included.
+  &[aria-disabled="true"],
+  &[aria-disabled="true"]:hover {
+    transform: none;
+    box-shadow: none;
+    opacity: var(--control-disabled-opacity);
+    cursor: not-allowed;
+  }
+}
+
+.srOnly {
+  @include visually-hidden;
 }

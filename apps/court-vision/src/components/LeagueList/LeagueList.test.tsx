@@ -4,6 +4,7 @@ import { type ReactNode, use, useEffect, useState } from "react";
 
 import { LeagueList } from "@/components/LeagueList/LeagueList";
 import { MAX_LEAGUES } from "@vision/core/league/constants";
+import { restoreEnv, stubEnv } from "@vision/testing/env";
 import { useLeaguesStore } from "@/lib/leagues/store";
 import { type LeagueSummary } from "@/lib/leagues/types";
 
@@ -360,6 +361,25 @@ describe("LeagueList", () => {
     );
     expect(within(card).getByText("Not valued: DD")).toBeInTheDocument();
     expect(within(card).getByText("League data from Yahoo Fantasy")).toBeInTheDocument();
+  });
+
+  it("never syncs an extension league on the server", async () => {
+    stubEnv({ key: "NEXT_PUBLIC_COURT_VISION_EXTENSION_ID", value: "" });
+    try {
+      render(<LeagueList leagues={[yahooLeague({ syncVia: "extension" })]} activeLeagueId="y" />);
+      const card = cardOf({ name: "Courts" });
+
+      fireEvent.click(within(card).getByRole("button", { name: "Sync with Yahoo: Courts" }));
+
+      await waitFor(() =>
+        expect(within(card).getByRole("status")).toHaveTextContent(
+          "Syncing this league needs the Court Vision extension in this browser.",
+        ),
+      );
+      expect(syncYahooLeagueMock).not.toHaveBeenCalled();
+    } finally {
+      restoreEnv();
+    }
   });
 
   it("leaves the not-valued warning off an imported league that values every category", () => {

@@ -4,6 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, setSystemTime, vi } from "
 
 import { StrictMode } from "react";
 
+import { type BridgeLeaguePayload } from "@vision/yahoo-bridge/protocol";
+
+import { type ExtensionLeagueResult } from "@/lib/yahoo/extensionClient";
 import { type YahooSyncResult } from "@/lib/yahoo/types";
 
 const syncYahooLeagueMock = vi.fn<(args: { leagueId: string }) => Promise<YahooSyncResult>>();
@@ -12,16 +15,56 @@ vi.mock("@/lib/yahoo/actions", () => ({
   syncYahooLeague: (args: { leagueId: string }) => syncYahooLeagueMock(args),
 }));
 
+const syncYahooLeagueFromSnapshotMock =
+  vi.fn<(args: { leagueId: string; payload: unknown }) => Promise<YahooSyncResult>>();
+
+vi.mock("@/lib/yahoo/snapshotActions", () => ({
+  syncYahooLeagueFromSnapshot: (args: { leagueId: string; payload: unknown }) =>
+    syncYahooLeagueFromSnapshotMock(args),
+}));
+
+const getExtensionIdMock = vi.fn<() => string | null>();
+const fetchLeagueViaExtensionMock =
+  vi.fn<(args: { extensionId: string; leagueId: string }) => Promise<ExtensionLeagueResult>>();
+
+vi.mock("@/lib/yahoo/extensionClient", () => ({
+  getExtensionId: () => getExtensionIdMock(),
+  fetchLeagueViaExtension: (args: { extensionId: string; leagueId: string }) =>
+    fetchLeagueViaExtensionMock(args),
+}));
+
 const refreshMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: refreshMock, push: vi.fn() }),
 }));
 
-import { SyncYahooButton } from "@/components/SyncYahooButton/SyncYahooButton";
+import {
+  SyncYahooButton,
+  type SyncYahooButtonProps,
+} from "@/components/SyncYahooButton/SyncYahooButton";
+
+const LEAGUE_URL = "https://basketball.fantasysports.yahoo.com/nba/106344";
+const EXTENSION_ID = "court-vision-extension-id";
+const PAYLOAD: BridgeLeaguePayload = { game: {}, snapshot: {}, waiverPages: [] };
+const NEEDS_EXTENSION = "Syncing this league needs the Court Vision extension in this browser.";
+
+const SERVER_LEAGUE: Pick<SyncYahooButtonProps, "syncVia" | "externalUrl"> = {
+  syncVia: "server",
+  externalUrl: LEAGUE_URL,
+};
+const EXTENSION_LEAGUE: Pick<SyncYahooButtonProps, "syncVia" | "externalUrl"> = {
+  syncVia: "extension",
+  externalUrl: LEAGUE_URL,
+};
 
 beforeEach(() => {
   syncYahooLeagueMock.mockReset();
+  syncYahooLeagueFromSnapshotMock.mockReset();
+  getExtensionIdMock.mockReset();
+  getExtensionIdMock.mockReturnValue(null);
+  fetchLeagueViaExtensionMock.mockReset();
+  fetchLeagueViaExtensionMock.mockResolvedValue({ status: "ok", payload: PAYLOAD });
   refreshMock.mockReset();
 });
 
@@ -35,7 +78,9 @@ describe("SyncYahooButton", () => {
     const user = userEvent.setup();
     const pending = Promise.withResolvers<YahooSyncResult>();
     syncYahooLeagueMock.mockReturnValue(pending.promise);
-    render(<SyncYahooButton leagueId="league-1" syncedAt={null} syncError={null} />);
+    render(
+      <SyncYahooButton {...SERVER_LEAGUE} leagueId="league-1" syncedAt={null} syncError={null} />,
+    );
 
     expect(screen.getByRole("status")).toHaveTextContent("Never synced");
     await user.click(screen.getByRole("button", { name: "Sync with Yahoo" }));
@@ -63,7 +108,9 @@ describe("SyncYahooButton", () => {
     const user = userEvent.setup();
     const pending = Promise.withResolvers<YahooSyncResult>();
     syncYahooLeagueMock.mockReturnValue(pending.promise);
-    render(<SyncYahooButton leagueId="league-1" syncedAt={null} syncError={null} />);
+    render(
+      <SyncYahooButton {...SERVER_LEAGUE} leagueId="league-1" syncedAt={null} syncError={null} />,
+    );
 
     const button = screen.getByRole("button", { name: "Sync with Yahoo" });
     await user.click(button);
@@ -79,7 +126,9 @@ describe("SyncYahooButton", () => {
     const user = userEvent.setup();
     const failure = "Yahoo isn't answering right now; try again in a minute.";
     syncYahooLeagueMock.mockResolvedValueOnce({ status: "unavailable" });
-    render(<SyncYahooButton leagueId="league-1" syncedAt={null} syncError={null} />);
+    render(
+      <SyncYahooButton {...SERVER_LEAGUE} leagueId="league-1" syncedAt={null} syncError={null} />,
+    );
     const status = screen.getByRole("status");
 
     await user.click(screen.getByRole("button", { name: "Sync with Yahoo" }));
@@ -100,7 +149,14 @@ describe("SyncYahooButton", () => {
     const failure = "Yahoo isn't answering right now; try again in a minute.";
     const pending = Promise.withResolvers<YahooSyncResult>();
     syncYahooLeagueMock.mockReturnValueOnce(pending.promise);
-    render(<SyncYahooButton leagueId="league-1" syncedAt={null} syncError={failure} />);
+    render(
+      <SyncYahooButton
+        {...SERVER_LEAGUE}
+        leagueId="league-1"
+        syncedAt={null}
+        syncError={failure}
+      />,
+    );
     const status = screen.getByRole("status");
     expect(status).toHaveTextContent(failure);
 
@@ -114,6 +170,7 @@ describe("SyncYahooButton", () => {
   it("names its league when given one", () => {
     render(
       <SyncYahooButton
+        {...SERVER_LEAGUE}
         leagueId="league-1"
         leagueName="Game of Courts"
         syncedAt={null}
@@ -129,7 +186,9 @@ describe("SyncYahooButton", () => {
   it("announces a sync failure", async () => {
     const user = userEvent.setup();
     syncYahooLeagueMock.mockResolvedValue({ status: "unavailable" });
-    render(<SyncYahooButton leagueId="league-1" syncedAt={null} syncError={null} />);
+    render(
+      <SyncYahooButton {...SERVER_LEAGUE} leagueId="league-1" syncedAt={null} syncError={null} />,
+    );
 
     const status = screen.getByRole("status");
     expect(status).toHaveAttribute("aria-live", "polite");
@@ -142,10 +201,33 @@ describe("SyncYahooButton", () => {
     expect(screen.getByRole("button", { name: "Sync with Yahoo" })).toBeEnabled();
   });
 
+  it("keeps the last sync time under a failed sync's message", async () => {
+    const user = userEvent.setup();
+    syncYahooLeagueMock.mockResolvedValue({ status: "unavailable" });
+    render(
+      <SyncYahooButton {...SERVER_LEAGUE} leagueId="league-1" syncedAt={null} syncError={null} />,
+    );
+    const status = screen.getByRole("status");
+
+    await user.click(screen.getByRole("button", { name: "Sync with Yahoo" }));
+
+    await waitFor(() =>
+      expect(status).toHaveTextContent(
+        /^Yahoo isn't answering right now; try again in a minute\.$/,
+      ),
+    );
+    const syncedTime = screen.getByText("Never synced");
+    expect(!!(status.compareDocumentPosition(syncedTime) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(
+      true,
+    );
+  });
+
   it("announces a sync that throws as a generic failure", async () => {
     const user = userEvent.setup();
     syncYahooLeagueMock.mockRejectedValue(new Error("network down"));
-    render(<SyncYahooButton leagueId="league-1" syncedAt={null} syncError={null} />);
+    render(
+      <SyncYahooButton {...SERVER_LEAGUE} leagueId="league-1" syncedAt={null} syncError={null} />,
+    );
 
     await user.click(screen.getByRole("button", { name: "Sync with Yahoo" }));
 
@@ -159,7 +241,12 @@ describe("SyncYahooButton", () => {
     const user = userEvent.setup();
     syncYahooLeagueMock.mockResolvedValue({ status: "throttled" });
     render(
-      <SyncYahooButton leagueId="league-1" syncedAt={new Date().toISOString()} syncError={null} />,
+      <SyncYahooButton
+        {...SERVER_LEAGUE}
+        leagueId="league-1"
+        syncedAt={new Date().toISOString()}
+        syncError={null}
+      />,
     );
 
     await user.click(screen.getByRole("button", { name: "Sync with Yahoo" }));
@@ -167,12 +254,15 @@ describe("SyncYahooButton", () => {
     await waitFor(() =>
       expect(screen.getByRole("status")).toHaveTextContent("Synced less than a minute ago."),
     );
+    // The throttle's message is the time, so no second time line follows it.
+    expect(screen.queryByText("Synced just now")).not.toBeInTheDocument();
     expect(refreshMock).not.toHaveBeenCalled();
   });
 
   it("shows the stored sync error in place of the sync time", () => {
     render(
       <SyncYahooButton
+        {...SERVER_LEAGUE}
         leagueId="league-1"
         syncedAt={new Date().toISOString()}
         syncError="Yahoo isn't answering right now; try again in a minute."
@@ -191,7 +281,9 @@ describe("SyncYahooButton", () => {
       syncedAt: new Date().toISOString(),
       unmatched: ["Bronny James"],
     });
-    render(<SyncYahooButton leagueId="league-1" syncedAt={null} syncError={null} />);
+    render(
+      <SyncYahooButton {...SERVER_LEAGUE} leagueId="league-1" syncedAt={null} syncError={null} />,
+    );
 
     await user.click(screen.getByRole("button", { name: "Sync with Yahoo" }));
 
@@ -201,6 +293,106 @@ describe("SyncYahooButton", () => {
       ),
     );
     expect(refreshMock).toHaveBeenCalled();
+  });
+
+  describe("an extension league", () => {
+    it("syncs through the extension, never the server", async () => {
+      const user = userEvent.setup();
+      getExtensionIdMock.mockReturnValue(EXTENSION_ID);
+      syncYahooLeagueFromSnapshotMock.mockResolvedValue({
+        status: "ok",
+        syncedAt: new Date().toISOString(),
+        unmatched: [],
+      });
+      render(
+        <SyncYahooButton
+          {...EXTENSION_LEAGUE}
+          leagueId="league-1"
+          syncedAt={null}
+          syncError={null}
+        />,
+      );
+
+      await user.click(screen.getByRole("button", { name: "Sync with Yahoo" }));
+
+      await waitFor(() => expect(refreshMock).toHaveBeenCalled());
+      expect(fetchLeagueViaExtensionMock).toHaveBeenCalledWith({
+        extensionId: EXTENSION_ID,
+        leagueId: "106344",
+      });
+      expect(syncYahooLeagueFromSnapshotMock).toHaveBeenCalledWith({
+        leagueId: "league-1",
+        payload: PAYLOAD,
+      });
+      expect(syncYahooLeagueMock).not.toHaveBeenCalled();
+      expect(screen.getByRole("status")).toHaveTextContent("Synced just now");
+    });
+
+    it("says syncing needs the extension", async () => {
+      const user = userEvent.setup();
+      setSystemTime(new Date("2026-10-16T12:00:00.000Z"));
+      render(
+        <SyncYahooButton
+          {...EXTENSION_LEAGUE}
+          leagueId="league-1"
+          syncedAt="2026-10-16T11:30:00.000Z"
+          syncError={null}
+        />,
+      );
+
+      await user.click(screen.getByRole("button", { name: "Sync with Yahoo" }));
+
+      const status = screen.getByRole("status");
+      await waitFor(() => expect(status).toHaveTextContent(NEEDS_EXTENSION));
+      expect(status).toHaveAttribute("aria-live", "polite");
+      expect(screen.getByText("Synced 30 min ago")).toBeInTheDocument();
+      expect(syncYahooLeagueMock).not.toHaveBeenCalled();
+      expect(syncYahooLeagueFromSnapshotMock).not.toHaveBeenCalled();
+      expect(refreshMock).not.toHaveBeenCalled();
+    });
+
+    it("says why the extension couldn't read the league", async () => {
+      const user = userEvent.setup();
+      getExtensionIdMock.mockReturnValue(EXTENSION_ID);
+      fetchLeagueViaExtensionMock.mockResolvedValue({ status: "failed", reason: "logged_out" });
+      render(
+        <SyncYahooButton
+          {...EXTENSION_LEAGUE}
+          leagueId="league-1"
+          syncedAt={null}
+          syncError={null}
+        />,
+      );
+
+      await user.click(screen.getByRole("button", { name: "Sync with Yahoo" }));
+
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "Couldn't read this league with your Yahoo login. Make sure you're signed in to Yahoo in this browser. If you block third-party cookies, allow them for yahoo.com and try again.",
+        ),
+      );
+      expect(syncYahooLeagueMock).not.toHaveBeenCalled();
+      expect(syncYahooLeagueFromSnapshotMock).not.toHaveBeenCalled();
+    });
+
+    it("says syncing needs the extension when it stops answering", async () => {
+      const user = userEvent.setup();
+      getExtensionIdMock.mockReturnValue(EXTENSION_ID);
+      fetchLeagueViaExtensionMock.mockResolvedValue({ status: "missing" });
+      render(
+        <SyncYahooButton
+          {...EXTENSION_LEAGUE}
+          leagueId="league-1"
+          syncedAt={null}
+          syncError={null}
+        />,
+      );
+
+      await user.click(screen.getByRole("button", { name: "Sync with Yahoo" }));
+
+      await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(NEEDS_EXTENSION));
+      expect(syncYahooLeagueMock).not.toHaveBeenCalled();
+    });
   });
 
   describe("autoSyncWhenStale", () => {
@@ -217,6 +409,7 @@ describe("SyncYahooButton", () => {
       syncYahooLeagueMock.mockReturnValue(pending.promise);
       render(
         <SyncYahooButton
+          {...SERVER_LEAGUE}
           leagueId="league-1"
           syncedAt={minutesAgo(16)}
           syncError={null}
@@ -241,7 +434,13 @@ describe("SyncYahooButton", () => {
         unmatched: [],
       });
       render(
-        <SyncYahooButton leagueId="league-1" syncedAt={null} syncError={null} autoSyncWhenStale />,
+        <SyncYahooButton
+          {...SERVER_LEAGUE}
+          leagueId="league-1"
+          syncedAt={null}
+          syncError={null}
+          autoSyncWhenStale
+        />,
       );
 
       await waitFor(() => expect(syncYahooLeagueMock).toHaveBeenCalledTimes(1));
@@ -251,6 +450,7 @@ describe("SyncYahooButton", () => {
     it("does not auto-sync a fresh league", async () => {
       render(
         <SyncYahooButton
+          {...SERVER_LEAGUE}
           leagueId="league-1"
           syncedAt={minutesAgo(14)}
           syncError={null}
@@ -267,7 +467,14 @@ describe("SyncYahooButton", () => {
     });
 
     it("does not auto-sync without the flag", async () => {
-      render(<SyncYahooButton leagueId="league-1" syncedAt={minutesAgo(60)} syncError={null} />);
+      render(
+        <SyncYahooButton
+          {...SERVER_LEAGUE}
+          leagueId="league-1"
+          syncedAt={minutesAgo(60)}
+          syncError={null}
+        />,
+      );
 
       await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Synced"));
       expect(syncYahooLeagueMock).not.toHaveBeenCalled();
@@ -277,6 +484,7 @@ describe("SyncYahooButton", () => {
     it("does not auto-sync at exactly 15 minutes", async () => {
       render(
         <SyncYahooButton
+          {...SERVER_LEAGUE}
           leagueId="league-1"
           syncedAt={minutesAgo(15)}
           syncError={null}
@@ -298,6 +506,7 @@ describe("SyncYahooButton", () => {
       });
       render(
         <SyncYahooButton
+          {...SERVER_LEAGUE}
           leagueId="league-1"
           syncedAt="garbage"
           syncError={null}
@@ -313,6 +522,7 @@ describe("SyncYahooButton", () => {
       syncYahooLeagueMock.mockResolvedValue({ status: "throttled" });
       render(
         <SyncYahooButton
+          {...SERVER_LEAGUE}
           leagueId="league-1"
           syncedAt={minutesAgo(30)}
           syncError={null}
@@ -332,6 +542,7 @@ describe("SyncYahooButton", () => {
       syncYahooLeagueMock.mockResolvedValue({ status: "throttled" });
       render(
         <SyncYahooButton
+          {...SERVER_LEAGUE}
           leagueId="league-1"
           syncedAt={minutesAgo(30)}
           syncError={storedError}
@@ -353,6 +564,7 @@ describe("SyncYahooButton", () => {
       render(
         <StrictMode>
           <SyncYahooButton
+            {...SERVER_LEAGUE}
             leagueId="league-1"
             syncedAt={minutesAgo(30)}
             syncError={null}
@@ -373,6 +585,7 @@ describe("SyncYahooButton", () => {
       });
       const { rerender } = render(
         <SyncYahooButton
+          {...SERVER_LEAGUE}
           leagueId="league-1"
           syncedAt={minutesAgo(30)}
           syncError={null}
@@ -383,6 +596,7 @@ describe("SyncYahooButton", () => {
 
       rerender(
         <SyncYahooButton
+          {...SERVER_LEAGUE}
           leagueId="league-1"
           syncedAt={minutesAgo(1)}
           syncError={null}
@@ -391,6 +605,7 @@ describe("SyncYahooButton", () => {
       );
       rerender(
         <SyncYahooButton
+          {...SERVER_LEAGUE}
           leagueId="league-1"
           syncedAt={minutesAgo(30)}
           syncError={null}
@@ -402,10 +617,69 @@ describe("SyncYahooButton", () => {
       expect(syncYahooLeagueMock).toHaveBeenCalledTimes(1);
     });
 
+    it("auto-sync of a stale extension league never falls back to the server", async () => {
+      render(
+        <SyncYahooButton
+          {...EXTENSION_LEAGUE}
+          leagueId="league-1"
+          syncedAt={minutesAgo(30)}
+          syncError={null}
+          autoSyncWhenStale
+        />,
+      );
+
+      await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(NEEDS_EXTENSION));
+      expect(screen.getByText("Synced 30 min ago")).toBeInTheDocument();
+      expect(syncYahooLeagueMock).not.toHaveBeenCalled();
+      expect(syncYahooLeagueFromSnapshotMock).not.toHaveBeenCalled();
+      expect(refreshMock).not.toHaveBeenCalled();
+    });
+
+    it("auto-syncs a stale extension league through the extension", async () => {
+      getExtensionIdMock.mockReturnValue(EXTENSION_ID);
+      syncYahooLeagueFromSnapshotMock.mockResolvedValue({
+        status: "ok",
+        syncedAt: NOW.toISOString(),
+        unmatched: [],
+      });
+      render(
+        <SyncYahooButton
+          {...EXTENSION_LEAGUE}
+          leagueId="league-1"
+          syncedAt={minutesAgo(30)}
+          syncError={null}
+          autoSyncWhenStale
+        />,
+      );
+
+      await waitFor(() => expect(refreshMock).toHaveBeenCalledTimes(1));
+      expect(syncYahooLeagueFromSnapshotMock).toHaveBeenCalledTimes(1);
+      expect(syncYahooLeagueMock).not.toHaveBeenCalled();
+    });
+
+    it("refreshes when an extension league's auto-sync is throttled", async () => {
+      getExtensionIdMock.mockReturnValue(EXTENSION_ID);
+      syncYahooLeagueFromSnapshotMock.mockResolvedValue({ status: "throttled" });
+      render(
+        <SyncYahooButton
+          {...EXTENSION_LEAGUE}
+          leagueId="league-1"
+          syncedAt={minutesAgo(30)}
+          syncError={null}
+          autoSyncWhenStale
+        />,
+      );
+
+      await waitFor(() => expect(refreshMock).toHaveBeenCalledTimes(1));
+      expect(screen.getByRole("status")).toHaveTextContent("Synced 30 min ago");
+      expect(syncYahooLeagueMock).not.toHaveBeenCalled();
+    });
+
     it("keeps the stored data and shows the error when the auto-sync fails", async () => {
       syncYahooLeagueMock.mockResolvedValue({ status: "unavailable" });
       render(
         <SyncYahooButton
+          {...SERVER_LEAGUE}
           leagueId="league-1"
           syncedAt={minutesAgo(30)}
           syncError={null}

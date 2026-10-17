@@ -26,6 +26,12 @@ describe("SiteFooter", () => {
     expect(link.querySelector("svg")).toBeInTheDocument();
   });
 
+  it("links to the privacy page", () => {
+    render(<SiteFooter />);
+
+    expect(screen.getByRole("link", { name: "Privacy" })).toHaveAttribute("href", "/privacy");
+  });
+
   it("shows the app version from the build environment", () => {
     stubEnv({ key: "NEXT_PUBLIC_APP_VERSION", value: "9.9.9" });
 

@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
+
+import { restoreEnv, stubEnv } from "@vision/testing/env";
 
 import { type League } from "@generated/prisma/client";
 import { type LeagueSyncVia } from "@/lib/leagues/types";
@@ -41,6 +43,7 @@ import {
   importLoadedLeague,
   loadFailureToResult,
   readStoredSync,
+  recordLoadFailure,
   syncLoadedLeague,
   toYahooPreview,
 } from "@/lib/yahoo/importLeague";
@@ -306,5 +309,33 @@ describe("syncLoadedLeague", () => {
     });
     expect(resolveYahooPlayers).not.toHaveBeenCalled();
     expect($transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe("recordLoadFailure", () => {
+  afterEach(() => {
+    restoreEnv();
+  });
+
+  it("records the plain not_found copy even when the extension is configured", async () => {
+    stubEnv({
+      key: "NEXT_PUBLIC_COURT_VISION_EXTENSION_ID",
+      value: "kkonhioibmfcogphfmoplgmfdpkngjif",
+    });
+
+    const result = await recordLoadFailure({
+      profileId: PROFILE_ID,
+      leagueId: LEAGUE_ID,
+      failure: { status: "not_found" },
+    });
+
+    expect(result).toEqual({ status: "not_found" });
+    expect(leagueUpdate).toHaveBeenCalledWith({
+      where: { id: LEAGUE_ID, profileId: PROFILE_ID },
+      data: {
+        syncError:
+          "Couldn't read this league. If it's private, the commissioner can make it publicly viewable in Yahoo's league settings.",
+      },
+    });
   });
 });

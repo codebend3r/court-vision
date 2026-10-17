@@ -1,6 +1,9 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+
+import { restoreEnv, stubEnv } from "@vision/testing/env";
 
 import {
+  bridgeFailureMessage,
   GENERIC_SYNC_ERROR_MESSAGE,
   KEY_CHANGED_MESSAGE,
   notValuedMessage,
@@ -38,6 +41,18 @@ const COPY: ReadonlyArray<readonly [YahooMessageStatus, string]> = [
   ["error", "Something went wrong. Try again."],
 ];
 
+const NOT_FOUND_WITH_EXTENSION =
+  "Couldn't read this league. If it's private, the commissioner can make it publicly viewable in Yahoo's league settings, or you can import it with the Court Vision extension.";
+
+// Bun loads the app's `.env`, so pin the extension off unless a test turns it on.
+beforeEach(() => {
+  stubEnv({ key: "NEXT_PUBLIC_COURT_VISION_EXTENSION_ID", value: "" });
+});
+
+afterEach(() => {
+  restoreEnv();
+});
+
 describe("yahooFailureMessage", () => {
   it("gives every status a non-empty message", () => {
     COPY.forEach(([status]) => {
@@ -49,14 +64,64 @@ describe("yahooFailureMessage", () => {
     expect(yahooFailureMessage({ status: "not_found" })).toBe(
       "Couldn't read this league. If it's private, the commissioner can make it publicly viewable in Yahoo's league settings.",
     );
-    // The extension that imports a private league doesn't ship yet.
     expect(yahooFailureMessage({ status: "not_found" })).not.toContain("extension");
+  });
+
+  it("offers the extension for a private league only when the extension is available", () => {
+    expect(yahooFailureMessage({ status: "not_found", extensionAvailable: true })).toBe(
+      NOT_FOUND_WITH_EXTENSION,
+    );
+    expect(yahooFailureMessage({ status: "not_found", extensionAvailable: false })).not.toContain(
+      "extension",
+    );
+  });
+
+  it("offers the extension for a private league when an extension id is configured", () => {
+    stubEnv({
+      key: "NEXT_PUBLIC_COURT_VISION_EXTENSION_ID",
+      value: "kkonhioibmfcogphfmoplgmfdpkngjif",
+    });
+
+    expect(yahooFailureMessage({ status: "not_found" })).toBe(NOT_FOUND_WITH_EXTENSION);
+  });
+
+  it("keeps the extension out of the copy when no extension id is configured", () => {
+    expect(yahooFailureMessage({ status: "not_found" })).not.toContain("extension");
+  });
+
+  it("leaves every other status unchanged when the extension is available", () => {
+    COPY.filter(([status]) => status !== "not_found").forEach(([status, message]) => {
+      expect(yahooFailureMessage({ status, extensionAvailable: true })).toBe(message);
+    });
   });
 
   it("uses the spec's copy for each status", () => {
     COPY.forEach(([status, message]) => {
       expect(yahooFailureMessage({ status })).toBe(message);
     });
+  });
+});
+
+describe("bridgeFailureMessage", () => {
+  it("explains each way the extension can fail", () => {
+    expect(bridgeFailureMessage({ reason: "logged_out" })).toBe(
+      "Couldn't read this league with your Yahoo login. Make sure you're signed in to Yahoo in this browser. If you block third-party cookies, allow them for yahoo.com and try again.",
+    );
+    expect(bridgeFailureMessage({ reason: "not_found" })).toBe(
+      "Couldn't read this league with your Yahoo login. Check that you're signed in to the Yahoo account that's in this league.",
+    );
+    expect(bridgeFailureMessage({ reason: "unavailable" })).toBe(
+      "Yahoo isn't answering right now; try again in a minute.",
+    );
+    expect(bridgeFailureMessage({ reason: "forbidden_origin" })).toBe(
+      "The Court Vision extension only works on court-vizion.netlify.app.",
+    );
+    expect(bridgeFailureMessage({ reason: "bad_request" })).toBe(
+      "Something went wrong. Try again.",
+    );
+    expect(bridgeFailureMessage({ reason: "missing" })).toBe(
+      "The Court Vision extension isn't responding. Check that it's installed and enabled, then try again.",
+    );
   });
 });
 

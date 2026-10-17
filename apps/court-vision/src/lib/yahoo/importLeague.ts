@@ -277,7 +277,11 @@ const recordSyncFailure = async ({
   await prisma.league.update({ where: { id: leagueId, profileId }, data: { syncError: message } });
 };
 
-/** Records why a sync's read of Yahoo failed, and answers it as a result. */
+/**
+ * Records why a sync's read of Yahoo failed, and answers it as a result. The
+ * stored copy never offers the extension: this league is already imported, so
+ * importing it again would only be refused as a duplicate.
+ */
 export const recordLoadFailure = async ({
   profileId,
   leagueId,
@@ -291,7 +295,7 @@ export const recordLoadFailure = async ({
   await recordSyncFailure({
     profileId,
     leagueId,
-    message: yahooFailureMessage({ status: result.status }),
+    message: yahooFailureMessage({ status: result.status, extensionAvailable: false }),
   });
   return result;
 };

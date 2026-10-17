@@ -101,6 +101,8 @@ export default async function WaiverWirePage({
               leagueId={league.id}
               syncedAt={league.syncedAt}
               syncError={league.syncError}
+              syncVia={league.syncVia}
+              externalUrl={league.externalUrl}
               autoSyncWhenStale
             />
             {!!league.externalUrl && (
