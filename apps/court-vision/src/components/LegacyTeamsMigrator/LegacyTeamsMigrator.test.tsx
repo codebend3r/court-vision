@@ -50,6 +50,11 @@ const parsedTeams = [
       { id: "PG-1", type: "PG", player },
       { id: "UTIL-1", type: "UTIL", player: null },
     ],
+    logoUrl: null,
+    managerName: null,
+    isMine: false,
+    isImported: false,
+    unmatchedBySlotId: {},
   },
 ];
 
