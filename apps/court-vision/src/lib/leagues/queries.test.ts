@@ -47,6 +47,13 @@ const dbLeague = ({ id, slug, updatedAt }: { id: string; slug: string; updatedAt
   teamCount: 12,
   rosterSlots: 13,
   scoringConfig: { categories: ["pts"] },
+  provider: "manual",
+  externalKey: null,
+  externalUrl: null,
+  myTeamId: null,
+  syncedAt: null,
+  syncError: null,
+  unsupportedCategories: [],
   createdAt: new Date("2026-07-01"),
   updatedAt,
 });
