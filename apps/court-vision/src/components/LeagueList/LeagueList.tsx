@@ -186,6 +186,8 @@ export function LeagueList({ leagues, activeLeagueId }: LeagueListProps) {
                   leagueName={league.name}
                   syncedAt={league.syncedAt}
                   syncError={league.syncError}
+                  syncVia={league.syncVia}
+                  externalUrl={league.externalUrl}
                 />
               )}
               {!!league.unsupportedCategories.length && (

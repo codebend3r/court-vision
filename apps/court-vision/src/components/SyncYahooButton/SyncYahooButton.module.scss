@@ -31,3 +31,11 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
+
+// The last sync time, kept beneath a failure so the stored data's age stays
+// visible.
+.syncedAt {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
