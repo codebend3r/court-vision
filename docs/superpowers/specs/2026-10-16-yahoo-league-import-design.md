@@ -435,8 +435,9 @@ skill).
 
 ### The Chrome extension
 
-A small MV3 extension at `apps/court-vision-extension/`, built with WXT and
-React, registered with Nx through its `package.json` like the other apps. It
+A small MV3 extension at `apps/court-vision-extension/`, built with WXT (no
+React: it has no UI of its own), registered with Nx through its `package.json`
+like the other apps. It
 does one thing in this spec: **read a Yahoo league the user can see, using the
 user's own Yahoo login, and hand it to Court Vision.**
 
