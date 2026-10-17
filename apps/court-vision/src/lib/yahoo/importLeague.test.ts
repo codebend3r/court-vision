@@ -194,6 +194,20 @@ describe("importLoadedLeague", () => {
     });
   });
 
+  it("hands a server import's syncVia to the write", async () => {
+    await importLoadedLeague({
+      profileId: PROFILE_ID,
+      loaded: loaded(),
+      myTeamExternalKey: NEWFOUNDLANDERS,
+      writeMappings: true,
+      syncVia: "server",
+    });
+
+    expect(createImportedLeague).toHaveBeenCalledWith(
+      expect.objectContaining({ syncVia: "server" }),
+    );
+  });
+
   it("refuses a duplicate, the cap, and a team key outside the league", async () => {
     const importWith = ({ myTeamExternalKey }: { myTeamExternalKey: string }) =>
       importLoadedLeague({
