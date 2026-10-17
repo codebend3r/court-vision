@@ -14,6 +14,7 @@ const base: LeagueSummary = {
   rosterSlots: 15,
   scoringConfig: { categories: ["pts", "reb", "ast", "stl", "blk", "tpm", "tov", "fg"] },
   provider: "manual",
+  syncVia: "server",
   isImported: false,
   externalUrl: null,
   myTeamId: null,

@@ -46,6 +46,7 @@ const league = ({
   rosterSlots: 13,
   scoringConfig: { categories: ["pts"] },
   provider: "manual",
+  syncVia: "server",
   isImported: false,
   externalUrl: null,
   myTeamId: null,

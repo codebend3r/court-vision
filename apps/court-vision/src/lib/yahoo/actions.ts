@@ -224,6 +224,7 @@ export const syncYahooLeague = async ({
         where,
         select: {
           provider: true,
+          syncVia: true,
           externalKey: true,
           syncedAt: true,
           syncError: true,
@@ -234,6 +235,10 @@ export const syncYahooLeague = async ({
       // The key reads "478.l.106344"; the part after ".l." is Yahoo's league id.
       const yahooLeagueId = stored.externalKey?.split(".l.")[1] ?? "";
       if (stored.provider !== YAHOO_PROVIDER || !yahooLeagueId) return { status: "not_imported" };
+      // Only a server league is read from here. Tests the raw column, so an
+      // unknown stored value fails closed; stand down before the throttle and
+      // before any load, and record nothing on the league.
+      if (stored.syncVia !== "server") return { status: "needs_extension" };
       if (Date.now() - lastSyncAttempt({ league: stored }) < YAHOO_SYNC_THROTTLE_MS) {
         return { status: "throttled" };
       }

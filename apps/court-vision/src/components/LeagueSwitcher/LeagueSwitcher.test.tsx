@@ -26,6 +26,7 @@ const league = ({ id, name }: { id: string; name: string }): LeagueSummary => ({
   rosterSlots: 13,
   scoringConfig: { categories: ["pts"] },
   provider: "manual",
+  syncVia: "server",
   isImported: false,
   externalUrl: null,
   myTeamId: null,
