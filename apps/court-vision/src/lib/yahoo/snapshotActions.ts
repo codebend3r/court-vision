@@ -16,6 +16,7 @@ import {
 } from "@/lib/yahoo/importLeague";
 import { parseYahooPayload } from "@/lib/yahoo/load";
 import { yahooGameSchema } from "@/lib/yahoo/schemas";
+import { checkSnapshotShape } from "@/lib/yahoo/snapshotShape";
 import { measureSnapshotBytes } from "@/lib/yahoo/snapshotSize";
 import {
   type YahooFailure,
@@ -31,14 +32,16 @@ import {
 
 const INVALID_PAYLOAD: YahooFailure = { status: "invalid_payload" };
 
-// Shape, then size, then the game body, then the league itself. The size check
-// runs before any zod parse, and the current season comes from the game body
-// the extension fetched, so this path never reads Yahoo from the server.
+// Shape, then size, then counts, then the game body, then the league itself.
+// The size and count checks run before any zod parse, and the current season
+// comes from the game body the extension fetched, so this path never reads
+// Yahoo from the server.
 const loadSnapshot = ({ payload }: { payload: unknown }): LoadedLeague | YahooFailure => {
   if (!isBridgeLeaguePayload(payload)) return INVALID_PAYLOAD;
   if (measureSnapshotBytes({ payload, limit: MAX_SNAPSHOT_BYTES }).status === "over") {
     return INVALID_PAYLOAD;
   }
+  if (checkSnapshotShape({ payload }).status === "over") return INVALID_PAYLOAD;
   const game = yahooGameSchema.safeParse(payload.game);
   if (!game.success) return INVALID_PAYLOAD;
   const loaded = parseYahooPayload({

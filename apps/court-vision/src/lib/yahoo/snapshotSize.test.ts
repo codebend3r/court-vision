@@ -33,6 +33,15 @@ describe("measureSnapshotBytes", () => {
     expect(measureSnapshotBytes({ payload, limit: LIMIT })).toEqual({ status: "over" });
   });
 
+  it("counts keys and strings, not the size of the JSON", () => {
+    // 200,000 nine-digit numbers: about 2 MB as JSON, but only the array
+    // indexes count as keys, about 1.1 MB of them.
+    const payload = Array.from({ length: 200_000 }, () => 123_456_789);
+
+    expect(JSON.stringify(payload).length).toBeGreaterThan(LIMIT);
+    expect(measureSnapshotBytes({ payload, limit: LIMIT })).toEqual({ status: "within" });
+  });
+
   it("stops a shared-reference chain early instead of expanding it", () => {
     const started = performance.now();
 

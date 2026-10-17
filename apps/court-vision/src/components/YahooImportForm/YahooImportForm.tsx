@@ -110,8 +110,9 @@ const previewThroughExtension = async ({
   }));
 };
 
-// Reads the league through the extension again, so the import never trusts
-// the payload the preview was built from.
+// Reads the league through the extension again, so the import stores Yahoo's
+// current rosters rather than the ones the preview showed. It's for freshness,
+// not trust: both reads are client-supplied, and the server validates each.
 const importThroughExtension = async ({
   extensionId,
   url,
