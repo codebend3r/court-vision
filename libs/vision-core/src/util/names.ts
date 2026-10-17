@@ -6,3 +6,12 @@ export const normalizeName = ({ name }: { name: string }): string =>
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase();
+
+// Sources disagree on punctuation ("A.J. Green" here vs "AJ Green" in the NBA
+// index, apostrophes, hyphens), so the match key drops everything but letters,
+// digits, and single spaces after diacritic normalization.
+export const nameMatchKey = ({ name }: { name: string }): string =>
+  normalizeName({ name })
+    .replace(/[^a-z0-9 ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
