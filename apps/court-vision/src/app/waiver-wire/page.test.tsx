@@ -265,6 +265,8 @@ describe("WaiverWirePage", () => {
       leagueId: "league-1",
       syncedAt: "2026-10-16T00:00:00.000Z",
       syncError: null,
+      syncVia: "server",
+      externalUrl: "https://basketball.fantasysports.yahoo.com/nba/106344",
       autoSyncWhenStale: true,
     });
     const external = screen.getByRole("link", { name: "Open in Yahoo (opens in new tab)" });
@@ -274,6 +276,19 @@ describe("WaiverWirePage", () => {
     );
     expect(external).toHaveAttribute("target", "_blank");
     expect(external).not.toHaveAttribute("aria-label");
+  });
+
+  it("tells the sync an extension league is synced through the extension", async () => {
+    getActiveLeague.mockResolvedValue(importedLeague({ syncVia: "extension" }));
+    await renderPage();
+
+    expect(syncProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        syncVia: "extension",
+        externalUrl: "https://basketball.fantasysports.yahoo.com/nba/106344",
+        autoSyncWhenStale: true,
+      }),
+    );
   });
 
   it("names the categories it can't value and credits Yahoo", async () => {
