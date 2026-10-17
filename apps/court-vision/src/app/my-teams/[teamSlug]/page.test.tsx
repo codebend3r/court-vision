@@ -116,4 +116,37 @@ describe("EditTeamPage", () => {
     );
     expect(digestOf(thrown)).toContain("NEXT_HTTP_ERROR_FALLBACK;404");
   });
+
+  it("sends an imported league back to My teams", async () => {
+    getActiveLeague.mockResolvedValue({
+      ...league({ id: "league-1", name: "Game of Courts" }),
+      provider: "yahoo",
+      isImported: true,
+    });
+    const thrown = await EditTeamPage({
+      params: Promise.resolve({ teamSlug: "better-call-gasol" }),
+    }).then(
+      () => null,
+      (error: unknown) => error,
+    );
+    expect(digestOf(thrown)).toContain(";/my-teams;");
+    expect(getLeagueTeamBySlug).not.toHaveBeenCalled();
+  });
+
+  it("sends an imported team back to My teams", async () => {
+    getLeagueTeamBySlug.mockResolvedValue({
+      id: "team-1",
+      name: "Better Call Gasol",
+      createdAt: "2026-07-23T00:00:00.000Z",
+      isImported: true,
+      slots: buildSlots<FantasyTeamPlayer>({ counts: DEFAULT_SLOT_COUNTS }),
+    });
+    const thrown = await EditTeamPage({
+      params: Promise.resolve({ teamSlug: "better-call-gasol" }),
+    }).then(
+      () => null,
+      (error: unknown) => error,
+    );
+    expect(digestOf(thrown)).toContain(";/my-teams;");
+  });
 });

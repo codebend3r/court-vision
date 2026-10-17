@@ -12,6 +12,8 @@ import {
   yahooPlayersPageSchema,
 } from "@/lib/yahoo/schemas";
 
+const base106344LogoUrl = league106344.fantasy_content.league.logo_url;
+
 describe("yahooLeagueSnapshotSchema", () => {
   it("parses both recorded league snapshots", () => {
     const gameOfCourts = yahooLeagueSnapshotSchema.parse(league106344).fantasy_content.league;
@@ -65,6 +67,7 @@ describe("yahooLeagueSnapshotSchema", () => {
     const league = yahooLeagueSnapshotSchema.parse(league106344).fantasy_content.league;
 
     expect(league.is_highscore).toBe(false);
+    expect(league.settings.is_highscore).toBe(false);
     expect(league.settings.stat_modifiers).toBeUndefined();
   });
 
@@ -162,6 +165,66 @@ describe("yahooLeagueSnapshotSchema", () => {
     expect(
       yahooLeagueSnapshotSchema.parse(body).fantasy_content.league.teams[0]?.roster.players,
     ).toEqual([]);
+  });
+
+  it("rejects a league url that isn't https on a Yahoo host", () => {
+    const base = league106344.fantasy_content.league;
+    const withUrl = (url: string) => ({ fantasy_content: { league: { ...base, url } } });
+
+    [
+      "http://basketball.fantasysports.yahoo.com/nba/106344",
+      "https://evil.com/nba/106344",
+      "https://basketball.fantasysports.yahoo.com.evil.com/nba/106344",
+      "javascript:alert(1)",
+      "not a url",
+    ].forEach((url) => {
+      expect(yahooLeagueSnapshotSchema.safeParse(withUrl(url)).success).toBe(false);
+    });
+    expect(
+      yahooLeagueSnapshotSchema.parse(withUrl("https://BASKETBALL.fantasysports.yahoo.com/nba/1"))
+        .fantasy_content.league.url,
+    ).toBe("https://BASKETBALL.fantasysports.yahoo.com/nba/1");
+  });
+
+  it("keeps logos on Yahoo's image hosts", () => {
+    const league = yahooLeagueSnapshotSchema.parse(league106344).fantasy_content.league;
+    const logoUrls = league.teams.map((team) => team.team_logos[0]?.url);
+
+    expect(league.logo_url).toBe(base106344LogoUrl);
+    expect(logoUrls.every((url) => url !== undefined)).toBe(true);
+  });
+
+  it("treats a league or team logo off Yahoo's hosts as absent", () => {
+    const base = league106344.fantasy_content.league;
+    const [firstTeam, ...otherTeams] = base.teams;
+    const offHost = ({ logoUrl, teamLogoUrl }: { logoUrl: string; teamLogoUrl: string }) => ({
+      fantasy_content: {
+        league: {
+          ...base,
+          logo_url: logoUrl,
+          teams: [
+            {
+              team: {
+                ...firstTeam?.team,
+                team_logos: [{ team_logo: { size: "large", url: teamLogoUrl } }],
+              },
+            },
+            ...otherTeams,
+          ],
+        },
+      },
+    });
+
+    [
+      { logoUrl: "https://evil.com/logo.png", teamLogoUrl: "https://evil.com/team.png" },
+      { logoUrl: "http://s.yimg.com/logo.png", teamLogoUrl: "http://s.yimg.com/team.png" },
+      { logoUrl: "https://s.yimg.com.evil.com/logo.png", teamLogoUrl: "data:image/png;base64,AA" },
+    ].forEach((urls) => {
+      const league = yahooLeagueSnapshotSchema.parse(offHost(urls)).fantasy_content.league;
+      expect(league.logo_url).toBeUndefined();
+      expect(league.teams[0]?.team_logos[0]?.url).toBeUndefined();
+      expect(league.teams).toHaveLength(12);
+    });
   });
 
   it("rejects a body without fantasy_content", () => {

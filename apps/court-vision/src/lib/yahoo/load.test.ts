@@ -108,6 +108,26 @@ describe("loadYahooLeague", () => {
     ]);
   });
 
+  it("reads only the game and the snapshot when waivers are left out", async () => {
+    const fetchImpl = stubYahoo({ routes: routesFor({}) });
+
+    const result = loaded({
+      result: await loadYahooLeague({
+        leagueId: "106344",
+        fetchImpl,
+        logger: silentLogger,
+        includeWaivers: false,
+      }),
+    });
+
+    expect(requestedUrls({ fetchImpl })).toEqual([
+      yahooUrl({ path: GAME_PATH }),
+      yahooUrl({ path: SNAPSHOT_PATH }),
+    ]);
+    expect(result.league.teams).toHaveLength(12);
+    expect(result.waiverRefs).toEqual([]);
+  });
+
   it("pages the waiver list until a short page", async () => {
     const fetchImpl = stubYahoo({
       routes: routesFor({
@@ -227,6 +247,41 @@ describe("loadYahooLeague", () => {
     expect(logger).toHaveBeenCalledWith(
       `yahoo: Yahoo responded 403 for ${waiverPath({ start: 0 })}`,
     );
+  });
+
+  it("reads the current game through a custom readGame instead of the cache", async () => {
+    const fetchImpl = stubYahoo({
+      routes: routesFor({ game: { status: 500, body: {} } }),
+    });
+    const readGame = vi.fn().mockResolvedValue({ gameKey: "478", season: 2026 });
+
+    const result = loaded({
+      result: await loadYahooLeague({
+        leagueId: "106344",
+        fetchImpl,
+        logger: silentLogger,
+        readGame,
+      }),
+    });
+
+    expect(readGame).toHaveBeenCalledWith({ fetchImpl });
+    expect(requestedUrls({ fetchImpl })).not.toContain(yahooUrl({ path: GAME_PATH }));
+    expect(result.league.externalKey).toBe("478.l.106344");
+  });
+
+  it("reports a custom readGame that throws as unavailable", async () => {
+    const readGame = vi.fn().mockRejectedValue(new Error("no cache here"));
+    const logger = vi.fn<Logger>();
+
+    const result = await loadYahooLeague({
+      leagueId: "106344",
+      fetchImpl: stubYahoo({ routes: routesFor({}) }),
+      logger,
+      readGame,
+    });
+
+    expect(result).toEqual({ status: "unavailable" });
+    expect(logger).toHaveBeenCalledWith("yahoo: no cache here");
   });
 
   it("caches the current NBA game for a day", () => {

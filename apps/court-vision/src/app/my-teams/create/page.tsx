@@ -1,4 +1,6 @@
 import { buildPlayerInsights, DEFAULT_VALUATION_CONFIG } from "@vision/sport-basketball/engine";
+import { redirect } from "next/navigation";
+
 import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { TeamBuilder } from "@/components/TeamBuilder/TeamBuilder";
 import { getActiveRosterPlayers } from "@/lib/fantasyTeams/loader";
@@ -21,6 +23,9 @@ export default async function CreateTeamPage() {
       />
     );
   }
+
+  // An imported league's teams are Yahoo's: there is nothing to build here.
+  if (league.isImported) redirect("/my-teams");
 
   // The cached fantasy pool carries identity, position, and team for every
   // player with a line this season; the active roster adds those who have yet

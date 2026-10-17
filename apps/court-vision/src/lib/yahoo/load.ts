@@ -24,7 +24,7 @@ export type YahooLoadResult =
   | { status: "ok"; league: ImportedLeague; waiverRefs: YahooPlayerRef[] }
   | YahooLoadFailure;
 
-type CurrentGame = { gameKey: string; season: number };
+export type CurrentGame = { gameKey: string; season: number };
 
 const NOT_FOUND: YahooLoadFailure = { status: "not_found" };
 const UNAVAILABLE: YahooLoadFailure = { status: "unavailable" };
@@ -45,39 +45,45 @@ const toFailure = ({
   return UNAVAILABLE;
 };
 
-// The game key changes once a season, so one read a day is plenty. A failed
-// read throws instead of returning, so it is never cached; the failure rides
-// out on `cause`. `fetchImpl` is a test seam: `JSON.stringify` drops functions,
-// so it never reaches the cache key.
-const readCurrentGame = unstable_cache(
-  async ({ fetchImpl }: { fetchImpl?: FetchImpl }): Promise<CurrentGame> => {
-    const result = await yahooFetch({ path: "game/nba", fetchImpl });
-    if (result.status !== "ok") {
-      const detail = result.status === "unavailable" ? result.detail : "Yahoo answered 400";
-      throw new Error(`Yahoo game read failed: ${detail}`, { cause: UNAVAILABLE });
-    }
-    const parsed = yahooGameSchema.safeParse(result.body);
-    if (!parsed.success) {
-      throw new Error("Yahoo game body did not parse", { cause: INVALID_PAYLOAD });
-    }
-    const { game_key, season } = parsed.data.fantasy_content.game;
-    return { gameKey: game_key, season };
-  },
-  ["yahoo-nba-game"],
-  { revalidate: 86_400 },
-);
+type ReadGame = (args: { fetchImpl?: FetchImpl }) => Promise<CurrentGame>;
+
+// The uncached read. A failed read throws instead of returning, so a caching
+// wrapper never stores it; the failure rides out on `cause`. The probe CLI
+// passes this directly, since `unstable_cache` throws outside the Next runtime.
+export const readCurrentGameUncached: ReadGame = async ({ fetchImpl }) => {
+  const result = await yahooFetch({ path: "game/nba", fetchImpl });
+  if (result.status !== "ok") {
+    const detail = result.status === "unavailable" ? result.detail : "Yahoo answered 400";
+    throw new Error(`Yahoo game read failed: ${detail}`, { cause: UNAVAILABLE });
+  }
+  const parsed = yahooGameSchema.safeParse(result.body);
+  if (!parsed.success) {
+    throw new Error("Yahoo game body did not parse", { cause: INVALID_PAYLOAD });
+  }
+  const { game_key, season } = parsed.data.fantasy_content.game;
+  return { gameKey: game_key, season };
+};
+
+// The game key changes once a season, so one read a day is plenty. `fetchImpl`
+// is a test seam: `JSON.stringify` drops functions, so it never reaches the
+// cache key.
+const readCurrentGame: ReadGame = unstable_cache(readCurrentGameUncached, ["yahoo-nba-game"], {
+  revalidate: 86_400,
+});
 
 // Anything thrown that isn't a parse failure, including `unstable_cache`
 // missing its incremental cache outside Next, reads as Yahoo being unavailable.
 const loadCurrentGame = async ({
   fetchImpl,
   logger,
+  readGame,
 }: {
   fetchImpl?: FetchImpl;
   logger: Logger;
+  readGame: ReadGame;
 }): Promise<{ status: "ok"; game: CurrentGame } | YahooLoadFailure> => {
   try {
-    return { status: "ok", game: await readCurrentGame({ fetchImpl }) };
+    return { status: "ok", game: await readGame({ fetchImpl }) };
   } catch (error) {
     logger(`yahoo: ${error instanceof Error ? error.message : String(error)}`);
     return error instanceof Error && error.cause === INVALID_PAYLOAD
@@ -153,18 +159,25 @@ export const parseYahooPayload = ({
 /**
  * Reads a public Yahoo league of the current NBA season: its settings, rosters
  * and waiver list. The snapshot is validated before the waiver list is paged,
- * so a league that can't be imported costs no waiver requests.
+ * so a league that can't be imported costs no waiver requests. A preview passes
+ * `includeWaivers: false` and gets an empty `waiverRefs` from two requests.
+ * `readGame` defaults to the cached read; outside Next, pass
+ * `readCurrentGameUncached`.
  */
 export const loadYahooLeague = async ({
   leagueId,
   fetchImpl,
   logger = consoleLogger,
+  readGame = readCurrentGame,
+  includeWaivers = true,
 }: {
   leagueId: string;
   fetchImpl?: FetchImpl;
   logger?: Logger;
+  readGame?: ReadGame;
+  includeWaivers?: boolean;
 }): Promise<YahooLoadResult> => {
-  const current = await loadCurrentGame({ fetchImpl, logger });
+  const current = await loadCurrentGame({ fetchImpl, logger, readGame });
   if (current.status !== "ok") return current;
 
   const leagueKey = `${current.game.gameKey}.l.${leagueId}`;
@@ -176,7 +189,7 @@ export const loadYahooLeague = async ({
 
   const currentSeason = current.game.season;
   const checked = parseYahooPayload({ currentSeason, snapshot: snapshot.body, waiverPages: [] });
-  if (checked.status !== "ok") return checked;
+  if (checked.status !== "ok" || !includeWaivers) return checked;
 
   const waivers = await fetchWaiverPages({ leagueKey, fetchImpl, logger });
   if (waivers.status !== "ok") return waivers;

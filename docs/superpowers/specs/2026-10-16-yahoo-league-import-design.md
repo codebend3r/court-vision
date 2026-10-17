@@ -317,7 +317,7 @@ No background cron in this spec: a league syncs when its owner looks at it.
   the user's). `RosteredMarker` in the Players and Fantasy Value tables then
   says "On your team" only when it is true.
 - Imported teams appear in My Teams with their logos, read-only: no drag and
-  drop, no rename, no delete. A note says "Managed in Yahoo. Sync to update."
+  drop, no rename, no delete. A note says "Managed in Yahoo. Sync from the Leagues page to update."
   The user's own team is listed first and labelled. The server enforces this:
   `saveLeagueTeam` and `deleteLeagueTeam` refuse teams in a league whose
   provider is not `manual`.

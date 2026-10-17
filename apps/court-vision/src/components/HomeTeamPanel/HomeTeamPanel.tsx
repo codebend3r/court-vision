@@ -14,17 +14,26 @@ import styles from "@/components/HomeTeamPanel/HomeTeamPanel.module.scss";
 // shows starters only.
 export type HomeTeamPanelProps = {
   team: FantasyTeam | null;
+  // The active league is imported: its teams are Yahoo's, so there is no
+  // builder to point at.
+  isImported: boolean;
   // Lets the page's grid place the panel; the panel itself stays
   // container-agnostic.
   className?: string;
 };
 
-export function HomeTeamPanel({ team, className }: HomeTeamPanelProps) {
+export function HomeTeamPanel({ team, isImported, className }: HomeTeamPanelProps) {
   if (team === null) {
     return (
       <DashboardPanel id="home-team-title" title="Your Team" className={className}>
         <DashboardPanelEmpty>
-          No fantasy teams yet — <Link href="/my-teams/create">create your first team</Link>.
+          {isImported ? (
+            "No fantasy teams yet."
+          ) : (
+            <>
+              No fantasy teams yet — <Link href="/my-teams/create">create your first team</Link>.
+            </>
+          )}
         </DashboardPanelEmpty>
       </DashboardPanel>
     );
@@ -35,7 +44,11 @@ export function HomeTeamPanel({ team, className }: HomeTeamPanelProps) {
 
   return (
     <DashboardPanel id="home-team-title" title="Your Team" className={className}>
-      <Link href={`/my-teams/${team.slug}`} className={styles.teamName}>
+      {/* An imported team is read-only, so it opens the list, not the builder. */}
+      <Link
+        href={team.isImported ? "/my-teams" : `/my-teams/${team.slug}`}
+        className={styles.teamName}
+      >
         {team.name}
       </Link>
       <p className={styles.meta}>

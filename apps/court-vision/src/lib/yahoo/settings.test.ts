@@ -155,14 +155,38 @@ describe("mapLeagueSettings", () => {
     ).toEqual(mapped.scoring.scoringConfig);
   });
 
-  it("maps plain points leagues without modifiers to all-zero scoring", () => {
-    const mapped = mapLeagueSettings({ league: { ...gameOfCourts(), scoring_type: "point" } });
+  it("refuses a points league whose every modifier is unsupported", () => {
+    const league = gameOfCourts();
+    const onlyDoubleDoubles = withSettings({
+      league: { ...league, scoring_type: "headpoint" },
+      settings: { stat_modifiers: [{ stat_id: 23, value: 2 }] },
+    });
 
-    expect(mapped.status).toBe("ok");
-    if (mapped.status !== "ok") return;
-    expect(mapped.scoring.scoringType).toBe("h2h_points");
-    expect(mapped.scoring.scoringConfig).toEqual({
-      scoring: { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fg3m: 0, tov: 0 },
+    expect(mapLeagueSettings({ league: onlyDoubleDoubles })).toEqual({
+      status: "unsupported",
+      reason: "scoring_type",
+    });
+  });
+
+  it("refuses a points league that scores nothing, all-zero or without modifiers", () => {
+    const league = gameOfCourts();
+    const allZero = withSettings({
+      league: { ...league, scoring_type: "headpoint" },
+      settings: {
+        stat_modifiers: [
+          { stat_id: 12, value: 0 },
+          { stat_id: 15, value: 0 },
+        ],
+      },
+    });
+
+    expect(mapLeagueSettings({ league: allZero })).toEqual({
+      status: "unsupported",
+      reason: "scoring_type",
+    });
+    expect(mapLeagueSettings({ league: { ...league, scoring_type: "point" } })).toEqual({
+      status: "unsupported",
+      reason: "scoring_type",
     });
   });
 
@@ -175,6 +199,19 @@ describe("mapLeagueSettings", () => {
       status: "unsupported",
       reason: "scoring_type",
     });
+  });
+
+  it("refuses a snapshot flagged High Score only in its settings", () => {
+    const base = league106344.fantasy_content.league;
+    const snapshot = {
+      fantasy_content: {
+        league: { ...base, settings: { ...base.settings, is_highscore: "1" } },
+      },
+    };
+    const league = yahooLeagueSnapshotSchema.parse(snapshot).fantasy_content.league;
+
+    expect(league.is_highscore).toBe(false);
+    expect(mapLeagueSettings({ league })).toEqual({ status: "unsupported", reason: "highscore" });
   });
 
   it("refuses a category league with no supported categories", () => {

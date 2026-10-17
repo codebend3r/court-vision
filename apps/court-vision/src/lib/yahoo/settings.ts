@@ -140,7 +140,9 @@ const mapScoring = ({
 
 /** Maps a parsed Yahoo league onto the basketball descriptor's scoring and roster shape. */
 export const mapLeagueSettings = ({ league }: { league: YahooLeague }): MappedSettings => {
-  if (league.is_highscore) return { status: "unsupported", reason: "highscore" };
+  if (league.is_highscore || league.settings.is_highscore) {
+    return { status: "unsupported", reason: "highscore" };
+  }
 
   const scoringType = Object.hasOwn(YAHOO_SCORING_TYPES, league.scoring_type)
     ? YAHOO_SCORING_TYPES[league.scoring_type]
@@ -152,8 +154,15 @@ export const mapLeagueSettings = ({ league }: { league: YahooLeague }): MappedSe
   );
   const scoring = mapScoring({ league, scoringType });
   // An empty list would make `parseScoringConfig` swap in the default categories,
-  // silently changing the league's scoring, so refuse it instead.
+  // silently changing the league's scoring, so refuse it instead. A points league
+  // that scores nothing we value (every modifier unsupported) is refused alike.
   if ("categories" in scoring.scoringConfig && scoring.scoringConfig.categories.length === 0) {
+    return { status: "unsupported", reason: "scoring_type" };
+  }
+  if (
+    "scoring" in scoring.scoringConfig &&
+    Object.values(scoring.scoringConfig.scoring).every((points) => points === 0)
+  ) {
     return { status: "unsupported", reason: "scoring_type" };
   }
 

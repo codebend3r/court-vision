@@ -18,6 +18,13 @@
   font-size: var(--font-size-sm);
 }
 
+.newLeague {
+  display: flex;
+  flex-wrap: wrap;
+  justify-self: start;
+  gap: var(--space-2);
+}
+
 .create {
   @include keycap;
 
@@ -79,6 +86,13 @@
   }
 }
 
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
 .badge {
   @include micro-label;
   padding: var(--space-1) var(--space-2);
@@ -126,6 +140,32 @@
   &[aria-pressed="true"]:not(:disabled) {
     @include keycap-engaged;
   }
+}
+
+// Leaves the app for the league's Yahoo page, so a keycap like its neighbours.
+.external {
+  @include keycap;
+
+  &:active {
+    @include keycap-press;
+  }
+}
+
+.srOnly {
+  @include visually-hidden;
+}
+
+// The wording carries the warning, so it stays in body text for contrast.
+.warning {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.credit {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
 }
 
 .delete {
