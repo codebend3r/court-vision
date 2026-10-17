@@ -24,7 +24,6 @@ import styles from "@/app/waiver-wire/waiverWire.module.scss";
 export const dynamic = "force-dynamic";
 
 const IMPORT_PATH = "/leagues/import";
-const NEW_TAB_NOTE_ID = "waiver-wire-new-tab";
 
 // Every state short of the comparison: the page's own header, then why the
 // Waiver Wire can't run yet and what to do about it.
@@ -112,13 +111,9 @@ export default async function WaiverWirePage({
                 target="_blank"
                 rel="noreferrer"
                 className={styles.external}
-                aria-label="Open in Yahoo"
-                aria-describedby={NEW_TAB_NOTE_ID}
               >
                 Open in Yahoo
-                <span id={NEW_TAB_NOTE_ID} className={styles.srOnly}>
-                  (opens in new tab)
-                </span>
+                <span className={styles.srOnly}> (opens in new tab)</span>
               </a>
             )}
           </>

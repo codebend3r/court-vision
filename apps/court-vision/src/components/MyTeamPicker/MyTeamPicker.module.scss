@@ -44,3 +44,8 @@
 .error {
   @include error-callout;
 }
+
+// The polite "Team saved." note, read out while the page refreshes.
+.status {
+  @include visually-hidden;
+}

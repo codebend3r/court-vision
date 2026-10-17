@@ -11,12 +11,14 @@ export type WaiverPlayerProps = {
     "playerId" | "fullName" | "teamAbbr" | "position" | "owner" | "injuryStatus"
   >;
   onCompare: ({ fa }: { fa: number }) => void;
+  // The view's one hidden hint saying what the name button does.
+  compareHintId: string;
 };
 
 // One player's name cell: my players link to their page; a free agent's name
 // is a button that opens them head-to-head against my weakest. The badges sit
 // outside the button so its accessible name stays the player's name.
-export function WaiverPlayer({ player, onCompare }: WaiverPlayerProps) {
+export function WaiverPlayer({ player, onCompare, compareHintId }: WaiverPlayerProps) {
   const meta = [player.teamAbbr, player.position]
     .flatMap((part) => (part ? [part] : []))
     .join(" · ");
@@ -31,6 +33,7 @@ export function WaiverPlayer({ player, onCompare }: WaiverPlayerProps) {
         <button
           type="button"
           className={styles.nameButton}
+          aria-describedby={compareHintId}
           onClick={() => onCompare({ fa: player.playerId })}
         >
           {player.fullName}

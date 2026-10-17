@@ -1,6 +1,6 @@
 "use client";
 
-import { type KeyboardEvent, type ReactNode, useId, useRef } from "react";
+import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef } from "react";
 
 import { WAIVER_VIEWS, type WaiverView } from "@/lib/waiverWire/searchParams";
 
@@ -36,6 +36,23 @@ export function WaiverWireTabs({ view, onChange, panels }: WaiverWireTabsProps) 
   const tabRefs = useRef(new Map<WaiverView, HTMLButtonElement>());
   const tabId = ({ tab }: { tab: WaiverView }) => `${baseId}-tab-${tab}`;
   const panelId = ({ tab }: { tab: WaiverView }) => `${baseId}-panel-${tab}`;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const shownView = useRef(view);
+
+  // A new view from outside the tabs (a free agent's name, the back button)
+  // unmounts whatever had focus with the old panel. Hand focus to the
+  // selected tab then, unless the user is already somewhere in the tabs.
+  useEffect(() => {
+    if (shownView.current === view) return;
+    shownView.current = view;
+    const active = document.activeElement;
+    const isInTabs =
+      active !== null &&
+      active !== document.body &&
+      (containerRef.current?.contains(active) ?? false);
+    const tab = tabRefs.current.get(view);
+    if (!isInTabs && tab) tab.focus();
+  }, [view]);
 
   const onKeyDown = ({
     event,
@@ -53,7 +70,7 @@ export function WaiverWireTabs({ view, onChange, panels }: WaiverWireTabsProps) 
   };
 
   return (
-    <div className={styles.tabs}>
+    <div className={styles.tabs} ref={containerRef}>
       <div className={styles.tablist} role="tablist" aria-label="Compare players">
         {WAIVER_VIEWS.map((tab) => {
           const isSelected = tab === view;

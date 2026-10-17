@@ -252,13 +252,13 @@ describe("WaiverWirePage", () => {
       syncError: null,
       autoSyncWhenStale: true,
     });
-    const external = screen.getByRole("link", { name: "Open in Yahoo" });
+    const external = screen.getByRole("link", { name: "Open in Yahoo (opens in new tab)" });
     expect(external).toHaveAttribute(
       "href",
       "https://basketball.fantasysports.yahoo.com/nba/106344",
     );
     expect(external).toHaveAttribute("target", "_blank");
-    expect(external).toHaveAccessibleDescription("(opens in new tab)");
+    expect(external).not.toHaveAttribute("aria-label");
   });
 
   it("names the categories it can't value and credits Yahoo", async () => {

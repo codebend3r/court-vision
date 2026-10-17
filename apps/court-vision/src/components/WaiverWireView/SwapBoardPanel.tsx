@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 
 import { WaiverPlayer } from "@/components/WaiverWireView/WaiverPlayer";
 import { type SwapBoard } from "@/lib/waiverWire/swapBoard";
+import { formatValue } from "@/lib/waiverWire/format";
 import { type WaiverModel, type WaiverRosterEntry } from "@/lib/waiverWire/types";
 import { formatSigned } from "@vision/core/util/format";
 import { Disclosure } from "@vision/ui/components/Disclosure/Disclosure";
@@ -12,18 +13,25 @@ import styles from "@/components/WaiverWireView/WaiverWireView.module.scss";
 
 const ROWS_SHOWN = 25;
 
-const NO_UPGRADE = "No free agent beats your weakest player in this range.";
-const NO_ROSTER = "No one on your roster has stats in this range. Try a longer range.";
+export const NO_UPGRADE = "No free agent beats your weakest player in this range.";
+export const NO_ROSTER = "No one on your roster has stats in this range. Try a longer range.";
 
 export type SwapBoardPanelProps = {
   board: SwapBoard;
   model: WaiverModel;
   onCompare: ({ fa }: { fa: number }) => void;
+  compareHintId: string;
 };
 
 // My rostered players with no line in the range: listed, never valued, so
 // they are not silently missing from "your weakest".
-function NoStatsDisclosure({ entries }: { entries: WaiverRosterEntry[] }) {
+function NoStatsDisclosure({
+  entries,
+  compareHintId,
+}: {
+  entries: WaiverRosterEntry[];
+  compareHintId: string;
+}) {
   return (
     <Disclosure
       className={styles.noStats}
@@ -43,6 +51,7 @@ function NoStatsDisclosure({ entries }: { entries: WaiverRosterEntry[] }) {
                 injuryStatus: entry.injuryStatus,
               }}
               onCompare={() => {}}
+              compareHintId={compareHintId}
             />
           </li>
         ))}
@@ -53,12 +62,13 @@ function NoStatsDisclosure({ entries }: { entries: WaiverRosterEntry[] }) {
 
 // Tab A: my weakest players beside the free agents who beat the weakest of
 // them, biggest gain first, with the categories the swap moves most.
-export function SwapBoardPanel({ board, model, onCompare }: SwapBoardPanelProps) {
+export function SwapBoardPanel({ board, model, onCompare, compareHintId }: SwapBoardPanelProps) {
   const weakestId = useId();
   const freeId = useId();
   const [showAll, setShowAll] = useState(false);
   const rows = showAll ? board.rows : board.rows.slice(0, ROWS_SHOWN);
-  const hasMore = rows.length < board.rows.length;
+  // A disclosure that stays mounted once open, so focus never drops.
+  const canExpand = board.rows.length > ROWS_SHOWN;
 
   return (
     <div className={styles.swap}>
@@ -81,9 +91,13 @@ export function SwapBoardPanel({ board, model, onCompare }: SwapBoardPanelProps)
                 {model.weakest.map((row) => (
                   <tr key={row.playerId} className={styles.mine}>
                     <td>
-                      <WaiverPlayer player={row} onCompare={onCompare} />
+                      <WaiverPlayer
+                        player={row}
+                        onCompare={onCompare}
+                        compareHintId={compareHintId}
+                      />
                     </td>
-                    <td className={styles.numeric}>{row.value.toFixed(2)}</td>
+                    <td className={styles.numeric}>{formatValue({ value: row.value })}</td>
                   </tr>
                 ))}
               </tbody>
@@ -92,7 +106,9 @@ export function SwapBoardPanel({ board, model, onCompare }: SwapBoardPanelProps)
         ) : (
           <p className={styles.empty}>{NO_ROSTER}</p>
         )}
-        {model.noStats.length > 0 && <NoStatsDisclosure entries={model.noStats} />}
+        {model.noStats.length > 0 && (
+          <NoStatsDisclosure entries={model.noStats} compareHintId={compareHintId} />
+        )}
       </section>
       {!!board.target && (
         <section className={styles.panel} aria-labelledby={freeId}>
@@ -121,9 +137,13 @@ export function SwapBoardPanel({ board, model, onCompare }: SwapBoardPanelProps)
                   {rows.map((row) => (
                     <tr key={row.playerId}>
                       <td>
-                        <WaiverPlayer player={row} onCompare={onCompare} />
+                        <WaiverPlayer
+                          player={row}
+                          onCompare={onCompare}
+                          compareHintId={compareHintId}
+                        />
                       </td>
-                      <td className={styles.numeric}>{row.value.toFixed(2)}</td>
+                      <td className={styles.numeric}>{formatValue({ value: row.value })}</td>
                       <td className={styles.numeric}>
                         {formatSigned({ value: row.gain, digits: 2 })}
                       </td>
@@ -136,7 +156,9 @@ export function SwapBoardPanel({ board, model, onCompare }: SwapBoardPanelProps)
                               data-improves={chip.improves}
                             >
                               {chip.text}
-                              {!chip.improves && <span className={styles.srOnly}> (worse)</span>}
+                              <span className={styles.srOnly}>
+                                {chip.improves ? " (better)" : " (worse)"}
+                              </span>
                             </li>
                           ))}
                         </ul>
@@ -149,9 +171,14 @@ export function SwapBoardPanel({ board, model, onCompare }: SwapBoardPanelProps)
           ) : (
             <p className={styles.empty}>{NO_UPGRADE}</p>
           )}
-          {hasMore && (
-            <button type="button" className={styles.keycap} onClick={() => setShowAll(true)}>
-              Show all
+          {canExpand && (
+            <button
+              type="button"
+              className={styles.keycap}
+              aria-expanded={showAll}
+              onClick={() => setShowAll(!showAll)}
+            >
+              {showAll ? "Show fewer" : `Show all ${board.rows.length} free agents`}
             </button>
           )}
         </section>

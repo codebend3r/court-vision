@@ -53,7 +53,14 @@ const renderPanel = ({
   modelOverride = model,
 }: { boardOverride?: SwapBoard; modelOverride?: WaiverModel } = {}) => {
   const onCompare = vi.fn<({ fa }: { fa: number }) => void>();
-  render(<SwapBoardPanel board={boardOverride} model={modelOverride} onCompare={onCompare} />);
+  render(
+    <SwapBoardPanel
+      board={boardOverride}
+      model={modelOverride}
+      onCompare={onCompare}
+      compareHintId="compare-hint"
+    />,
+  );
   return { onCompare };
 };
 
@@ -85,7 +92,7 @@ describe("SwapBoardPanel", () => {
       "href",
       "/players/1",
     );
-    expect(within(first).getByText("-0.42")).toHaveClass("numeric");
+    expect(within(first).getByText("−0.42")).toHaveClass("numeric");
     expect(within(second).getByText("Questionable")).toBeInTheDocument();
   });
 
@@ -98,11 +105,12 @@ describe("SwapBoardPanel", () => {
     expect(cells.getByText("+1.36")).toHaveClass("numeric");
     expect(cells.getByText("On waivers")).toBeInTheDocument();
     expect(cells.getAllByRole("listitem").map((chip) => chip.textContent)).toEqual([
-      "+REB",
-      "+PTS",
+      "+REB (better)",
+      "+PTS (better)",
       "−FG% (worse)",
     ]);
     expect(cells.getByText("(worse)")).toHaveClass("srOnly");
+    cells.getAllByText("(better)").map((hint) => expect(hint).toHaveClass("srOnly"));
   });
 
   it("opens head-to-head from a free agent's name", async () => {
@@ -114,7 +122,7 @@ describe("SwapBoardPanel", () => {
     expect(onCompare).toHaveBeenCalledWith({ fa: 10 });
   });
 
-  it("shows 25 free agents, then every one on Show all", async () => {
+  it("shows 25 free agents, then every one on Show all, then 25 again", async () => {
     const user = userEvent.setup();
     const rows = Array.from({ length: 30 }, (_, index): SwapRow => ({
       ...makeRow({ playerId: 100 + index, owner: "free_agent", value: 2 - index / 100 }),
@@ -125,16 +133,27 @@ describe("SwapBoardPanel", () => {
 
     expect(bodyRows({ panel: freePanel() })).toHaveLength(25);
 
-    await user.click(within(freePanel()).getByRole("button", { name: "Show all" }));
+    const toggle = within(freePanel()).getByRole("button", { name: "Show all 30 free agents" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(toggle);
 
     expect(bodyRows({ panel: freePanel() })).toHaveLength(30);
-    expect(within(freePanel()).queryByRole("button", { name: "Show all" })).not.toBeInTheDocument();
+    // The same button stays mounted, so focus stays on it.
+    expect(toggle).toHaveAccessibleName("Show fewer");
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle).toHaveFocus();
+
+    await user.click(toggle);
+
+    expect(bodyRows({ panel: freePanel() })).toHaveLength(25);
+    expect(toggle).toHaveAccessibleName("Show all 30 free agents");
   });
 
   it("hides Show all when every free agent fits", () => {
     renderPanel();
 
-    expect(screen.queryByRole("button", { name: "Show all" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Show all/ })).not.toBeInTheDocument();
   });
 
   it("lists your players with no stats under a disclosure", () => {
