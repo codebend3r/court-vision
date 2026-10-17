@@ -1,5 +1,7 @@
 "use server";
 
+import { type Prisma } from "@generated/prisma/client";
+
 import { isActionId, isActionText } from "@vision/core/util/argGuards";
 import { getProfile } from "@/lib/auth/session";
 import { withProfile } from "@/lib/auth/withProfile";
@@ -70,6 +72,24 @@ export const createLeague = async ({
   });
 };
 
+// Ownership in the where: a forged leagueId matches no row, and Prisma
+// reports that as P2025 rather than updating someone else's league.
+const writeLeague = async ({
+  where,
+  data,
+}: {
+  where: Prisma.LeagueWhereUniqueInput;
+  data: Prisma.LeagueUpdateInput;
+}): Promise<LeagueMutationResult> => {
+  try {
+    const league = await prisma.league.update({ where, data });
+    return { status: "ok", league: toLeagueSummary({ league }) };
+  } catch (error) {
+    if (hasPrismaCode({ error, code: PRISMA_RECORD_NOT_FOUND })) return { status: "invalid" };
+    throw error;
+  }
+};
+
 export const updateLeague = async ({
   leagueId,
   name,
@@ -92,26 +112,35 @@ export const updateLeague = async ({
     getProfile,
     run: async ({ profile }) => {
       const trimmed = name.trim();
-      if (trimmed === "" || !isLeagueScoringType(scoringType)) return { status: "invalid" };
-      const config = parseScoringConfig({ scoringType, value: scoringConfig });
-      try {
-        // Ownership in the where: a forged leagueId matches no row, and Prisma
-        // reports that as P2025 rather than updating someone else's league.
-        const league = await prisma.league.update({
+      if (trimmed === "") return { status: "invalid" };
+      const owned = await prisma.league.findFirst({
+        where: { id: leagueId, profileId: profile.id },
+        select: { provider: true },
+      });
+      if (owned === null) return { status: "invalid" };
+      // An imported league's scoring and size are its host's: only the name
+      // is the user's to change, and the scoring arguments are ignored. Tests
+      // the raw column so a provider this build doesn't know fails closed.
+      if (owned.provider !== "manual") {
+        return writeLeague({
           where: { id: leagueId, profileId: profile.id },
-          data: {
-            name: trimmed,
-            scoringType,
-            teamCount: clampInt({ value: teamCount, ...LEAGUE_BOUNDS.teams }),
-            rosterSlots: clampInt({ value: rosterSlots, ...LEAGUE_BOUNDS.slots }),
-            scoringConfig: { ...config },
-          },
+          data: { name: trimmed },
         });
-        return { status: "ok", league: toLeagueSummary({ league }) };
-      } catch (error) {
-        if (hasPrismaCode({ error, code: PRISMA_RECORD_NOT_FOUND })) return { status: "invalid" };
-        throw error;
       }
+      if (!isLeagueScoringType(scoringType)) return { status: "invalid" };
+      const config = parseScoringConfig({ scoringType, value: scoringConfig });
+      // Scoped to a hand-built league in the write itself too, so the scoring
+      // can never land on an imported league whatever the read above saw.
+      return writeLeague({
+        where: { id: leagueId, profileId: profile.id, provider: "manual" },
+        data: {
+          name: trimmed,
+          scoringType,
+          teamCount: clampInt({ value: teamCount, ...LEAGUE_BOUNDS.teams }),
+          rosterSlots: clampInt({ value: rosterSlots, ...LEAGUE_BOUNDS.slots }),
+          scoringConfig: { ...config },
+        },
+      });
     },
   });
 };

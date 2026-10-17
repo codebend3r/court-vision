@@ -29,6 +29,13 @@ const league = ({ id, name }: { id: string; name: string }): LeagueSummary => ({
   teamCount: 12,
   rosterSlots: 13,
   scoringConfig: { categories: ["pts"] },
+  provider: "manual",
+  isImported: false,
+  externalUrl: null,
+  myTeamId: null,
+  syncedAt: null,
+  syncError: null,
+  unsupportedCategories: [],
   createdAt: "2026-07-31T00:00:00.000Z",
   updatedAt: "2026-07-31T00:00:00.000Z",
 });

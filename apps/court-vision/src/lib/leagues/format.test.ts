@@ -7,16 +7,12 @@ import { type Category } from "@vision/sport-basketball/types";
 
 const NINE: Category[] = ["pts", "reb", "ast", "stl", "blk", "tpm", "tov", "fg", "ft"];
 
-const league = (overrides: Partial<LeagueSummary>): LeagueSummary => ({
-  id: "l1",
-  name: "Test league",
-  slug: "test-league",
+type MetaLeague = Pick<LeagueSummary, "teamCount" | "scoringType" | "scoringConfig">;
+
+const league = (overrides: Partial<MetaLeague>): MetaLeague => ({
   scoringType: "h2h_categories",
   teamCount: 12,
-  rosterSlots: 13,
   scoringConfig: { categories: NINE },
-  createdAt: "2026-01-01T00:00:00.000Z",
-  updatedAt: "2026-01-01T00:00:00.000Z",
   ...overrides,
 });
 

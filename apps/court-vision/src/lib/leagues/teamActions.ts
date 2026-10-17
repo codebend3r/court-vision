@@ -118,8 +118,10 @@ export const saveLeagueTeam = async ({
     getProfile,
     run: async ({ profile }) => {
       // RLS-safe ownership check up front: a forged leagueId never sees a row.
+      // Only a hand-built league's teams are editable; an imported league's
+      // teams belong to its host and read as not found here.
       const league = await prisma.league.findFirst({
-        where: { id: leagueId, profileId: profile.id },
+        where: { id: leagueId, profileId: profile.id, provider: "manual" },
         select: { id: true },
       });
       if (league === null) return { status: "invalid" };
@@ -151,7 +153,10 @@ export const saveLeagueTeam = async ({
           include: TEAM_INCLUDE,
         });
         if (team === null) return { status: "error" };
-        return { status: "ok", team: toFantasyTeam({ team }) };
+        return {
+          status: "ok",
+          team: toFantasyTeam({ team, isMine: false, isImported: false }),
+        };
       });
     },
   });
@@ -206,6 +211,9 @@ export const importLegacyTeams = async ({
       // doesn't re-fetch the session a second time.
       const league = await ensureDefaultLeague({ profile });
       if (league === null) return { status: "unauthenticated" };
+      // Legacy teams were hand-built; they never belong in an imported league,
+      // whose teams are its host's.
+      if (league.isImported) return { status: "skipped" };
 
       return prisma.$transaction(async (tx) => {
         // Re-checked inside the transaction (not just before it) so two
@@ -257,10 +265,20 @@ export const deleteLeagueTeam = async ({
   return withProfile<LeagueTeamDeleteResult>({
     getProfile,
     run: async ({ profile }) => {
+      // Only a hand-built league's teams can be deleted; an imported league's
+      // teams belong to its host.
+      const deleted = await prisma.leagueTeam.deleteMany({
+        where: { id: teamId, profileId: profile.id, league: { provider: "manual" } },
+      });
+      if (deleted.count > 0) return { status: "ok" };
       // Idempotent: deleting an already-gone or unowned team still reports
-      // ok, since the end state the caller wants is "team is gone".
-      await prisma.leagueTeam.deleteMany({ where: { id: teamId, profileId: profile.id } });
-      return { status: "ok" };
+      // ok, since the end state the caller wants is "team is gone". A team
+      // that's still there was refused because its league is imported.
+      const remaining = await prisma.leagueTeam.findFirst({
+        where: { id: teamId, profileId: profile.id },
+        select: { id: true },
+      });
+      return remaining === null ? { status: "ok" } : { status: "error" };
     },
   });
 };
