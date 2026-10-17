@@ -130,14 +130,12 @@ export default async function WaiverWirePage({
         </p>
       )}
       <WaiverWireView
-        league={league}
-        range={range}
-        method={method}
         lines={lines}
+        league={leagueData}
         activePlayerIds={activeRoster.map((player) => player.playerId)}
-        leagueData={leagueData}
         config={config}
         methodWeights={methodWeights}
+        method={method}
       />
       <p className={styles.credit}>League data from Yahoo Fantasy</p>
     </main>
