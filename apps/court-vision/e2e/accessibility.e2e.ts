@@ -4,6 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 const pages = [
   { path: "/login", heading: "Sign in" },
   { path: "/signup", heading: "Create your account" },
+  { path: "/privacy", heading: "Privacy" },
   { path: "/design", heading: "Design system" },
 ] as const;
 

@@ -6,9 +6,10 @@ export const YAHOO_SYNC_THROTTLE_MS = 60_000;
 
 export const YAHOO_STALE_AFTER_MS = 900_000;
 
-// The largest league snapshot the extension may hand over, measured as UTF-8
-// JSON. A 20-team league with its waiver pages is well under it. Lives here
-// because a "use server" file may export only async functions.
+// The largest league snapshot the extension may hand over, counted as the
+// UTF-8 bytes of every key and string value in it (`measureSnapshotBytes`), not
+// as the size of its JSON. A 20-team league with its waiver pages is well under
+// it. Lives here because a "use server" file may export only async functions.
 export const MAX_SNAPSHOT_BYTES = 1_500_000;
 
 export {

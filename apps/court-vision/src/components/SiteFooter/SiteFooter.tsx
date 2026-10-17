@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import styles from "@/components/SiteFooter/SiteFooter.module.scss";
 
 const REPO_NAME = "codebend3r/court-vision";
@@ -20,6 +22,9 @@ export function SiteFooter() {
   return (
     <footer className={styles.footer}>
       <span>© {year} CJ Rivas</span>
+      <Link className={styles.privacy} href="/privacy">
+        Privacy
+      </Link>
       <a className={styles.repo} href={REPO_URL} target="_blank" rel="noreferrer">
         <GithubMark />
         {REPO_NAME}
