@@ -4,37 +4,64 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useId, useRef, useState, useTransition } from "react";
 
+import { type BridgeErrorReason, type BridgeLeaguePayload } from "@vision/yahoo-bridge/protocol";
+
 import { FantasyTeamLogo } from "@/components/FantasyTeamLogo/FantasyTeamLogo";
 import { useLeaguesStore } from "@/lib/leagues/store";
 import { importYahooLeague, previewYahooLeague } from "@/lib/yahoo/actions";
 import {
+  extensionStoreUrl,
+  fetchLeagueViaExtension,
+  getExtensionId,
+  pingExtension,
+} from "@/lib/yahoo/extensionClient";
+import {
+  bridgeFailureMessage,
   notValuedMessage,
   unmatchedPlayersMessage,
   YAHOO_URL_HINT,
   yahooFailureMessage,
   type YahooMessageStatus,
 } from "@/lib/yahoo/messages";
+import { importYahooLeagueFromSnapshot, previewYahooSnapshot } from "@/lib/yahoo/snapshotActions";
 import {
   type YahooImportResult,
   type YahooPreview,
   type YahooPreviewResult,
   type YahooPreviewTeam,
 } from "@/lib/yahoo/types";
+import { parseYahooLeagueUrl } from "@/lib/yahoo/url";
 
 import styles from "@/components/YahooImportForm/YahooImportForm.module.scss";
 
 const WAIVER_WIRE_PATH = "/waiver-wire";
 
+// Where a preview came from: the server reads public leagues itself, and the
+// browser extension reads private ones with the user's own Yahoo login.
+type PreviewMode = "server" | "extension";
+
 // Paste a URL, then pick your team from the league it names, then (only when
 // some players couldn't be matched) read the summary before moving on.
 type Step =
   | { kind: "url" }
-  | { kind: "team"; url: string; preview: YahooPreview }
+  | { kind: "team"; url: string; preview: YahooPreview; mode: PreviewMode }
   | { kind: "imported"; unmatched: string[] };
+
+// Unknown until the ping answers; nothing about the extension renders before then.
+type ExtensionState = "unknown" | "absent" | "present";
 
 type Failure =
   | { status: "duplicate"; slug: string }
-  | { status: Exclude<YahooMessageStatus, "duplicate"> };
+  | { status: Exclude<YahooMessageStatus, "duplicate"> }
+  // The server couldn't read the league, so it may be private: the extension can try.
+  | { status: "server_not_found"; url: string }
+  | { status: "bridge"; reason: BridgeErrorReason | "missing" };
+
+const failureMessage = ({ failure }: { failure: Failure }): string => {
+  if (failure.status === "bridge") return bridgeFailureMessage({ reason: failure.reason });
+  if (failure.status === "server_not_found") return yahooFailureMessage({ status: "not_found" });
+  return yahooFailureMessage({ status: failure.status });
+};
 
 // An action that throws (the network dropped) reads as the generic failure.
 const previewOrError = ({ url }: { url: string }): Promise<YahooPreviewResult> =>
@@ -50,6 +77,56 @@ const importOrError = ({
   importYahooLeague({ url, myTeamExternalKey }).catch((): YahooImportResult => ({
     status: "error",
   }));
+
+// The extension path parses the URL in the browser, then asks the extension to
+// read the league. Every failure here reads as one of the form's messages.
+const fetchThroughExtension = async ({
+  extensionId,
+  url,
+}: {
+  extensionId: string | null;
+  url: string;
+}): Promise<{ status: "ok"; payload: BridgeLeaguePayload } | Failure> => {
+  const parsed = parseYahooLeagueUrl({ input: url });
+  if (parsed.status === "invalid") return { status: "invalid_url" };
+  if (parsed.status !== "ok") return { status: parsed.status };
+  if (extensionId === null) return { status: "bridge", reason: "missing" };
+  const fetched = await fetchLeagueViaExtension({ extensionId, leagueId: parsed.leagueId });
+  if (fetched.status === "ok") return fetched;
+  return { status: "bridge", reason: fetched.status === "failed" ? fetched.reason : "missing" };
+};
+
+const previewThroughExtension = async ({
+  extensionId,
+  url,
+}: {
+  extensionId: string | null;
+  url: string;
+}): Promise<YahooPreviewResult | Failure> => {
+  const fetched = await fetchThroughExtension({ extensionId, url });
+  if (fetched.status !== "ok") return fetched;
+  return previewYahooSnapshot({ payload: fetched.payload }).catch((): YahooPreviewResult => ({
+    status: "error",
+  }));
+};
+
+// Reads the league through the extension again, so the import never trusts
+// the payload the preview was built from.
+const importThroughExtension = async ({
+  extensionId,
+  url,
+  myTeamExternalKey,
+}: {
+  extensionId: string | null;
+  url: string;
+  myTeamExternalKey: string;
+}): Promise<YahooImportResult | Failure> => {
+  const fetched = await fetchThroughExtension({ extensionId, url });
+  if (fetched.status !== "ok") return fetched;
+  return importYahooLeagueFromSnapshot({ payload: fetched.payload, myTeamExternalKey }).catch(
+    (): YahooImportResult => ({ status: "error" }),
+  );
+};
 
 const teamDetails = ({ team }: { team: YahooPreviewTeam }): string =>
   [team.managerName, team.rosterCount === 1 ? "1 player" : `${team.rosterCount} players`]
@@ -75,6 +152,13 @@ export function YahooImportForm() {
   const [teamKey, setTeamKey] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const [isPending, startTransition] = useTransition();
+  // Which button started the pending request, for its pending label.
+  const [pendingMode, setPendingMode] = useState<PreviewMode>("server");
+  const extensionId = getExtensionId();
+  const [extension, setExtension] = useState<ExtensionState>(() =>
+    extensionId === null ? "absent" : "unknown",
+  );
+  const hasPinged = useRef(false);
   const urlRef = useRef<HTMLInputElement>(null);
   const legendRef = useRef<HTMLLegendElement>(null);
   const waiverWireRef = useRef<HTMLAnchorElement>(null);
@@ -101,9 +185,32 @@ export function YahooImportForm() {
     if (failure !== null && alert !== null) alert.focus();
   }, [failure]);
 
+  // With an id configured, ask once whether the extension is installed here.
+  useEffect(() => {
+    if (extensionId === null || hasPinged.current) return;
+    hasPinged.current = true;
+    void pingExtension({ extensionId }).then((answered) => {
+      setExtension(answered ? "present" : "absent");
+    });
+  }, [extensionId]);
+
   const goTo = ({ next }: { next: Step }) => {
     shouldMoveFocus.current = true;
     setStep(next);
+  };
+
+  const showPreview = ({
+    leagueUrl,
+    preview,
+    mode,
+  }: {
+    leagueUrl: string;
+    preview: YahooPreview;
+    mode: PreviewMode;
+  }) => {
+    setFailure(null);
+    setTeamKey(preview.teams.find((team) => team.isOwnedByCurrentLogin)?.externalKey ?? null);
+    goTo({ next: { kind: "team", url: leagueUrl, preview, mode } });
   };
 
   const onFind = (event: FormEvent<HTMLFormElement>) => {
@@ -112,17 +219,35 @@ export function YahooImportForm() {
     const submitted = url.trim();
     // Unmounts the last alert, so a repeat of the same failure is announced.
     setFailure(null);
+    setPendingMode("server");
     startTransition(async () => {
       const result = await previewOrError({ url: submitted });
+      startTransition(() => {
+        if (result.status === "not_found") {
+          setFailure({ status: "server_not_found", url: submitted });
+          return;
+        }
+        if (result.status !== "ok") {
+          setFailure(result);
+          return;
+        }
+        showPreview({ leagueUrl: submitted, preview: result.preview, mode: "server" });
+      });
+    });
+  };
+
+  const onFindWithExtension = ({ leagueUrl }: { leagueUrl: string }) => {
+    if (isPending) return;
+    setFailure(null);
+    setPendingMode("extension");
+    startTransition(async () => {
+      const result = await previewThroughExtension({ extensionId, url: leagueUrl });
       startTransition(() => {
         if (result.status !== "ok") {
           setFailure(result);
           return;
         }
-        const { preview } = result;
-        setFailure(null);
-        setTeamKey(preview.teams.find((team) => team.isOwnedByCurrentLogin)?.externalKey ?? null);
-        goTo({ next: { kind: "team", url: submitted, preview } });
+        showPreview({ leagueUrl, preview: result.preview, mode: "extension" });
       });
     });
   };
@@ -131,9 +256,13 @@ export function YahooImportForm() {
     event.preventDefault();
     if (isPending || step.kind !== "team" || teamKey === null) return;
     const leagueUrl = step.url;
+    const myTeamExternalKey = teamKey;
+    const viaExtension = step.mode === "extension";
     setFailure(null);
     startTransition(async () => {
-      const result = await importOrError({ url: leagueUrl, myTeamExternalKey: teamKey });
+      const result = viaExtension
+        ? await importThroughExtension({ extensionId, url: leagueUrl, myTeamExternalKey })
+        : await importOrError({ url: leagueUrl, myTeamExternalKey });
       if (result.status !== "ok") {
         startTransition(() => setFailure(result));
         return;
@@ -162,12 +291,15 @@ export function YahooImportForm() {
   };
 
   const urlDescription = !!failure && step.kind === "url" ? `${hintId} ${errorId}` : hintId;
+  const missedUrl = failure !== null && failure.status === "server_not_found" ? failure.url : null;
+  const isFindingOnServer = isPending && pendingMode === "server";
+  const isReadingThroughExtension = isPending && pendingMode === "extension";
 
   return (
     <section className={styles.importer}>
       {!!failure && (
         <p ref={alertRef} role="alert" id={errorId} tabIndex={-1} className={styles.error}>
-          {yahooFailureMessage({ status: failure.status })}
+          {failureMessage({ failure })}
           {failure.status === "duplicate" && (
             <>
               {" "}
@@ -177,6 +309,31 @@ export function YahooImportForm() {
             </>
           )}
         </p>
+      )}
+
+      {missedUrl !== null && extension === "present" && (
+        <button
+          type="button"
+          className={styles.secondary}
+          onClick={() => onFindWithExtension({ leagueUrl: missedUrl })}
+          disabled={isPending}
+        >
+          Try with the extension
+        </button>
+      )}
+
+      {missedUrl !== null && extension === "absent" && extensionId !== null && (
+        // The hidden note, read as part of the name, says the link leaves for
+        // a new tab.
+        <a
+          href={extensionStoreUrl({ extensionId })}
+          target="_blank"
+          rel="noreferrer"
+          className={styles.secondary}
+        >
+          Get the Court Vision extension
+          <span className={styles.srOnly}> (opens in new tab)</span>
+        </a>
       )}
 
       <p role="status" className={styles.status}>
@@ -206,9 +363,23 @@ export function YahooImportForm() {
               {YAHOO_URL_HINT}
             </p>
           </div>
-          <button type="submit" className={styles.submit} disabled={isPending}>
-            {isPending ? "Finding league…" : "Find league"}
-          </button>
+          <div className={styles.actions}>
+            <button type="submit" className={styles.submit} disabled={isPending}>
+              {isFindingOnServer ? "Finding league…" : "Find league"}
+            </button>
+            {extension === "present" && (
+              <button
+                type="button"
+                className={styles.secondary}
+                onClick={() => onFindWithExtension({ leagueUrl: url.trim() })}
+                disabled={isPending}
+              >
+                {isReadingThroughExtension
+                  ? "Reading your league…"
+                  : "Import with the Court Vision extension"}
+              </button>
+            )}
+          </div>
         </form>
       )}
 

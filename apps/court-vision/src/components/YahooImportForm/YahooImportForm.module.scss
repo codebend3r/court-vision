@@ -176,10 +176,17 @@
   }
 }
 
+// Also styles the extension buttons and the link to the extension's store
+// page, which sits under the failure as a keycap of its own.
 .secondary {
   @include keycap;
+  justify-self: start;
 
   &:active:not(:disabled) {
     @include keycap-press;
   }
+}
+
+.srOnly {
+  @include visually-hidden;
 }
