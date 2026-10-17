@@ -3,9 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { restoreEnv, stubEnv } from "@vision/testing/env";
+import { type BridgeLeaguePayload } from "@vision/yahoo-bridge/protocol";
 
 import { useLeaguesStore } from "@/lib/leagues/store";
 import { type LeagueSummary } from "@/lib/leagues/types";
+import { type ExtensionLeagueResult } from "@/lib/yahoo/extensionClient";
 import {
   type YahooImportResult,
   type YahooPreview,
@@ -20,6 +22,31 @@ vi.mock("@/lib/yahoo/actions", () => ({
   previewYahooLeague: (args: { url: string }) => previewYahooLeagueMock(args),
   importYahooLeague: (args: { url: string; myTeamExternalKey: string }) =>
     importYahooLeagueMock(args),
+}));
+
+const previewYahooSnapshotMock =
+  vi.fn<(args: { payload: unknown }) => Promise<YahooPreviewResult>>();
+const importYahooLeagueFromSnapshotMock =
+  vi.fn<(args: { payload: unknown; myTeamExternalKey: string }) => Promise<YahooImportResult>>();
+
+vi.mock("@/lib/yahoo/snapshotActions", () => ({
+  previewYahooSnapshot: (args: { payload: unknown }) => previewYahooSnapshotMock(args),
+  importYahooLeagueFromSnapshot: (args: { payload: unknown; myTeamExternalKey: string }) =>
+    importYahooLeagueFromSnapshotMock(args),
+}));
+
+const getExtensionIdMock = vi.fn<() => string | null>();
+const pingExtensionMock = vi.fn<(args: { extensionId: string }) => Promise<boolean>>();
+const fetchLeagueViaExtensionMock =
+  vi.fn<(args: { extensionId: string; leagueId: string }) => Promise<ExtensionLeagueResult>>();
+
+vi.mock("@/lib/yahoo/extensionClient", () => ({
+  getExtensionId: () => getExtensionIdMock(),
+  pingExtension: (args: { extensionId: string }) => pingExtensionMock(args),
+  fetchLeagueViaExtension: (args: { extensionId: string; leagueId: string }) =>
+    fetchLeagueViaExtensionMock(args),
+  extensionStoreUrl: ({ extensionId }: { extensionId: string }) =>
+    `https://chromewebstore.google.com/detail/${extensionId}`,
 }));
 
 const pushMock = vi.fn();
@@ -82,6 +109,22 @@ const importedLeague: LeagueSummary = {
   updatedAt: "2026-10-16T00:00:00.000Z",
 };
 
+const EXTENSION_ID = "court-vision-extension-id";
+
+const payload = ({ tag }: { tag: string }): BridgeLeaguePayload => ({
+  game: { tag },
+  snapshot: { tag },
+  waiverPages: [],
+});
+
+const mine = (externalKey: string): YahooPreview =>
+  preview({
+    teams: preview().teams.map((team) => ({
+      ...team,
+      isOwnedByCurrentLogin: team.externalKey === externalKey,
+    })),
+  });
+
 beforeEach(() => {
   // The failure copy below is the no-extension copy, whatever a local `.env` sets.
   stubEnv({ key: "NEXT_PUBLIC_COURT_VISION_EXTENSION_ID", value: "" });
@@ -92,6 +135,23 @@ beforeEach(() => {
     status: "ok",
     league: importedLeague,
     unmatched: [],
+  });
+  previewYahooSnapshotMock.mockReset();
+  previewYahooSnapshotMock.mockResolvedValue({ status: "ok", preview: preview() });
+  importYahooLeagueFromSnapshotMock.mockReset();
+  importYahooLeagueFromSnapshotMock.mockResolvedValue({
+    status: "ok",
+    league: importedLeague,
+    unmatched: [],
+  });
+  getExtensionIdMock.mockReset();
+  getExtensionIdMock.mockReturnValue(null);
+  pingExtensionMock.mockReset();
+  pingExtensionMock.mockResolvedValue(false);
+  fetchLeagueViaExtensionMock.mockReset();
+  fetchLeagueViaExtensionMock.mockResolvedValue({
+    status: "ok",
+    payload: payload({ tag: "first" }),
   });
   pushMock.mockClear();
   refreshMock.mockClear();
@@ -332,5 +392,218 @@ describe("YahooImportForm", () => {
 
     expect(screen.getByLabelText("Yahoo league URL")).toHaveValue(LEAGUE_URL);
     expect(screen.queryByRole("group", { name: "Which team is yours?" })).not.toBeInTheDocument();
+  });
+});
+
+const EXTENSION_BUTTON = "Import with the Court Vision extension";
+const NOT_FOUND_WITH_EXTENSION =
+  "Couldn't read this league. If it's private, the commissioner can make it publicly viewable in Yahoo's league settings, or you can import it with the Court Vision extension.";
+
+// Renders with an id configured and waits until the ping has answered.
+const renderWithExtension = async ({ answers }: { answers: boolean }) => {
+  getExtensionIdMock.mockReturnValue(EXTENSION_ID);
+  pingExtensionMock.mockResolvedValue(answers);
+  const user = userEvent.setup();
+  render(<YahooImportForm />);
+  await waitFor(() =>
+    expect(pingExtensionMock).toHaveBeenCalledWith({ extensionId: EXTENSION_ID }),
+  );
+  if (answers) await screen.findByRole("button", { name: EXTENSION_BUTTON });
+  await user.type(screen.getByLabelText("Yahoo league URL"), LEAGUE_URL);
+  return user;
+};
+
+describe("YahooImportForm with the extension", () => {
+  it("shows no extension controls without an id", async () => {
+    previewYahooLeagueMock.mockResolvedValue({ status: "not_found" });
+
+    await findLeague();
+
+    await screen.findByRole("alert");
+    expect(pingExtensionMock).not.toHaveBeenCalled();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Find league" })).toBeInTheDocument();
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it("shows no extension controls when the ping fails", async () => {
+    await renderWithExtension({ answers: false });
+
+    expect(pingExtensionMock).toHaveBeenCalledTimes(1);
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Find league" })).toBeInTheDocument();
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it("shows nothing about the extension until the ping answers", async () => {
+    getExtensionIdMock.mockReturnValue(EXTENSION_ID);
+    const ping = Promise.withResolvers<boolean>();
+    pingExtensionMock.mockReturnValue(ping.promise);
+
+    render(<YahooImportForm />);
+
+    try {
+      expect(screen.getAllByRole("button")).toHaveLength(1);
+    } finally {
+      ping.resolve(true);
+    }
+    expect(await screen.findByRole("button", { name: EXTENSION_BUTTON })).toBeInTheDocument();
+  });
+
+  it("previews through the extension and preselects my team", async () => {
+    previewYahooSnapshotMock.mockResolvedValue({
+      status: "ok",
+      preview: mine("478.l.106344.t.5"),
+    });
+    const user = await renderWithExtension({ answers: true });
+
+    await user.click(screen.getByRole("button", { name: EXTENSION_BUTTON }));
+
+    const picker = await teamPicker();
+    expect(fetchLeagueViaExtensionMock).toHaveBeenCalledWith({
+      extensionId: EXTENSION_ID,
+      leagueId: "106344",
+    });
+    expect(previewYahooSnapshotMock).toHaveBeenCalledWith({ payload: payload({ tag: "first" }) });
+    expect(previewYahooLeagueMock).not.toHaveBeenCalled();
+    expect(within(picker).getByRole("radio", { name: "Newfoundlanders" })).toBeChecked();
+    expect(screen.getByRole("button", { name: "Import league" })).toBeEnabled();
+  });
+
+  it("labels the extension button while it reads the league", async () => {
+    const user = await renderWithExtension({ answers: true });
+    const pending = Promise.withResolvers<ExtensionLeagueResult>();
+    fetchLeagueViaExtensionMock.mockReturnValue(pending.promise);
+
+    await user.click(screen.getByRole("button", { name: EXTENSION_BUTTON }));
+
+    try {
+      expect(screen.getByRole("button", { name: "Reading your league…" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Find league" })).toBeDisabled();
+    } finally {
+      pending.resolve({ status: "missing" });
+    }
+    await screen.findByRole("alert");
+  });
+
+  it("refetches through the extension on import", async () => {
+    fetchLeagueViaExtensionMock
+      .mockResolvedValueOnce({ status: "ok", payload: payload({ tag: "first" }) })
+      .mockResolvedValueOnce({ status: "ok", payload: payload({ tag: "second" }) });
+    const user = await renderWithExtension({ answers: true });
+
+    await user.click(screen.getByRole("button", { name: EXTENSION_BUTTON }));
+    const picker = await teamPicker();
+    await user.click(within(picker).getByRole("radio", { name: "Newfoundlanders" }));
+    await user.click(screen.getByRole("button", { name: "Import league" }));
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/waiver-wire"));
+    expect(fetchLeagueViaExtensionMock).toHaveBeenCalledTimes(2);
+    expect(importYahooLeagueFromSnapshotMock).toHaveBeenCalledWith({
+      payload: payload({ tag: "second" }),
+      myTeamExternalKey: "478.l.106344.t.5",
+    });
+    expect(importYahooLeagueMock).not.toHaveBeenCalled();
+    expect(useLeaguesStore.getState().activeLeagueId).toBe("league-9");
+  });
+
+  it("announces an extension failure", async () => {
+    fetchLeagueViaExtensionMock.mockResolvedValue({ status: "failed", reason: "logged_out" });
+    const user = await renderWithExtension({ answers: true });
+
+    await user.click(screen.getByRole("button", { name: EXTENSION_BUTTON }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(
+      "Couldn't read this league with your Yahoo login. Make sure you're signed in to Yahoo in this browser. If you block third-party cookies, allow them for yahoo.com and try again.",
+    );
+    await waitFor(() => expect(alert).toHaveFocus());
+    expect(previewYahooSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("announces an extension that stops answering before the import", async () => {
+    fetchLeagueViaExtensionMock
+      .mockResolvedValueOnce({ status: "ok", payload: payload({ tag: "first" }) })
+      .mockResolvedValueOnce({ status: "missing" });
+    const user = await renderWithExtension({ answers: true });
+
+    await user.click(screen.getByRole("button", { name: EXTENSION_BUTTON }));
+    const picker = await teamPicker();
+    await user.click(within(picker).getByRole("radio", { name: "Newfoundlanders" }));
+    await user.click(screen.getByRole("button", { name: "Import league" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "The Court Vision extension isn't responding. Check that it's installed and enabled, then try again.",
+    );
+    expect(importYahooLeagueFromSnapshotMock).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("checks the URL before asking the extension", async () => {
+    const user = await renderWithExtension({ answers: true });
+    await user.clear(screen.getByLabelText("Yahoo league URL"));
+    await user.type(
+      screen.getByLabelText("Yahoo league URL"),
+      "https://football.fantasysports.yahoo.com/f1/12345",
+    );
+
+    await user.click(screen.getByRole("button", { name: EXTENSION_BUTTON }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "That's a Yahoo league for another sport. Only Yahoo Fantasy Basketball leagues can be imported.",
+    );
+    expect(fetchLeagueViaExtensionMock).not.toHaveBeenCalled();
+  });
+
+  describe("offers the extension after a private-league miss", () => {
+    it("offers to try with the extension when it answered the ping", async () => {
+      previewYahooLeagueMock.mockResolvedValue({ status: "not_found" });
+      const user = await renderWithExtension({ answers: true });
+
+      await user.click(screen.getByRole("button", { name: "Find league" }));
+      expect(await screen.findByRole("alert")).toHaveTextContent(NOT_FOUND_WITH_EXTENSION);
+      expect(screen.queryByRole("link")).not.toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Try with the extension" }));
+
+      await teamPicker();
+      expect(fetchLeagueViaExtensionMock).toHaveBeenCalledWith({
+        extensionId: EXTENSION_ID,
+        leagueId: "106344",
+      });
+      expect(previewYahooSnapshotMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("links to the extension when it didn't answer the ping", async () => {
+      previewYahooLeagueMock.mockResolvedValue({ status: "not_found" });
+      const user = await renderWithExtension({ answers: false });
+
+      await user.click(screen.getByRole("button", { name: "Find league" }));
+      await screen.findByRole("alert");
+
+      expect(
+        screen.queryByRole("button", { name: "Try with the extension" }),
+      ).not.toBeInTheDocument();
+      const link = screen.getByRole("link", {
+        name: "Get the Court Vision extension (opens in new tab)",
+      });
+      expect(link).toHaveAttribute(
+        "href",
+        `https://chromewebstore.google.com/detail/${EXTENSION_ID}`,
+      );
+      expect(link).toHaveAttribute("target", "_blank");
+      expect(link).toHaveAttribute("rel", "noreferrer");
+    });
+
+    it("offers nothing after a different failure", async () => {
+      previewYahooLeagueMock.mockResolvedValue({ status: "unavailable" });
+      const user = await renderWithExtension({ answers: true });
+
+      await user.click(screen.getByRole("button", { name: "Find league" }));
+      await screen.findByRole("alert");
+
+      expect(
+        screen.queryByRole("button", { name: "Try with the extension" }),
+      ).not.toBeInTheDocument();
+    });
   });
 });
