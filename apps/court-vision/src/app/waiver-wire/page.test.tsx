@@ -223,12 +223,10 @@ describe("WaiverWirePage", () => {
       myTeamId: "team-5",
     });
     expect(lastViewProps()).toMatchObject({
-      range: "last10",
       method: "zscore",
       lines,
       activePlayerIds: [1],
-      leagueData,
-      league: importedLeague(),
+      league: leagueData,
     });
   });
 

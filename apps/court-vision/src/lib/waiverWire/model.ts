@@ -1,8 +1,14 @@
-import { type FantasyPlayerValues, type MethodValueKey } from "@vision/core/valuation/types";
+import { SORT_KEY_BY_METHOD, VALUE_KEY_BY_SORT } from "@vision/core/valuation/registry";
+import {
+  type FantasyMethodKey,
+  type FantasyPlayerValues,
+  type MethodValueKey,
+} from "@vision/core/valuation/types";
 import { parseEligibleGroups } from "@vision/sport-basketball/engine";
 
 import { NON_ROSTER_SLOTS } from "@/lib/leagues/slots";
 import { type FantasyStatLine } from "@/lib/valuation/types";
+import { type ScoreKey } from "@/lib/waiverWire/swapBoard";
 import {
   type WaiverLeagueData,
   type WaiverModel,
@@ -13,6 +19,18 @@ import {
 } from "@/lib/waiverWire/types";
 
 const WEAKEST_COUNT = 3;
+
+// The method's value field ranks the pool; the category chips and the
+// head-to-head winners compare G-Score's per-category g for G-Score and z for
+// every other method.
+export const scoreKeysFor = ({
+  method,
+}: {
+  method: FantasyMethodKey;
+}): { valueKey: MethodValueKey; scoreKey: ScoreKey } => ({
+  valueKey: VALUE_KEY_BY_SORT[SORT_KEY_BY_METHOD[method]],
+  scoreKey: method === "gscore" ? "g" : "z",
+});
 
 type RankedValue = { playerId: number; value: number; rank: number };
 
