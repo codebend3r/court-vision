@@ -177,6 +177,34 @@ describe("mapLeagueSettings", () => {
     });
   });
 
+  it("refuses a category league with no supported categories", () => {
+    const league = gameOfCourts();
+    const onlyDoubleDoubles = withSettings({
+      league,
+      settings: {
+        stat_categories: {
+          stats: [
+            {
+              stat_id: 23,
+              display_name: "DD",
+              position_type: undefined,
+              is_only_display_stat: false,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(mapLeagueSettings({ league: onlyDoubleDoubles })).toEqual({
+      status: "unsupported",
+      reason: "scoring_type",
+    });
+    expect(mapLeagueSettings({ league: { ...onlyDoubleDoubles, scoring_type: "roto" } })).toEqual({
+      status: "unsupported",
+      reason: "scoring_type",
+    });
+  });
+
   it("clamps team count and roster slots to the league bounds", () => {
     const league = gameOfCourts();
     const mapped = mapLeagueSettings({
@@ -226,5 +254,6 @@ describe("toSlotType", () => {
   it("treats an unknown position as bench", () => {
     expect(toSlotType({ position: "NA" })).toBe("BENCH");
     expect(toSlotType({ position: null })).toBe("BENCH");
+    expect(toSlotType({ position: "constructor" })).toBe("BENCH");
   });
 });
