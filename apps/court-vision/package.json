@@ -17,6 +17,7 @@
     "db:migrate": "prisma migrate dev",
     "sync:bdl": "bun run src/lib/balldontlie/sync.ts",
     "sync:players": "bun run src/lib/balldontlie/sync-players.ts",
+    "yahoo:probe": "bun run src/lib/yahoo/probe.ts",
     "sync:nightly": "bun run src/lib/balldontlie/sync-nightly.ts",
     "seed:demo": "bun run src/lib/demo/seed.ts",
     "map:headshots": "bun run src/lib/headshots/map.ts"
