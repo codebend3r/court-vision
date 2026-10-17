@@ -9,7 +9,8 @@ export type YahooMessageStatus =
   | "duplicate"
   | "limit"
   | "invalid_team"
-  | "throttled";
+  | "throttled"
+  | "needs_extension";
 
 const GENERIC_MESSAGE = "Something went wrong. Try again.";
 
@@ -29,6 +30,7 @@ const YAHOO_FAILURE_MESSAGES: Readonly<Record<YahooMessageStatus, string>> = {
   limit: `You've reached the ${MAX_LEAGUES}-league limit. Delete a league to import another.`,
   invalid_team: "Pick your team from the list.",
   throttled: "Synced less than a minute ago.",
+  needs_extension: "Syncing this league needs the Court Vision extension in this browser.",
   unauthenticated: "Your session expired. Sign in again to continue.",
   error: GENERIC_MESSAGE,
 };

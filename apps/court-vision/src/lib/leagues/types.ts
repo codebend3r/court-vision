@@ -19,6 +19,22 @@ export const isLeagueProvider = (value: string): value is LeagueProvider =>
 export const toLeagueProvider = ({ value }: { value: string }): LeagueProvider =>
   isLeagueProvider(value) ? value : "manual";
 
+// Which path keeps an imported league in sync: the server reads Yahoo
+// directly, or the browser extension does, which is the only way to read a
+// private league.
+const LEAGUE_SYNC_VIAS = ["server", "extension"] as const;
+
+export type LeagueSyncVia = (typeof LEAGUE_SYNC_VIAS)[number];
+
+export const isLeagueSyncVia = (value: string): value is LeagueSyncVia =>
+  LEAGUE_SYNC_VIAS.some((syncVia) => syncVia === value);
+
+// For display only: a stored sync path this build doesn't know reads as the
+// server. Never lock or scope on this; those decisions test the raw column,
+// as they do for `provider`.
+export const toLeagueSyncVia = ({ value }: { value: string }): LeagueSyncVia =>
+  isLeagueSyncVia(value) ? value : "server";
+
 // Serializable league shape crossing the RSC boundary (dates as ISO strings).
 // `scoringConfig` is discriminated by `scoringType` and validated by the
 // sport engine's scoring-config guards.
@@ -31,6 +47,7 @@ export type LeagueSummary = {
   rosterSlots: number;
   scoringConfig: LeagueScoringConfig;
   provider: LeagueProvider;
+  syncVia: LeagueSyncVia;
   // Fail-closed: true for any stored provider other than "manual", including
   // one this build doesn't know. Teams and scoring are read-only when true.
   isImported: boolean;

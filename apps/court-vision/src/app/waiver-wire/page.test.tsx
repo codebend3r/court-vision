@@ -74,6 +74,7 @@ const importedLeague = (overrides: Partial<LeagueSummary> = {}): LeagueSummary =
   rosterSlots: 13,
   scoringConfig: { categories: ["pts", "reb", "ast"] },
   provider: "yahoo",
+  syncVia: "server",
   isImported: true,
   externalUrl: "https://basketball.fantasysports.yahoo.com/nba/106344",
   myTeamId: "team-5",
