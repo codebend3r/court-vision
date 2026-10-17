@@ -2,6 +2,8 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
+import { restoreEnv, stubEnv } from "@vision/testing/env";
+
 import { useLeaguesStore } from "@/lib/leagues/store";
 import { type LeagueSummary } from "@/lib/leagues/types";
 import {
@@ -81,6 +83,8 @@ const importedLeague: LeagueSummary = {
 };
 
 beforeEach(() => {
+  // The failure copy below is the no-extension copy, whatever a local `.env` sets.
+  stubEnv({ key: "NEXT_PUBLIC_COURT_VISION_EXTENSION_ID", value: "" });
   previewYahooLeagueMock.mockReset();
   previewYahooLeagueMock.mockResolvedValue({ status: "ok", preview: preview() });
   importYahooLeagueMock.mockReset();
@@ -94,7 +98,10 @@ beforeEach(() => {
   useLeaguesStore.setState({ leagues: [], activeLeagueId: null });
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  restoreEnv();
+});
 
 const findLeague = async () => {
   const user = userEvent.setup();
