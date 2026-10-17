@@ -6,6 +6,18 @@
   font-size: var(--font-size-sm);
 }
 
+.note {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.credit {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
 .error {
   @include error-callout;
 }
@@ -39,6 +51,14 @@
   padding: var(--space-3) var(--space-4);
 }
 
+// Logo (imported teams), name, then the "Your team" tag and manager.
+.identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .teamName {
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
@@ -47,6 +67,26 @@
     color: var(--color-accent);
     text-decoration: underline;
   }
+}
+
+// Labelled in words, so the tag never relies on its border alone.
+.mine {
+  @include micro-label;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+}
+
+.manager {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+// An imported team's name: the link's type, without its hover.
+.teamLabel {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
 }
 
 .teamMeta {
@@ -109,6 +149,12 @@
 
 .empty {
   color: var(--color-text-muted);
+}
+
+// A Yahoo player with no Court Vision match: named, in body text, so the
+// marker reads as text rather than colour.
+.unmatched {
+  color: var(--color-text);
 }
 
 .player {

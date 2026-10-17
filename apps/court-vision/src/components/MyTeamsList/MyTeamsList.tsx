@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startTransition, useOptimistic, useState } from "react";
 
+import { FantasyTeamLogo } from "@/components/FantasyTeamLogo/FantasyTeamLogo";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { Disclosure } from "@vision/ui/components/Disclosure/Disclosure";
 import { groupSlotsByKind, slotMeta } from "@vision/sport-basketball/engine";
@@ -12,6 +13,19 @@ import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 import { deleteLeagueTeam } from "@/lib/leagues/teamActions";
 
 import styles from "@/components/MyTeamsList/MyTeamsList.module.scss";
+
+// A slot with no Court Vision player: a vacancy, or an imported player Yahoo
+// named that could not be matched (shown by name, never guessed).
+function EmptySlot({ unmatchedName }: { unmatchedName: string | null }) {
+  if (unmatchedName === null) return <span className={styles.empty}>Empty</span>;
+  return <span className={styles.unmatched}>Unmatched: {unmatchedName}</span>;
+}
+
+// The user's own team leads; the rest keep the server's order.
+const mineFirst = ({ teams }: { teams: FantasyTeam[] }): FantasyTeam[] => [
+  ...teams.filter((team) => team.isMine),
+  ...teams.filter((team) => !team.isMine),
+];
 
 type TeamAccordionProps = {
   team: FantasyTeam;
@@ -29,17 +43,27 @@ function TeamAccordion({ team, onDelete }: TeamAccordionProps) {
       summaryClassName={styles.summary}
       summary={
         <>
-          {/* preventDefault stops the summary toggle; navigate manually. */}
-          <Link
-            href={editHref}
-            className={styles.teamName}
-            onClick={(event) => {
-              event.preventDefault();
-              router.push(editHref);
-            }}
-          >
-            {team.name}
-          </Link>
+          <span className={styles.identity}>
+            {team.isImported && <FantasyTeamLogo name={team.name} logoUrl={team.logoUrl} />}
+            {team.isImported ? (
+              // An imported team is Yahoo's to edit, so its name is not a link.
+              <span className={styles.teamLabel}>{team.name}</span>
+            ) : (
+              // preventDefault stops the summary toggle; navigate manually.
+              <Link
+                href={editHref}
+                className={styles.teamName}
+                onClick={(event) => {
+                  event.preventDefault();
+                  router.push(editHref);
+                }}
+              >
+                {team.name}
+              </Link>
+            )}
+            {team.isMine && <span className={styles.mine}>Your team</span>}
+            {!!team.managerName && <span className={styles.manager}>{team.managerName}</span>}
+          </span>
           <span className={styles.teamMeta}>
             {filled}/{team.slots.length} slots filled
           </span>
@@ -55,7 +79,7 @@ function TeamAccordion({ team, onDelete }: TeamAccordionProps) {
                 <li key={slot.id} className={styles.slot}>
                   <span className={styles.slotType}>{slotMeta({ type: slot.type }).label}</span>
                   {slot.player === null ? (
-                    <span className={styles.empty}>Empty</span>
+                    <EmptySlot unmatchedName={team.unmatchedBySlotId[slot.id] ?? null} />
                   ) : (
                     <span className={styles.player}>
                       <PlayerAvatar
@@ -75,13 +99,15 @@ function TeamAccordion({ team, onDelete }: TeamAccordionProps) {
             </ul>
           </span>
         ))}
-        <button
-          type="button"
-          onClick={() => onDelete({ teamId: team.id })}
-          className={styles.delete}
-        >
-          Delete team
-        </button>
+        {!team.isImported && (
+          <button
+            type="button"
+            onClick={() => onDelete({ teamId: team.id })}
+            className={styles.delete}
+          >
+            Delete team
+          </button>
+        )}
       </span>
     </Disclosure>
   );
@@ -90,9 +116,11 @@ function TeamAccordion({ team, onDelete }: TeamAccordionProps) {
 export type MyTeamsListProps = {
   teams: FantasyTeam[];
   leagueName: string;
+  // The league is imported, so its teams are Yahoo's and read-only here.
+  isImported: boolean;
 };
 
-export function MyTeamsList({ teams, leagueName }: MyTeamsListProps) {
+export function MyTeamsList({ teams, leagueName, isImported }: MyTeamsListProps) {
   const router = useRouter();
   // The server's `teams`, minus a team whose delete has been confirmed but
   // whose refreshed list has not landed yet.
@@ -120,18 +148,24 @@ export function MyTeamsList({ teams, leagueName }: MyTeamsListProps) {
   return (
     <section className={styles.list}>
       <p className={styles.scope}>League: {leagueName}</p>
+      {isImported && <p className={styles.note}>Managed in Yahoo. Sync to update.</p>}
       {!!errorMessage && (
         <p role="alert" className={styles.error}>
           {errorMessage}
         </p>
       )}
-      {shownTeams.length === 0 ? (
+      {shownTeams.length === 0 && isImported && (
+        <p className={styles.emptyState}>No fantasy teams yet.</p>
+      )}
+      {shownTeams.length === 0 && !isImported && (
         <p className={styles.emptyState}>
           No fantasy teams yet — <Link href="/my-teams/create">create your first team</Link>.
         </p>
-      ) : (
-        shownTeams.map((team) => <TeamAccordion key={team.id} team={team} onDelete={onDelete} />)
       )}
+      {mineFirst({ teams: shownTeams }).map((team) => (
+        <TeamAccordion key={team.id} team={team} onDelete={onDelete} />
+      ))}
+      {isImported && <p className={styles.credit}>League data from Yahoo Fantasy</p>}
     </section>
   );
 }

@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { startTransition, useOptimistic, useState } from "react";
+import { startTransition, useId, useOptimistic, useState } from "react";
 
 import styles from "@/components/LeagueList/LeagueList.module.scss";
+import { SyncYahooButton } from "@/components/SyncYahooButton/SyncYahooButton";
 import { deleteLeague } from "@/lib/leagues/actions";
 import { MAX_LEAGUES } from "@vision/core/league/constants";
 import { SCORING_TYPE_LABELS } from "@/lib/leagues/settings";
 import { SWITCH_LEAGUE_ERROR, useLeaguesStore } from "@/lib/leagues/store";
 import { type LeagueSummary } from "@/lib/leagues/types";
+import { notValuedMessage } from "@/lib/yahoo/messages";
 
 const DELETE_ERROR = "Could not delete the league — try again.";
 
@@ -38,6 +40,7 @@ export type LeagueListProps = {
 // own `leagues`/`activeLeagueId`, and fall back to them when an action fails.
 export function LeagueList({ leagues, activeLeagueId }: LeagueListProps) {
   const router = useRouter();
+  const newTabIdPrefix = useId();
   const [shownLeagues, removeShownLeague] = useOptimistic(leagues, (current, leagueId: string) =>
     current.filter((league) => league.id !== leagueId),
   );
@@ -130,7 +133,10 @@ export function LeagueList({ leagues, activeLeagueId }: LeagueListProps) {
                 <Link href={`/leagues/${league.slug}`} className={styles.name}>
                   {league.name}
                 </Link>
-                <span className={styles.badge}>{SCORING_TYPE_LABELS[league.scoringType]}</span>
+                <span className={styles.badges}>
+                  {league.isImported && <span className={styles.badge}>Yahoo</span>}
+                  <span className={styles.badge}>{SCORING_TYPE_LABELS[league.scoringType]}</span>
+                </span>
               </div>
               <div className={styles.actions}>
                 <button
@@ -141,6 +147,24 @@ export function LeagueList({ leagues, activeLeagueId }: LeagueListProps) {
                 >
                   {isActive ? "Active" : "Set active"}
                 </button>
+                {league.isImported && !!league.externalUrl && (
+                  // The name says which league; the hidden note, read as the
+                  // description, says the link leaves for a new tab.
+                  <a
+                    href={league.externalUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={styles.external}
+                    aria-label={`Open in Yahoo: ${league.name}`}
+                    aria-describedby={`${newTabIdPrefix}-${league.id}`}
+                  >
+                    Open in Yahoo
+                    <span id={`${newTabIdPrefix}-${league.id}`} className={styles.srOnly}>
+                      {" "}
+                      (opens in new tab)
+                    </span>
+                  </a>
+                )}
                 <button
                   type="button"
                   className={styles.delete}
@@ -156,6 +180,19 @@ export function LeagueList({ leagues, activeLeagueId }: LeagueListProps) {
                   {isPendingDelete ? "Confirm delete" : "Delete"}
                 </button>
               </div>
+              {league.isImported && (
+                <SyncYahooButton
+                  leagueId={league.id}
+                  leagueName={league.name}
+                  syncedAt={league.syncedAt}
+                  syncError={league.syncError}
+                />
+              )}
+              {!!league.unsupportedCategories.length && (
+                <p className={styles.warning}>
+                  {notValuedMessage({ categories: league.unsupportedCategories })}
+                </p>
+              )}
               {/* Replacement rank matters here: it is what the valuation
                   engine derives from league size (teams × slots). */}
               <dl className={styles.facts}>
@@ -176,6 +213,7 @@ export function LeagueList({ leagues, activeLeagueId }: LeagueListProps) {
                   <dd className={styles.factValue}>{SCORING_TYPE_LABELS[league.scoringType]}</dd>
                 </div>
               </dl>
+              {league.isImported && <p className={styles.credit}>League data from Yahoo Fantasy</p>}
             </li>
           );
         })}
