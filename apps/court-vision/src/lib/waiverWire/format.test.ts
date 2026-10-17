@@ -1,6 +1,11 @@
 import { describe, expect, it } from "bun:test";
 
-import { formatCategoryDelta, formatCategoryValue, formatValue } from "@/lib/waiverWire/format";
+import {
+  formatCategoryDelta,
+  formatCategoryValue,
+  formatValue,
+  unmatchedNotice,
+} from "@/lib/waiverWire/format";
 
 describe("formatCategoryValue", () => {
   it("prints a ratio category as a rate with no leading zero", () => {
@@ -53,5 +58,39 @@ describe("formatValue", () => {
 
   it("drops the sign from a negative value that rounds to zero", () => {
     expect(formatValue({ value: -0.001 })).toBe("0.00");
+  });
+});
+
+describe("unmatchedNotice", () => {
+  it("names every unmatched player and says what that costs", () => {
+    expect(
+      unmatchedNotice({
+        unmatched: [
+          { fullName: "Bronny James", isMine: false },
+          { fullName: "Kel'el Ware", isMine: false },
+        ],
+      }),
+    ).toBe(
+      "2 players couldn't be matched to Court Vision (Bronny James, Kel'el Ware). They won't count as rostered, so they may show up as free agents.",
+    );
+  });
+
+  it("calls out the ones on your team", () => {
+    expect(
+      unmatchedNotice({
+        unmatched: [
+          { fullName: "Bronny James", isMine: true },
+          { fullName: "Kel'el Ware", isMine: false },
+        ],
+      }),
+    ).toBe(
+      "2 players couldn't be matched to Court Vision (Bronny James, Kel'el Ware; yours: Bronny James). They won't count as rostered, so they may show up as free agents.",
+    );
+  });
+
+  it("counts a single player in the singular", () => {
+    expect(unmatchedNotice({ unmatched: [{ fullName: "Bronny James", isMine: true }] })).toBe(
+      "1 player couldn't be matched to Court Vision (Bronny James; yours: Bronny James). They won't count as rostered, so they may show up as free agents.",
+    );
   });
 });

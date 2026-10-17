@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { loadWaiverWireSearchParams } from "@/lib/waiverWire/searchParams";
+import { loadWaiverWireSearchParams, waiverWireParsers } from "@/lib/waiverWire/searchParams";
 
 describe("loadWaiverWireSearchParams", () => {
   it("defaults to the swap board over the season", () => {
@@ -32,5 +32,20 @@ describe("loadWaiverWireSearchParams", () => {
       mine: 7,
     });
     expect(loadWaiverWireSearchParams({ fa: "abc" }).fa).toBeNull();
+  });
+});
+
+describe("waiverWireParsers", () => {
+  it("refetches from the server on a range change and on nothing else", () => {
+    expect(Reflect.get(waiverWireParsers.range, "shallow")).toBe(false);
+    [
+      waiverWireParsers.view,
+      waiverWireParsers.pos,
+      waiverWireParsers.scope,
+      waiverWireParsers.fa,
+      waiverWireParsers.mine,
+    ].forEach((parser) => {
+      expect(Reflect.get(parser, "shallow")).not.toBe(false);
+    });
   });
 });

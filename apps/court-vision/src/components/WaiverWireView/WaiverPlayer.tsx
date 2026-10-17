@@ -10,7 +10,8 @@ export type WaiverPlayerProps = {
     WaiverRow,
     "playerId" | "fullName" | "teamAbbr" | "position" | "owner" | "injuryStatus"
   >;
-  onCompare: ({ fa }: { fa: number }) => void;
+  // Only a free agent's name compares; a list of my players can leave it out.
+  onCompare?: ({ fa }: { fa: number }) => void;
   // The view's one hidden hint saying what the name button does.
   compareHintId: string;
 };
@@ -34,7 +35,7 @@ export function WaiverPlayer({ player, onCompare, compareHintId }: WaiverPlayerP
           type="button"
           className={styles.nameButton}
           aria-describedby={compareHintId}
-          onClick={() => onCompare({ fa: player.playerId })}
+          onClick={() => onCompare?.({ fa: player.playerId })}
         >
           {player.fullName}
         </button>

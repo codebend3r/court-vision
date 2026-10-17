@@ -24,7 +24,30 @@ const slot = ({
   slotType: string;
   injuryStatus?: string | null;
   fullName?: string;
-}) => ({ teamId, playerId, slotType, injuryStatus, player: { fullName } });
+}) => ({
+  teamId,
+  playerId,
+  slotType,
+  injuryStatus,
+  externalPlayerName: fullName,
+  player: { fullName },
+});
+
+// A slot whose Yahoo player never matched: no player id, only Yahoo's name.
+const unmatchedSlot = ({
+  teamId,
+  externalPlayerName,
+}: {
+  teamId: string;
+  externalPlayerName: string | null;
+}) => ({
+  teamId,
+  playerId: null,
+  slotType: "BE",
+  injuryStatus: null,
+  externalPlayerName,
+  player: null,
+});
 
 beforeEach(() => {
   slotFindMany.mockReset();
@@ -51,15 +74,18 @@ describe("getWaiverLeagueData", () => {
       ],
       rosteredPlayerIds: [1, 2, 3],
       waivers: [{ playerId: 9, injuryStatus: "Q" }],
+      unmatched: [],
     });
     expect(slotFindMany).toHaveBeenCalledTimes(1);
+    // No playerId filter: the unmatched slots are read too.
     expect(slotFindMany).toHaveBeenCalledWith({
-      where: { team: { leagueId: "league-1" }, playerId: { not: null } },
+      where: { team: { leagueId: "league-1" } },
       select: {
         playerId: true,
         slotType: true,
         injuryStatus: true,
         teamId: true,
+        externalPlayerName: true,
         player: { select: { fullName: true } },
       },
     });
@@ -82,15 +108,32 @@ describe("getWaiverLeagueData", () => {
     expect(data.rosteredPlayerIds).toEqual([1, 2]);
   });
 
-  it("skips slot rows with no player", async () => {
-    slotFindMany.mockResolvedValue([
-      { teamId: "mine", playerId: null, slotType: "PG", injuryStatus: null, player: null },
-    ]);
+  it("skips empty slot rows", async () => {
+    slotFindMany.mockResolvedValue([unmatchedSlot({ teamId: "mine", externalPlayerName: null })]);
 
     expect(await getWaiverLeagueData({ leagueId: "league-1", myTeamId: "mine" })).toEqual({
       myRoster: [],
       rosteredPlayerIds: [],
       waivers: [],
+      unmatched: [],
     });
+  });
+
+  it("splits unmatched slots out by Yahoo name, marking mine", async () => {
+    slotFindMany.mockResolvedValue([
+      slot({ teamId: "mine", playerId: 1, slotType: "PG", fullName: "Ann Guard" }),
+      unmatchedSlot({ teamId: "mine", externalPlayerName: "Bronny James" }),
+      unmatchedSlot({ teamId: "other", externalPlayerName: "Kel'el Ware" }),
+      slot({ teamId: "other", playerId: 3, slotType: "C" }),
+    ]);
+
+    const data = await getWaiverLeagueData({ leagueId: "league-1", myTeamId: "mine" });
+
+    expect(data.unmatched).toEqual([
+      { fullName: "Bronny James", isMine: true },
+      { fullName: "Kel'el Ware", isMine: false },
+    ]);
+    expect(data.myRoster.map((entry) => entry.playerId)).toEqual([1]);
+    expect(data.rosteredPlayerIds).toEqual([1, 3]);
   });
 });

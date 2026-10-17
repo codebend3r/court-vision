@@ -125,6 +125,7 @@ export default async function WaiverWirePage({
         </p>
       )}
       <WaiverWireView
+        range={range}
         lines={lines}
         league={leagueData}
         activePlayerIds={activeRoster.map((player) => player.playerId)}

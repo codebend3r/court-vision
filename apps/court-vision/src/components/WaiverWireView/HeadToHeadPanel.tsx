@@ -2,6 +2,7 @@
 
 import { type ChangeEvent, useId } from "react";
 
+import { NO_FREE_AGENTS } from "@/components/WaiverWireView/CutLinePanel";
 import { formatCategoryDelta, formatCategoryValue, formatValue } from "@/lib/waiverWire/format";
 import {
   type HeadToHead,
@@ -196,7 +197,8 @@ export function HeadToHeadPanel({ pair, result, freePool, roster, onPick }: Head
           <p className={styles.summary}>{headToHeadSummary({ pair, result })}</p>
         </>
       ) : (
-        <p className={styles.empty}>{NO_PAIR}</p>
+        // With no free agent to pick, say why rather than ask for a pick.
+        <p className={styles.empty}>{freePool.length === 0 ? NO_FREE_AGENTS : NO_PAIR}</p>
       )}
     </div>
   );

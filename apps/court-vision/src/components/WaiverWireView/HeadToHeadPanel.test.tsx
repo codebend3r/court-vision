@@ -236,12 +236,23 @@ describe("HeadToHeadPanel", () => {
     expect(cellOf({ label: "FT%", column: "delta" }).textContent).toBe("0");
   });
 
-  it("says what is missing when there is no pair", () => {
-    renderPanel({ withPair: false, freePool: [] });
+  it("asks for a pick when there is no pair", () => {
+    renderPanel({ withPair: false });
 
     expect(
       screen.getByText("Pick a free agent and one of your players to compare."),
     ).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Free agent" })).toBeInTheDocument();
+  });
+
+  it("says no free agent matches when the free pool is empty", () => {
+    renderPanel({ withPair: false, freePool: [] });
+
+    expect(screen.getByText("No free agents match this range and position.")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Pick a free agent and one of your players to compare."),
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
     expect(screen.queryByRole("article")).not.toBeInTheDocument();
     expect(screen.queryByRole("combobox", { name: "Free agent" })).not.toBeInTheDocument();

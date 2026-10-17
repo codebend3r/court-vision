@@ -40,6 +40,7 @@ const league = (overrides: Partial<WaiverLeagueData>): WaiverLeagueData => ({
   myRoster: [],
   rosteredPlayerIds: [],
   waivers: [],
+  unmatched: [],
   ...overrides,
 });
 

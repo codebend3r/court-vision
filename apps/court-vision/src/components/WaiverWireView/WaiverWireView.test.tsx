@@ -85,6 +85,7 @@ const league: WaiverLeagueData = {
   ],
   rosteredPlayerIds: [1, 2, 3],
   waivers: [{ playerId: 5, injuryStatus: null }],
+  unmatched: [],
 };
 
 const config: ValuationConfig = {
@@ -97,6 +98,7 @@ const config: ValuationConfig = {
 };
 
 const props: WaiverWireViewProps = {
+  range: "all",
   lines,
   league,
   activePlayerIds: [1, 2, 3, 4, 5, 6, 7],
@@ -172,6 +174,56 @@ describe("WaiverWireView", () => {
     );
     expect(lastUpdate({ onUrlUpdate })?.options.shallow).toBe(false);
     expect(select).toHaveValue("last10");
+  });
+
+  it("names the league's unmatched players under the controls, calling out yours", () => {
+    renderView({
+      overrides: {
+        league: {
+          ...league,
+          unmatched: [
+            { fullName: "Bronny James", isMine: true },
+            { fullName: "Kel'el Ware", isMine: false },
+          ],
+        },
+      },
+    });
+
+    expect(
+      screen.getByText(
+        "2 players couldn't be matched to Court Vision (Bronny James, Kel'el Ware; yours: Bronny James). They won't count as rostered, so they may show up as free agents.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("says nothing about unmatched players when every player matched", () => {
+    renderView();
+
+    expect(screen.queryByText(/couldn't be matched/)).not.toBeInTheDocument();
+  });
+
+  it("keeps valuing the loaded pool with its own range while a new range loads", async () => {
+    const user = userEvent.setup();
+    const { onUrlUpdate } = renderView({
+      searchParams: "?range=last20",
+      overrides: { range: "last20" },
+    });
+
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Range" }),
+      GAME_RANGE_LABELS.last10,
+    );
+
+    await waitFor(() =>
+      expect(lastUpdate({ onUrlUpdate })?.searchParams.get("range") ?? null).toBe("last10"),
+    );
+    expect(screen.getByRole("combobox", { name: "Range" })).toHaveValue("last10");
+    // Same lines, same window: nothing to re-value until the server's pool lands.
+    expect(post).not.toHaveBeenCalled();
+    expect(screen.getByRole("region", { name: "Waiver Wire" })).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
   });
 
   it("filters free agents by position", async () => {
@@ -292,6 +344,21 @@ describe("WaiverWireView", () => {
     await user.click(screen.getByRole("tab", { name: "Cut line" }));
 
     expect(screen.getByRole("status")).toHaveTextContent(/^\d+ of \d+ players shown$/);
+  });
+
+  it("says no free agent matches on head-to-head when the free pool is empty", () => {
+    renderView({
+      searchParams: "?view=h2h",
+      overrides: { league: { ...league, rosteredPlayerIds: [1, 2, 3, 4, 5, 6, 7], waivers: [] } },
+    });
+
+    const panel = screen.getByRole("tabpanel", { name: "Head-to-head" });
+    expect(
+      within(panel).getByText("No free agents match this range and position."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "No free agents match this range and position.",
+    );
   });
 
   it("names the position filters in full", () => {

@@ -16,6 +16,9 @@ export type WaiverLeagueData = {
   myRoster: WaiverRosterEntry[]; // my team's matched players
   rosteredPlayerIds: number[]; // matched players on every team in the league
   waivers: { playerId: number; injuryStatus: string | null }[];
+  // Slots whose Yahoo player never matched a Court Vision player, by the name
+  // Yahoo gave. They count as rostered nowhere, so they can read as free agents.
+  unmatched: { fullName: string; isMine: boolean }[];
 };
 
 export type WaiverOwner = "mine" | "free_agent" | "waivers";
