@@ -5,6 +5,8 @@ const mappingFindMany = vi.fn();
 const upsert = vi.fn();
 const deleteMany = vi.fn();
 const $transaction = vi.fn();
+// Every array handed to $transaction, so a test can assert the write order.
+const transactions: unknown[][] = [];
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -16,7 +18,7 @@ vi.mock("@/lib/prisma", () => ({
 
 import { type YahooPlayerRef } from "@/lib/yahoo/types";
 
-import { matchPlayer, resolveYahooPlayers } from "@/lib/yahoo/matchPlayers";
+import { isMatchMethod, matchPlayer, resolveYahooPlayers } from "@/lib/yahoo/matchPlayers";
 
 const ref = (overrides: Partial<YahooPlayerRef> = {}): YahooPlayerRef => ({
   yahooPlayerId: "6404",
@@ -29,6 +31,19 @@ const ref = (overrides: Partial<YahooPlayerRef> = {}): YahooPlayerRef => ({
 
 const green = { id: 1, fullName: "Jalen Green", teamAbbr: "PHX" };
 const smith = { id: 2, fullName: "Jalen Smith", teamAbbr: "CHI" };
+
+describe("isMatchMethod", () => {
+  it("accepts the two methods the matcher writes", () => {
+    expect(isMatchMethod("name_team")).toBe(true);
+    expect(isMatchMethod("name_only")).toBe(true);
+  });
+
+  it("rejects anything else, including the read-only existing marker", () => {
+    expect(isMatchMethod("existing")).toBe(false);
+    expect(isMatchMethod("")).toBe(false);
+    expect(isMatchMethod("manual")).toBe(false);
+  });
+});
 
 describe("matchPlayer", () => {
   it("keeps a stored mapping whose name still agrees", () => {
@@ -143,12 +158,16 @@ describe("resolveYahooPlayers", () => {
     upsert.mockReset();
     deleteMany.mockReset();
     $transaction.mockReset();
+    transactions.length = 0;
 
     playerFindMany.mockResolvedValue([green, smith]);
     mappingFindMany.mockResolvedValue([]);
     upsert.mockImplementation((args: unknown) => ({ op: "upsert", args }));
     deleteMany.mockImplementation((args: unknown) => ({ op: "deleteMany", args }));
-    $transaction.mockImplementation((ops: unknown[]) => Promise.resolve(ops));
+    $transaction.mockImplementation((ops: unknown[]) => {
+      transactions.push(ops);
+      return Promise.resolve(ops);
+    });
   });
 
   it("queries only active players and the stored mappings for the given refs", async () => {
@@ -191,7 +210,7 @@ describe("resolveYahooPlayers", () => {
   });
 
   it("keeps a stored mapping whose name still agrees", async () => {
-    mappingFindMany.mockResolvedValue([
+    mappingFindMany.mockResolvedValueOnce([
       {
         externalId: "6404",
         playerId: 9,
@@ -218,7 +237,7 @@ describe("resolveYahooPlayers", () => {
   });
 
   it("drops a stored mapping whose name no longer agrees and rematches", async () => {
-    mappingFindMany.mockResolvedValue([
+    mappingFindMany.mockResolvedValueOnce([
       { externalId: "6404", playerId: 2, method: "name_team", player: smith },
     ]);
 
@@ -239,11 +258,18 @@ describe("resolveYahooPlayers", () => {
       },
       update: { playerId: 1, method: "name_team", eligiblePositions: ["SG", "G", "Util"] },
     });
-    expect($transaction).toHaveBeenCalledTimes(1);
+    expect(transactions).toHaveLength(1);
+    expect(transactions[0]).toEqual([
+      {
+        op: "deleteMany",
+        args: { where: { provider: "yahoo", externalId: { in: ["6404"] } } },
+      },
+      expect.objectContaining({ op: "upsert" }),
+    ]);
   });
 
   it("deletes a stale mapping whose ref no longer matches anyone", async () => {
-    mappingFindMany.mockResolvedValue([
+    mappingFindMany.mockResolvedValueOnce([
       { externalId: "6404", playerId: 2, method: "name_team", player: smith },
     ]);
     playerFindMany.mockResolvedValue([smith]);
@@ -256,7 +282,7 @@ describe("resolveYahooPlayers", () => {
   });
 
   it("writes nothing when writeMappings is false", async () => {
-    mappingFindMany.mockResolvedValue([
+    mappingFindMany.mockResolvedValueOnce([
       { externalId: "6404", playerId: 2, method: "name_team", player: smith },
     ]);
 
@@ -269,7 +295,7 @@ describe("resolveYahooPlayers", () => {
   });
 
   it("refreshes eligible positions on stored mappings", async () => {
-    mappingFindMany.mockResolvedValue([
+    mappingFindMany.mockResolvedValueOnce([
       { externalId: "6404", playerId: 1, method: "name_team", player: green },
     ]);
 
@@ -279,11 +305,75 @@ describe("resolveYahooPlayers", () => {
     });
 
     expect(upsert).toHaveBeenCalledTimes(1);
-    expect(upsert.mock.calls[0]?.[0]?.update).toEqual({
-      playerId: 1,
-      method: "name_team",
-      eligiblePositions: ["SF", "F"],
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: { playerId: 1, method: "name_team", eligiblePositions: ["SF", "F"] },
+      }),
+    );
+  });
+
+  it("never upserts conflicted refs when writing", async () => {
+    const first = ref({ yahooPlayerId: "6404" });
+    const second = ref({ yahooPlayerId: "7777", teamAbbr: "SAS" });
+
+    const resolved = await resolveYahooPlayers({ refs: [first, second], writeMappings: true });
+
+    expect(resolved.byYahooId.size).toBe(0);
+    expect(upsert).not.toHaveBeenCalled();
+    expect(deleteMany).not.toHaveBeenCalled();
+    expect($transaction).not.toHaveBeenCalled();
+  });
+
+  it("keeps a stored row whose name agrees when its ref loses a conflict", async () => {
+    mappingFindMany.mockResolvedValueOnce([
+      { externalId: "6404", playerId: 1, method: "name_team", player: green },
+    ]);
+    const stored = ref({ yahooPlayerId: "6404" });
+    const rival = ref({ yahooPlayerId: "7777", teamAbbr: "SAS" });
+
+    const resolved = await resolveYahooPlayers({ refs: [stored, rival], writeMappings: true });
+
+    expect(resolved.byYahooId.size).toBe(0);
+    expect(resolved.unmatched).toEqual([stored, rival]);
+    expect(deleteMany).not.toHaveBeenCalled();
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it("leaves a ref unmatched when another Yahoo id outside the batch already holds the player", async () => {
+    mappingFindMany.mockResolvedValueOnce([]).mockResolvedValueOnce([{ playerId: 1 }]);
+    const rival = ref({ yahooPlayerId: "7777" });
+
+    const resolved = await resolveYahooPlayers({ refs: [rival], writeMappings: true });
+
+    expect(mappingFindMany).toHaveBeenLastCalledWith({
+      where: { provider: "yahoo", playerId: { in: [1] }, externalId: { notIn: ["7777"] } },
+      select: { playerId: true },
     });
+    expect(resolved.byYahooId.size).toBe(0);
+    expect(resolved.unmatched).toEqual([rival]);
+    expect(upsert).not.toHaveBeenCalled();
+    expect($transaction).not.toHaveBeenCalled();
+  });
+
+  it("skips the held-player query when nothing matched", async () => {
+    await resolveYahooPlayers({ refs: [ref({ fullName: "Nobody Here" })], writeMappings: true });
+
+    expect(mappingFindMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a stored row whose method this code never writes", async () => {
+    mappingFindMany.mockResolvedValueOnce([
+      {
+        externalId: "6404",
+        playerId: 9,
+        method: "manual",
+        player: { id: 9, fullName: "Jalen Green", teamAbbr: "HOU" },
+      },
+    ]);
+
+    const resolved = await resolveYahooPlayers({ refs: [ref()], writeMappings: false });
+
+    expect(resolved.byYahooId.get("6404")).toBe(1);
   });
 
   it("opens no transaction when there is nothing to write", async () => {
