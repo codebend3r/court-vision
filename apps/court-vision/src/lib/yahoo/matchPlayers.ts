@@ -60,7 +60,11 @@ export type ResolvedPlayers = {
   unmatched: YahooPlayerRef[];
 };
 
-type StoredMapping = { method: MatchMethod; player: MatchCandidate };
+type StoredMapping = {
+  method: MatchMethod;
+  eligiblePositions: readonly string[];
+  player: MatchCandidate;
+};
 type Match = { playerId: number; method: MatchMethod };
 type Attempt = {
   ref: YahooPlayerRef;
@@ -89,7 +93,16 @@ const loadStoredMappings = async ({
   return new Map(
     rows.flatMap((row): [string, StoredMapping][] =>
       isMatchMethod(row.method)
-        ? [[row.externalId, { method: row.method, player: row.player }]]
+        ? [
+            [
+              row.externalId,
+              {
+                method: row.method,
+                eligiblePositions: row.eligiblePositions,
+                player: row.player,
+              },
+            ],
+          ]
         : [],
     ),
   );
@@ -156,6 +169,30 @@ const persistMappings = async ({
   if (!operations.length) return;
   await prisma.$transaction(operations);
 };
+
+const sameStrings = ({
+  left,
+  right,
+}: {
+  left: readonly string[];
+  right: readonly string[];
+}): boolean => left.length === right.length && left.every((value, index) => value === right[index]);
+
+// A stored row that already says exactly this needs no write. Most of a sync's
+// refs land here, and each skipped upsert is a statement the request saves.
+const isUnchanged = ({
+  row,
+  ref,
+  match,
+}: {
+  row: StoredMapping | undefined;
+  ref: YahooPlayerRef;
+  match: Match;
+}): boolean =>
+  !!row &&
+  row.player.id === match.playerId &&
+  row.method === match.method &&
+  sameStrings({ left: row.eligiblePositions, right: ref.eligiblePositions });
 
 const groupByNameKey = ({
   candidates,
@@ -236,7 +273,12 @@ export const resolveYahooPlayers = async ({
     const staleIds = resolved
       .filter(({ ref, keepsStored }) => stored.has(ref.yahooPlayerId) && !keepsStored)
       .map(({ ref }) => ref.yahooPlayerId);
-    await persistMappings({ upserts: matched, staleIds });
+    const upserts = matched.filter(
+      ({ ref, match }) =>
+        staleIds.includes(ref.yahooPlayerId) ||
+        !isUnchanged({ row: stored.get(ref.yahooPlayerId), ref, match }),
+    );
+    await persistMappings({ upserts, staleIds });
   }
 
   return {

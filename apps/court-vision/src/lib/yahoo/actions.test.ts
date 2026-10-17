@@ -5,7 +5,7 @@ import { type YahooLoadResult } from "@/lib/yahoo/load";
 import { type ResolvedPlayers } from "@/lib/yahoo/matchPlayers";
 import { type ImportedLeague, type YahooPlayerRef } from "@/lib/yahoo/types";
 
-type LoadArgs = { leagueId: string };
+type LoadArgs = { leagueId: string; includeWaivers?: boolean };
 type ResolveArgs = { refs: readonly YahooPlayerRef[]; writeMappings: boolean };
 
 const getProfile = vi.fn();
@@ -16,6 +16,7 @@ const syncImportedLeague = vi.fn<(args: { leagueId: string }) => Promise<League>
 
 const leagueFindFirst = vi.fn();
 const leagueUpdate = vi.fn();
+const leagueCount = vi.fn<() => Promise<number>>();
 const teamFindFirst = vi.fn();
 const $transaction = vi.fn();
 // The transaction's own delegate, so a test can tell a read made inside the
@@ -23,7 +24,7 @@ const $transaction = vi.fn();
 const txFindFirst = vi.fn();
 const txCount = vi.fn<() => Promise<number>>();
 
-const leagueDelegate = { findFirst: leagueFindFirst, update: leagueUpdate };
+const leagueDelegate = { findFirst: leagueFindFirst, update: leagueUpdate, count: leagueCount };
 const tx = { league: { findFirst: txFindFirst, count: txCount } };
 
 vi.mock("@/lib/prisma", () => ({
@@ -184,6 +185,7 @@ beforeEach(() => {
     txFindFirst,
     txCount,
     leagueUpdate,
+    leagueCount,
     teamFindFirst,
     $transaction,
   ].forEach((double) => double.mockReset());
@@ -196,6 +198,7 @@ beforeEach(() => {
   leagueFindFirst.mockResolvedValue(null);
   txFindFirst.mockResolvedValue(null);
   txCount.mockResolvedValue(0);
+  leagueCount.mockResolvedValue(0);
   leagueUpdate.mockResolvedValue(leagueRow);
   teamFindFirst.mockResolvedValue({ id: "team-6" });
 });
@@ -274,7 +277,7 @@ describe("previewYahooLeague", () => {
     }, Promise.resolve([]));
 
     expect(results).toEqual(cases.map(([, status]) => status));
-    expect(loadYahooLeague).toHaveBeenCalledWith({ leagueId: "106344" });
+    expect(loadYahooLeague).toHaveBeenCalledWith({ leagueId: "106344", includeWaivers: false });
   });
 
   it("previews without writing anything", async () => {
@@ -330,7 +333,30 @@ describe("importYahooLeague", () => {
     expectNoWrites();
   });
 
-  it("refuses a duplicate import and returns the existing slug", async () => {
+  it("refuses a duplicate before matching any players", async () => {
+    leagueFindFirst.mockResolvedValueOnce({ slug: "game-of-courts" });
+
+    const result = await importYahooLeague({ url: LEAGUE_URL, myTeamExternalKey: MY_TEAM });
+
+    expect(result).toEqual({ status: "duplicate", slug: "game-of-courts" });
+    expect(leagueFindFirst).toHaveBeenCalledWith({
+      where: { profileId: PROFILE_ID, provider: "yahoo", externalKey: "478.l.106344" },
+      select: { slug: true },
+    });
+    expectNoWrites();
+  });
+
+  it("refuses an eleventh league before matching any players", async () => {
+    leagueCount.mockResolvedValueOnce(10);
+
+    const result = await importYahooLeague({ url: LEAGUE_URL, myTeamExternalKey: MY_TEAM });
+
+    expect(result).toEqual({ status: "limit" });
+    expect(leagueCount).toHaveBeenCalledWith({ where: { profileId: PROFILE_ID } });
+    expectNoWrites();
+  });
+
+  it("rechecks for a duplicate inside the transaction and returns the existing slug", async () => {
     txFindFirst.mockResolvedValueOnce({ slug: "game-of-courts" });
 
     const result = await importYahooLeague({ url: LEAGUE_URL, myTeamExternalKey: MY_TEAM });
@@ -340,7 +366,7 @@ describe("importYahooLeague", () => {
       where: { profileId: PROFILE_ID, provider: "yahoo", externalKey: "478.l.106344" },
       select: { slug: true },
     });
-    expect(leagueFindFirst).not.toHaveBeenCalled();
+    expect(leagueFindFirst).toHaveBeenCalledTimes(1);
     expect(createImportedLeague).not.toHaveBeenCalled();
   });
 
@@ -348,12 +374,13 @@ describe("importYahooLeague", () => {
     createImportedLeague.mockRejectedValueOnce(
       Object.assign(new Error("unique"), { code: "P2002" }),
     );
-    leagueFindFirst.mockResolvedValueOnce({ slug: "game-of-courts" });
+    // The early check finds nothing; the lookup after the violation finds the winner.
+    leagueFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({ slug: "game-of-courts" });
 
     const result = await importYahooLeague({ url: LEAGUE_URL, myTeamExternalKey: MY_TEAM });
 
     expect(result).toEqual({ status: "duplicate", slug: "game-of-courts" });
-    expect(leagueFindFirst).toHaveBeenCalledWith({
+    expect(leagueFindFirst).toHaveBeenLastCalledWith({
       where: { profileId: PROFILE_ID, provider: "yahoo", externalKey: "478.l.106344" },
       select: { slug: true },
     });
@@ -367,10 +394,10 @@ describe("importYahooLeague", () => {
     const result = await importYahooLeague({ url: LEAGUE_URL, myTeamExternalKey: MY_TEAM });
 
     expect(result).toEqual({ status: "error" });
-    expect(leagueFindFirst).toHaveBeenCalledTimes(1);
+    expect(leagueFindFirst).toHaveBeenCalledTimes(2);
   });
 
-  it("refuses an eleventh league", async () => {
+  it("rechecks the league cap inside the transaction", async () => {
     txCount.mockResolvedValueOnce(10);
 
     const result = await importYahooLeague({ url: LEAGUE_URL, myTeamExternalKey: MY_TEAM });
@@ -393,7 +420,7 @@ describe("importYahooLeague", () => {
   it("imports with server-side matching", async () => {
     const result = await importYahooLeague({ url: LEAGUE_URL, myTeamExternalKey: MY_TEAM });
 
-    expect(loadYahooLeague).toHaveBeenCalledWith({ leagueId: "106344" });
+    expect(loadYahooLeague).toHaveBeenCalledWith({ leagueId: "106344", includeWaivers: true });
     expect(resolveYahooPlayers).toHaveBeenCalledWith({
       refs: [BRUNSON, NOBODY, HART, WAIVER],
       writeMappings: true,

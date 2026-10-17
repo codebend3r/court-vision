@@ -63,12 +63,19 @@ const toFailure = ({ failure }: { failure: YahooLoadFailure }): LoadFailure => {
 };
 
 // Reads the league a pasted URL names. Every action refetches from Yahoo
-// rather than trusting anything the client was shown in a preview.
-const loadFromUrl = async ({ url }: { url: string }): Promise<LoadedLeague | YahooFailure> => {
+// rather than trusting anything the client was shown in a preview. A preview
+// shows no waivers, so it skips paging them.
+const loadFromUrl = async ({
+  url,
+  includeWaivers,
+}: {
+  url: string;
+  includeWaivers: boolean;
+}): Promise<LoadedLeague | YahooFailure> => {
   const parsed = parseYahooLeagueUrl({ input: url });
   if (parsed.status === "invalid") return { status: "invalid_url" };
   if (parsed.status !== "ok") return { status: parsed.status };
-  const loaded = await loadYahooLeague({ leagueId: parsed.leagueId });
+  const loaded = await loadYahooLeague({ leagueId: parsed.leagueId, includeWaivers });
   return loaded.status === "ok" ? loaded : toFailure({ failure: loaded });
 };
 
@@ -111,7 +118,7 @@ export const previewYahooLeague = async ({ url }: { url: string }): Promise<Yaho
   return withProfile<YahooPreviewResult>({
     getProfile,
     run: async () => {
-      const loaded = await loadFromUrl({ url });
+      const loaded = await loadFromUrl({ url, includeWaivers: false });
       if (loaded.status !== "ok") return loaded;
       return { status: "ok", preview: toPreview({ league: loaded.league }) };
     },
@@ -145,12 +152,23 @@ export const importYahooLeague = async ({
   return withProfile<YahooImportResult>({
     getProfile,
     run: async ({ profile }) => {
-      const loaded = await loadFromUrl({ url });
+      const loaded = await loadFromUrl({ url, includeWaivers: true });
       if (loaded.status !== "ok") return loaded;
       const { league, waiverRefs } = loaded;
       // Checked before matching, so a forged key writes nothing at all.
       if (!league.teams.some(({ externalKey }) => externalKey === myTeamExternalKey)) {
         return { status: "invalid_team" };
+      }
+      // An early answer for the common refusals, so they skip player matching
+      // and its writes. Not authoritative: the transaction checks both again.
+      const early = await findImported({
+        client: prisma,
+        profileId: profile.id,
+        externalKey: league.externalKey,
+      });
+      if (early !== null) return { status: "duplicate", slug: early.slug };
+      if ((await prisma.league.count({ where: { profileId: profile.id } })) >= MAX_LEAGUES) {
+        return { status: "limit" };
       }
       const resolved = await resolvePlayers({ loaded });
       try {
