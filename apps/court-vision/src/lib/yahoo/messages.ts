@@ -1,5 +1,7 @@
 import { MAX_LEAGUES } from "@vision/core/league/constants";
+import { type BridgeErrorReason } from "@vision/yahoo-bridge/protocol";
 
+import { getExtensionId } from "@/lib/yahoo/extensionClient";
 import { type YahooFailure } from "@/lib/yahoo/types";
 
 // The one home for the Yahoo importer's user-facing copy: the import page
@@ -35,8 +37,41 @@ const YAHOO_FAILURE_MESSAGES: Readonly<Record<YahooMessageStatus, string>> = {
   error: GENERIC_MESSAGE,
 };
 
-export const yahooFailureMessage = ({ status }: { status: YahooMessageStatus }): string =>
-  YAHOO_FAILURE_MESSAGES[status];
+// A private league can still be read through the extension, so the not_found
+// copy offers it, but only where the extension is configured and reachable.
+const NOT_FOUND_WITH_EXTENSION_MESSAGE =
+  "Couldn't read this league. If it's private, the commissioner can make it publicly viewable in Yahoo's league settings, or you can import it with the Court Vision extension.";
+
+export const yahooFailureMessage = ({
+  status,
+  extensionAvailable = getExtensionId() !== null,
+}: {
+  status: YahooMessageStatus;
+  extensionAvailable?: boolean;
+}): string =>
+  status === "not_found" && extensionAvailable
+    ? NOT_FOUND_WITH_EXTENSION_MESSAGE
+    : YAHOO_FAILURE_MESSAGES[status];
+
+// Why an import through the extension failed: one of its error reasons, or
+// "missing" when it never answered.
+const BRIDGE_FAILURE_MESSAGES: Readonly<Record<BridgeErrorReason | "missing", string>> = {
+  logged_out:
+    "Couldn't read this league with your Yahoo login. Make sure you're signed in to Yahoo in this browser. If you block third-party cookies, allow them for yahoo.com and try again.",
+  not_found:
+    "Couldn't read this league with your Yahoo login. Check that you're signed in to the Yahoo account that's in this league.",
+  unavailable: "Yahoo isn't answering right now; try again in a minute.",
+  forbidden_origin: "The Court Vision extension only works on court-vizion.netlify.app.",
+  bad_request: GENERIC_MESSAGE,
+  missing:
+    "The Court Vision extension isn't responding. Check that it's installed and enabled, then try again.",
+};
+
+export const bridgeFailureMessage = ({
+  reason,
+}: {
+  reason: BridgeErrorReason | "missing";
+}): string => BRIDGE_FAILURE_MESSAGES[reason];
 
 // Describes the import page's URL field.
 export const YAHOO_URL_HINT =
