@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "bun:test";
 
 import { CutLinePanel } from "@/components/WaiverWireView/CutLinePanel";
 import { type CutLine, type CutLineEntry, type CutScope } from "@/lib/waiverWire/cutLine";
-import { type WaiverRow } from "@/lib/waiverWire/types";
+import { type WaiverRosterEntry, type WaiverRow } from "@/lib/waiverWire/types";
 
 afterEach(cleanup);
 
@@ -56,7 +56,13 @@ const renderPanel = ({
   line = cutLine,
   scope = "all",
   showAll = false,
-}: { line?: CutLine; scope?: CutScope; showAll?: boolean } = {}) => {
+  noStats = [],
+}: {
+  line?: CutLine;
+  scope?: CutScope;
+  showAll?: boolean;
+  noStats?: WaiverRosterEntry[];
+} = {}) => {
   const onScope = vi.fn<({ scope }: { scope: CutScope }) => void>();
   const onShowAll = vi.fn<({ showAll }: { showAll: boolean }) => void>();
   const onCompare = vi.fn<({ fa }: { fa: number }) => void>();
@@ -69,6 +75,7 @@ const renderPanel = ({
       onShowAll={onShowAll}
       onCompare={onCompare}
       compareHintId="compare-hint"
+      noStats={noStats}
     />,
   );
   return { onScope, onShowAll, onCompare };
@@ -81,6 +88,30 @@ const rowOf = ({ name }: { name: string }): HTMLElement => {
 };
 
 describe("CutLinePanel", () => {
+  it("lists your players with no stats in this range under the table", () => {
+    renderPanel({
+      noStats: [{ playerId: 3, fullName: "Rookie Stash", slotType: "BENCH", injuryStatus: "O" }],
+    });
+
+    const summary = screen.getByText("No stats in this range");
+    const details = summary.closest("details");
+    if (details === null) throw new Error("expected the summary inside a <details>");
+    expect(within(details).getByRole("link", { name: "Rookie Stash" })).toHaveAttribute(
+      "href",
+      "/players/3",
+    );
+    expect(within(details).getByText("Out")).toBeInTheDocument();
+    // After the table in document order, so it reads under it.
+    const table = screen.getByRole("table");
+    expect(table.compareDocumentPosition(details) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("leaves the no-stats disclosure out when every player has stats", () => {
+    renderPanel();
+
+    expect(screen.queryByText("No stats in this range")).not.toBeInTheDocument();
+  });
+
   it("ranks each player in a rank column", () => {
     renderPanel();
 

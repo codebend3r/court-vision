@@ -89,6 +89,7 @@ const leagueData: WaiverLeagueData = {
   myRoster: [{ playerId: 1, fullName: "Jalen Brunson", slotType: "BENCH", injuryStatus: null }],
   rosteredPlayerIds: [1, 2],
   waivers: [{ playerId: 3, injuryStatus: null }],
+  unmatched: [],
 };
 
 const lines = [makeStatLine({ playerId: 1, pts: 900, minutes: 300 })];
@@ -97,6 +98,13 @@ const renderPage = async ({ raw = {} }: { raw?: Record<string, string> } = {}) =
   render(await WaiverWirePage({ searchParams: Promise.resolve(raw) }));
 
 const lastViewProps = (): unknown => viewProps.mock.calls.at(-1)?.[0] ?? null;
+
+// A gate stops before the pool, the league's rosters or the active roster.
+const expectNothingLoaded = () => {
+  expect(getFantasyPool).not.toHaveBeenCalled();
+  expect(getWaiverLeagueData).not.toHaveBeenCalled();
+  expect(getActiveRosterPlayers).not.toHaveBeenCalled();
+};
 
 beforeEach(() => {
   getProfile.mockReset().mockResolvedValue({ id: "profile-1", preferredFormula: null });
@@ -130,6 +138,7 @@ describe("WaiverWirePage", () => {
       (error: unknown) => error,
     );
     expect(redirectTarget(thrown)).toContain("/login?next=/waiver-wire");
+    expectNothingLoaded();
   });
 
   it("points to the Yahoo import when there is no active league", async () => {
@@ -148,6 +157,7 @@ describe("WaiverWirePage", () => {
       "/leagues/import",
     );
     expect(viewProps).not.toHaveBeenCalled();
+    expectNothingLoaded();
   });
 
   it("asks for a Yahoo import when the active league was built by hand", async () => {
@@ -166,6 +176,7 @@ describe("WaiverWirePage", () => {
       "/leagues/import",
     );
     expect(viewProps).not.toHaveBeenCalled();
+    expectNothingLoaded();
   });
 
   it("says points leagues are not supported yet", async () => {
@@ -182,6 +193,7 @@ describe("WaiverWirePage", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Import from Yahoo" })).not.toBeInTheDocument();
     expect(viewProps).not.toHaveBeenCalled();
+    expectNothingLoaded();
   });
 
   it("asks which team is yours when the imported league has none picked", async () => {
@@ -207,6 +219,7 @@ describe("WaiverWirePage", () => {
     expect(getLeagueTeams).toHaveBeenCalledWith({ leagueId: "league-1" });
     expect(pickerProps).toHaveBeenCalledWith({ leagueId: "league-1", teams });
     expect(viewProps).not.toHaveBeenCalled();
+    expectNothingLoaded();
   });
 
   it("renders the view for the URL's range under the league's header", async () => {
@@ -224,6 +237,7 @@ describe("WaiverWirePage", () => {
     });
     expect(lastViewProps()).toMatchObject({
       method: "zscore",
+      range: "last10",
       lines,
       activePlayerIds: [1],
       league: leagueData,

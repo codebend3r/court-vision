@@ -1,10 +1,11 @@
 "use client";
 
+import { NoStatsDisclosure } from "@/components/WaiverWireView/SwapBoardPanel";
 import { WaiverPlayer } from "@/components/WaiverWireView/WaiverPlayer";
 import { type CutLine, type CutLineEntry, type CutScope } from "@/lib/waiverWire/cutLine";
 import { formatValue } from "@/lib/waiverWire/format";
 import { CUT_SCOPES } from "@/lib/waiverWire/searchParams";
-import { type WaiverOwner } from "@/lib/waiverWire/types";
+import { type WaiverOwner, type WaiverRosterEntry } from "@/lib/waiverWire/types";
 
 import styles from "@/components/WaiverWireView/WaiverWireView.module.scss";
 
@@ -12,7 +13,7 @@ const COLUMNS = 4;
 
 const LINE_LABEL = "Cut line: your worst player";
 const CAPTION = "Your roster and free agents ranked by value";
-const NO_FREE_AGENTS = "No free agents match this range and position.";
+export const NO_FREE_AGENTS = "No free agents match this range and position.";
 
 const SCOPE_LABELS: Record<CutScope, string> = {
   all: "My team and free agents",
@@ -33,6 +34,8 @@ export type CutLinePanelProps = {
   onShowAll: ({ showAll }: { showAll: boolean }) => void;
   onCompare: ({ fa }: { fa: number }) => void;
   compareHintId: string;
+  // My rostered players with no line in the range, listed under the table.
+  noStats: WaiverRosterEntry[];
 };
 
 // "Show all (3 above, 7 below)", naming only the sides that hide rows.
@@ -65,6 +68,7 @@ export function CutLinePanel({
   onShowAll,
   onCompare,
   compareHintId,
+  noStats,
 }: CutLinePanelProps) {
   const hasRows = cutLine.entries.some((entry) => entry.kind === "row");
   const hasFreeAgent = cutLine.entries.some(isFreeAgentEntry);
@@ -146,6 +150,7 @@ export function CutLinePanel({
           {showAll ? "Show fewer" : showAllLabel(cutLine)}
         </button>
       )}
+      {noStats.length > 0 && <NoStatsDisclosure entries={noStats} compareHintId={compareHintId} />}
     </div>
   );
 }

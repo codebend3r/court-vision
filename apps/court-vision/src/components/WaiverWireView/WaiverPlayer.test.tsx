@@ -61,6 +61,15 @@ describe("WaiverPlayer", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
+  it("links one of my players without a compare handler", () => {
+    render(<WaiverPlayer player={{ ...player, owner: "mine" }} compareHintId="compare-hint" />);
+
+    expect(screen.getByRole("link", { name: "Daniel Gafford" })).toHaveAttribute(
+      "href",
+      "/players/7",
+    );
+  });
+
   it("shows the team, position and status badges beside the name", () => {
     renderPlayer();
 

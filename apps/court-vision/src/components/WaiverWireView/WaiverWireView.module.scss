@@ -89,7 +89,9 @@
   @include visually-hidden;
 }
 
-.empty {
+// `.notice`: the players Yahoo named that Court Vision never matched.
+.empty,
+.notice {
   margin: 0;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
@@ -169,6 +171,14 @@
   .ownerLabel,
   .meta {
     color: var(--color-text);
+  }
+
+  // The accent name loses contrast on the tint under the Team-accent theme
+  // (an accent close to the win tone), so the name goes full-strength text
+  // and keeps the underline to still read as pressable.
+  .nameButton {
+    color: var(--color-text);
+    text-decoration: underline;
   }
 }
 

@@ -23,8 +23,8 @@
   min-width: 14rem;
 }
 
-// Pending is aria-disabled (the button keeps focus), so it borrows the
-// keycap's :disabled look, hover included.
+// Pending, or no team chosen yet, is aria-disabled (the button keeps focus),
+// so it borrows the keycap's :disabled look, hover included.
 .save {
   @include keycap;
 

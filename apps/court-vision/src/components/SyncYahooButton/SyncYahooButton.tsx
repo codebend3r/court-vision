@@ -31,7 +31,7 @@ type SyncOutcome =
   | { kind: "failed"; message: string };
 
 // A throw and "not_imported" (a league that is no longer Yahoo's) read as the
-// generic failure; "throttled" reads "Synced less than a minute ago.".
+// generic failure; a clicked "throttled" reads "Synced less than a minute ago.".
 const failureMessageFor = ({ result }: { result: FailedSync | null }): string =>
   result === null || result.status === "not_imported"
     ? yahooFailureMessage({ status: "error" })
@@ -81,12 +81,21 @@ export function SyncYahooButton({
 
   const label = isPending ? SYNCING_TEXT : "Sync with Yahoo";
 
-  const sync = () => {
+  const sync = ({ isAuto }: { isAuto: boolean }) => {
     // aria-disabled, not disabled, while pending: a disabled button drops the
     // focus of the keyboard user who just pressed it.
     if (isPending) return;
     startTransition(async () => {
       const result = await syncYahooLeague({ leagueId }).catch(() => null);
+      // A throttled auto-sync means another sync just ran (or just failed), so
+      // its notice would paint over a stored syncError as a false success.
+      // Leave the outcome unset and re-read what that sync stored instead.
+      if (isAuto && result?.status === "throttled") {
+        startTransition(() => {
+          router.refresh();
+        });
+        return;
+      }
       if (result === null || result.status !== "ok") {
         setOutcome({ kind: "failed", message: failureMessageFor({ result }) });
         return;
@@ -105,7 +114,7 @@ export function SyncYahooButton({
     if (!autoSyncWhenStale) return;
     const syncedMs = syncedAt === null ? Number.NaN : Date.parse(syncedAt);
     const isStale = Number.isNaN(syncedMs) || now.getTime() - syncedMs > YAHOO_STALE_AFTER_MS;
-    if (isStale) sync();
+    if (isStale) sync({ isAuto: true });
   });
   // React's dev double-invoke runs the effect twice; the ref makes it one sync.
   const hasAutoSynced = useRef(false);
@@ -124,7 +133,7 @@ export function SyncYahooButton({
         aria-disabled={isPending}
         aria-label={leagueName === undefined ? undefined : `${label}: ${leagueName}`}
         aria-describedby={statusId}
-        onClick={sync}
+        onClick={() => sync({ isAuto: false })}
       >
         {label}
       </button>

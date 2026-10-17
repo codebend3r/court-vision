@@ -207,7 +207,7 @@ describe("buildCutLine", () => {
     expect(hiddenBelow).toBe(3);
   });
 
-  it("starts at the line when there are no upgrades", () => {
+  it("shows your bottom players above the line when there are no upgrades", () => {
     const { entries, hiddenAbove, hiddenBelow } = buildCutLine({
       model: model({
         roster: [
@@ -223,9 +223,25 @@ describe("buildCutLine", () => {
       showAll: false,
     });
 
-    expect(ids(entries)).toEqual(["-", 20, 21, 22, 23, 24]);
-    expect(hiddenAbove).toBe(5);
+    // Merged: 1..5, line (index 5), 20..26. The window opens 3 rows above the line.
+    expect(ids(entries)).toEqual([3, 4, 5, "-", 20, 21, 22, 23, 24]);
+    expect(hiddenAbove).toBe(2);
     expect(hiddenBelow).toBe(2);
+  });
+
+  it("shows your whole short roster above the line when there are no upgrades", () => {
+    const { entries, hiddenAbove } = buildCutLine({
+      model: model({
+        roster: [mine({ playerId: 1, value: 50 }), mine({ playerId: 2, value: 40 })],
+        freePool: [row({ playerId: 20, value: 10 }), row({ playerId: 21, value: 5 })],
+      }),
+      scope: "all",
+      showAll: false,
+    });
+
+    expect(ids(entries)).toEqual([1, 2, "-", 20, 21]);
+    expect(entries.some((entry) => entry.kind === "row" && entry.isUpgrade)).toBe(false);
+    expect(hiddenAbove).toBe(0);
   });
 
   it("has no line without a valued roster", () => {

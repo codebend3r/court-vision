@@ -24,8 +24,8 @@ export type SwapBoardPanelProps = {
 };
 
 // My rostered players with no line in the range: listed, never valued, so
-// they are not silently missing from "your weakest".
-function NoStatsDisclosure({
+// they are not silently missing from "your weakest" or the cut line.
+export function NoStatsDisclosure({
   entries,
   compareHintId,
 }: {
@@ -50,7 +50,6 @@ function NoStatsDisclosure({
                 owner: "mine",
                 injuryStatus: entry.injuryStatus,
               }}
-              onCompare={() => {}}
               compareHintId={compareHintId}
             />
           </li>

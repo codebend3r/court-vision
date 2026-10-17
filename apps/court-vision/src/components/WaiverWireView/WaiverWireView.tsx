@@ -4,7 +4,7 @@ import { type ChangeEvent, type ReactNode, useEffect, useId, useMemo, useState }
 import { useQueryStates } from "nuqs";
 
 import { useValuation } from "@/components/FantasyValueView/useValuation";
-import { CutLinePanel } from "@/components/WaiverWireView/CutLinePanel";
+import { CutLinePanel, NO_FREE_AGENTS } from "@/components/WaiverWireView/CutLinePanel";
 import {
   HeadToHeadPanel,
   type HeadToHeadPick,
@@ -17,9 +17,11 @@ import {
   gamesForRange,
   isPlayerGameRange,
   PLAYER_GAME_RANGES,
+  type PlayerGameRange,
 } from "@/lib/players/searchParams";
 import { type FantasyStatLine } from "@/lib/valuation/types";
 import { buildCutLine, type CutScope } from "@/lib/waiverWire/cutLine";
+import { unmatchedNotice } from "@/lib/waiverWire/format";
 import { buildHeadToHead, headToHeadSummary, resolvePair } from "@/lib/waiverWire/headToHead";
 import { buildWaiverModel, scoreKeysFor } from "@/lib/waiverWire/model";
 import {
@@ -40,6 +42,9 @@ import {
 import styles from "@/components/WaiverWireView/WaiverWireView.module.scss";
 
 export type WaiverWireViewProps = {
+  // The range the server loaded `lines` for. The URL's range runs ahead of it
+  // while a new pool loads, so the valuation window follows this one.
+  range: PlayerGameRange;
   lines: FantasyStatLine[];
   league: WaiverLeagueData;
   activePlayerIds: number[];
@@ -63,6 +68,7 @@ const COMPARE_HINT = "Compare head-to-head against your weakest player";
 // three comparisons. The range, tab, position filter and compared pair live in
 // the URL; only a new range goes back to the server for a new pool.
 export function WaiverWireView({
+  range,
   lines,
   league,
   activePlayerIds,
@@ -87,7 +93,9 @@ export function WaiverWireView({
     lines,
     config,
     methodWeights,
-    windowGames: gamesForRange({ range: query.range }),
+    // The pool's own range, never the URL's: valuing the old pool with a new
+    // window would flash wrong numbers until the server answers.
+    windowGames: gamesForRange({ range }),
   });
 
   const activeIds = useMemo(() => new Set(activePlayerIds), [activePlayerIds]);
@@ -171,7 +179,10 @@ export function WaiverWireView({
         ? `1 free agent beats ${board.target.fullName}`
         : `${count} free agents beat ${board.target.fullName}`;
     },
-    h2h: () => (pair && headToHead ? headToHeadSummary({ pair, result: headToHead }) : NO_PAIR),
+    h2h: () => {
+      if (pair && headToHead) return headToHeadSummary({ pair, result: headToHead });
+      return model.freePool.length === 0 ? NO_FREE_AGENTS : NO_PAIR;
+    },
     cut: () => {
       const visible = cutLine.entries.filter((entry) => entry.kind === "row").length;
       const total = visible + cutLine.hiddenAbove + cutLine.hiddenBelow;
@@ -238,6 +249,7 @@ export function WaiverWireView({
         onShowAll={({ showAll: next }) => setExpandedCut(next ? cutKey : null)}
         onCompare={onCompare}
         compareHintId={compareHintId}
+        noStats={model.noStats}
       />
     ),
   };
@@ -271,6 +283,9 @@ export function WaiverWireView({
           ))}
         </fieldset>
       </div>
+      {league.unmatched.length > 0 && (
+        <p className={styles.notice}>{unmatchedNotice({ unmatched: league.unmatched })}</p>
+      )}
       <WaiverWireTabs view={query.view} onChange={onView} panels={panels} />
       <p role="status" className={styles.srOnly}>
         {announcement}

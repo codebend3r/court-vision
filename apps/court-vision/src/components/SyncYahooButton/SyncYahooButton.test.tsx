@@ -309,7 +309,7 @@ describe("SyncYahooButton", () => {
       await waitFor(() => expect(refreshMock).toHaveBeenCalledTimes(1));
     });
 
-    it("shows the throttle notice, not a generic error, when the auto-sync is throttled", async () => {
+    it("keeps the stored status and refreshes when the auto-sync is throttled", async () => {
       syncYahooLeagueMock.mockResolvedValue({ status: "throttled" });
       render(
         <SyncYahooButton
@@ -320,11 +320,28 @@ describe("SyncYahooButton", () => {
         />,
       );
 
+      await waitFor(() => expect(refreshMock).toHaveBeenCalledTimes(1));
       await waitFor(() =>
-        expect(screen.getByRole("status")).toHaveTextContent("Synced less than a minute ago."),
+        expect(screen.getByRole("status")).toHaveTextContent("Synced 30 min ago"),
       );
-      expect(screen.getByRole("status")).not.toHaveTextContent("Something went wrong");
-      expect(refreshMock).not.toHaveBeenCalled();
+      expect(screen.getByRole("status")).not.toHaveTextContent("Synced less than a minute ago.");
+    });
+
+    it("still shows a stored sync error when the auto-sync is throttled", async () => {
+      const storedError = "Yahoo isn't answering right now; try again in a minute.";
+      syncYahooLeagueMock.mockResolvedValue({ status: "throttled" });
+      render(
+        <SyncYahooButton
+          leagueId="league-1"
+          syncedAt={minutesAgo(30)}
+          syncError={storedError}
+          autoSyncWhenStale
+        />,
+      );
+
+      await waitFor(() => expect(refreshMock).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(storedError));
+      expect(screen.getByRole("status")).not.toHaveTextContent("Synced less than a minute ago.");
     });
 
     it("syncs once under StrictMode's double-invoked effects", async () => {

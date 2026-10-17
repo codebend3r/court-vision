@@ -16,6 +16,7 @@ export type MyTeamPickerProps = {
 
 const SAVE_FAILED = "Couldn't save your team. Try again.";
 const SAVED = "Team saved.";
+const PLACEHOLDER = "Choose your team";
 
 // Names the user's own team in an imported league that has none yet, which
 // the Waiver Wire needs before it can compare anyone. A save refreshes the
@@ -24,15 +25,16 @@ export function MyTeamPicker({ leagueId, teams }: MyTeamPickerProps) {
   const router = useRouter();
   const selectId = useId();
   const errorId = useId();
-  const [teamId, setTeamId] = useState(teams[0]?.id ?? "");
+  // Nothing preselected: saving the wrong team silently skews every compare.
+  const [teamId, setTeamId] = useState("");
   const [failed, setFailed] = useState(false);
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const onSave = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // aria-disabled, not disabled, while pending: a disabled button drops the
-    // focus of the keyboard user who just pressed it.
+    // aria-disabled, not disabled, while pending or with no team chosen: a
+    // disabled button drops the focus of the keyboard user who just pressed it.
     if (isPending || teamId === "") return;
     setFailed(false);
     startTransition(async () => {
@@ -63,13 +65,16 @@ export function MyTeamPicker({ leagueId, teams }: MyTeamPickerProps) {
           onChange={(event) => setTeamId(event.target.value)}
           aria-describedby={failed ? errorId : undefined}
         >
+          <option value="" disabled>
+            {PLACEHOLDER}
+          </option>
           {teams.map((team) => (
             <option key={team.id} value={team.id}>
               {team.name}
             </option>
           ))}
         </select>
-        <button type="submit" className={styles.save} aria-disabled={isPending}>
+        <button type="submit" className={styles.save} aria-disabled={isPending || teamId === ""}>
           Save
         </button>
       </div>

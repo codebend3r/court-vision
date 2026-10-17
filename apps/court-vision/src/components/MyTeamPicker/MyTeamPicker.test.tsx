@@ -44,16 +44,41 @@ describe("MyTeamPicker", () => {
   it("lists the league's teams in a labelled select beside a Save keycap", () => {
     render(<MyTeamPicker leagueId="league-1" teams={teams} />);
 
-    const select = screen.getByRole("combobox", { name: "Your team" });
+    expect(screen.getByRole("combobox", { name: "Your team" })).toBeInTheDocument();
     expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
+      "Choose your team",
       "Bench Mob",
       "Newfoundlanders",
     ]);
-    expect(select).toHaveValue("team-1");
     expect(screen.getByRole("button", { name: "Save" })).toHaveClass("save");
   });
 
-  it("saves the picked team and refreshes the page", async () => {
+  it("preselects no team and leaves Save disabled until one is chosen", async () => {
+    const user = userEvent.setup();
+    render(<MyTeamPicker leagueId="league-1" teams={teams} />);
+
+    const select = screen.getByRole("combobox", { name: "Your team" });
+    expect(select).toHaveValue("");
+    expect(screen.getByRole("option", { name: "Choose your team" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save" })).toHaveAttribute("aria-disabled", "true");
+
+    await user.selectOptions(select, "team-1");
+
+    expect(screen.getByRole("button", { name: "Save" })).toHaveAttribute("aria-disabled", "false");
+  });
+
+  it("does nothing when Save is pressed with no team chosen", async () => {
+    const user = userEvent.setup();
+    render(<MyTeamPicker leagueId="league-1" teams={teams} />);
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(setMyTeam).not.toHaveBeenCalled();
+    expect(refreshMock).not.toHaveBeenCalled();
+    expect(screen.getByRole("status")).toHaveTextContent("");
+  });
+
+  it("saves the chosen team and refreshes the page", async () => {
     const user = userEvent.setup();
     render(<MyTeamPicker leagueId="league-1" teams={teams} />);
 
@@ -77,6 +102,7 @@ describe("MyTeamPicker", () => {
     const status = screen.getByRole("status");
     expect(status).toHaveTextContent("");
 
+    await user.selectOptions(screen.getByRole("combobox", { name: "Your team" }), "team-1");
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => expect(main).toHaveFocus());
@@ -89,6 +115,7 @@ describe("MyTeamPicker", () => {
     const user = userEvent.setup();
     render(<MyTeamPicker leagueId="league-1" teams={teams} />);
 
+    await user.selectOptions(screen.getByRole("combobox", { name: "Your team" }), "team-1");
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -102,6 +129,7 @@ describe("MyTeamPicker", () => {
     const user = userEvent.setup();
     render(<MyTeamPicker leagueId="league-1" teams={teams} />);
 
+    await user.selectOptions(screen.getByRole("combobox", { name: "Your team" }), "team-1");
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
