@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "bun:test";
 
 import { SideNav } from "@/components/SideNav/SideNav";
@@ -30,6 +30,7 @@ describe("SideNav", () => {
       "/players",
       "/teams",
       "/my-teams",
+      "/waiver-wire",
       "/leagues",
       "/watchlist",
       "/settings",
@@ -59,6 +60,19 @@ describe("SideNav", () => {
     pathnameMock.current = "/my-teams/rim-protectors";
     render(<SideNav />);
     expect(screen.getByRole("link", { name: "My Teams" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("lists the Waiver Wire in My league and marks it current on its page", () => {
+    pathnameMock.current = "/waiver-wire";
+    render(<SideNav />);
+    const link = screen.getByRole("link", { name: "Waiver Wire" });
+    expect(link).toHaveAttribute("href", "/waiver-wire");
+    expect(link).toHaveAttribute("aria-current", "page");
+    expect(
+      within(screen.getByRole("region", { name: "My league" })).getByRole("link", {
+        name: "Waiver Wire",
+      }),
+    ).toBe(link);
   });
 
   it("keeps Leagues active on a league's own page", () => {
