@@ -13,6 +13,21 @@ import { type LeagueSummary } from "@/lib/leagues/types";
 
 const DELETE_ERROR = "Could not delete the league — try again.";
 
+// The two ways to add a league: build one by hand, or import one from Yahoo.
+// Both go away together at MAX_LEAGUES.
+function NewLeagueLinks() {
+  return (
+    <div className={styles.newLeague}>
+      <Link href="/leagues/create" className={styles.create}>
+        Create league
+      </Link>
+      <Link href="/leagues/import" className={styles.create}>
+        Import from Yahoo
+      </Link>
+    </div>
+  );
+}
+
 export type LeagueListProps = {
   leagues: LeagueSummary[];
   activeLeagueId: string | null;
@@ -83,9 +98,7 @@ export function LeagueList({ leagues, activeLeagueId }: LeagueListProps) {
     return (
       <section className={styles.list}>
         <p className={styles.empty}>Create your first league to start tracking your team.</p>
-        <Link href="/leagues/create" className={styles.create}>
-          Create league
-        </Link>
+        <NewLeagueLinks />
       </section>
     );
   }
@@ -104,9 +117,7 @@ export function LeagueList({ leagues, activeLeagueId }: LeagueListProps) {
         {atCap ? (
           <p className={styles.capNotice}>Limit reached ({MAX_LEAGUES})</p>
         ) : (
-          <Link href="/leagues/create" className={styles.create}>
-            Create league
-          </Link>
+          <NewLeagueLinks />
         )}
       </div>
       <ul className={styles.cards}>

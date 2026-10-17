@@ -294,4 +294,28 @@ describe("LeagueList", () => {
     render(<LeagueList leagues={[]} activeLeagueId={null} />);
     expect(screen.getByText(/create your first league/i)).toBeInTheDocument();
   });
+
+  it("offers a Yahoo import beside Create league", () => {
+    render(<LeagueList leagues={[league({ id: "a", name: "Alpha" })]} activeLeagueId="a" />);
+    expect(screen.getByRole("link", { name: "Import from Yahoo" })).toHaveAttribute(
+      "href",
+      "/leagues/import",
+    );
+  });
+
+  it("offers a Yahoo import in the empty state", () => {
+    render(<LeagueList leagues={[]} activeLeagueId={null} />);
+    expect(screen.getByRole("link", { name: "Import from Yahoo" })).toHaveAttribute(
+      "href",
+      "/leagues/import",
+    );
+  });
+
+  it("hides the Yahoo import at MAX_LEAGUES", () => {
+    const leagues = Array.from({ length: MAX_LEAGUES }, (_, index) =>
+      league({ id: `id-${index}`, name: `League ${index}` }),
+    );
+    render(<LeagueList leagues={leagues} activeLeagueId="id-0" />);
+    expect(screen.queryByRole("link", { name: "Import from Yahoo" })).not.toBeInTheDocument();
+  });
 });

@@ -13,6 +13,11 @@ import { hasPrismaCode, PRISMA_UNIQUE_VIOLATION } from "@/lib/prismaErrors";
 import { YAHOO_PROVIDER, YAHOO_SYNC_THROTTLE_MS } from "@/lib/yahoo/constants";
 import { loadYahooLeague, type YahooLoadFailure, type YahooLoadResult } from "@/lib/yahoo/load";
 import { resolveYahooPlayers, type ResolvedPlayers } from "@/lib/yahoo/matchPlayers";
+import {
+  GENERIC_SYNC_ERROR_MESSAGE,
+  KEY_CHANGED_MESSAGE,
+  yahooFailureMessage,
+} from "@/lib/yahoo/messages";
 import { createImportedLeague, syncImportedLeague } from "@/lib/yahoo/persist";
 import {
   type ImportedLeague,
@@ -36,21 +41,6 @@ type LoadFailure = Extract<YahooFailure, { status: LoadFailureStatus }>;
 // An import or sync writes each team in its own statement before the slots
 // and waivers, so it gets more room than Prisma's 5 s interactive default.
 const TRANSACTION_OPTIONS = { timeout: 30_000 };
-
-// Recorded on the league when a sync fails, so the league page can say why
-// its data is stale. The copy is the import page's for the same statuses.
-const SYNC_ERROR_MESSAGE: Readonly<Record<LoadFailureStatus, string>> = {
-  not_found:
-    "Couldn't read this league. If it's private, the commissioner can make it publicly viewable in Yahoo's league settings, or you can import it with the Court Vision extension.",
-  unavailable: "Yahoo isn't answering right now; try again in a minute.",
-  invalid_payload: "Yahoo sent something we couldn't read. Try again in a minute.",
-  past_season: "Only this season's leagues can be imported.",
-  highscore: "Yahoo Fantasy High Score leagues aren't supported yet.",
-  unsupported_scoring: "This league's scoring type isn't supported yet.",
-};
-
-const KEY_CHANGED_MESSAGE = "This league's Yahoo key changed; import it again.";
-const GENERIC_SYNC_ERROR_MESSAGE = "Something went wrong. Try again.";
 
 // When the league last tried to sync, in ms. A success stamps `syncedAt`; a
 // failure leaves `syncError` set and bumps `updatedAt` with that write, so a
@@ -231,7 +221,8 @@ export const syncYahooLeague = async ({
       }
 
       // The league keeps its last good data on any failure; only the reason
-      // is recorded, so the league page can say why it is stale.
+      // is recorded, in the import page's copy, so the league page can say
+      // why it is stale.
       const recordFailure = async ({ message }: { message: string }): Promise<void> => {
         await prisma.league.update({ where, data: { syncError: message } });
       };
@@ -239,7 +230,7 @@ export const syncYahooLeague = async ({
       const loaded = await loadYahooLeague({ leagueId: yahooLeagueId });
       if (loaded.status !== "ok") {
         const failure = toFailure({ failure: loaded });
-        await recordFailure({ message: SYNC_ERROR_MESSAGE[failure.status] });
+        await recordFailure({ message: yahooFailureMessage({ status: failure.status }) });
         return failure;
       }
       // Yahoo answers a reused league id with another season's league, whose

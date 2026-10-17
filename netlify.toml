@@ -13,10 +13,16 @@
 command = "bun run --cwd apps/court-vision build"
 publish = "apps/court-vision/.next"
 
-# Netlify Image CDN: allow transforming remote NBA headshots requested by
-# the next/image loader in apps/court-vision/src/lib/images/netlifyLoader.ts.
+# Netlify Image CDN: allow transforming the remote images requested by the
+# next/image loader in apps/court-vision/src/lib/images/netlifyLoader.ts: NBA
+# headshots, and the Yahoo Fantasy league and team logos imported leagues
+# hotlink (Yahoo's own defaults on s.yimg.com, uploads on its Cloudinary).
 [images]
-remote_images = ["https://cdn\\.nba\\.com/.*"]
+remote_images = [
+  "https://cdn\\.nba\\.com/.*",
+  "https://s\\.yimg\\.com/.*",
+  "https://yahoofantasysports-res\\.cloudinary\\.com/.*",
+]
 
 # The Supabase publishable key and project URL are public by design — both
 # ship in the client bundle (Next.js inlines NEXT_PUBLIC_* vars) and access is
