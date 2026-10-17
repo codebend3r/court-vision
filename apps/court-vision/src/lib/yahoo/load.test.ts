@@ -108,6 +108,26 @@ describe("loadYahooLeague", () => {
     ]);
   });
 
+  it("reads only the game and the snapshot when waivers are left out", async () => {
+    const fetchImpl = stubYahoo({ routes: routesFor({}) });
+
+    const result = loaded({
+      result: await loadYahooLeague({
+        leagueId: "106344",
+        fetchImpl,
+        logger: silentLogger,
+        includeWaivers: false,
+      }),
+    });
+
+    expect(requestedUrls({ fetchImpl })).toEqual([
+      yahooUrl({ path: GAME_PATH }),
+      yahooUrl({ path: SNAPSHOT_PATH }),
+    ]);
+    expect(result.league.teams).toHaveLength(12);
+    expect(result.waiverRefs).toEqual([]);
+  });
+
   it("pages the waiver list until a short page", async () => {
     const fetchImpl = stubYahoo({
       routes: routesFor({

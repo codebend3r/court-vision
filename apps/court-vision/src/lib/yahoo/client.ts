@@ -29,34 +29,28 @@ const describeError = (error: unknown): string =>
 const buildUrl = (path: string): string =>
   `${YAHOO_API_BASE_URL}/${path}${path.includes("?") ? "&" : "?"}format=json_f`;
 
+// One request's outcome: final, or a transient failure worth another attempt.
+type AttemptOutcome = YahooFetchResult | { status: "retry"; detail: string };
+
 /**
  * Read-only GET against Yahoo's `pub-api-ro` host. Never throws: every outcome
  * is a `YahooFetchResult`. 5xx, 999, network errors, timeouts and non-JSON
  * bodies are retried with exponential backoff; a 400 means the league or game
- * does not exist; any other 4xx is not retried.
+ * does not exist; any other 4xx is not retried. The defaults keep a load's
+ * handful of requests inside a serverless function's time limit.
  */
 export async function yahooFetch({
   path,
   fetchImpl = globalThis.fetch,
   sleep = defaultSleep,
-  maxRetries = 2,
-  timeoutMs = 15_000,
+  maxRetries = 1,
+  timeoutMs = 4_000,
 }: YahooFetchOptions): Promise<YahooFetchResult> {
   const url = buildUrl(path);
 
-  const retryOrGiveUp = async ({
-    retriesLeft,
-    detail,
-  }: {
-    retriesLeft: number;
-    detail: string;
-  }): Promise<YahooFetchResult> => {
-    if (retriesLeft <= 0) return { status: "unavailable", detail };
-    await sleep(backoffMs(maxRetries - retriesLeft));
-    return attempt(retriesLeft - 1);
-  };
-
-  const attempt = async (retriesLeft: number): Promise<YahooFetchResult> => {
+  // One request, timed from the call until its body is read. The timer is
+  // cleared before any backoff, so it never outlives its own attempt.
+  const fetchOnce = async (): Promise<AttemptOutcome> => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -66,33 +60,36 @@ export async function yahooFetch({
       });
       if (response.status === 400) return { status: "not_found" };
       if (response.status >= 500 || response.status === YAHOO_RATE_LIMIT_STATUS) {
-        return await retryOrGiveUp({
-          retriesLeft,
-          detail: `Yahoo responded ${response.status} for ${path}`,
-        });
+        return { status: "retry", detail: `Yahoo responded ${response.status} for ${path}` };
       }
       if (!response.ok) {
         return { status: "unavailable", detail: `Yahoo responded ${response.status} for ${path}` };
       }
       const text = await response.text();
+      clearTimeout(timer);
       try {
         const body: unknown = JSON.parse(text);
         return { status: "ok", body };
       } catch {
         // A 200 with an HTML or truncated body is a transient upstream hiccup.
-        return await retryOrGiveUp({
-          retriesLeft,
-          detail: `Yahoo sent an unparseable body for ${path}`,
-        });
+        return { status: "retry", detail: `Yahoo sent an unparseable body for ${path}` };
       }
     } catch (error) {
-      return retryOrGiveUp({
-        retriesLeft,
+      return {
+        status: "retry",
         detail: `Yahoo request failed for ${path} (${describeError(error)})`,
-      });
+      };
     } finally {
       clearTimeout(timer);
     }
+  };
+
+  const attempt = async (retriesLeft: number): Promise<YahooFetchResult> => {
+    const outcome = await fetchOnce();
+    if (outcome.status !== "retry") return outcome;
+    if (retriesLeft <= 0) return { status: "unavailable", detail: outcome.detail };
+    await sleep(backoffMs(maxRetries - retriesLeft));
+    return attempt(retriesLeft - 1);
   };
 
   return attempt(maxRetries);

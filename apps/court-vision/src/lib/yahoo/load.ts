@@ -159,19 +159,23 @@ export const parseYahooPayload = ({
 /**
  * Reads a public Yahoo league of the current NBA season: its settings, rosters
  * and waiver list. The snapshot is validated before the waiver list is paged,
- * so a league that can't be imported costs no waiver requests. `readGame`
- * defaults to the cached read; outside Next, pass `readCurrentGameUncached`.
+ * so a league that can't be imported costs no waiver requests. A preview passes
+ * `includeWaivers: false` and gets an empty `waiverRefs` from two requests.
+ * `readGame` defaults to the cached read; outside Next, pass
+ * `readCurrentGameUncached`.
  */
 export const loadYahooLeague = async ({
   leagueId,
   fetchImpl,
   logger = consoleLogger,
   readGame = readCurrentGame,
+  includeWaivers = true,
 }: {
   leagueId: string;
   fetchImpl?: FetchImpl;
   logger?: Logger;
   readGame?: ReadGame;
+  includeWaivers?: boolean;
 }): Promise<YahooLoadResult> => {
   const current = await loadCurrentGame({ fetchImpl, logger, readGame });
   if (current.status !== "ok") return current;
@@ -185,7 +189,7 @@ export const loadYahooLeague = async ({
 
   const currentSeason = current.game.season;
   const checked = parseYahooPayload({ currentSeason, snapshot: snapshot.body, waiverPages: [] });
-  if (checked.status !== "ok") return checked;
+  if (checked.status !== "ok" || !includeWaivers) return checked;
 
   const waivers = await fetchWaiverPages({ leagueKey, fetchImpl, logger });
   if (waivers.status !== "ok") return waivers;
