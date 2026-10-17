@@ -77,6 +77,10 @@ model Profile {
 // refresh, and unsupportedCategories lists provider stat categories the sport
 // descriptor cannot score, so the UI can say what was left out.
 //
+// syncVia records which path keeps an imported league in sync: "server" reads
+// it from Yahoo directly, "extension" goes through the browser extension,
+// because a private league can only be read from a logged-in browser.
+//
 // myTeamId must always name one of this league's own teams. The database
 // cannot enforce that (the foreign key only checks that the team exists), so
 // the importer asserts it before writing.
@@ -93,6 +97,7 @@ model League {
   provider              String                  @default("manual")
   externalKey           String?
   externalUrl           String?
+  syncVia               String                  @default("server")
   myTeamId              String?                 @unique
   myTeam                LeagueTeam?             @relation("MyTeam", fields: [myTeamId], references: [id], onDelete: SetNull)
   syncedAt              DateTime?

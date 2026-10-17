@@ -24,7 +24,7 @@
     },
     "apps/court-vision": {
       "name": "court-vision",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "dependencies": {
         "@prisma/adapter-pg": "7.10.0",
         "@prisma/client": "7.10.0",
@@ -33,6 +33,7 @@
         "@vision/core": "workspace:*",
         "@vision/sport-basketball": "workspace:*",
         "@vision/ui": "workspace:*",
+        "@vision/yahoo-bridge": "workspace:*",
         "lucide-react": "1.50.0",
         "next": "16.3.8",
         "nuqs": "2.10.1",
@@ -171,6 +172,10 @@
         "react": "19.3.0",
         "react-dom": "19.3.0",
       },
+    },
+    "libs/yahoo-bridge": {
+      "name": "@vision/yahoo-bridge",
+      "version": "0.0.0",
     },
   },
   "trustedDependencies": [
@@ -673,6 +678,8 @@
     "@vision/testing": ["@vision/testing@workspace:libs/vision-testing"],
 
     "@vision/ui": ["@vision/ui@workspace:libs/vision-ui"],
+
+    "@vision/yahoo-bridge": ["@vision/yahoo-bridge@workspace:libs/yahoo-bridge"],
 
     "@visx/curve": ["@visx/curve@4.0.1-alpha.0", "", { "dependencies": { "@visx/vendor": "4.0.0-alpha.0" } }, "sha512-jRu61Uz274pV1zyioXmboyrLutYbnKsgjj4njSGCnhdXj5GkZvZbg+ThDb6oOzoAnJOBRLz4rzPlWvNJOzuVMg=="],
 

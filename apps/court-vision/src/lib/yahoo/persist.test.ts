@@ -120,6 +120,7 @@ const leagueRow: League = {
   rosterSlots: 13,
   scoringConfig: { categories: ["pts"] },
   provider: "yahoo",
+  syncVia: "server",
   externalKey: "478.l.106344",
   externalUrl: "https://basketball.fantasysports.yahoo.com/nba/106344",
   myTeamId: null,
@@ -138,8 +139,12 @@ type SyncArgs = Parameters<typeof syncImportedLeague>[0];
 
 // Each call runs inside the mocked `prisma.$transaction`, so `client` is typed
 // as Prisma's transaction client while it is the double above at runtime.
-const create = (args: Omit<CreateArgs, "tx">) =>
-  prisma.$transaction((client) => createImportedLeague({ ...args, tx: client }));
+// A server import unless a test names the path.
+const create = ({
+  syncVia = "server",
+  ...args
+}: Omit<CreateArgs, "tx" | "syncVia"> & { syncVia?: CreateArgs["syncVia"] }) =>
+  prisma.$transaction((client) => createImportedLeague({ ...args, syncVia, tx: client }));
 
 const sync = (args: Omit<SyncArgs, "tx">) =>
   prisma.$transaction((client) => syncImportedLeague({ ...args, tx: client }));
@@ -224,6 +229,7 @@ describe("createImportedLeague", () => {
         name: "Game of Courts",
         slug: "game-of-courts-2",
         provider: "yahoo",
+        syncVia: "server",
         externalKey: "478.l.106344",
         externalUrl: "https://basketball.fantasysports.yahoo.com/nba/106344",
         scoringType: league.scoring.scoringType,
@@ -302,6 +308,21 @@ describe("createImportedLeague", () => {
       data: { activeLeagueId: LEAGUE_ID },
     });
     expect(created).toBe(updatedRow);
+  });
+
+  it("stores syncVia on create", async () => {
+    await create({
+      profileId: PROFILE_ID,
+      league: importedLeague(),
+      resolved,
+      waiverRefs: [],
+      myTeamExternalKey: NEWFOUNDLANDERS,
+      syncVia: "extension",
+    });
+
+    expect(leagueCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ provider: "yahoo", syncVia: "extension" }),
+    });
   });
 
   it("gives teams that share a name distinct slugs", async () => {

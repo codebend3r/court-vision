@@ -3,7 +3,7 @@ import { consoleLogger, type Logger } from "@vision/core/util/logger";
 import { unstable_cache } from "next/cache";
 
 import { yahooFetch, type YahooFetchResult } from "@/lib/yahoo/client";
-import { YAHOO_MAX_WAIVER_PAGES, YAHOO_PAGE_SIZE } from "@/lib/yahoo/constants";
+import { YAHOO_MAX_WAIVER_PAGES, YAHOO_PAGE_SIZE } from "@vision/yahoo-bridge/constants";
 import {
   yahooGameSchema,
   yahooLeagueSnapshotSchema,

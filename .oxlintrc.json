@@ -239,6 +239,66 @@
       }
     },
     {
+      "files": [
+        "libs/yahoo-bridge/src/**/*.{ts,tsx,mts,cts}",
+        "libs/yahoo-bridge/src/**/*.{js,jsx,mjs}"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["../*", "../**", "./*", "./**"],
+                "message": "Relative paths are banned, including co-located siblings. In an app use @/ (its src), @public/, or @generated/; in a lib use its own #<name>/ subpath alias; across packages use a @vision/<name>/ entry point."
+              },
+              {
+                "group": ["@/*", "@/**"],
+                "message": "@/ belongs to an app's src. Inside a lib, import siblings through the lib's own #<name>/ alias (package.json \"imports\")."
+              },
+              {
+                "group": [
+                  "@prisma/*",
+                  "@prisma/**",
+                  "@generated/*",
+                  "@generated/**",
+                  "@supabase/*",
+                  "@supabase/**"
+                ],
+                "message": "@vision/yahoo-bridge is dependency-free: no database or auth clients."
+              },
+              {
+                "group": [
+                  "next",
+                  "next/*",
+                  "next/**",
+                  "react",
+                  "react/*",
+                  "react/**",
+                  "react-dom",
+                  "react-dom/*",
+                  "react-dom/**",
+                  "nuqs",
+                  "nuqs/*",
+                  "nuqs/**",
+                  "zustand",
+                  "zustand/*",
+                  "zustand/**",
+                  "recharts",
+                  "lucide-react"
+                ],
+                "message": "@vision/yahoo-bridge is dependency-free: no React, Next, nuqs, zustand, or UI libraries. The app and the extension own their own wiring."
+              },
+              {
+                "group": ["@vision/*", "@vision/**"],
+                "message": "@vision/yahoo-bridge imports nothing from the workspace, not even @vision/core. Import its own modules through #bridge/."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": ["libs/sport-*/src/**/*.{ts,tsx,mts,cts}", "libs/sport-*/src/**/*.{js,jsx,mjs}"],
       "rules": {
         "no-restricted-imports": [

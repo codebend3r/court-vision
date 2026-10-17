@@ -1,6 +1,6 @@
 import type { FetchImpl } from "@vision/core/util/fetchImpl";
 
-import { YAHOO_API_BASE_URL } from "@/lib/yahoo/constants";
+import { YAHOO_API_BASE_URL } from "@vision/yahoo-bridge/constants";
 
 export type YahooFetchResult =
   | { status: "ok"; body: unknown }

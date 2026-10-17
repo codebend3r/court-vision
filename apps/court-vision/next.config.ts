@@ -12,7 +12,12 @@ import packageJson from "./package.json";
 const workspaceRoot = resolve(import.meta.dirname, "../..");
 
 // Workspace libs ship TypeScript source, not a build, so Next compiles them.
-const workspacePackages = ["@vision/core", "@vision/sport-basketball", "@vision/ui"];
+const workspacePackages = [
+  "@vision/core",
+  "@vision/sport-basketball",
+  "@vision/ui",
+  "@vision/yahoo-bridge",
+];
 
 const nextConfig: NextConfig = {
   turbopack: { root: workspaceRoot },
@@ -22,6 +27,12 @@ const nextConfig: NextConfig = {
   // whenever an AI agent starts it; the repo's root CLAUDE.md carries the one
   // pointer that block adds (Next's bundled docs).
   agentRules: false,
+  experimental: {
+    // An extension snapshot of a 20-team league can pass Next's 1 MB default.
+    // This 2 MB limit is app-wide, for every server action; the snapshot
+    // actions cap their own payload at 1.5 MB (`MAX_SNAPSHOT_BYTES`).
+    serverActions: { bodySizeLimit: "2mb" },
+  },
   env: {
     // Surfaces the app's package.json version to the SiteFooter; source imports
     // cannot reach it (parent-relative imports are lint-banned).

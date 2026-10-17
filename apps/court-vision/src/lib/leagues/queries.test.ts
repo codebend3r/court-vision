@@ -50,6 +50,7 @@ const dbLeague = ({ id, slug, updatedAt }: { id: string; slug: string; updatedAt
   provider: "manual",
   externalKey: null,
   externalUrl: null,
+  syncVia: "server",
   myTeamId: null,
   syncedAt: null,
   syncError: null,
@@ -118,6 +119,15 @@ describe("toLeagueSummary", () => {
       provider: "manual",
       isImported: true,
     });
+  });
+
+  it("maps syncVia into the summary, defaulting to server", () => {
+    const league = dbLeague({ id: "1", slug: "a", updatedAt: new Date("2026-07-01") });
+    expect(toLeagueSummary({ league }).syncVia).toBe("server");
+    expect(toLeagueSummary({ league: { ...league, syncVia: "extension" } }).syncVia).toBe(
+      "extension",
+    );
+    expect(toLeagueSummary({ league: { ...league, syncVia: "browser" } }).syncVia).toBe("server");
   });
 
   it("marks only a hand-built league as not imported", () => {
@@ -280,6 +290,7 @@ describe("fallbackActiveLeagueId", () => {
     rosterSlots: 13,
     scoringConfig: { categories: ["pts"] },
     provider: "manual",
+    syncVia: "server",
     isImported: false,
     externalUrl: null,
     myTeamId: null,

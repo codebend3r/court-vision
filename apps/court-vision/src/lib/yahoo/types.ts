@@ -77,6 +77,7 @@ export type YahooSyncResult =
   | { status: "ok"; syncedAt: string; unmatched: string[] }
   | { status: "throttled" }
   | { status: "not_imported" }
+  | { status: "needs_extension" }
   | YahooFailure;
 
 export type SetMyTeamResult =
