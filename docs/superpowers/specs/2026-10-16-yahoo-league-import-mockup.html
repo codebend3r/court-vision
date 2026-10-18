@@ -1,0 +1,735 @@
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link
+  href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  .cv {
+    --bg: #131629;
+    --surface: #1c2138;
+    --border: #2a3050;
+    --text: #e8eaf6;
+    --muted: #8b93b5;
+    --accent: #3fc3e8;
+    --accent-strong: #ff2e7e;
+    --highlight: #ff9f3c;
+    --win: #3dd68c;
+    --loss: #ff5c6a;
+    --retro: #2b7592;
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    color: var(--text);
+    display: grid;
+    gap: 1.5rem;
+  }
+  .cv-pick {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    background: var(--bg);
+    cursor: pointer;
+  }
+  .cv-pick.selected {
+    border-color: var(--accent);
+  }
+  .cv-pick-head {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.75rem;
+    align-items: baseline;
+  }
+  .cv-letter {
+    font-family: "Chakra Petch", sans-serif;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: var(--accent);
+    text-shadow:
+      1px 1px 0 var(--retro),
+      2px 2px 0 var(--retro);
+  }
+  .cv-pick-head h3 {
+    margin: 0;
+    font-family: "Chakra Petch", sans-serif;
+    font-size: 1.15rem;
+    color: var(--text);
+  }
+  .cv-pick-head p {
+    grid-column: 2;
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+  .cv-screen {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+  }
+  .cv-eyebrow {
+    font-family: "Chakra Petch", sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .cv-title {
+    font-family: "Chakra Petch", sans-serif;
+    font-weight: 700;
+    font-size: 1.4rem;
+    text-shadow:
+      1px 1px 0 var(--retro),
+      2px 2px 0 var(--retro);
+  }
+  .cv-sub {
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+  .cv-panels {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+    gap: 0.75rem;
+  }
+  .cv-panel {
+    display: grid;
+    align-content: start;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  .cv-panel-title {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+    font-family: "Chakra Petch", sans-serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .cv-panel-title span {
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  table.cv-t {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+  .cv-t th {
+    text-align: left;
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.35rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .cv-t td {
+    padding: 0.45rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .cv-t .num {
+    text-align: right;
+    font-family: "IBM Plex Mono", monospace;
+  }
+  .cv-t th.num {
+    text-align: right;
+  }
+  .cv-name {
+    font-weight: 600;
+  }
+  .cv-meta {
+    color: var(--muted);
+    font-size: 0.7rem;
+  }
+  .cv-badge {
+    display: inline-block;
+    padding: 0 0.3rem;
+    margin-left: 0.3rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--bg);
+    background: var(--highlight);
+    vertical-align: 1px;
+  }
+  .cv-badge.out {
+    background: var(--loss);
+  }
+  .cv-mine {
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+  .cv-chip {
+    display: inline-block;
+    padding: 0.05rem 0.35rem;
+    margin: 0 0.15rem 0.15rem 0;
+    border-radius: 4px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.68rem;
+    border: 1px solid var(--border);
+  }
+  .cv-chip.up {
+    color: var(--win);
+    border-color: color-mix(in srgb, var(--win) 45%, var(--bg));
+  }
+  .cv-chip.down {
+    color: var(--loss);
+    border-color: color-mix(in srgb, var(--loss) 45%, var(--bg));
+  }
+  .cv-gain {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600;
+    color: var(--win);
+  }
+  .cv-gain.neg {
+    color: var(--loss);
+  }
+  .cv-keycap {
+    display: inline-grid;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Chakra Petch", sans-serif;
+    font-weight: 700;
+    font-size: 0.72rem;
+    box-shadow: 1px 1px 0 var(--retro);
+  }
+  .cv-keycap.on {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+    box-shadow:
+      1px 1px 0 var(--retro),
+      2px 2px 0 var(--retro),
+      3px 3px 0 var(--retro),
+      4px 4px 0 var(--retro);
+    transform: translate(-1px, -1px);
+  }
+  .cv-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .cv-vs {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  .cv-vs-card {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  .cv-vs-card.right {
+    text-align: right;
+  }
+  .cv-vs-card .big {
+    font-family: "Chakra Petch", sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    text-shadow:
+      1px 1px 0 var(--retro),
+      2px 2px 0 var(--retro);
+  }
+  .cv-vs-mid {
+    font-family: "Chakra Petch", sans-serif;
+    color: var(--muted);
+    font-weight: 700;
+  }
+  .cv-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    align-items: center;
+    height: 10px;
+  }
+  .cv-bar i {
+    display: block;
+    height: 8px;
+    border-radius: 2px;
+  }
+  .cv-bar .l {
+    justify-self: end;
+    background: var(--accent);
+  }
+  .cv-bar .r {
+    justify-self: start;
+    background: var(--muted);
+  }
+  .cv-win {
+    color: var(--win);
+    font-weight: 700;
+  }
+  .cv-cut td {
+    padding: 0;
+    border-bottom: 2px dashed var(--accent-strong);
+  }
+  .cv-cut-label td {
+    padding: 0.3rem 0.5rem;
+    color: var(--accent-strong);
+    font-family: "Chakra Petch", sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border-bottom: none;
+  }
+  .cv-above {
+    background: color-mix(in srgb, var(--win) 7%, transparent);
+  }
+  .cv-note {
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+  @media (max-width: 760px) {
+    .cv-panels {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .cv-tabs-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .cv-header {
+    display: grid;
+    gap: 0.35rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .cv-header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .cv-controls {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  .cv-tablist {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .cv-tablist label {
+    cursor: pointer;
+  }
+  .cv-view {
+    display: none;
+  }
+  #tab-a:checked ~ .cv-controls label[for="tab-a"],
+  #tab-b:checked ~ .cv-controls label[for="tab-b"],
+  #tab-c:checked ~ .cv-controls label[for="tab-c"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+    box-shadow:
+      1px 1px 0 var(--retro),
+      2px 2px 0 var(--retro),
+      3px 3px 0 var(--retro),
+      4px 4px 0 var(--retro);
+    transform: translate(-1px, -1px);
+  }
+  #tab-a:checked ~ .cv-view-a,
+  #tab-b:checked ~ .cv-view-b,
+  #tab-c:checked ~ .cv-view-c {
+    display: grid;
+  }
+  .cv-hint {
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+</style>
+
+<h2>Waiver Wire: one page, three ways to compare</h2>
+<p class="subtitle">
+  Click the tabs to switch views. The page header and stat window are shared, so changing the window
+  or position filter changes all three views. Names are real; numbers are made up.
+</p>
+
+<div class="cv">
+  <div class="cv-screen">
+    <input class="cv-tabs-input" type="radio" name="cvtab" id="tab-a" checked />
+    <input class="cv-tabs-input" type="radio" name="cvtab" id="tab-b" />
+    <input class="cv-tabs-input" type="radio" name="cvtab" id="tab-c" />
+    <div class="cv-header">
+      <div class="cv-eyebrow">Game of Courts · Yahoo · synced 4 min ago</div>
+      <div class="cv-title">Waiver Wire</div>
+      <p>How Game of Courts' free agents stack up against Newfoundlanders.</p>
+    </div>
+    <div class="cv-controls">
+      <div class="cv-tablist">
+        <label class="cv-keycap" for="tab-a">Swap board</label>
+        <label class="cv-keycap" for="tab-b">Head-to-head</label>
+        <label class="cv-keycap" for="tab-c">Cut line</label>
+      </div>
+      <div class="cv-toolbar">
+        Window <span class="cv-keycap on">Season</span><span class="cv-keycap">30d</span
+        ><span class="cv-keycap">14d</span><span class="cv-keycap">7d</span>
+      </div>
+    </div>
+    <div class="cv-view cv-view-a">
+      <div class="cv-panels">
+        <div class="cv-panel">
+          <div class="cv-panel-title">Your weakest <span>Newfoundlanders</span></div>
+          <table class="cv-t">
+            <tr>
+              <th>Player</th>
+              <th class="num">Value</th>
+            </tr>
+            <tr class="cv-mine">
+              <td>
+                <div class="cv-name">Paul Reed</div>
+                <div class="cv-meta">DET · PF,C</div>
+              </td>
+              <td class="num cv-gain neg">−0.42</td>
+            </tr>
+            <tr class="cv-mine">
+              <td>
+                <div class="cv-name">Neemias Queta<span class="cv-badge">Q</span></div>
+                <div class="cv-meta">BOS · C</div>
+              </td>
+              <td class="num">0.08</td>
+            </tr>
+            <tr class="cv-mine">
+              <td>
+                <div class="cv-name">Ayo Dosunmu<span class="cv-badge">Q</span></div>
+                <div class="cv-meta">MIN · PG,SG</div>
+              </td>
+              <td class="num">0.31</td>
+            </tr>
+          </table>
+        </div>
+        <div class="cv-panel">
+          <div class="cv-panel-title">
+            Free agents that beat them <span>sorted by gain over Reed</span>
+          </div>
+          <table class="cv-t">
+            <tr>
+              <th>Free agent</th>
+              <th class="num">Value</th>
+              <th class="num">Gain</th>
+              <th>Categories</th>
+            </tr>
+            <tr>
+              <td>
+                <div class="cv-name">Wendell Carter Jr.</div>
+                <div class="cv-meta">ORL · C</div>
+              </td>
+              <td class="num">0.94</td>
+              <td class="num cv-gain">+1.36</td>
+              <td>
+                <span class="cv-chip up">+REB</span><span class="cv-chip up">+PTS</span
+                ><span class="cv-chip down">−FG%</span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="cv-name">Daniel Gafford</div>
+                <div class="cv-meta">DAL · C</div>
+              </td>
+              <td class="num">0.71</td>
+              <td class="num cv-gain">+1.13</td>
+              <td>
+                <span class="cv-chip up">+BLK</span><span class="cv-chip up">+FG%</span
+                ><span class="cv-chip down">−FT%</span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="cv-name">Draymond Green</div>
+                <div class="cv-meta">GSW · PF,C</div>
+              </td>
+              <td class="num">0.58</td>
+              <td class="num cv-gain">+1.00</td>
+              <td>
+                <span class="cv-chip up">+AST</span><span class="cv-chip up">+ST</span
+                ><span class="cv-chip down">−TO</span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="cv-name">Jalen Smith</div>
+                <div class="cv-meta">CHI · PF,C</div>
+              </td>
+              <td class="num">0.47</td>
+              <td class="num cv-gain">+0.89</td>
+              <td><span class="cv-chip up">+REB</span><span class="cv-chip up">+3PTM</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="cv-name">Herbert Jones</div>
+                <div class="cv-meta">NOP · SG,SF</div>
+              </td>
+              <td class="num">0.40</td>
+              <td class="num cv-gain">+0.82</td>
+              <td>
+                <span class="cv-chip up">+ST</span><span class="cv-chip up">+BLK</span
+                ><span class="cv-chip down">−PTS</span>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      <div class="cv-hint">
+        Clicking a free agent opens Head-to-head with that player against your weakest.
+      </div>
+    </div>
+    <div class="cv-view cv-view-b">
+      <div class="cv-toolbar">
+        Compare <span class="cv-keycap on">Wendell Carter Jr. ▾</span> with
+        <span class="cv-keycap">Paul Reed ▾</span>
+      </div>
+      <div class="cv-vs">
+        <div class="cv-vs-card">
+          <div class="cv-meta">FREE AGENT · ORL · C</div>
+          <div class="cv-name">Wendell Carter Jr.</div>
+          <div class="big">0.94</div>
+        </div>
+        <div class="cv-vs-mid">VS</div>
+        <div class="cv-vs-card right">
+          <div class="cv-meta">YOUR TEAM · DET · PF,C</div>
+          <div class="cv-name">Paul Reed</div>
+          <div class="big">−0.42</div>
+        </div>
+      </div>
+      <table class="cv-t">
+        <tr>
+          <th class="num">Carter</th>
+          <th></th>
+          <th>Reed</th>
+          <th>Cat</th>
+          <th class="num">Your team after swap</th>
+        </tr>
+        <tr>
+          <td class="num">.532</td>
+          <td>
+            <div class="cv-bar">
+              <i class="l" style="width: 45%"></i><i class="r" style="width: 55%"></i>
+            </div>
+          </td>
+          <td class="cv-win">.560 ✓</td>
+          <td>FG%</td>
+          <td class="num cv-gain neg">−.002</td>
+        </tr>
+        <tr>
+          <td class="num cv-win">✓ .760</td>
+          <td>
+            <div class="cv-bar">
+              <i class="l" style="width: 60%"></i><i class="r" style="width: 40%"></i>
+            </div>
+          </td>
+          <td>.680</td>
+          <td>FT%</td>
+          <td class="num cv-gain">+.003</td>
+        </tr>
+        <tr>
+          <td class="num cv-win">✓ 0.6</td>
+          <td>
+            <div class="cv-bar">
+              <i class="l" style="width: 75%"></i><i class="r" style="width: 25%"></i>
+            </div>
+          </td>
+          <td>0.2</td>
+          <td>3PTM</td>
+          <td class="num cv-gain">+0.4</td>
+        </tr>
+        <tr>
+          <td class="num cv-win">✓ 11.8</td>
+          <td>
+            <div class="cv-bar">
+              <i class="l" style="width: 65%"></i><i class="r" style="width: 35%"></i>
+            </div>
+          </td>
+          <td>6.4</td>
+          <td>PTS</td>
+          <td class="num cv-gain">+5.4</td>
+        </tr>
+        <tr>
+          <td class="num cv-win">✓ 8.2</td>
+          <td>
+            <div class="cv-bar">
+              <i class="l" style="width: 62%"></i><i class="r" style="width: 38%"></i>
+            </div>
+          </td>
+          <td>4.9</td>
+          <td>REB</td>
+          <td class="num cv-gain">+3.3</td>
+        </tr>
+        <tr>
+          <td class="num cv-win">✓ 1.9</td>
+          <td>
+            <div class="cv-bar">
+              <i class="l" style="width: 63%"></i><i class="r" style="width: 37%"></i>
+            </div>
+          </td>
+          <td>1.1</td>
+          <td>AST</td>
+          <td class="num cv-gain">+0.8</td>
+        </tr>
+        <tr>
+          <td class="num">0.6</td>
+          <td>
+            <div class="cv-bar">
+              <i class="l" style="width: 38%"></i><i class="r" style="width: 62%"></i>
+            </div>
+          </td>
+          <td class="cv-win">1.0 ✓</td>
+          <td>ST</td>
+          <td class="num cv-gain neg">−0.4</td>
+        </tr>
+        <tr>
+          <td class="num">0.8</td>
+          <td>
+            <div class="cv-bar">
+              <i class="l" style="width: 47%"></i><i class="r" style="width: 53%"></i>
+            </div>
+          </td>
+          <td class="cv-win">0.9 ✓</td>
+          <td>BLK</td>
+          <td class="num cv-gain neg">−0.1</td>
+        </tr>
+        <tr>
+          <td class="num">1.3</td>
+          <td>
+            <div class="cv-bar">
+              <i class="l" style="width: 62%"></i><i class="r" style="width: 38%"></i>
+            </div>
+          </td>
+          <td class="cv-win">0.8 ✓</td>
+          <td>TO</td>
+          <td class="num cv-gain neg">+0.5</td>
+        </tr>
+      </table>
+      <div class="cv-note">Carter wins 5 of 9. ✓ marks the winner of each category.</div>
+    </div>
+    <div class="cv-view cv-view-c">
+      <div class="cv-toolbar">
+        Show <span class="cv-keycap on">My team + free agents</span
+        ><span class="cv-keycap">Free agents only</span> · Position
+        <span class="cv-keycap on">All</span><span class="cv-keycap">G</span
+        ><span class="cv-keycap">F</span><span class="cv-keycap">C</span>
+      </div>
+      <table class="cv-t">
+        <tr>
+          <th>#</th>
+          <th>Player</th>
+          <th>Owner</th>
+          <th class="num">Value</th>
+        </tr>
+        <tr class="cv-mine">
+          <td>…</td>
+          <td class="cv-meta" colspan="3">10 more of your players above</td>
+        </tr>
+        <tr class="cv-mine">
+          <td class="num">151</td>
+          <td>
+            <span class="cv-name">Isaiah Hartenstein</span> <span class="cv-meta">OKC · C</span>
+          </td>
+          <td>You</td>
+          <td class="num">1.12</td>
+        </tr>
+        <tr class="cv-above">
+          <td class="num">168</td>
+          <td>
+            <span class="cv-name">Wendell Carter Jr.</span> <span class="cv-meta">ORL · C</span>
+          </td>
+          <td class="cv-meta">Free agent</td>
+          <td class="num">0.94</td>
+        </tr>
+        <tr class="cv-above">
+          <td class="num">179</td>
+          <td><span class="cv-name">Daniel Gafford</span> <span class="cv-meta">DAL · C</span></td>
+          <td class="cv-meta">Free agent</td>
+          <td class="num">0.71</td>
+        </tr>
+        <tr class="cv-above">
+          <td class="num">186</td>
+          <td>
+            <span class="cv-name">Draymond Green</span> <span class="cv-meta">GSW · PF,C</span>
+          </td>
+          <td class="cv-meta">Free agent</td>
+          <td class="num">0.58</td>
+        </tr>
+        <tr class="cv-above">
+          <td class="num">195</td>
+          <td><span class="cv-name">Jalen Smith</span> <span class="cv-meta">CHI · PF,C</span></td>
+          <td class="cv-meta">Free agent</td>
+          <td class="num">0.47</td>
+        </tr>
+        <tr class="cv-above">
+          <td class="num">199</td>
+          <td>
+            <span class="cv-name">Herbert Jones</span> <span class="cv-meta">NOP · SG,SF</span>
+          </td>
+          <td class="cv-meta">Free agent</td>
+          <td class="num">0.40</td>
+        </tr>
+        <tr class="cv-mine">
+          <td class="num">203</td>
+          <td>
+            <span class="cv-name">Ayo Dosunmu</span><span class="cv-badge">Q</span>
+            <span class="cv-meta">MIN · PG,SG</span>
+          </td>
+          <td>You</td>
+          <td class="num">0.31</td>
+        </tr>
+        <tr class="cv-mine">
+          <td class="num">231</td>
+          <td>
+            <span class="cv-name">Neemias Queta</span><span class="cv-badge">Q</span>
+            <span class="cv-meta">BOS · C</span>
+          </td>
+          <td>You</td>
+          <td class="num">0.08</td>
+        </tr>
+        <tr class="cv-mine">
+          <td class="num">262</td>
+          <td><span class="cv-name">Paul Reed</span> <span class="cv-meta">DET · PF,C</span></td>
+          <td>You</td>
+          <td class="num cv-gain neg">−0.42</td>
+        </tr>
+        <tr class="cv-cut-label">
+          <td colspan="4">Cut line · your worst player</td>
+        </tr>
+        <tr class="cv-cut">
+          <td colspan="4"></td>
+        </tr>
+        <tr>
+          <td class="num">270</td>
+          <td><span class="cv-name">Yves Missi</span> <span class="cv-meta">NOP · C</span></td>
+          <td class="cv-meta">Free agent</td>
+          <td class="num">−0.51</td>
+        </tr>
+      </table>
+      <div class="cv-note">
+        Rows tinted green are free agents ranked above at least one of your players. The bar on the
+        left marks yours.
+      </div>
+      <div class="cv-hint">
+        Clicking a free agent opens Head-to-head with that player against your worst player.
+      </div>
+    </div>
+  </div>
+</div>
