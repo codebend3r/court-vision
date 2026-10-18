@@ -2,6 +2,8 @@ import { PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 
 import styles from "@/app/privacy/privacy.module.scss";
 
+const CONTACT_EMAIL = "cj.rivas.dev@gmail.com";
+
 // Static and public on purpose: the Chrome Web Store listing links here, so the
 // page must render signed out with no session read and no dynamic export.
 export default function PrivacyPage() {
@@ -49,8 +51,10 @@ export default function PrivacyPage() {
         </section>
         <section className={styles.section}>
           <h2 className={styles.heading}>Contact</h2>
-          {/* TODO(owner): replace this placeholder with real contact details before the Chrome Web Store listing goes live. */}
-          <p>Questions about this policy can be sent to the Court Vision team.</p>
+          <p>
+            Questions about this policy can be sent to{" "}
+            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+          </p>
         </section>
       </div>
     </div>

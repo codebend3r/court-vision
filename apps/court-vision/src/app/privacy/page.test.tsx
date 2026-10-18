@@ -30,6 +30,15 @@ describe("PrivacyPage", () => {
     expect(headings).toEqual(SECTIONS);
   });
 
+  it("links the contact email", () => {
+    render(<PrivacyPage />);
+
+    expect(screen.getByRole("link", { name: "cj.rivas.dev@gmail.com" })).toHaveAttribute(
+      "href",
+      "mailto:cj.rivas.dev@gmail.com",
+    );
+  });
+
   it("states that Court Vision is not affiliated with Yahoo", () => {
     render(<PrivacyPage />);
 

@@ -19,6 +19,11 @@
     color: var(--color-text-muted);
     line-height: 1.5;
   }
+
+  // A link inside a sentence is underlined, so color is not its only signal.
+  a {
+    text-decoration: underline;
+  }
 }
 
 .heading {
