@@ -43,6 +43,7 @@ const league = {
   teamCount: 12,
   rosterSlots: 13,
   scoringConfig: { categories: ["pts", "reb"] },
+  provider: "manual",
   createdAt: new Date("2026-07-31"),
 };
 
@@ -179,7 +180,7 @@ describe("updateLeague", () => {
     expect(result.status).toBe("ok");
     expect(result).toHaveProperty("league", league);
     expect(leagueUpdate).toHaveBeenCalledWith({
-      where: { id: "league-1", profileId: profile.id },
+      where: { id: "league-1", profileId: profile.id, provider: "manual" },
       data: expect.objectContaining({
         name: "Updated",
         scoringType: "roto",
@@ -187,6 +188,89 @@ describe("updateLeague", () => {
         rosterSlots: 10,
       }),
     });
+  });
+
+  it("only renames an imported league", async () => {
+    findFirst.mockResolvedValueOnce({ provider: "yahoo" });
+    const result = await updateLeague({
+      leagueId: "league-1",
+      name: "  Renamed  ",
+      scoringType: "roto",
+      teamCount: 8,
+      rosterSlots: 10,
+      scoringConfig: { categories: ["pts"] },
+    });
+    expect(result.status).toBe("ok");
+    expect(findFirst).toHaveBeenCalledWith({
+      where: { id: "league-1", profileId: profile.id },
+      select: { provider: true },
+    });
+    expect(leagueUpdate).toHaveBeenCalledWith({
+      where: { id: "league-1", profileId: profile.id },
+      data: { name: "Renamed" },
+    });
+  });
+
+  it("renames an imported league whatever scoring type the caller sends", async () => {
+    findFirst.mockResolvedValueOnce({ provider: "yahoo" });
+    const result = await updateLeague({
+      leagueId: "league-1",
+      name: "Renamed",
+      scoringType: "junk",
+      teamCount: 8,
+      rosterSlots: 10,
+      scoringConfig: { categories: ["pts"] },
+    });
+    expect(result.status).toBe("ok");
+    expect(leagueUpdate).toHaveBeenCalledWith({
+      where: { id: "league-1", profileId: profile.id },
+      data: { name: "Renamed" },
+    });
+  });
+
+  it("only renames a league whose stored provider is unknown", async () => {
+    findFirst.mockResolvedValueOnce({ provider: "espn" });
+    const result = await updateLeague({
+      leagueId: "league-1",
+      name: "Renamed",
+      scoringType: "roto",
+      teamCount: 8,
+      rosterSlots: 10,
+      scoringConfig: { categories: ["pts"] },
+    });
+    expect(result.status).toBe("ok");
+    expect(leagueUpdate).toHaveBeenCalledWith({
+      where: { id: "league-1", profileId: profile.id },
+      data: { name: "Renamed" },
+    });
+  });
+
+  it("still refuses a blank name for an imported league", async () => {
+    findFirst.mockResolvedValueOnce({ provider: "yahoo" });
+    const result = await updateLeague({
+      leagueId: "league-1",
+      name: "   ",
+      scoringType: "roto",
+      teamCount: 8,
+      rosterSlots: 10,
+      scoringConfig: { categories: ["pts"] },
+    });
+    expect(result).toEqual({ status: "invalid" });
+    expect(leagueUpdate).not.toHaveBeenCalled();
+  });
+
+  it("returns invalid for a league the caller doesn't own", async () => {
+    findFirst.mockResolvedValueOnce(null);
+    const result = await updateLeague({
+      leagueId: "forged",
+      name: "Hacked",
+      scoringType: "roto",
+      teamCount: 12,
+      rosterSlots: 13,
+      scoringConfig: { categories: ["pts"] },
+    });
+    expect(result).toEqual({ status: "invalid" });
+    expect(leagueUpdate).not.toHaveBeenCalled();
   });
 
   it("returns invalid for a forged leagueId (no owned row, P2025)", async () => {

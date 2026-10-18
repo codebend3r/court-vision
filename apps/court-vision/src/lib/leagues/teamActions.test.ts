@@ -7,6 +7,7 @@ const leagueTeamCreateManyAndReturn = vi.fn();
 const leagueTeamUpdateMany = vi.fn();
 const leagueTeamFindUnique = vi.fn();
 const leagueTeamDeleteMany = vi.fn();
+const leagueTeamFindFirst = vi.fn();
 const leagueTeamCount = vi.fn();
 const leagueTeamSlotDeleteMany = vi.fn();
 const leagueTeamSlotCreateMany = vi.fn();
@@ -31,7 +32,7 @@ const tx = {
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     league: { findFirst: leagueFindFirst },
-    leagueTeam: { deleteMany: leagueTeamDeleteMany },
+    leagueTeam: { deleteMany: leagueTeamDeleteMany, findFirst: leagueTeamFindFirst },
     $transaction: vi.fn((fn: (client: typeof tx) => unknown) => fn(tx)),
   },
 }));
@@ -59,10 +60,13 @@ const teamRow = {
   id: "team-1",
   name: "Bench Mob",
   slug: "bench-mob",
+  logoUrl: null,
+  managerName: null,
   createdAt: new Date("2026-07-31"),
   slots: [
     {
       slotType: "PG",
+      externalPlayerName: null,
       player: {
         id: 7,
         firstName: "Kevin",
@@ -73,7 +77,7 @@ const teamRow = {
         nbaPersonId: 201142,
       },
     },
-    { slotType: "UTIL", player: null },
+    { slotType: "UTIL", externalPlayerName: null, player: null },
   ],
 };
 
@@ -85,6 +89,7 @@ beforeEach(() => {
   leagueTeamUpdateMany.mockReset();
   leagueTeamFindUnique.mockReset();
   leagueTeamDeleteMany.mockReset();
+  leagueTeamFindFirst.mockReset();
   leagueTeamCount.mockReset();
   leagueTeamSlotDeleteMany.mockReset();
   leagueTeamSlotCreateMany.mockReset();
@@ -102,10 +107,11 @@ beforeEach(() => {
   leagueTeamUpdateMany.mockResolvedValue({ count: 1 });
   leagueTeamFindUnique.mockResolvedValue(teamRow);
   leagueTeamDeleteMany.mockResolvedValue({ count: 1 });
+  leagueTeamFindFirst.mockResolvedValue(null);
   leagueTeamCount.mockResolvedValue(0);
   leagueTeamSlotDeleteMany.mockResolvedValue({ count: 0 });
   leagueTeamSlotCreateMany.mockResolvedValue({ count: 2 });
-  ensureDefaultLeague.mockResolvedValue({ id: "league-1" });
+  ensureDefaultLeague.mockResolvedValue({ id: "league-1", isImported: false });
 });
 
 describe("saveLeagueTeam", () => {
@@ -176,6 +182,41 @@ describe("saveLeagueTeam", () => {
     });
     expect(result).toEqual({ status: "invalid" });
     expect(leagueTeamCreate).not.toHaveBeenCalled();
+  });
+
+  it("refuses to save or delete a team in an imported league", async () => {
+    // The ownership lookup only matches a hand-built league, so an imported
+    // one reads as not found: no team row, no slot writes.
+    leagueFindFirst.mockResolvedValueOnce(null);
+    const saved = await saveLeagueTeam({
+      leagueId: "yahoo-league",
+      teamId: "team-1",
+      name: "Renamed",
+      slots,
+    });
+    expect(saved).toEqual({ status: "invalid" });
+    expect(leagueFindFirst).toHaveBeenCalledWith({
+      where: { id: "yahoo-league", profileId: profile.id, provider: "manual" },
+      select: { id: true },
+    });
+    expect(leagueTeamUpdateMany).not.toHaveBeenCalled();
+    expect(leagueTeamCreate).not.toHaveBeenCalled();
+    expect(leagueTeamSlotDeleteMany).not.toHaveBeenCalled();
+    expect(leagueTeamSlotCreateMany).not.toHaveBeenCalled();
+
+    // The delete is scoped to hand-built leagues too, so it matches no row;
+    // the team still exists, so the caller hears it was refused.
+    leagueTeamDeleteMany.mockResolvedValueOnce({ count: 0 });
+    leagueTeamFindFirst.mockResolvedValueOnce({ id: "team-1" });
+    const deleted = await deleteLeagueTeam({ teamId: "team-1" });
+    expect(deleted).toEqual({ status: "error" });
+    expect(leagueTeamDeleteMany).toHaveBeenCalledWith({
+      where: { id: "team-1", profileId: profile.id, league: { provider: "manual" } },
+    });
+    expect(leagueTeamFindFirst).toHaveBeenCalledWith({
+      where: { id: "team-1", profileId: profile.id },
+      select: { id: true },
+    });
   });
 
   it("returns invalid for an empty trimmed name", async () => {
@@ -250,8 +291,9 @@ describe("deleteLeagueTeam", () => {
     const result = await deleteLeagueTeam({ teamId: "team-1" });
     expect(result).toEqual({ status: "ok" });
     expect(leagueTeamDeleteMany).toHaveBeenCalledWith({
-      where: { id: "team-1", profileId: profile.id },
+      where: { id: "team-1", profileId: profile.id, league: { provider: "manual" } },
     });
+    expect(leagueTeamFindFirst).not.toHaveBeenCalled();
   });
 
   it("is idempotent for an already-gone or unowned team (0 rows deleted)", async () => {
@@ -288,12 +330,35 @@ describe("deleteLeagueTeam", () => {
 });
 
 describe("importLegacyTeams", () => {
+  // A legacy team predates imported leagues, so it carries none of their
+  // fields.
+  const notImported = {
+    logoUrl: null,
+    managerName: null,
+    isMine: false,
+    isImported: false,
+    unmatchedBySlotId: {},
+  };
   // Legacy/localStorage-sourced teams predate the DB and carry no real slug —
   // importLegacyTeams computes a fresh collision-proof one server-side, so
   // the input slug is always "" here.
   const legacyTeams: FantasyTeam[] = [
-    { id: "legacy-1", name: "Bench Mob", slug: "", createdAt: "2026-07-23T00:00:00.000Z", slots },
-    { id: "legacy-2", name: "Bench Mob", slug: "", createdAt: "2026-07-24T00:00:00.000Z", slots },
+    {
+      id: "legacy-1",
+      name: "Bench Mob",
+      slug: "",
+      createdAt: "2026-07-23T00:00:00.000Z",
+      slots,
+      ...notImported,
+    },
+    {
+      id: "legacy-2",
+      name: "Bench Mob",
+      slug: "",
+      createdAt: "2026-07-24T00:00:00.000Z",
+      slots,
+      ...notImported,
+    },
   ];
 
   it("returns unauthenticated when no profile", async () => {
@@ -330,6 +395,15 @@ describe("importLegacyTeams", () => {
     expect(leagueTeamCreateManyAndReturn).not.toHaveBeenCalled();
   });
 
+  it("skips the import when the resolved league is imported", async () => {
+    ensureDefaultLeague.mockResolvedValueOnce({ id: "league-1", isImported: true });
+    const result = await importLegacyTeams({ teams: legacyTeams });
+    expect(result).toEqual({ status: "skipped" });
+    expect(leagueTeamCount).not.toHaveBeenCalled();
+    expect(leagueTeamCreateManyAndReturn).not.toHaveBeenCalled();
+    expect(leagueTeamSlotCreateMany).not.toHaveBeenCalled();
+  });
+
   it("returns ok without writing anything for an empty team list", async () => {
     const result = await importLegacyTeams({ teams: [] });
     expect(result).toEqual({ status: "ok" });
@@ -343,6 +417,7 @@ describe("importLegacyTeams", () => {
       slug: "",
       createdAt: "2026-07-23T00:00:00.000Z",
       slots,
+      ...notImported,
     }));
     const result = await importLegacyTeams({ teams: tooMany });
     expect(result).toEqual({ status: "error" });
@@ -352,7 +427,14 @@ describe("importLegacyTeams", () => {
   it("rejects a team with a blank name without touching the session", async () => {
     const result = await importLegacyTeams({
       teams: [
-        { id: "legacy-1", name: "   ", slug: "", createdAt: "2026-07-23T00:00:00.000Z", slots },
+        {
+          id: "legacy-1",
+          name: "   ",
+          slug: "",
+          createdAt: "2026-07-23T00:00:00.000Z",
+          slots,
+          ...notImported,
+        },
       ],
     });
     expect(result).toEqual({ status: "error" });
@@ -380,6 +462,7 @@ describe("importLegacyTeams", () => {
           slug: "",
           createdAt: "2026-07-23T00:00:00.000Z",
           slots: tooManySlots,
+          ...notImported,
         },
       ],
     });

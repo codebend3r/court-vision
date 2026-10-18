@@ -14,34 +14,36 @@ datasource db {
 }
 
 model Player {
-  id           Int                 @id
-  firstName    String
-  lastName     String
-  fullName     String
-  teamId       Int?
-  teamAbbr     String?
-  position     String?
-  jerseyNumber String?
-  nbaPersonId  Int?
-  heightInches Int?
-  weightLbs    Int?
-  birthDate    DateTime?
-  college      String?
-  country      String?
-  draftYear    Int?
-  draftRound   Int?
-  draftNumber  Int?
+  id               Int                     @id
+  firstName        String
+  lastName         String
+  fullName         String
+  teamId           Int?
+  teamAbbr         String?
+  position         String?
+  jerseyNumber     String?
+  nbaPersonId      Int?
+  heightInches     Int?
+  weightLbs        Int?
+  birthDate        DateTime?
+  college          String?
+  country          String?
+  draftYear        Int?
+  draftRound       Int?
+  draftNumber      Int?
   // On a current NBA roster per Balldontlie's /v1/players/active, refreshed by
   // `sync:players`. Team rosters read this, not game logs, so rookies and new
   // signings appear before they play.
-  isActive     Boolean             @default(false)
-  seasonStats  PlayerSeasonStats[]
-  gameLogs     PlayerGameLog[]
+  isActive         Boolean                 @default(false)
+  seasonStats      PlayerSeasonStats[]
+  gameLogs         PlayerGameLog[]
   advancedGameLogs PlayerAdvancedGameLog[]
   leagueWatchlist  LeagueWatchlistPlayer[]
   leagueTeamSlots  LeagueTeamSlot[]
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+  externalIds      PlayerExternalId[]
+  leagueWaivers    LeagueWaiverPlayer[]
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
 }
 
 model Profile {
@@ -66,50 +68,88 @@ model Profile {
 // players, and scoring setup. scoringConfig's shape depends on scoringType and
 // is validated by the sport engine's parseScoringConfig. The 10-league cap is
 // enforced in lib/leagues/actions.ts, inside a transaction.
+//
+// Imported leagues (provider other than "manual") carry the host's identity:
+// externalKey is the provider's league key, so re-importing the same league
+// updates it instead of duplicating (unique per profile). myTeamId marks the
+// team the user manages; the import writes it, and SetNull keeps the league
+// valid if that team is ever removed. syncedAt / syncError record the latest
+// refresh, and unsupportedCategories lists provider stat categories the sport
+// descriptor cannot score, so the UI can say what was left out.
+//
+// myTeamId must always name one of this league's own teams. The database
+// cannot enforce that (the foreign key only checks that the team exists), so
+// the importer asserts it before writing.
 model League {
-  id            String                  @id @default(cuid())
-  profileId     String                  @db.Uuid
-  profile       Profile                 @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  name          String
-  slug          String
-  scoringType   String                  @default("h2h_categories")
-  teamCount     Int                     @default(12)
-  rosterSlots   Int                     @default(13)
-  scoringConfig Json
-  teams         LeagueTeam[]
-  watchlist     LeagueWatchlistPlayer[]
-  activeFor     Profile[]               @relation("ActiveLeague")
-  createdAt     DateTime                @default(now())
-  updatedAt     DateTime                @updatedAt
+  id                    String                  @id @default(cuid())
+  profileId             String                  @db.Uuid
+  profile               Profile                 @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name                  String
+  slug                  String
+  scoringType           String                  @default("h2h_categories")
+  teamCount             Int                     @default(12)
+  rosterSlots           Int                     @default(13)
+  scoringConfig         Json
+  provider              String                  @default("manual")
+  externalKey           String?
+  externalUrl           String?
+  myTeamId              String?                 @unique
+  myTeam                LeagueTeam?             @relation("MyTeam", fields: [myTeamId], references: [id], onDelete: SetNull)
+  syncedAt              DateTime?
+  syncError             String?
+  unsupportedCategories String[]                @default([])
+  teams                 LeagueTeam[]            @relation("LeagueTeams")
+  watchlist             LeagueWatchlistPlayer[]
+  waivers               LeagueWaiverPlayer[]
+  activeFor             Profile[]               @relation("ActiveLeague")
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
 
   @@unique([profileId, slug])
+  @@unique([profileId, provider, externalKey])
 }
 
+// externalKey, logoUrl and managerName are filled by league imports; manual
+// teams leave them null. Postgres treats nulls as distinct, so the
+// [leagueId, externalKey] unique only constrains imported teams.
 model LeagueTeam {
-  id        String           @id @default(cuid())
-  leagueId  String
-  league    League           @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  id          String           @id @default(cuid())
+  leagueId    String
+  league      League           @relation("LeagueTeams", fields: [leagueId], references: [id], onDelete: Cascade)
   // Denormalized owner so RLS is a direct auth.uid() check, not a join.
-  profileId String           @db.Uuid
-  name      String
-  slug      String
-  slots     LeagueTeamSlot[]
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  profileId   String           @db.Uuid
+  name        String
+  slug        String
+  externalKey String?
+  logoUrl     String?
+  managerName String?
+  // Back-relation: set when this is the team its league's user manages.
+  myTeamOf    League?          @relation("MyTeam")
+  slots       LeagueTeamSlot[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   @@unique([leagueId, slug])
+  @@unique([leagueId, externalKey])
   @@index([profileId])
 }
 
+// An imported slot whose player could not be matched to a Player row keeps the
+// provider's key and name (externalPlayerKey / externalPlayerName) with a null
+// playerId, so the roster still shows who holds it. injuryStatus is the
+// provider's status code ("Q", "O", "INJ", "P", ...), refreshed every sync.
 model LeagueTeamSlot {
-  id        String     @id @default(cuid())
-  teamId    String
-  team      LeagueTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  profileId String     @db.Uuid
-  slotType  String
-  position  Int
-  playerId  Int?
-  player    Player?    @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  id                 String     @id @default(cuid())
+  teamId             String
+  team               LeagueTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  profileId          String     @db.Uuid
+  slotType           String
+  position           Int
+  playerId           Int?
+  player             Player?    @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  externalPlayerKey  String?
+  externalPlayerName String?
+  injuryStatus       String?
 
   @@unique([teamId, position])
   @@index([profileId])
@@ -128,6 +168,41 @@ model LeagueWatchlistPlayer {
 
   @@id([leagueId, playerId])
   @@index([leagueId, createdAt(sort: Desc)])
+  @@index([profileId])
+}
+
+// Maps a provider's player id (e.g. Yahoo's) onto our Player row. Written by
+// the import matcher, which records how the match was made (method) and the
+// positions the provider lists the player at. Server-only: RLS is on with no
+// policies, and Prisma connects as a role that bypasses it. The table is shared
+// by every profile, so only data the server fetched from Yahoo itself may write
+// to it; a client-supplied snapshot never does.
+model PlayerExternalId {
+  provider          String
+  externalId        String
+  playerId          Int
+  player            Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  method            String
+  eligiblePositions String[] @default([])
+  updatedAt         DateTime @updatedAt
+
+  @@id([provider, externalId])
+  @@index([playerId])
+}
+
+// Free agents (waiver pool) of an imported league, replaced on every sync so
+// the pool tracks the host. Per-profile like the watchlist, with the owner
+// denormalized so RLS is a direct auth.uid() check. injuryStatus is the
+// provider's status code at the last sync.
+model LeagueWaiverPlayer {
+  leagueId     String
+  league       League  @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  playerId     Int
+  player       Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  profileId    String  @db.Uuid
+  injuryStatus String?
+
+  @@id([leagueId, playerId])
   @@index([profileId])
 }
 
@@ -162,15 +237,15 @@ model PlayerSeasonStats {
 }
 
 model PlayerGameLog {
-  id           String   @id @default(cuid())
-  player       Player   @relation(fields: [playerId], references: [id])
-  playerId     Int
-  gameId       String
-  gameDate     DateTime
-  season       String
-  seasonType   String
-  teamId       Int
-  teamAbbr     String
+  id            String   @id @default(cuid())
+  player        Player   @relation(fields: [playerId], references: [id])
+  playerId      Int
+  gameId        String
+  gameDate      DateTime
+  season        String
+  seasonType    String
+  teamId        Int
+  teamAbbr      String
   matchup       String
   opponentAbbr  String?
   homeAway      String
@@ -178,21 +253,21 @@ model PlayerGameLog {
   teamScore     Int?
   opponentScore Int?
   minutes       Float
-  fgm          Int
-  fga          Int
-  fg3m         Int
-  fg3a         Int
-  ftm          Int
-  fta          Int
-  oreb         Int
-  dreb         Int
-  reb          Int
-  ast          Int
-  stl          Int
-  blk          Int
-  tov          Int
-  pts          Int
-  plusMinus    Int?
+  fgm           Int
+  fga           Int
+  fg3m          Int
+  fg3a          Int
+  ftm           Int
+  fta           Int
+  oreb          Int
+  dreb          Int
+  reb           Int
+  ast           Int
+  stl           Int
+  blk           Int
+  tov           Int
+  pts           Int
+  plusMinus     Int?
 
   @@unique([playerId, gameId])
   @@index([gameDate])

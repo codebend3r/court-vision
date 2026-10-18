@@ -47,6 +47,13 @@ const dbLeague = ({ id, slug, updatedAt }: { id: string; slug: string; updatedAt
   teamCount: 12,
   rosterSlots: 13,
   scoringConfig: { categories: ["pts"] },
+  provider: "manual",
+  externalKey: null,
+  externalUrl: null,
+  myTeamId: null,
+  syncedAt: null,
+  syncError: null,
+  unsupportedCategories: [],
   createdAt: new Date("2026-07-01"),
   updatedAt,
 });
@@ -67,6 +74,56 @@ describe("toLeagueSummary", () => {
     const league = dbLeague({ id: "1", slug: "a", updatedAt: new Date("2026-07-01") });
     const summary = toLeagueSummary({ league: { ...league, scoringType: "junk" } });
     expect(summary.scoringType).toBe("h2h_categories");
+  });
+
+  it("maps provider, sync fields and unsupported categories into the summary", () => {
+    const league = dbLeague({ id: "1", slug: "a", updatedAt: new Date("2026-07-01") });
+    const summary = toLeagueSummary({
+      league: {
+        ...league,
+        provider: "yahoo",
+        externalKey: "466.l.1234",
+        externalUrl: "https://basketball.fantasysports.yahoo.com/nba/1234",
+        myTeamId: "team-3",
+        syncedAt: new Date("2026-10-16T12:00:00.000Z"),
+        syncError: "token expired",
+        unsupportedCategories: ["DD", "TD"],
+      },
+    });
+    expect(summary).toMatchObject({
+      provider: "yahoo",
+      externalUrl: "https://basketball.fantasysports.yahoo.com/nba/1234",
+      myTeamId: "team-3",
+      syncedAt: "2026-10-16T12:00:00.000Z",
+      syncError: "token expired",
+      unsupportedCategories: ["DD", "TD"],
+    });
+  });
+
+  it("reads a hand-built league's empty sync fields as nulls", () => {
+    const league = dbLeague({ id: "1", slug: "a", updatedAt: new Date("2026-07-01") });
+    expect(toLeagueSummary({ league })).toMatchObject({
+      provider: "manual",
+      externalUrl: null,
+      myTeamId: null,
+      syncedAt: null,
+      syncError: null,
+      unsupportedCategories: [],
+    });
+  });
+
+  it("reads an unknown stored provider as manual for display but still imported", () => {
+    const league = dbLeague({ id: "1", slug: "a", updatedAt: new Date("2026-07-01") });
+    expect(toLeagueSummary({ league: { ...league, provider: "espn" } })).toMatchObject({
+      provider: "manual",
+      isImported: true,
+    });
+  });
+
+  it("marks only a hand-built league as not imported", () => {
+    const league = dbLeague({ id: "1", slug: "a", updatedAt: new Date("2026-07-01") });
+    expect(toLeagueSummary({ league }).isImported).toBe(false);
+    expect(toLeagueSummary({ league: { ...league, provider: "yahoo" } }).isImported).toBe(true);
   });
 });
 
@@ -222,6 +279,13 @@ describe("fallbackActiveLeagueId", () => {
     teamCount: 12,
     rosterSlots: 13,
     scoringConfig: { categories: ["pts"] },
+    provider: "manual",
+    isImported: false,
+    externalUrl: null,
+    myTeamId: null,
+    syncedAt: null,
+    syncError: null,
+    unsupportedCategories: [],
     createdAt: "2026-07-01T00:00:00.000Z",
     updatedAt,
   });
