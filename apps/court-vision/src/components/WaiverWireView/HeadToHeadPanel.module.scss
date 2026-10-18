@@ -1,0 +1,130 @@
+@use "@/styles/mixins" as *;
+
+// The pickers, the two readout cards, the category table, then the summary.
+.panel {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-4);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.select {
+  @include control-field;
+}
+
+.tableWrapper {
+  @include table-wrapper;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  @include data-table;
+
+  // The category label is the row header. It sits mid-row, so it reads as a
+  // body cell: no sticky header treatment.
+  tbody th {
+    position: static;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 0;
+    background: none;
+  }
+}
+
+.numeric {
+  @include numeric-cell;
+}
+
+// My player's number mirrors the free agent's across the bar.
+.mineValue {
+  @include numeric-cell;
+  text-align: left;
+}
+
+// The free agent's number, then the bar that mirrors it against mine.
+.faCell {
+  @include numeric-cell;
+  width: 40%;
+}
+
+.faInner {
+  display: grid;
+  grid-template-columns: auto minmax(4rem, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+}
+
+// The "✓" and the hidden "wins" carry the win; the weight repeats it.
+.value,
+.mineValue {
+  &[data-winner="true"] {
+    font-weight: var(--font-weight-bold);
+  }
+}
+
+.category {
+  white-space: nowrap;
+}
+
+// Decorative: each side's share of the two per-game numbers.
+.bar {
+  display: flex;
+  overflow: hidden;
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+}
+
+.barFa {
+  background: var(--color-accent);
+}
+
+.barMine {
+  background: var(--color-text-muted);
+}
+
+// "better" / "worse" carry the meaning; the tint repeats it.
+.delta {
+  @include numeric-cell;
+
+  &[data-improves="true"] {
+    background: color-mix(in srgb, var(--color-win) 9%, transparent);
+  }
+
+  &[data-improves="false"] {
+    background: color-mix(in srgb, var(--color-loss) 9%, transparent);
+  }
+}
+
+.verdict {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+}
+
+.summary {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.srOnly {
+  @include visually-hidden;
+}

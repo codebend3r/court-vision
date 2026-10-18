@@ -1,0 +1,51 @@
+@use "@/styles/mixins" as *;
+
+.picker {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+}
+
+.label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.select {
+  @include control-field;
+  min-width: 14rem;
+}
+
+// Pending, or no team chosen yet, is aria-disabled (the button keeps focus),
+// so it borrows the keycap's :disabled look, hover included.
+.save {
+  @include keycap;
+
+  &:active:not([aria-disabled="true"]) {
+    @include keycap-press;
+  }
+
+  &[aria-disabled="true"],
+  &[aria-disabled="true"]:hover {
+    transform: none;
+    box-shadow: none;
+    opacity: var(--control-disabled-opacity);
+    cursor: not-allowed;
+  }
+}
+
+.error {
+  @include error-callout;
+}
+
+// The polite "Team saved." note, read out while the page refreshes.
+.status {
+  @include visually-hidden;
+}

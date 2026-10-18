@@ -23,7 +23,7 @@ import {
 
 import styles from "@/components/YahooImportForm/YahooImportForm.module.scss";
 
-const MY_TEAMS_PATH = "/my-teams";
+const WAIVER_WIRE_PATH = "/waiver-wire";
 
 // Paste a URL, then pick your team from the league it names, then (only when
 // some players couldn't be matched) read the summary before moving on.
@@ -77,7 +77,7 @@ export function YahooImportForm() {
   const [isPending, startTransition] = useTransition();
   const urlRef = useRef<HTMLInputElement>(null);
   const legendRef = useRef<HTMLLegendElement>(null);
-  const myTeamsRef = useRef<HTMLAnchorElement>(null);
+  const waiverWireRef = useRef<HTMLAnchorElement>(null);
   const alertRef = useRef<HTMLParagraphElement>(null);
   // Set when a step change should move focus; the first render leaves it be.
   const shouldMoveFocus = useRef(false);
@@ -88,7 +88,7 @@ export function YahooImportForm() {
     const targets: FocusTargets = {
       url: urlRef.current,
       team: legendRef.current,
-      imported: myTeamsRef.current,
+      imported: waiverWireRef.current,
     };
     const target = targets[step.kind];
     if (target !== null) target.focus();
@@ -143,7 +143,7 @@ export function YahooImportForm() {
       store.upsert({ league: result.league });
       store.setActive({ leagueId: result.league.id });
       if (result.unmatched.length === 0) {
-        router.push(MY_TEAMS_PATH);
+        router.push(WAIVER_WIRE_PATH);
         router.refresh();
         return;
       }
@@ -283,8 +283,8 @@ export function YahooImportForm() {
       )}
 
       {step.kind === "imported" && (
-        <Link ref={myTeamsRef} href={MY_TEAMS_PATH} className={styles.submit}>
-          Go to My Teams
+        <Link ref={waiverWireRef} href={WAIVER_WIRE_PATH} className={styles.submit}>
+          Go to the Waiver Wire
         </Link>
       )}
     </section>

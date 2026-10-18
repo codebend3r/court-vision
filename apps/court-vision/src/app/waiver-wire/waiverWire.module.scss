@@ -1,0 +1,48 @@
+@use "@/styles/mixins" as *;
+
+// The /waiver-wire route shell, shared with its loading skeleton.
+.page {
+  @include page-shell;
+}
+
+// A gate: why the comparison can't run yet, and the one thing to do next.
+.gate {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+}
+
+.message {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+}
+
+.external {
+  @include keycap;
+
+  &:hover {
+    text-decoration: none;
+  }
+
+  &:active {
+    @include keycap-press;
+  }
+}
+
+.srOnly {
+  @include visually-hidden;
+}
+
+// The wording carries the warning, so it stays in body text for contrast.
+.warning {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.credit {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
