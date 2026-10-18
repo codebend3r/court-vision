@@ -130,6 +130,29 @@ describe("Home", () => {
     );
   });
 
+  it("offers no team builder for an imported active league with no teams", async () => {
+    getProfile.mockResolvedValue({ username: "steve" });
+    getActiveLeague.mockResolvedValue({
+      id: "league-1",
+      name: "Game of Courts",
+      slug: "game-of-courts",
+      scoringType: "h2h_categories",
+      teamCount: 12,
+      rosterSlots: 13,
+      scoringConfig: { categories: ["pts", "reb", "ast"] },
+      provider: "yahoo",
+      isImported: true,
+      createdAt: "2026-07-01T00:00:00.000Z",
+      updatedAt: "2026-07-01T00:00:00.000Z",
+    });
+    getLeagueTeams.mockResolvedValue([]);
+
+    await renderHome();
+
+    expect(screen.getByText(/No fantasy teams yet/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "create your first team" })).not.toBeInTheDocument();
+  });
+
   it("shows the active league's most recent team", async () => {
     getProfile.mockResolvedValue({ username: "steve" });
     getActiveLeague.mockResolvedValue({

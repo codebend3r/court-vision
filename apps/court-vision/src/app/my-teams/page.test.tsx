@@ -98,6 +98,27 @@ describe("MyTeamsPage", () => {
       "/my-teams/create",
     );
     expect(getLeagueTeams).toHaveBeenCalledWith({ leagueId: "league-1" });
-    expect(listProps).toHaveBeenCalledWith({ teams, leagueName: "Bench Mob League" });
+    expect(listProps).toHaveBeenCalledWith({
+      teams,
+      leagueName: "Bench Mob League",
+      isImported: false,
+    });
+  });
+
+  it("offers no New team for an imported league and tells the list it is imported", async () => {
+    getActiveLeague.mockResolvedValue({
+      ...league({ id: "league-1", name: "Game of Courts" }),
+      provider: "yahoo",
+      isImported: true,
+    });
+
+    render(await MyTeamsPage());
+
+    expect(screen.queryByRole("link", { name: "New team" })).not.toBeInTheDocument();
+    expect(listProps).toHaveBeenCalledWith({
+      teams: [],
+      leagueName: "Game of Courts",
+      isImported: true,
+    });
   });
 });

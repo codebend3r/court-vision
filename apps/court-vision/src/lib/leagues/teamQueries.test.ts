@@ -76,7 +76,7 @@ describe("getRosteredPlayerIds", () => {
 
     expect(await getRosteredPlayerIds()).toEqual([115]);
     expect(findMany).toHaveBeenCalledWith({
-      where: { teamId: "team-3", playerId: { not: null } },
+      where: { teamId: "team-3", team: { leagueId: "league-1" }, playerId: { not: null } },
       distinct: ["playerId"],
       select: { playerId: true },
     });
@@ -92,7 +92,7 @@ describe("getRosteredPlayerIds", () => {
 
     expect(await getRosteredPlayerIds()).toEqual([115]);
     expect(findMany).toHaveBeenCalledWith({
-      where: { teamId: "team-3", playerId: { not: null } },
+      where: { teamId: "team-3", team: { leagueId: "league-1" }, playerId: { not: null } },
       distinct: ["playerId"],
       select: { playerId: true },
     });

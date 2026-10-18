@@ -138,6 +138,7 @@ const buildScoringConfig = ({
 
 export function LeagueForm({ league }: LeagueFormProps) {
   const router = useRouter();
+  const isImported = league?.isImported ?? false;
   const [state, setState] = useState<LeagueFormState>(() => buildInitialState({ league }));
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -210,13 +211,24 @@ export function LeagueForm({ league }: LeagueFormProps) {
     const rosterSlots = readCount({ formData, field: "rosterSlots" });
     setIsSubmitting(true);
     setErrorMessage(null);
-    const payload = {
-      name: trimmed,
-      scoringType: state.scoringType,
-      teamCount,
-      rosterSlots,
-      scoringConfig: buildScoringConfig({ state, formData }),
-    };
+    // An imported league's scoring and size are Yahoo's: send them back as
+    // stored (updateLeague ignores them anyway) and change only the name.
+    const payload =
+      league !== null && league.isImported
+        ? {
+            name: trimmed,
+            scoringType: league.scoringType,
+            teamCount: league.teamCount,
+            rosterSlots: league.rosterSlots,
+            scoringConfig: league.scoringConfig,
+          }
+        : {
+            name: trimmed,
+            scoringType: state.scoringType,
+            teamCount,
+            rosterSlots,
+            scoringConfig: buildScoringConfig({ state, formData }),
+          };
     const result =
       league === null
         ? await createLeague(payload)
@@ -250,115 +262,123 @@ export function LeagueForm({ league }: LeagueFormProps) {
         />
       </label>
 
-      <fieldset className={styles.fieldset}>
-        <legend className={styles.legend}>Scoring</legend>
-        <div className={styles.radioGroup}>
-          {SCORING_TYPES.map((scoringType) => (
-            <label key={scoringType} className={styles.radioLabel}>
+      {isImported && (
+        <p className={styles.note}>Scoring, teams and roster slots come from Yahoo.</p>
+      )}
+
+      {!isImported && (
+        <>
+          <fieldset className={styles.fieldset}>
+            <legend className={styles.legend}>Scoring</legend>
+            <div className={styles.radioGroup}>
+              {SCORING_TYPES.map((scoringType) => (
+                <label key={scoringType} className={styles.radioLabel}>
+                  <input
+                    type="radio"
+                    name="scoringType"
+                    value={scoringType}
+                    checked={state.scoringType === scoringType}
+                    onChange={onScoringTypeChange}
+                    className={styles.radio}
+                  />
+                  {SCORING_TYPE_LABELS[scoringType]}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <div className={styles.countRow}>
+            <label className={styles.field}>
+              Teams
               <input
-                type="radio"
-                name="scoringType"
-                value={scoringType}
-                checked={state.scoringType === scoringType}
-                onChange={onScoringTypeChange}
-                className={styles.radio}
+                type="number"
+                name="teamCount"
+                min={LEAGUE_BOUNDS.teams.min}
+                max={LEAGUE_BOUNDS.teams.max}
+                key={`teams:${state.teamCount}`}
+                defaultValue={state.teamCount}
+                onBlur={onCountBlur({ field: "teamCount" })}
+                className={styles.input}
               />
-              {SCORING_TYPE_LABELS[scoringType]}
             </label>
-          ))}
-        </div>
-      </fieldset>
-
-      <div className={styles.countRow}>
-        <label className={styles.field}>
-          Teams
-          <input
-            type="number"
-            name="teamCount"
-            min={LEAGUE_BOUNDS.teams.min}
-            max={LEAGUE_BOUNDS.teams.max}
-            key={`teams:${state.teamCount}`}
-            defaultValue={state.teamCount}
-            onBlur={onCountBlur({ field: "teamCount" })}
-            className={styles.input}
-          />
-        </label>
-        <label className={styles.field}>
-          Roster slots
-          <input
-            type="number"
-            name="rosterSlots"
-            min={LEAGUE_BOUNDS.slots.min}
-            max={LEAGUE_BOUNDS.slots.max}
-            key={`slots:${state.rosterSlots}`}
-            defaultValue={state.rosterSlots}
-            onBlur={onCountBlur({ field: "rosterSlots" })}
-            className={styles.input}
-          />
-        </label>
-      </div>
-
-      {state.scoringType === "h2h_points" ? (
-        <fieldset className={styles.fieldset}>
-          <legend className={styles.legend}>Scoring table</legend>
-          <div className={styles.configGrid}>
-            {SCORED_KEYS.map((stat) => (
-              <label key={stat} className={styles.field}>
-                {SCORING_LABELS[stat]}
-                <input
-                  type="number"
-                  name={`scoring:${stat}`}
-                  step={0.1}
-                  key={`${stat}:${state.scoring[stat]}`}
-                  defaultValue={state.scoring[stat]}
-                  onBlur={onScoringBlur({ stat })}
-                  className={styles.input}
-                />
-              </label>
-            ))}
+            <label className={styles.field}>
+              Roster slots
+              <input
+                type="number"
+                name="rosterSlots"
+                min={LEAGUE_BOUNDS.slots.min}
+                max={LEAGUE_BOUNDS.slots.max}
+                key={`slots:${state.rosterSlots}`}
+                defaultValue={state.rosterSlots}
+                onBlur={onCountBlur({ field: "rosterSlots" })}
+                className={styles.input}
+              />
+            </label>
           </div>
-        </fieldset>
-      ) : (
-        <fieldset className={styles.fieldset}>
-          <legend className={styles.legend}>Categories</legend>
-          <div className={styles.configGrid}>
-            {CATEGORY_META.map((meta) => {
-              const checked = state.categories.some((key) => key === meta.key);
-              const isOnlyChecked = checked && state.categories.length === 1;
-              return (
-                <div key={meta.key} className={styles.categoryRow}>
-                  <label className={styles.checkboxLabel}>
+
+          {state.scoringType === "h2h_points" ? (
+            <fieldset className={styles.fieldset}>
+              <legend className={styles.legend}>Scoring table</legend>
+              <div className={styles.configGrid}>
+                {SCORED_KEYS.map((stat) => (
+                  <label key={stat} className={styles.field}>
+                    {SCORING_LABELS[stat]}
                     <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={isOnlyChecked}
-                      onChange={() => toggleCategory({ category: meta.key })}
-                      className={styles.checkbox}
+                      type="number"
+                      name={`scoring:${stat}`}
+                      step={0.1}
+                      key={`${stat}:${state.scoring[stat]}`}
+                      defaultValue={state.scoring[stat]}
+                      onBlur={onScoringBlur({ stat })}
+                      className={styles.input}
                     />
-                    {meta.label}
                   </label>
-                  {state.scoringType === "h2h_categories" && (
-                    <label className={styles.field}>
-                      {`${meta.label} weight`}
-                      <input
-                        type="number"
-                        name={`weight:${meta.key}`}
-                        min={WEIGHT_BOUNDS.min}
-                        max={WEIGHT_BOUNDS.max}
-                        step={WEIGHT_BOUNDS.step}
-                        key={`${meta.key}:${state.weights[meta.key] ?? 1}`}
-                        defaultValue={state.weights[meta.key] ?? 1}
-                        onBlur={onWeightBlur({ category: meta.key })}
-                        disabled={!checked}
-                        className={styles.input}
-                      />
-                    </label>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </fieldset>
+                ))}
+              </div>
+            </fieldset>
+          ) : (
+            <fieldset className={styles.fieldset}>
+              <legend className={styles.legend}>Categories</legend>
+              <div className={styles.configGrid}>
+                {CATEGORY_META.map((meta) => {
+                  const checked = state.categories.some((key) => key === meta.key);
+                  const isOnlyChecked = checked && state.categories.length === 1;
+                  return (
+                    <div key={meta.key} className={styles.categoryRow}>
+                      <label className={styles.checkboxLabel}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={isOnlyChecked}
+                          onChange={() => toggleCategory({ category: meta.key })}
+                          className={styles.checkbox}
+                        />
+                        {meta.label}
+                      </label>
+                      {state.scoringType === "h2h_categories" && (
+                        <label className={styles.field}>
+                          {`${meta.label} weight`}
+                          <input
+                            type="number"
+                            name={`weight:${meta.key}`}
+                            min={WEIGHT_BOUNDS.min}
+                            max={WEIGHT_BOUNDS.max}
+                            step={WEIGHT_BOUNDS.step}
+                            key={`${meta.key}:${state.weights[meta.key] ?? 1}`}
+                            defaultValue={state.weights[meta.key] ?? 1}
+                            onBlur={onWeightBlur({ category: meta.key })}
+                            disabled={!checked}
+                            className={styles.input}
+                          />
+                        </label>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </fieldset>
+          )}
+        </>
       )}
 
       <button type="submit" className={styles.submit} disabled={isSubmitting}>

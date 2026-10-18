@@ -75,7 +75,11 @@ export default async function Home() {
       </ReadoutRow>
       <div className={styles.dashboardGrid}>
         <HomeStarredPanel players={players} count={count} className={styles.panelCardLeft} />
-        <HomeTeamPanel team={team} className={styles.panelCardRight} />
+        <HomeTeamPanel
+          team={team}
+          isImported={league?.isImported ?? false}
+          className={styles.panelCardRight}
+        />
         <HomeStandingsPanel standings={standings} className={styles.panelCardFar} />
         <DashboardPanel
           id="home-z-trend-title"
