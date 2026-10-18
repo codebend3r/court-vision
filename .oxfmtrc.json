@@ -15,6 +15,7 @@
     "bun.lock",
     "next-env.d.ts",
     "apps/*/prisma/migrations/",
+    "apps/*/src/lib/*/fixtures/",
     ".agents/",
     ".windsurf/",
     ".claude/skills/prisma-*/",
