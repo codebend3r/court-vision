@@ -11,62 +11,37 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  system:
+    name: 🩺 Checks
+    uses: ./.github/workflows/system-check.yml
+
+  # Branch protection requires a check named "🩺 System check". Checks from a
+  # reusable workflow are reported as "🩺 Checks / <job>", so this job carries
+  # the required name and passes only when every system-check job did.
   checks:
     name: 🩺 System check
+    needs: system
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: 🧾 Verdict
+        env:
+          RESULT: ${{ needs.system.result }}
+        run: |
+          echo "System check: $RESULT"
+          [ "$RESULT" = "success" ]
 
-      - name: 🥟 Set up Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-
-      - name: 📦 Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: 🧬 Generate Prisma client
-        run: bun run db:generate
-
-      - name: 💅 Format (Oxfmt)
-        run: bun run format:check
-
-      - name: 🔍 Lint (Oxlint)
-        run: bun run lint:ts
-
-      - name: 🎨 Lint SCSS (Gale)
-        run: bun run lint:scss
-
-      - name: 🔤 Spelling (typos)
-        run: bun run lint:spell
-
-      # Lints the workflows in this very directory: bad `uses:` refs, undefined
-      # `needs:`/`steps:` outputs, invalid `${{ }}` expressions, and — via the
-      # shellcheck preinstalled on ubuntu-latest — the `run:` scripts themselves.
-      # Nothing else here parses these files, so a typo'd expression would
-      # otherwise only surface as a silently empty string at runtime.
-      - name: ⚙️ Workflows (actionlint)
-        run: bun run lint:actions
-
-      - name: 🏷️ TypeScript (tsgo)
-        run: bun run typecheck
-
-      - name: 🧪 Test
-        run: bun run test
-
-      # Typecheck does not see RSC boundary violations, bad route config, or a
-      # server-only import pulled into a client component — those only surface
-      # at build. Every data page is dynamic, so this needs no database.
-      - name: Build
-        run: bun run build
-
-      - name: 🌐 Install Chromium
-        run: bunx playwright install --with-deps chromium
-
-      - name: ♿ Accessibility
-        run: bun run test:a11y
-
+  # One job per audited route, so the Lighthouse runs (three per route, about
+  # 14s each) happen side by side instead of nine in a row. Keep this list in
+  # step with `collect.url` in apps/court-vision/lighthouserc.json, which is
+  # what a local `lhci autorun` audits.
   perf:
-    name: ⚡ Performance
+    name: ⚡ Performance (/${{ matrix.route }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        route: [login, signup, design]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -76,11 +51,9 @@ jobs:
       - name: 📦 Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: 🧬 Generate Prisma client
-        run: bun run db:generate
-
+      # Only Court Vision is served; the shell apps are built by system-check.
       - name: 🏗️ Build
-        run: bun run build
+        run: bun run --cwd apps/court-vision build
 
       # Signed out, the audited routes touch neither Supabase nor the database,
       # so no env is needed: the same property the a11y job relies on.
@@ -121,13 +94,15 @@ jobs:
       # See .claude/skills/perf-budget.
       - name: 🔦 Lighthouse budgets
         working-directory: apps/court-vision
-        run: bunx @lhci/cli@0.15.1 autorun
+        env:
+          ROUTE: ${{ matrix.route }}
+        run: bunx @lhci/cli@0.15.1 autorun --collect.url="http://localhost:46644/$ROUTE"
 
       - name: 📤 Upload Lighthouse reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: lighthouse-reports
+          name: lighthouse-reports-${{ matrix.route }}
           path: apps/court-vision/.lighthouseci/reports
           if-no-files-found: ignore
 

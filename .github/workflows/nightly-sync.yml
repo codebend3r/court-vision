@@ -78,10 +78,6 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         run: bun install --frozen-lockfile
 
-      - name: 🧬 Generate Prisma client
-        if: steps.gate.outputs.run == 'true'
-        run: bun run db:generate
-
       - name: 🏀 Sync
         if: steps.gate.outputs.run == 'true'
         env:
