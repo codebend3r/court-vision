@@ -41,6 +41,7 @@ import { computePoolStats, leagueRates, poolStatsFor } from "#core/valuation/poo
 import { fantasyMethods } from "#core/valuation/registry";
 import { buildRollingSeries, rollingWindowLines } from "#core/valuation/rolling";
 import { buildLeague, rankByValue } from "#core/valuation/rosters";
+import { teamCategoryTotals } from "#core/valuation/teamTotals";
 import { buildFantasyTrend } from "#core/valuation/trend";
 import { type ValuationLine } from "#core/valuation/types";
 import { valuePlayers } from "#core/valuation/valuePlayers";
@@ -106,6 +107,8 @@ export const createSportEngine = <K extends SportKeys>({
       valuePlayers<K>({ ...args, sport }),
     buildCategoryBreakdown: (args: WithoutSport<Parameters<typeof buildCategoryBreakdown<K>>[0]>) =>
       buildCategoryBreakdown<K>({ ...args, sport }),
+    teamCategoryTotals: (args: WithoutSport<Parameters<typeof teamCategoryTotals<K>>[0]>) =>
+      teamCategoryTotals<K>({ ...args, sport }),
     buildFantasyGameValues: (args: WithoutSport<Parameters<typeof buildFantasyGameValues<K>>[0]>) =>
       buildFantasyGameValues<K>({ ...args, sport }),
     buildFantasyTrend: (args: WithoutSport<Parameters<typeof buildFantasyTrend<K>>[0]>) =>

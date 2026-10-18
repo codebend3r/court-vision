@@ -8,6 +8,7 @@ import {
 } from "@vision/sport-basketball/types";
 
 import { clampInt, LEAGUE_BOUNDS } from "@/lib/leagues/settings";
+import { NON_ROSTER_SLOTS } from "@/lib/leagues/slots";
 import { type YahooLeague } from "@/lib/yahoo/schemas";
 
 // Yahoo identifies stats by numeric id. Ratio categories (FG%, FT%) and the
@@ -65,8 +66,6 @@ const ZERO_POINTS_SCORING: ScoringSettings = {
   fg3m: 0,
   tov: 0,
 };
-
-const NON_ROSTER_SLOTS: readonly RosterSlotType[] = ["IL", "ILPLUS"];
 
 /** Unknown or missing Yahoo positions (`NA`, `null`) sit on the bench. */
 export const toSlotType = ({ position }: { position: string | null }): RosterSlotType =>
