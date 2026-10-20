@@ -5,7 +5,7 @@ import { getProfile } from "@/lib/auth/session";
 import { DEFAULT_LEAGUE_NAME, DEFAULT_LEAGUE_SLUG } from "@vision/core/league/constants";
 import { isLeagueScoringType } from "@vision/core/league/scoring";
 import { defaultScoringConfig, parseScoringConfig } from "@vision/sport-basketball/engine";
-import { type LeagueSummary, toLeagueProvider } from "@/lib/leagues/types";
+import { type LeagueSummary, toLeagueProvider, toLeagueSyncVia } from "@/lib/leagues/types";
 import { prisma } from "@/lib/prisma";
 import { hasPrismaCode, PRISMA_UNIQUE_VIOLATION } from "@/lib/prismaErrors";
 
@@ -26,6 +26,7 @@ export const toLeagueSummary = ({ league }: { league: League }): LeagueSummary =
     rosterSlots: league.rosterSlots,
     scoringConfig: parseScoringConfig({ scoringType, value: league.scoringConfig }),
     provider: toLeagueProvider({ value: league.provider }),
+    syncVia: toLeagueSyncVia({ value: league.syncVia }),
     isImported: league.provider !== "manual",
     externalUrl: league.externalUrl,
     myTeamId: league.myTeamId,

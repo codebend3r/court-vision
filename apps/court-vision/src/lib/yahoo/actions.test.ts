@@ -118,6 +118,7 @@ const leagueRow: League = {
   rosterSlots: 13,
   scoringConfig: { categories: ["pts", "reb", "ast"] },
   provider: "yahoo",
+  syncVia: "server",
   externalKey: "478.l.106344",
   externalUrl: LEAGUE_URL,
   myTeamId: "team-5",
@@ -142,6 +143,7 @@ const secondsAgo = ({ seconds }: { seconds: number }): Date =>
 
 type StoredLeague = {
   provider: string;
+  syncVia: string;
   externalKey: string | null;
   syncedAt: Date | null;
   syncError: string | null;
@@ -151,6 +153,7 @@ type StoredLeague = {
 // The row `syncYahooLeague` reads: an imported league last synced 5 minutes ago.
 const storedLeague = (overrides: Partial<StoredLeague> = {}): StoredLeague => ({
   provider: "yahoo",
+  syncVia: "server",
   externalKey: "478.l.106344",
   syncedAt: secondsAgo({ seconds: 300 }),
   syncError: null,
@@ -454,6 +457,7 @@ describe("syncYahooLeague", () => {
       where: { id: LEAGUE_ID, profileId: PROFILE_ID },
       select: {
         provider: true,
+        syncVia: true,
         externalKey: true,
         syncedAt: true,
         syncError: true,
@@ -490,6 +494,25 @@ describe("syncYahooLeague", () => {
     );
 
     expect(await syncYahooLeague({ leagueId: LEAGUE_ID })).toEqual({ status: "not_imported" });
+    expect(loadYahooLeague).not.toHaveBeenCalled();
+    expectNoWrites();
+  });
+
+  it("refuses to sync an extension league from the server", async () => {
+    // Synced a moment ago, so the throttle would answer if it ran first.
+    leagueFindFirst.mockResolvedValueOnce(
+      storedLeague({ syncVia: "extension", syncedAt: secondsAgo({ seconds: 5 }) }),
+    );
+
+    expect(await syncYahooLeague({ leagueId: LEAGUE_ID })).toEqual({ status: "needs_extension" });
+    expect(loadYahooLeague).not.toHaveBeenCalled();
+    expectNoWrites();
+  });
+
+  it("refuses to sync a league with an unknown sync path from the server", async () => {
+    leagueFindFirst.mockResolvedValueOnce(storedLeague({ syncVia: "espn" }));
+
+    expect(await syncYahooLeague({ leagueId: LEAGUE_ID })).toEqual({ status: "needs_extension" });
     expect(loadYahooLeague).not.toHaveBeenCalled();
     expectNoWrites();
   });

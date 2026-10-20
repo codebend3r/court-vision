@@ -69,6 +69,7 @@ const importedLeague: LeagueSummary = {
   rosterSlots: 13,
   scoringConfig: { categories: ["pts"] },
   provider: "yahoo",
+  syncVia: "server",
   isImported: true,
   externalUrl: LEAGUE_URL,
   myTeamId: "team-5",

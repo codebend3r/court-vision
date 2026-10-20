@@ -3,6 +3,7 @@ import { uniqueSlug } from "@vision/core/league/slug";
 import { teamNameToSlug } from "@vision/core/roster/slug";
 import { sequentially } from "@vision/core/util/sequentially";
 
+import { type LeagueSyncVia } from "@/lib/leagues/types";
 import { YAHOO_PROVIDER } from "@/lib/yahoo/constants";
 import { type ResolvedPlayers } from "@/lib/yahoo/matchPlayers";
 import { type ImportedLeague, type ImportedTeam, type YahooPlayerRef } from "@/lib/yahoo/types";
@@ -114,8 +115,9 @@ const writeWaivers = async ({
 
 /**
  * Writes a newly imported league, its teams, rosters and waiver list, makes it
- * the active league and points `myTeamId` at the user's team. Run it inside
- * the caller's transaction; the league cap is the caller's to check.
+ * the active league and points `myTeamId` at the user's team. `syncVia` records
+ * which path keeps it in sync from here on. Run it inside the caller's
+ * transaction; the league cap is the caller's to check.
  */
 export const createImportedLeague = async ({
   tx,
@@ -124,7 +126,8 @@ export const createImportedLeague = async ({
   resolved,
   waiverRefs,
   myTeamExternalKey,
-}: PersistArgs & { myTeamExternalKey: string }): Promise<League> => {
+  syncVia,
+}: PersistArgs & { myTeamExternalKey: string; syncVia: LeagueSyncVia }): Promise<League> => {
   // The database can't check that `myTeamId` names one of this league's own
   // teams, so this does, before anything is written.
   if (!league.teams.some(({ externalKey }) => externalKey === myTeamExternalKey)) {
@@ -143,6 +146,7 @@ export const createImportedLeague = async ({
         taken: existing.map(({ slug }) => slug),
       }),
       provider: YAHOO_PROVIDER,
+      syncVia,
       externalKey: league.externalKey,
       ...toLeagueSettings({ league }),
       syncedAt: new Date(),
