@@ -33,9 +33,10 @@ const green = { id: 1, fullName: "Jalen Green", teamAbbr: "PHX" };
 const smith = { id: 2, fullName: "Jalen Smith", teamAbbr: "CHI" };
 
 describe("isMatchMethod", () => {
-  it("accepts the two methods the matcher writes", () => {
+  it("accepts the three methods the matcher writes", () => {
     expect(isMatchMethod("name_team")).toBe(true);
     expect(isMatchMethod("name_only")).toBe(true);
+    expect(isMatchMethod("short_name_team")).toBe(true);
   });
 
   it("rejects anything else, including the read-only existing marker", () => {
@@ -138,6 +139,156 @@ describe("matchPlayer", () => {
     expect(outcome).toEqual({ status: "matched", playerId: 8, method: "name_team" });
   });
 
+  it("ignores a generational suffix on Yahoo's side", () => {
+    const outcome = matchPlayer({
+      ref: ref({ fullName: "Jimmy Butler III", teamAbbr: "GSW" }),
+      candidates: [{ id: 79, fullName: "Jimmy Butler", teamAbbr: "GSW" }],
+      existing: null,
+    });
+
+    expect(outcome).toEqual({ status: "matched", playerId: 79, method: "name_team" });
+  });
+
+  it("ignores a generational suffix on our side", () => {
+    const outcome = matchPlayer({
+      ref: ref({ fullName: "Jaime Jaquez", teamAbbr: "MIA" }),
+      candidates: [{ id: 12, fullName: "Jaime Jaquez Jr.", teamAbbr: "MIA" }],
+      existing: null,
+    });
+
+    expect(outcome).toEqual({ status: "matched", playerId: 12, method: "name_team" });
+  });
+
+  it("prefers the exact name over one that differs only by a suffix", () => {
+    const outcome = matchPlayer({
+      ref: ref({ fullName: "Gary Payton II", teamAbbr: "GSW" }),
+      candidates: [
+        { id: 10, fullName: "Gary Payton", teamAbbr: "GSW" },
+        { id: 11, fullName: "Gary Payton II", teamAbbr: "GSW" },
+      ],
+      existing: null,
+    });
+
+    expect(outcome).toEqual({ status: "matched", playerId: 11, method: "name_team" });
+  });
+
+  it("keeps a word that only looks like a suffix in a two-word name", () => {
+    const outcome = matchPlayer({
+      ref: ref({ fullName: "Jalen V", teamAbbr: "PHX" }),
+      candidates: [{ id: 19, fullName: "Jalen", teamAbbr: "PHX" }],
+      existing: null,
+    });
+
+    expect(outcome).toEqual({ status: "unmatched" });
+  });
+
+  it("matches a shortened first name on last name and team", () => {
+    const outcome = matchPlayer({
+      ref: ref({ fullName: "Nic Claxton", teamAbbr: "BKN" }),
+      candidates: [{ id: 13, fullName: "Nicolas Claxton", teamAbbr: "BKN" }],
+      existing: null,
+    });
+
+    expect(outcome).toEqual({ status: "matched", playerId: 13, method: "short_name_team" });
+  });
+
+  it("matches a shortened first name on either side", () => {
+    const outcome = matchPlayer({
+      ref: ref({ fullName: "Alexandre Sarr", teamAbbr: "WAS" }),
+      candidates: [{ id: 14, fullName: "Alex Sarr", teamAbbr: "WAS" }],
+      existing: null,
+    });
+
+    expect(outcome).toEqual({ status: "matched", playerId: 14, method: "short_name_team" });
+  });
+
+  it("never matches a shortened first name on another team", () => {
+    const outcome = matchPlayer({
+      ref: ref({ fullName: "Nic Claxton", teamAbbr: "BKN" }),
+      candidates: [{ id: 13, fullName: "Nicolas Claxton", teamAbbr: "HOU" }],
+      existing: null,
+    });
+
+    expect(outcome).toEqual({ status: "unmatched" });
+  });
+
+  it("never matches a shortened first name when Yahoo sends no team", () => {
+    const outcome = matchPlayer({
+      ref: ref({ fullName: "Nic Claxton", teamAbbr: null }),
+      candidates: [{ id: 13, fullName: "Nicolas Claxton", teamAbbr: null }],
+      existing: null,
+    });
+
+    expect(outcome).toEqual({ status: "unmatched" });
+  });
+
+  it("never matches teammates whose first names only share an initial", () => {
+    const outcome = matchPlayer({
+      ref: ref({ fullName: "Jalen Williams", teamAbbr: "OKC" }),
+      candidates: [{ id: 15, fullName: "Jaylin Williams", teamAbbr: "OKC" }],
+      existing: null,
+    });
+
+    expect(outcome).toEqual({ status: "unmatched" });
+  });
+
+  it("never matches a one-letter first name as a shortened one", () => {
+    const outcome = matchPlayer({
+      ref: ref({ fullName: "J Williams", teamAbbr: "OKC" }),
+      candidates: [{ id: 15, fullName: "Jaylin Williams", teamAbbr: "OKC" }],
+      existing: null,
+    });
+
+    expect(outcome).toEqual({ status: "unmatched" });
+  });
+
+  it("leaves a shortened first name unmatched when it fits two teammates", () => {
+    const outcome = matchPlayer({
+      ref: ref({ fullName: "Cam Johnson", teamAbbr: "DEN" }),
+      candidates: [
+        { id: 16, fullName: "Cameron Johnson", teamAbbr: "DEN" },
+        { id: 17, fullName: "Camden Johnson", teamAbbr: "DEN" },
+      ],
+      existing: null,
+    });
+
+    expect(outcome).toEqual({ status: "unmatched" });
+  });
+
+  it("never falls back to a shortened name when the full name is ambiguous", () => {
+    const outcome = matchPlayer({
+      ref: ref({ fullName: "Jalen Williams", teamAbbr: "SAS" }),
+      candidates: [
+        { id: 3, fullName: "Jalen Williams", teamAbbr: "OKC" },
+        { id: 4, fullName: "Jalen Williams", teamAbbr: "CHA" },
+        { id: 18, fullName: "Jalenius Williams", teamAbbr: "SAS" },
+      ],
+      existing: null,
+    });
+
+    expect(outcome).toEqual({ status: "unmatched" });
+  });
+
+  it("keeps a stored mapping made through a shortened first name", () => {
+    const outcome = matchPlayer({
+      ref: ref({ fullName: "Nic Claxton", teamAbbr: "HOU" }),
+      candidates: [],
+      existing: { id: 13, fullName: "Nicolas Claxton", teamAbbr: "BKN" },
+    });
+
+    expect(outcome).toEqual({ status: "matched", playerId: 13, method: "existing" });
+  });
+
+  it("keeps a stored mapping whose names differ only by a suffix", () => {
+    const outcome = matchPlayer({
+      ref: ref({ fullName: "Jimmy Butler III", teamAbbr: "GSW" }),
+      candidates: [],
+      existing: { id: 79, fullName: "Jimmy Butler", teamAbbr: "GSW" },
+    });
+
+    expect(outcome).toEqual({ status: "matched", playerId: 79, method: "existing" });
+  });
+
   it("never matches a ref whose name has an empty key", () => {
     const blankCandidate = { id: 6, fullName: "...", teamAbbr: "PHX" };
 
@@ -190,6 +341,31 @@ describe("resolveYahooPlayers", () => {
 
     expect([...resolved.byYahooId]).toEqual([["6404", 1]]);
     expect(resolved.unmatched).toEqual([missing]);
+  });
+
+  it("finds candidates whose full name differs from Yahoo's", async () => {
+    playerFindMany.mockResolvedValue([
+      green,
+      { id: 79, fullName: "Jimmy Butler", teamAbbr: "GSW" },
+      { id: 13, fullName: "Nicolas Claxton", teamAbbr: "BKN" },
+    ]);
+    const butler = ref({ yahooPlayerId: "5", fullName: "Jimmy Butler III", teamAbbr: "GSW" });
+    const claxton = ref({ yahooPlayerId: "6", fullName: "Nic Claxton", teamAbbr: "BKN" });
+
+    const resolved = await resolveYahooPlayers({
+      refs: [butler, claxton],
+      writeMappings: true,
+    });
+
+    expect([...resolved.byYahooId]).toEqual([
+      ["5", 79],
+      ["6", 13],
+    ]);
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ externalId: "6", method: "short_name_team" }),
+      }),
+    );
   });
 
   it("resolves a ref listed twice once", async () => {

@@ -23,6 +23,11 @@ type ProbeOutcome = Exclude<RequestOutcome, { type: "body" }>;
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
+// One league read is up to 12 requests, 15 seconds each, but the page stops
+// waiting for an answer after 60 seconds. The whole read gives up well before
+// that, so the page hears `unavailable` instead of nothing.
+const OVERALL_DEADLINE_MS = 45_000;
+
 // `nba` stands in for the current season's game key, so nothing is parsed to
 // build these paths.
 const GAME_PATH = "game/nba";
@@ -37,20 +42,27 @@ const FAILED: Failed = { type: "failed" };
 
 /**
  * One GET with the user's Yahoo cookies, timed from the call until `read` has
- * finished with the response. A network error, a timeout or a throw inside
- * `read` all count as failed. No retries: the user can press again.
+ * finished with the response. A network error, a timeout, the read's overall
+ * `deadline` passing or a throw inside `read` all count as failed, and once
+ * the deadline has passed no request starts. No retries: the user can press
+ * again.
  */
 const timedYahooRequest = async <Outcome>({
   path,
   fetchImpl,
+  deadline,
   read,
 }: {
   path: string;
   fetchImpl: FetchImpl;
+  deadline: AbortSignal;
   read: (response: Response) => Promise<Outcome> | Outcome;
 }): Promise<Outcome | Failed> => {
+  if (deadline.aborted) return FAILED;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const abort = () => controller.abort();
+  const timer = setTimeout(abort, REQUEST_TIMEOUT_MS);
+  deadline.addEventListener("abort", abort);
   try {
     const response = await fetchImpl(`${YAHOO_API_BASE_URL}/${path}?format=json_f`, {
       method: "GET",
@@ -62,6 +74,7 @@ const timedYahooRequest = async <Outcome>({
     return FAILED;
   } finally {
     clearTimeout(timer);
+    deadline.removeEventListener("abort", abort);
   }
 };
 
@@ -69,13 +82,16 @@ const timedYahooRequest = async <Outcome>({
 const requestYahoo = ({
   path,
   fetchImpl,
+  deadline,
 }: {
   path: string;
   fetchImpl: FetchImpl;
+  deadline: AbortSignal;
 }): Promise<RequestOutcome> =>
   timedYahooRequest<RequestOutcome>({
     path,
     fetchImpl,
+    deadline,
     read: async (response) => {
       if (!response.ok) return { type: "status", status: response.status };
       const body: unknown = JSON.parse(await response.text());
@@ -87,13 +103,16 @@ const requestYahoo = ({
 const probeYahoo = ({
   path,
   fetchImpl,
+  deadline,
 }: {
   path: string;
   fetchImpl: FetchImpl;
+  deadline: AbortSignal;
 }): Promise<ProbeOutcome> =>
   timedYahooRequest<ProbeOutcome>({
     path,
     fetchImpl,
+    deadline,
     read: (response) => ({ type: "status", status: response.status }),
   });
 
@@ -112,22 +131,25 @@ const playerCount = ({ page }: { page: unknown }): number => {
 const fetchWaiverPages = async ({
   leagueId,
   fetchImpl,
+  deadline,
   pages = [],
 }: {
   leagueId: string;
   fetchImpl: FetchImpl;
+  deadline: AbortSignal;
   pages?: readonly unknown[];
 }): Promise<{ type: "pages"; pages: unknown[] } | LeagueFetchError> => {
   const outcome = await requestYahoo({
     path: waiverPath({ leagueId, start: pages.length * YAHOO_PAGE_SIZE }),
     fetchImpl,
+    deadline,
   });
   if (outcome.type !== "body") return UNAVAILABLE;
 
   const collected = [...pages, outcome.body];
   const isFull = playerCount({ page: outcome.body }) >= YAHOO_PAGE_SIZE;
   return isFull && collected.length < YAHOO_MAX_WAIVER_PAGES
-    ? fetchWaiverPages({ leagueId, fetchImpl, pages: collected })
+    ? fetchWaiverPages({ leagueId, fetchImpl, deadline, pages: collected })
     : { type: "pages", pages: collected };
 };
 
@@ -138,19 +160,50 @@ const fetchWaiverPages = async ({
 // is fine and the league is out of its reach.
 const explainLeague400 = async ({
   fetchImpl,
+  deadline,
 }: {
   fetchImpl: FetchImpl;
+  deadline: AbortSignal;
 }): Promise<LeagueFetchError> => {
-  const probe = await probeYahoo({ path: LOGIN_PROBE_PATH, fetchImpl });
+  const probe = await probeYahoo({ path: LOGIN_PROBE_PATH, fetchImpl, deadline });
   if (probe.type === "failed" || probe.status >= 500) return UNAVAILABLE;
   if (probe.status === 401) return { type: "error", reason: "logged_out" };
   return { type: "error", reason: "not_found" };
 };
 
+// The league read itself, every request of it bounded by the one `deadline`.
+const readLeague = async ({
+  leagueId,
+  fetchImpl,
+  deadline,
+}: {
+  leagueId: string;
+  fetchImpl: FetchImpl;
+  deadline: AbortSignal;
+}): Promise<LeagueFetchResult> => {
+  const game = await requestYahoo({ path: GAME_PATH, fetchImpl, deadline });
+  if (game.type !== "body") return UNAVAILABLE;
+
+  const league = await requestYahoo({ path: leaguePath({ leagueId }), fetchImpl, deadline });
+  if (league.type === "status" && league.status === 400) {
+    return explainLeague400({ fetchImpl, deadline });
+  }
+  if (league.type !== "body") return UNAVAILABLE;
+
+  const waivers = await fetchWaiverPages({ leagueId, fetchImpl, deadline });
+  if (waivers.type !== "pages") return waivers;
+
+  return {
+    type: "league",
+    payload: { game: game.body, snapshot: league.body, waiverPages: waivers.pages },
+  };
+};
+
 /**
  * Fetches a Yahoo league with the user's own cookies: the current game, the
  * league with its settings, teams and rosters, and the waiver list. The bodies
- * go back untouched; Court Vision validates them.
+ * go back untouched; Court Vision validates them. The whole read gives up as
+ * `unavailable` after `OVERALL_DEADLINE_MS`, whatever request it is on.
  */
 export const fetchLeaguePayload = async ({
   leagueId,
@@ -159,18 +212,11 @@ export const fetchLeaguePayload = async ({
   leagueId: string;
   fetchImpl: FetchImpl;
 }): Promise<LeagueFetchResult> => {
-  const game = await requestYahoo({ path: GAME_PATH, fetchImpl });
-  if (game.type !== "body") return UNAVAILABLE;
-
-  const league = await requestYahoo({ path: leaguePath({ leagueId }), fetchImpl });
-  if (league.type === "status" && league.status === 400) return explainLeague400({ fetchImpl });
-  if (league.type !== "body") return UNAVAILABLE;
-
-  const waivers = await fetchWaiverPages({ leagueId, fetchImpl });
-  if (waivers.type !== "pages") return waivers;
-
-  return {
-    type: "league",
-    payload: { game: game.body, snapshot: league.body, waiverPages: waivers.pages },
-  };
+  const overall = new AbortController();
+  const timer = setTimeout(() => overall.abort(), OVERALL_DEADLINE_MS);
+  try {
+    return await readLeague({ leagueId, fetchImpl, deadline: overall.signal });
+  } finally {
+    clearTimeout(timer);
+  }
 };

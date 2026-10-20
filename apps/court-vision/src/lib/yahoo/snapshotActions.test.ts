@@ -48,6 +48,11 @@ vi.mock("@/lib/yahoo/schemas", () => ({
 import gameNba from "@/lib/yahoo/fixtures/game-nba.json";
 import league106344 from "@/lib/yahoo/fixtures/league-106344.json";
 import waivers106344 from "@/lib/yahoo/fixtures/waivers-106344.json";
+import {
+  snapshotWithRosterSize,
+  snapshotWithTeamCount,
+  waiverPageWithPlayers,
+} from "@/lib/yahoo/fixtures/oversized";
 import { KEY_CHANGED_MESSAGE } from "@/lib/yahoo/messages";
 import {
   importYahooLeagueFromSnapshot,
@@ -217,6 +222,42 @@ describe("every snapshot action", () => {
     expect(
       await syncYahooLeagueFromSnapshot({ leagueId: LEAGUE_ID, payload: oversizedNextSeason }),
     ).toEqual({ status: "invalid_payload" });
+    expectNoWrites();
+    expect(gameSafeParse).not.toHaveBeenCalled();
+  });
+
+  it("refuses a snapshot carrying more teams, roster players or waiver pages than Yahoo allows", async () => {
+    // Each is under 1.5 MB and otherwise well formed, so only the count caps
+    // stand between it and an import that grows much faster than its size.
+    const overCounts = [
+      { ...payload, snapshot: snapshotWithTeamCount({ count: 33 }) },
+      { ...payload, snapshot: snapshotWithRosterSize({ count: 65 }) },
+      { ...payload, waiverPages: Array.from({ length: 11 }, () => waivers106344) },
+      { ...payload, waiverPages: [waivers106344, waiverPageWithPlayers({ count: 26 })] },
+    ];
+
+    const previews = await Promise.all(
+      overCounts.map((forged) => previewYahooSnapshot({ payload: forged })),
+    );
+    const imports = await Promise.all(
+      overCounts.map((forged) =>
+        importYahooLeagueFromSnapshot({ payload: forged, myTeamExternalKey: NEWFOUNDLANDERS }),
+      ),
+    );
+
+    expect([...previews, ...imports]).toEqual(
+      Array.from({ length: 8 }, () => ({ status: "invalid_payload" })),
+    );
+    expectNoPrisma();
+
+    leagueFindFirst.mockResolvedValue(storedLeague());
+    const syncs = await Promise.all(
+      overCounts.map((forged) =>
+        syncYahooLeagueFromSnapshot({ leagueId: LEAGUE_ID, payload: forged }),
+      ),
+    );
+
+    expect(syncs).toEqual(Array.from({ length: 4 }, () => ({ status: "invalid_payload" })));
     expectNoWrites();
     expect(gameSafeParse).not.toHaveBeenCalled();
   });

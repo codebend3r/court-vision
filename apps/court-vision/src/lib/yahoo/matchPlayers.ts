@@ -4,20 +4,95 @@ import { type YahooPlayerRef } from "@/lib/yahoo/types";
 import { nameMatchKey } from "@vision/core/util/names";
 
 export type MatchCandidate = { id: number; fullName: string; teamAbbr: string | null };
-export type MatchMethod = "name_team" | "name_only";
+export type MatchMethod = "name_team" | "name_only" | "short_name_team";
 
 export const isMatchMethod = (value: string): value is MatchMethod =>
-  value === "name_team" || value === "name_only";
+  value === "name_team" || value === "name_only" || value === "short_name_team";
 export type MatchOutcome =
   | { status: "matched"; playerId: number; method: MatchMethod | "existing" }
   | { status: "unmatched" };
 
 const UNMATCHED: MatchOutcome = { status: "unmatched" };
 
-// Order: a stored mapping whose name still agrees, then name + team, then a
-// name that exactly one active player has. An ambiguous name stays unmatched
-// rather than guessing, and an empty key (a name that is all punctuation)
-// matches nothing, since every other empty key would equal it.
+// Yahoo writes "Jimmy Butler III" where Balldontlie writes "Jimmy Butler", and
+// the reverse happens too. A suffix is dropped only from a name of three words
+// or more, so a two-word name never loses its last name.
+const GENERATIONAL_SUFFIXES: ReadonlySet<string> = new Set(["jr", "sr", "ii", "iii", "iv", "v"]);
+
+// A shortened first name ("nic" for "nicolas") must keep at least this many
+// letters, so a bare initial never stands in for a whole first name.
+const MIN_SHORT_NAME_LENGTH = 2;
+
+type NameParts = {
+  key: string; // nameMatchKey: "jimmy butler iii"
+  baseKey: string; // without a generational suffix: "jimmy butler"
+  first: string; // "jimmy"
+  last: string; // every word after the first, or the only word: "butler"
+};
+
+const nameParts = ({ name }: { name: string }): NameParts => {
+  const key = nameMatchKey({ name });
+  const words = key.split(" ");
+  const lastWord = words.at(-1) ?? "";
+  const baseWords =
+    words.length > 2 && GENERATIONAL_SUFFIXES.has(lastWord) ? words.slice(0, -1) : words;
+  const [first = ""] = baseWords;
+  return {
+    key,
+    baseKey: baseWords.join(" "),
+    first,
+    last: baseWords.slice(1).join(" ") || first,
+  };
+};
+
+// "Nic" and "Nicolas", or "Alex" and "Alexandre": one first name starts the
+// other. Sharing only an initial is not enough: "Jalen" and "Jaylin" Williams
+// were Oklahoma City teammates.
+const isShortenedFirstName = ({ left, right }: { left: string; right: string }): boolean => {
+  const [shorter, longer] = left.length <= right.length ? [left, right] : [right, left];
+  return shorter.length >= MIN_SHORT_NAME_LENGTH && longer.startsWith(shorter);
+};
+
+// Whether two names can belong to one player, by any rule the matcher uses.
+// A stored mapping keeps only while this holds, so a trade never drops one.
+const namesAgree = ({ left, right }: { left: NameParts; right: NameParts }): boolean =>
+  left.baseKey === right.baseKey ||
+  (left.last === right.last && isShortenedFirstName({ left: left.first, right: right.first }));
+
+// The matched player among those sharing a name: the one on Yahoo's team, else
+// the only one. `null` when none share it, so the caller tries a looser rule;
+// unmatched when several do, so an ambiguous name never falls through to one.
+const pickByName = ({
+  ref,
+  sameName,
+}: {
+  ref: YahooPlayerRef;
+  sameName: readonly MatchCandidate[];
+}): MatchOutcome | null => {
+  if (!sameName.length) return null;
+  const sameTeam = sameName.filter(
+    (candidate) => !!ref.teamAbbr && candidate.teamAbbr === ref.teamAbbr,
+  );
+  const [byTeam] = sameTeam;
+  if (byTeam && sameTeam.length === 1) {
+    return { status: "matched", playerId: byTeam.id, method: "name_team" };
+  }
+  // Two players sharing a name and a team cannot be told apart by name alone.
+  if (sameTeam.length > 1) return UNMATCHED;
+  const [byName] = sameName;
+  if (byName && sameName.length === 1) {
+    return { status: "matched", playerId: byName.id, method: "name_only" };
+  }
+  return UNMATCHED;
+};
+
+// Order: a stored mapping whose name still agrees; the exact name; the name
+// without a generational suffix; then a shortened first name with the same
+// last name on Yahoo's team. Each name rule tries team first, then a name
+// exactly one active player has. A shortened first name always needs the team
+// and exactly one teammate. An ambiguous name stays unmatched rather than
+// guessing, and an empty key (a name that is all punctuation) matches nothing,
+// since every other empty key would equal it.
 export const matchPlayer = ({
   ref,
   candidates,
@@ -27,32 +102,33 @@ export const matchPlayer = ({
   candidates: readonly MatchCandidate[];
   existing: MatchCandidate | null;
 }): MatchOutcome => {
-  const key = nameMatchKey({ name: ref.fullName });
-  if (!key) return UNMATCHED;
+  const parts = nameParts({ name: ref.fullName });
+  if (!parts.key) return UNMATCHED;
 
-  if (existing && nameMatchKey({ name: existing.fullName }) === key) {
+  if (existing && namesAgree({ left: parts, right: nameParts({ name: existing.fullName }) })) {
     return { status: "matched", playerId: existing.id, method: "existing" };
   }
 
-  const sameName = candidates.filter(
-    (candidate) => nameMatchKey({ name: candidate.fullName }) === key,
-  );
-  const sameTeam = sameName.filter(
-    (candidate) => !!ref.teamAbbr && candidate.teamAbbr === ref.teamAbbr,
-  );
+  const named = candidates.map((candidate) => ({
+    candidate,
+    parts: nameParts({ name: candidate.fullName }),
+  }));
+  const withName = (rule: (other: NameParts) => boolean): MatchCandidate[] =>
+    named.filter(({ parts: other }) => rule(other)).map(({ candidate }) => candidate);
 
-  const [byTeam] = sameTeam;
-  if (byTeam && sameTeam.length === 1) {
-    return { status: "matched", playerId: byTeam.id, method: "name_team" };
-  }
-  // Two players sharing a name and a team cannot be told apart by name alone.
-  if (sameTeam.length > 1) return UNMATCHED;
+  const byName =
+    pickByName({ ref, sameName: withName((other) => other.key === parts.key) }) ??
+    pickByName({ ref, sameName: withName((other) => other.baseKey === parts.baseKey) });
+  if (byName) return byName;
 
-  const [byName] = sameName;
-  if (byName && sameName.length === 1) {
-    return { status: "matched", playerId: byName.id, method: "name_only" };
-  }
-  return UNMATCHED;
+  const teammates = withName(
+    (other) =>
+      other.last === parts.last && isShortenedFirstName({ left: parts.first, right: other.first }),
+  ).filter((candidate) => !!ref.teamAbbr && candidate.teamAbbr === ref.teamAbbr);
+  const [teammate] = teammates;
+  return teammate && teammates.length === 1
+    ? { status: "matched", playerId: teammate.id, method: "short_name_team" }
+    : UNMATCHED;
 };
 
 export type ResolvedPlayers = {
@@ -194,14 +270,16 @@ const isUnchanged = ({
   row.method === match.method &&
   sameStrings({ left: row.eligiblePositions, right: ref.eligiblePositions });
 
-const groupByNameKey = ({
+// Every rule `matchPlayer` uses needs the same last name, so each ref is only
+// compared with the active players who share its last name.
+const groupByLastName = ({
   candidates,
 }: {
   candidates: readonly MatchCandidate[];
 }): ReadonlyMap<string, readonly MatchCandidate[]> =>
   candidates.reduce<ReadonlyMap<string, readonly MatchCandidate[]>>((groups, candidate) => {
-    const key = nameMatchKey({ name: candidate.fullName });
-    return new Map(groups).set(key, [...(groups.get(key) ?? []), candidate]);
+    const { last } = nameParts({ name: candidate.fullName });
+    return new Map(groups).set(last, [...(groups.get(last) ?? []), candidate]);
   }, new Map());
 
 export const resolveYahooPlayers = async ({
@@ -219,13 +297,13 @@ export const resolveYahooPlayers = async ({
     loadCandidates(),
     loadStoredMappings({ yahooIds: batchIds }),
   ]);
-  const candidatesByKey = groupByNameKey({ candidates });
+  const candidatesByLastName = groupByLastName({ candidates });
 
   const attempts = uniqueRefs.map((ref): Attempt => {
     const row = stored.get(ref.yahooPlayerId);
     const outcome = matchPlayer({
       ref,
-      candidates: candidatesByKey.get(nameMatchKey({ name: ref.fullName })) ?? [],
+      candidates: candidatesByLastName.get(nameParts({ name: ref.fullName }).last) ?? [],
       existing: row?.player ?? null,
     });
     if (outcome.status === "unmatched") return { ref, match: undefined, keepsStored: false };

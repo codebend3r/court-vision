@@ -50,6 +50,48 @@ const fetchByUrl = ({ routes }: { routes: Record<string, Route> }) =>
 const requestedUrls = ({ fetchImpl }: { fetchImpl: ReturnType<typeof fetchByUrl> }): string[] =>
   fetchImpl.mock.calls.map(([input]) => String(input));
 
+// Answers every request after `delayMs` (on the fake clock): the game, the
+// league, and a full waiver page for any other URL, so paging never stops on
+// its own. An aborted request rejects at once, as `fetch` does.
+const slowYahoo = ({ delayMs }: { delayMs: number }) => {
+  const signals: AbortSignal[] = [];
+  const fetchImpl = vi.fn<FetchImpl>(
+    (input, init) =>
+      new Promise<Response>((resolve, reject) => {
+        const signal = init?.signal ?? null;
+        if (!signal) return;
+        signals.push(signal);
+        const url = String(input);
+        const body =
+          url === GAME_URL ? gameBody : url === LEAGUE_URL ? leagueBody : waiverPage({ size: 25 });
+        const timer = setTimeout(() => resolve(jsonResponse(body)), delayMs);
+        signal.addEventListener("abort", () => {
+          clearTimeout(timer);
+          reject(signal.reason);
+        });
+      }),
+  );
+  return { fetchImpl, signals };
+};
+
+// Moves the fake clock a second at a time, letting each request's promise
+// chain run between ticks the way the real event loop would.
+const advanceBy = async ({ ms }: { ms: number }) => {
+  const flush = async (rounds: number): Promise<void> => {
+    if (rounds === 0) return;
+    await Promise.resolve();
+    return flush(rounds - 1);
+  };
+  const ticks = Array.from({ length: Math.ceil(ms / 1_000) }, (_, index) =>
+    Math.min(1_000, ms - index * 1_000),
+  );
+  await ticks.reduce<Promise<void>>(async (previous, tick) => {
+    await previous;
+    vi.advanceTimersByTime(tick);
+    await flush(20);
+  }, flush(20));
+};
+
 describe("fetchLeaguePayload", () => {
   afterEach(() => {
     vi.useRealTimers();
@@ -345,5 +387,55 @@ describe("fetchLeaguePayload", () => {
 
     expect(await pending).toEqual({ type: "error", reason: "unavailable" });
     expect(signals.map((signal) => signal.aborted)).toEqual([true]);
+  });
+
+  it("gives up on the whole read after 45 seconds even when each request answers in time", async () => {
+    vi.useFakeTimers();
+    const { fetchImpl, signals } = slowYahoo({ delayMs: 10_000 });
+    const settled: unknown[] = [];
+
+    void fetchLeaguePayload({ leagueId: "106344", fetchImpl }).then((result) => {
+      settled.push(result);
+    });
+    await advanceBy({ ms: 44_999 });
+
+    // The game, the league and two waiver pages answered; the third page is on its way.
+    expect(settled).toEqual([]);
+    expect(fetchImpl).toHaveBeenCalledTimes(5);
+    expect(signals.map((signal) => signal.aborted)).toEqual([false, false, false, false, false]);
+
+    await advanceBy({ ms: 1 });
+
+    expect(settled).toEqual([{ type: "error", reason: "unavailable" }]);
+    expect(signals.at(-1)?.aborted ?? false).toBe(true);
+
+    await advanceBy({ ms: 60_000 });
+    expect(fetchImpl).toHaveBeenCalledTimes(5);
+  });
+
+  it("returns a league that finishes reading inside the deadline", async () => {
+    vi.useFakeTimers();
+    const fetchImpl = vi.fn<FetchImpl>(
+      (input) =>
+        new Promise<Response>((resolve) => {
+          const url = String(input);
+          const body =
+            url === GAME_URL ? gameBody : url === LEAGUE_URL ? leagueBody : waiverPage({ size: 3 });
+          setTimeout(() => resolve(jsonResponse(body)), 14_000);
+        }),
+    );
+    const settled: unknown[] = [];
+
+    void fetchLeaguePayload({ leagueId: "106344", fetchImpl }).then((result) => {
+      settled.push(result);
+    });
+    await advanceBy({ ms: 42_000 });
+
+    expect(settled).toEqual([
+      {
+        type: "league",
+        payload: { game: gameBody, snapshot: leagueBody, waiverPages: [waiverPage({ size: 3 })] },
+      },
+    ]);
   });
 });

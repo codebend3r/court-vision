@@ -560,7 +560,11 @@ prints what an import would do, for checking Yahoo by hand.
 
 ## Risks
 
-- **Yahoo blocks Netlify's IPs.** Untested until phase 0; see Phasing.
+- **Yahoo blocks Netlify's IPs.** Checked 2026-10-17 (phase 0): a branch
+  deploy of `yahoo/1-adapter` on `court-vizion` fetched `league/478.l.1000`
+  from `pub-api-ro` three times, HTTP 200 with `fantasy_content` every time,
+  in under a second. The server path is open; the risk is now that Yahoo
+  starts blocking later, which the sync-error copy already covers.
 - **Yahoo closes or changes `pub-api-ro`.** It is undocumented. Fixtures and
   zod schemas make a shape change fail loudly instead of writing bad data. The
   fallback is the official API: apply for access now (read-only, single

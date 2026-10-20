@@ -3,11 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useId, useRef, useState, useTransition } from "react";
 
-import { syncYahooLeague } from "@/lib/yahoo/actions";
+import { type LeagueSyncVia } from "@/lib/leagues/types";
+import { type ClientSyncResult, syncLeagueFromClient } from "@/lib/yahoo/clientSync";
 import { YAHOO_STALE_AFTER_MS } from "@/lib/yahoo/constants";
 import { formatSyncedAgo } from "@/lib/yahoo/format";
-import { unmatchedSyncMessage, yahooFailureMessage } from "@/lib/yahoo/messages";
-import { type YahooSyncResult } from "@/lib/yahoo/types";
+import {
+  bridgeFailureMessage,
+  unmatchedSyncMessage,
+  yahooFailureMessage,
+} from "@/lib/yahoo/messages";
 
 import styles from "@/components/SyncYahooButton/SyncYahooButton.module.scss";
 
@@ -17,25 +21,38 @@ export type SyncYahooButtonProps = {
   leagueName?: string;
   syncedAt: string | null;
   syncError: string | null;
+  // The path the league syncs on: an extension league is read through the
+  // extension in this browser, never by the server.
+  syncVia: LeagueSyncVia;
+  // The league's Yahoo URL, which the extension path reads the league id from.
+  externalUrl: string | null;
   // Syncs once on mount when the league never synced or last synced more than
   // YAHOO_STALE_AFTER_MS ago, through the same handler a click uses.
   autoSyncWhenStale?: boolean;
 };
 
-type FailedSync = Exclude<YahooSyncResult, { status: "ok" }>;
+type FailedSync = Exclude<ClientSyncResult, { status: "ok" }>;
 
 // What the last click came to: a sync that landed (and the names it could not
-// match), or the message for one that did not.
+// match), or the message for one that did not. A failure keeps the last sync
+// time on show beneath it, except a throttle, whose message is the time.
 type SyncOutcome =
   | { kind: "synced"; syncedAt: string; unmatched: string[] }
-  | { kind: "failed"; message: string };
+  | { kind: "failed"; message: string; showsSyncedAt: boolean };
 
 // A throw and "not_imported" (a league that is no longer Yahoo's) read as the
 // generic failure; a clicked "throttled" reads "Synced less than a minute ago.".
-const failureMessageFor = ({ result }: { result: FailedSync | null }): string =>
-  result === null || result.status === "not_imported"
-    ? yahooFailureMessage({ status: "error" })
-    : yahooFailureMessage({ status: result.status });
+// An extension that is missing reads as the server's needs_extension refusal.
+const failureMessageFor = ({ result }: { result: FailedSync | null }): string => {
+  if (result === null || result.status === "not_imported") {
+    return yahooFailureMessage({ status: "error" });
+  }
+  if (result.status === "extension_missing") {
+    return yahooFailureMessage({ status: "needs_extension" });
+  }
+  if (result.status === "extension_failed") return bridgeFailureMessage({ reason: result.reason });
+  return yahooFailureMessage({ status: result.status });
+};
 
 const SYNCING_TEXT = "Syncing…";
 
@@ -69,6 +86,8 @@ export function SyncYahooButton({
   leagueName,
   syncedAt,
   syncError,
+  syncVia,
+  externalUrl,
   autoSyncWhenStale = false,
 }: SyncYahooButtonProps) {
   const router = useRouter();
@@ -86,7 +105,9 @@ export function SyncYahooButton({
     // focus of the keyboard user who just pressed it.
     if (isPending) return;
     startTransition(async () => {
-      const result = await syncYahooLeague({ leagueId }).catch(() => null);
+      const result = await syncLeagueFromClient({ leagueId, syncVia, externalUrl }).catch(
+        () => null,
+      );
       // A throttled auto-sync means another sync just ran (or just failed), so
       // its notice would paint over a stored syncError as a false success.
       // Leave the outcome unset and re-read what that sync stored instead.
@@ -97,7 +118,11 @@ export function SyncYahooButton({
         return;
       }
       if (result === null || result.status !== "ok") {
-        setOutcome({ kind: "failed", message: failureMessageFor({ result }) });
+        setOutcome({
+          kind: "failed",
+          message: failureMessageFor({ result }),
+          showsSyncedAt: result === null || result.status !== "throttled",
+        });
         return;
       }
       startTransition(() => {
@@ -146,6 +171,9 @@ export function SyncYahooButton({
       >
         {statusTextFor({ isPending, outcome, syncedAt, syncError, now })}
       </p>
+      {!isPending && outcome !== null && outcome.kind === "failed" && outcome.showsSyncedAt && (
+        <p className={styles.syncedAt}>{formatSyncedAgo({ syncedAt, now })}</p>
+      )}
     </div>
   );
 }
