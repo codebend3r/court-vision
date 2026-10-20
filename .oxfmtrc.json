@@ -10,6 +10,8 @@
     ".next/",
     "out/",
     "build/",
+    "apps/*/.wxt/",
+    "apps/*/.output/",
     "coverage/",
     "generated/",
     "bun.lock",
