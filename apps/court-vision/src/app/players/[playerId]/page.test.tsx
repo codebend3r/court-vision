@@ -414,7 +414,7 @@ describe("PlayerPage", () => {
     expect(screen.queryAllByRole("button")).toHaveLength(0);
   });
 
-  it("renders the season dropdown with each played season plus Career, defaulting to latest", async () => {
+  it("renders the current season, each played season, and Career", async () => {
     findUniquePlayer.mockResolvedValue(player);
     findManyGameLogs.mockResolvedValue([buildLog({ id: "a" })]);
     findManySeasonStats.mockResolvedValue([
@@ -424,25 +424,27 @@ describe("PlayerPage", () => {
 
     await renderPage({ playerId: "3547238" });
 
+    expect(screen.getByRole("option", { name: SEASON_LABEL })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "2025-26" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "2024-25" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Career" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Season" })).toHaveValue("2025-26");
+    expect(screen.getByRole("combobox", { name: "Season" })).toHaveValue(SEASON_LABEL);
   });
 
-  it("filters the logs to the player's latest season by default", async () => {
+  it("filters to the current season before a returning player has played", async () => {
     findUniquePlayer.mockResolvedValue(player);
     findManySeasonStats.mockResolvedValue([
-      buildSeasonRow({ playerId: 3547238, season: "2023-24" }),
+      buildSeasonRow({ playerId: 3547238, season: "2025-26" }),
     ]);
-    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1", season: "2023-24" })]);
+    findManyGameLogs.mockResolvedValue([]);
 
     await renderPage({ playerId: "3547238" });
 
     expect(findManyGameLogs).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { playerId: 3547238, season: "2023-24" } }),
+      expect.objectContaining({ where: { playerId: 3547238, season: SEASON_LABEL } }),
     );
-    expect(screen.getByRole("combobox", { name: "Season" })).toHaveValue("2023-24");
+    expect(screen.getByRole("combobox", { name: "Season" })).toHaveValue(SEASON_LABEL);
+    expect(screen.getByText("No game logs for this season yet.")).toBeInTheDocument();
   });
 
   it("honors an explicit season param even if the player never played it", async () => {
@@ -637,7 +639,7 @@ describe("PlayerPage", () => {
     });
 
     // The pool is the one the Fantasy tab would load for this window and season.
-    expect(getFantasyPool).toHaveBeenCalledWith({ range: "last10", season: "2025-26" });
+    expect(getFantasyPool).toHaveBeenCalledWith({ range: "last10", season: SEASON_LABEL });
     // The card names every registry method; Z-Score also appears in the chart
     // legend and as a line label, so the readout is read inside the card.
     const card = screen.getByRole("region", { name: "Fantasy value" });

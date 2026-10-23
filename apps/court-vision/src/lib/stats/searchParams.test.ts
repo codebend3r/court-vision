@@ -70,23 +70,13 @@ describe("loadStatFilters", () => {
 });
 
 describe("resolveSeasonSelection", () => {
-  it("honors an explicit request over the player's seasons", () => {
-    expect(
-      resolveSeasonSelection({ requested: "2021-22", playerSeasons: ["2025-26", "2024-25"] }),
-    ).toBe("2021-22");
-    expect(resolveSeasonSelection({ requested: "career", playerSeasons: ["2025-26"] })).toBe(
-      "career",
-    );
+  it("honors an explicit request", () => {
+    expect(resolveSeasonSelection({ requested: "2021-22" })).toBe("2021-22");
+    expect(resolveSeasonSelection({ requested: "career" })).toBe("career");
   });
 
-  it("defaults to the player's most recent season with data", () => {
-    expect(resolveSeasonSelection({ requested: null, playerSeasons: ["2023-24", "2022-23"] })).toBe(
-      "2023-24",
-    );
-  });
-
-  it("falls back to the current league season when the player has none", () => {
-    expect(resolveSeasonSelection({ requested: null, playerSeasons: [] })).toBe("2026-27");
+  it("defaults to the current league season", () => {
+    expect(resolveSeasonSelection({ requested: null })).toBe("2026-27");
   });
 });
 

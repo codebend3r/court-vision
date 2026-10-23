@@ -33,16 +33,10 @@ export const statFilterParsers = {
   view: parseAsStringLiteral(PLAYER_VIEWS).withDefault(DEFAULT_VIEW),
 };
 
-// Requested season (already literal-validated) wins even if the player never
-// played it; otherwise the player's most recent season with data; otherwise
-// the current league season so an empty page still labels itself sensibly.
-export const resolveSeasonSelection = ({
-  requested,
-  playerSeasons,
-}: {
-  requested: string | null;
-  playerSeasons: readonly string[];
-}): string => requested ?? playerSeasons[0] ?? SEASON_LABEL;
+// Requested season (already literal-validated) wins; otherwise every player
+// opens on the current league season, including players who have not played yet.
+export const resolveSeasonSelection = ({ requested }: { requested: string | null }): string =>
+  requested ?? SEASON_LABEL;
 
 export const loadStatFilters = createLoader(statFilterParsers);
 
