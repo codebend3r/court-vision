@@ -46,8 +46,8 @@ export default async function PlayerPage({
     notFound();
   }
   // None of these reads depends on another, so they share one round trip
-  // instead of four. The player's own season rows drive the dropdown options,
-  // the default selection (their most recent season), and the career totals.
+  // instead of four. The player's own season rows drive the dropdown history
+  // and career totals; the current league season remains the default.
   const [user, player, filters, playerSeasonRows] = await Promise.all([
     getUser(),
     prisma.player.findUnique({ where: { id: numericId } }),
@@ -63,7 +63,7 @@ export default async function PlayerPage({
   const isSignedIn = !!user;
   const { mode, span, season: requestedSeason, view } = filters;
   const playerSeasons = [...new Set(playerSeasonRows.map((row) => row.season))];
-  const selection = resolveSeasonSelection({ requested: requestedSeason, playerSeasons });
+  const selection = resolveSeasonSelection({ requested: requestedSeason });
   const isCareer = selection === CAREER;
 
   // Every downstream view (games count, chart, log table) is scoped to the
