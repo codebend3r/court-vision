@@ -1,7 +1,12 @@
 "use client";
 
+import { useState } from "react";
+
+import { SortHeader } from "@/components/SortHeader/SortHeader";
 import { NoStatsDisclosure } from "@/components/WaiverWireView/SwapBoardPanel";
 import { WaiverPlayer } from "@/components/WaiverWireView/WaiverPlayer";
+import { type SortColumn } from "@/lib/tableSort";
+import { useColumnSort } from "@/lib/useColumnSort";
 import { type CutLine, type CutLineEntry, type CutScope } from "@/lib/waiverWire/cutLine";
 import { formatValue } from "@/lib/waiverWire/format";
 import { CUT_SCOPES } from "@/lib/waiverWire/searchParams";
@@ -26,8 +31,23 @@ const OWNER_LABELS: Record<WaiverOwner, string> = {
   waivers: "Waivers",
 };
 
+type CutRow = Extract<CutLineEntry, { kind: "row" }>;
+
+const ROWS_SHOWN = 25;
+
+const CUT_COLUMNS: readonly SortColumn<CutRow>[] = [
+  { key: "rank", firstDir: "asc", valueOf: ({ row }) => row.rank },
+  { key: "player", firstDir: "asc", valueOf: ({ row }) => row.fullName },
+  { key: "owner", firstDir: "asc", valueOf: ({ row }) => OWNER_LABELS[row.owner] },
+  { key: "value", firstDir: "desc", valueOf: ({ row }) => row.value },
+];
+
 export type CutLinePanelProps = {
   cutLine: CutLine;
+  // Every row of the scope, line and all, however the window is set: what a
+  // sort orders, since a window around the line means nothing once the rows
+  // are in another order.
+  fullLine: CutLine;
   scope: CutScope;
   onScope: ({ scope }: { scope: CutScope }) => void;
   showAll: boolean;
@@ -62,6 +82,7 @@ const isFreeAgentEntry = (entry: CutLineEntry): boolean =>
 // drawn under my lowest-valued player.
 export function CutLinePanel({
   cutLine,
+  fullLine,
   scope,
   onScope,
   showAll,
@@ -70,7 +91,16 @@ export function CutLinePanel({
   compareHintId,
   noStats,
 }: CutLinePanelProps) {
-  const hasRows = cutLine.entries.some((entry) => entry.kind === "row");
+  const { sort, onSort, sorted } = useColumnSort({ columns: CUT_COLUMNS });
+  const [shown, setShown] = useState(ROWS_SHOWN);
+  // Unsorted, the panel's own window around the line. Sorted, the line and the
+  // window go, and every row of the scope comes in the order asked for.
+  const sortedRows =
+    sort === null ? null : sorted(fullLine.entries.filter((entry) => entry.kind === "row"));
+  const entries: CutLineEntry[] =
+    sortedRows === null ? cutLine.entries : sortedRows.slice(0, shown);
+  const moreRows = sortedRows === null ? 0 : sortedRows.length - entries.length;
+  const hasRows = entries.some((entry) => entry.kind === "row");
   const hasFreeAgent = cutLine.entries.some(isFreeAgentEntry);
   const hidden = cutLine.hiddenAbove + cutLine.hiddenBelow;
 
@@ -97,18 +127,28 @@ export function CutLinePanel({
             <caption className={styles.srOnly}>{CAPTION}</caption>
             <thead>
               <tr>
-                <th scope="col" className={styles.numeric}>
-                  Rank
-                </th>
-                <th scope="col">Player</th>
-                <th scope="col">Owner</th>
-                <th scope="col" className={styles.numeric}>
-                  Value
-                </th>
+                <SortHeader
+                  label="Rank"
+                  sortKey="rank"
+                  sort={sort}
+                  onSort={onSort}
+                  align="end"
+                  className={styles.numeric}
+                />
+                <SortHeader label="Player" sortKey="player" sort={sort} onSort={onSort} />
+                <SortHeader label="Owner" sortKey="owner" sort={sort} onSort={onSort} />
+                <SortHeader
+                  label="Value"
+                  sortKey="value"
+                  sort={sort}
+                  onSort={onSort}
+                  align="end"
+                  className={styles.numeric}
+                />
               </tr>
             </thead>
             <tbody>
-              {cutLine.entries.map((entry) =>
+              {entries.map((entry) =>
                 entry.kind === "line" ? (
                   <tr key="line" className={styles.cutLine}>
                     <th scope="row" colSpan={COLUMNS}>
@@ -140,7 +180,7 @@ export function CutLinePanel({
         </div>
       )}
       {/* A disclosure that stays mounted once open, so focus never drops. */}
-      {(hidden > 0 || showAll) && (
+      {sort === null && (hidden > 0 || showAll) && (
         <button
           type="button"
           className={styles.keycap}
@@ -148,6 +188,15 @@ export function CutLinePanel({
           onClick={() => onShowAll({ showAll: !showAll })}
         >
           {showAll ? "Show fewer" : showAllLabel(cutLine)}
+        </button>
+      )}
+      {moreRows > 0 && (
+        <button
+          type="button"
+          className={styles.keycap}
+          onClick={() => setShown((current) => current + ROWS_SHOWN)}
+        >
+          Show {Math.min(ROWS_SHOWN, moreRows)} more ({moreRows} left)
         </button>
       )}
       {noStats.length > 0 && <NoStatsDisclosure entries={noStats} compareHintId={compareHintId} />}

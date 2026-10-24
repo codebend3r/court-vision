@@ -1,0 +1,41 @@
+@use "@/styles/mixins" as *;
+
+// A sortable header: the whole label is the button, with a fixed-width arrow
+// beside it. On a right-aligned column the arrow leads, so the label stays
+// flush with the numbers below it.
+.sortButton {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-text);
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+  }
+
+  &[data-align="end"] .sortArrow {
+    order: -1;
+  }
+}
+
+.sortArrow {
+  width: 1em;
+  visibility: hidden;
+  text-align: center;
+
+  &[data-active="true"] {
+    visibility: visible;
+  }
+}

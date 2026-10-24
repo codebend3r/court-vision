@@ -21,6 +21,7 @@ const params: RegularSearchParams = {
   range: "all",
   mode: "average",
   minimums: true,
+  owner: "all",
   tab: "starred",
 };
 
@@ -110,6 +111,10 @@ describe("StarredPlayersView", () => {
     getWatchlistPlayerIds.mockResolvedValue([7, 3]);
     searchPlayers.mockResolvedValue({ rows: [], total: 0, page: 1 });
     render(await StarredPlayersView({ params, showCounter: false }));
-    expect(searchPlayers).toHaveBeenCalledWith({ ...params, playerIds: [7, 3] });
+    expect(searchPlayers).toHaveBeenCalledWith({
+      ...params,
+      takenIds: null,
+      playerIds: [7, 3],
+    });
   });
 });

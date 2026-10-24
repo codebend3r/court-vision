@@ -25,18 +25,6 @@
   }
 }
 
-// Always mounted so assistive tech is already watching it when the summary
-// arrives; while empty it leaves the grid flow instead of adding a gap.
-.status {
-  margin: 0;
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-
-  &:empty {
-    @include visually-hidden;
-  }
-}
-
 .form {
   display: grid;
   gap: var(--space-4);

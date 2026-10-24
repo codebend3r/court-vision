@@ -1,0 +1,16 @@
+@use "@/styles/mixins" as *;
+
+.page {
+  @include page-shell;
+}
+
+.summary {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.results {
+  display: grid;
+  gap: var(--space-4);
+}

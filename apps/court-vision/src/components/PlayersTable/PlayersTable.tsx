@@ -2,6 +2,7 @@ import Link from "next/link";
 import { type ReactNode } from "react";
 
 import { LinkPending } from "@vision/ui/components/LinkPending/LinkPending";
+import { OwnershipChip } from "@/components/OwnershipChip/OwnershipChip";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PositionTag } from "@/components/PositionTag/PositionTag";
 import { RosteredMarker } from "@/components/RosteredMarker/RosteredMarker";
@@ -13,6 +14,7 @@ import { type PlayerIdentity } from "@/lib/players/identity";
 import { isNameSort } from "@/lib/players/rank";
 import { type CountingSortKey, type PlayerPoolRow } from "@/lib/players/search";
 import { type AdvancedPlayerRow } from "@/lib/players/searchAdvanced";
+import { type StatColumn } from "@/lib/players/statColumn";
 import {
   buildPlayersHref,
   type AdvancedSortKey,
@@ -24,21 +26,47 @@ import {
 
 import styles from "@/components/PlayersTable/PlayersTable.module.scss";
 
+const perGameValue = ({
+  total,
+  gamesPlayed,
+}: {
+  total: number;
+  gamesPlayed: number;
+}): number | null => (gamesPlayed > 0 ? total / gamesPlayed : null);
+
+const rateValue = ({ made, attempted }: { made: number; attempted: number }): number | null =>
+  attempted > 0 ? made / attempted : null;
+
 const formatPerGame = ({ total, gamesPlayed }: { total: number; gamesPlayed: number }): string =>
-  gamesPlayed > 0 ? (total / gamesPlayed).toFixed(1) : "—";
+  perGameValue({ total, gamesPlayed })?.toFixed(1) ?? "—";
 
-const formatPercentage = ({ made, attempted }: { made: number; attempted: number }): string =>
-  attempted > 0 ? formatRate({ value: made / attempted }) : "—";
-
-// Each stat column pairs its sort key with how to read the value, so the
-// header link and the body cell always agree on which column is highlighted.
-// `meta` gives a column its header tooltip and spoken full name.
-export type StatColumn<Row> = {
-  label: string;
-  sortKey: PlayerSortKey | AdvancedSortKey;
-  meta?: AdvancedStatMeta;
-  cell: (row: Row) => string;
+const formatPercentage = ({ made, attempted }: { made: number; attempted: number }): string => {
+  const value = rateValue({ made, attempted });
+  return value === null ? "—" : formatRate({ value });
 };
+
+// Minutes read as whole numbers: a per-game average or a season total, rounded.
+const minutesValue = ({
+  stats,
+  mode,
+}: {
+  stats: PlayerPoolRow["stats"];
+  mode: PlayerStatMode;
+}): number | null => {
+  const value =
+    mode === "total"
+      ? stats.min
+      : perGameValue({ total: stats.min, gamesPlayed: stats.gamesPlayed });
+  return value === null ? null : Math.round(value);
+};
+
+const formatMinutes = ({
+  stats,
+  mode,
+}: {
+  stats: PlayerPoolRow["stats"];
+  mode: PlayerStatMode;
+}): string => minutesValue({ stats, mode })?.toString() ?? "—";
 
 // The regular table's columns. Counting stats read per game or as totals, per
 // the stat mode; games played and the percentages read the same either way.
@@ -60,9 +88,24 @@ export const regularColumns = ({
       mode === "total"
         ? String(stats[key])
         : formatPerGame({ total: stats[key], gamesPlayed: stats.gamesPlayed }),
+    valueOf: ({ stats }) =>
+      mode === "total"
+        ? stats[key]
+        : perGameValue({ total: stats[key], gamesPlayed: stats.gamesPlayed }),
   });
   return [
-    { label: "GP", sortKey: "gamesPlayed", cell: ({ stats }) => String(stats.gamesPlayed) },
+    {
+      label: "GP",
+      sortKey: "gamesPlayed",
+      cell: ({ stats }) => String(stats.gamesPlayed),
+      valueOf: ({ stats }) => stats.gamesPlayed,
+    },
+    {
+      label: "MIN",
+      sortKey: "min",
+      cell: ({ stats }) => formatMinutes({ stats, mode }),
+      valueOf: ({ stats }) => minutesValue({ stats, mode }),
+    },
     counting({ label: "PTS", key: "pts" }),
     counting({ label: "REB", key: "reb" }),
     counting({ label: "AST", key: "ast" }),
@@ -76,16 +119,19 @@ export const regularColumns = ({
       label: "FG%",
       sortKey: "fgPct",
       cell: ({ stats }) => formatPercentage({ made: stats.fgm, attempted: stats.fga }),
+      valueOf: ({ stats }) => rateValue({ made: stats.fgm, attempted: stats.fga }),
     },
     {
       label: "3P%",
       sortKey: "fg3Pct",
       cell: ({ stats }) => formatPercentage({ made: stats.fg3m, attempted: stats.fg3a }),
+      valueOf: ({ stats }) => rateValue({ made: stats.fg3m, attempted: stats.fg3a }),
     },
     {
       label: "FT%",
       sortKey: "ftPct",
       cell: ({ stats }) => formatPercentage({ made: stats.ftm, attempted: stats.fta }),
+      valueOf: ({ stats }) => rateValue({ made: stats.ftm, attempted: stats.fta }),
     },
     counting({ label: "TOV", key: "tov" }),
   ];
@@ -111,6 +157,7 @@ export const ADVANCED_COLUMNS: readonly StatColumn<AdvancedPlayerRow>[] = ADVANC
     sortKey: meta.key,
     meta,
     cell: (row) => formatAdvancedMetric({ meta, value: row.stats[meta.key] }),
+    valueOf: (row) => row.stats[meta.key],
   }),
 );
 
@@ -132,6 +179,7 @@ function PlayerCell({ row }: { row: PlayerIdentity }) {
         </Link>
         <RosteredMarker playerId={row.id} />
         <span className={styles.playerTags}>
+          <OwnershipChip playerId={row.id} />
           {!!row.teamAbbr && <TeamChip team={row.teamAbbr} size="sm" />}
           {!!row.position && <PositionTag position={row.position} className={styles.position} />}
         </span>

@@ -107,13 +107,25 @@ const props: WaiverWireViewProps = {
   method: "zscore",
 };
 
+// The view opens on Available players; most tests are about the swap board, so
+// they open there unless they name a view of their own.
+const pinView = ({ searchParams }: { searchParams: string }): string => {
+  const query = new URLSearchParams(searchParams);
+  if (!query.has("view")) query.set("view", "swap");
+  return `?${query.toString()}`;
+};
+
 const renderView = ({
   searchParams = "?",
   overrides = {},
 }: { searchParams?: string; overrides?: Partial<WaiverWireViewProps> } = {}) => {
   const onUrlUpdate = vi.fn<(event: UrlUpdateEvent) => void>();
   render(<WaiverWireView {...props} {...overrides} />, {
-    wrapper: withNuqsTestingAdapter({ searchParams, onUrlUpdate, hasMemory: true }),
+    wrapper: withNuqsTestingAdapter({
+      searchParams: pinView({ searchParams }),
+      onUrlUpdate,
+      hasMemory: true,
+    }),
   });
   return { onUrlUpdate };
 };
@@ -124,10 +136,93 @@ const lastUpdate = ({
   onUrlUpdate: ReturnType<typeof vi.fn<(event: UrlUpdateEvent) => void>>;
 }): UrlUpdateEvent | null => onUrlUpdate.mock.calls.at(-1)?.[0] ?? null;
 
+// The free agents a panel lists, by their Compare buttons: one each, and mine
+// never have one.
+const comparedNames = ({ panel }: { panel: HTMLElement }): string[] =>
+  within(panel)
+    .queryAllByRole("button", { name: /^Compare .* head-to-head$/ })
+    .map((button) =>
+      (button.getAttribute("aria-label") ?? "")
+        .replace(/^Compare /, "")
+        .replace(/ head-to-head$/, ""),
+    );
+
 const swapNames = (): string[] =>
-  within(screen.getByRole("tabpanel", { name: "Swap board" }))
-    .getAllByRole("button")
-    .map((button) => button.textContent ?? "");
+  comparedNames({ panel: screen.getByRole("tabpanel", { name: "Swap board" }) });
+
+describe("WaiverWireView available players", () => {
+  const availableNames = (): string[] =>
+    comparedNames({ panel: screen.getByRole("tabpanel", { name: "Available players" }) });
+
+  it("opens on every player nobody in the league has, not only those who beat your weakest", () => {
+    const { onUrlUpdate } = renderView({ searchParams: "?view=available" });
+    expect(lastUpdate({ onUrlUpdate })).toBeNull();
+    // Deep Bench is worse than my weakest player, so no swap board lists them.
+    expect(availableNames()).toEqual(
+      expect.arrayContaining(["Free Guard", "Free Center", "Free Forward", "Deep Bench"]),
+    );
+    expect(availableNames()).toHaveLength(4);
+    expect(availableNames()).not.toContain("Rival Star");
+    expect(availableNames()).not.toContain("Mine High");
+  });
+
+  it("links a name to the player's profile and never opens head-to-head from it", async () => {
+    const user = userEvent.setup();
+    const { onUrlUpdate } = renderView({ searchParams: "?view=available" });
+
+    const link = within(screen.getByRole("tabpanel", { name: "Available players" })).getByRole(
+      "link",
+      { name: "Free Guard" },
+    );
+    expect(link).toHaveAttribute("href", "/players/4");
+    await user.click(link);
+
+    expect(screen.getByRole("tab", { name: "Available players" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(lastUpdate({ onUrlUpdate })).toBeNull();
+  });
+
+  it("lets the user star a free agent from the table", () => {
+    renderView({ searchParams: "?view=available" });
+
+    expect(
+      within(screen.getByRole("tabpanel", { name: "Available players" })).getByRole("button", {
+        name: "Star Free Guard",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("narrows the list to a position group", async () => {
+    const user = userEvent.setup();
+    renderView({ searchParams: "?view=available" });
+    await user.click(screen.getByRole("button", { name: "Guards" }));
+    expect(availableNames().sort()).toEqual(["Deep Bench", "Free Guard"]);
+  });
+
+  it("opens head-to-head from a name", async () => {
+    const user = userEvent.setup();
+    renderView({ searchParams: "?view=available" });
+    await user.click(screen.getByRole("button", { name: "Compare Deep Bench head-to-head" }));
+    expect(screen.getByRole("tab", { name: "Head-to-head" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("is the view a visit with no query lands on", () => {
+    // Not pinned: no view in the URL.
+    const onUrlUpdate = vi.fn<(event: UrlUpdateEvent) => void>();
+    render(<WaiverWireView {...props} />, {
+      wrapper: withNuqsTestingAdapter({ searchParams: "?", onUrlUpdate, hasMemory: true }),
+    });
+    expect(screen.getByRole("tab", { name: "Available players" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+});
 
 describe("WaiverWireView", () => {
   it("values the pool once and opens on the swap board", async () => {
@@ -264,7 +359,7 @@ describe("WaiverWireView", () => {
 
     await user.click(
       within(screen.getByRole("tabpanel", { name: "Swap board" })).getByRole("button", {
-        name: "Free Center",
+        name: "Compare Free Center head-to-head",
       }),
     );
 
@@ -310,21 +405,23 @@ describe("WaiverWireView", () => {
 
     await user.click(
       within(screen.getByRole("tabpanel", { name: "Swap board" })).getByRole("button", {
-        name: "Free Center",
+        name: "Compare Free Center head-to-head",
       }),
     );
 
     expect(screen.getByRole("tab", { name: "Head-to-head" })).toHaveFocus();
   });
 
-  it("describes every free agent's name button with one compare hint", () => {
+  it("describes every free agent's Compare button with one compare hint", () => {
     renderView();
 
     const hint = "Compare head-to-head against your weakest player";
     expect(screen.getAllByText(hint)).toHaveLength(1);
-    within(screen.getByRole("tabpanel", { name: "Swap board" }))
-      .getAllByRole("button")
-      .map((button) => expect(button).toHaveAccessibleDescription(hint));
+    const compareButtons = within(
+      screen.getByRole("tabpanel", { name: "Swap board" }),
+    ).getAllByRole("button", { name: /^Compare / });
+    expect(compareButtons.length).toBeGreaterThan(0);
+    compareButtons.map((button) => expect(button).toHaveAccessibleDescription(hint));
   });
 
   it("announces what the panel shows after a position change", async () => {

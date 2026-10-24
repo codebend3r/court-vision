@@ -36,6 +36,12 @@
   @include numeric-cell;
 }
 
+// The shared header rule left-aligns every th; the rank column's header must
+// follow its right-aligned numbers.
+.table th.numeric {
+  text-align: right;
+}
+
 .rank {
   color: var(--color-text-muted);
 }
@@ -43,6 +49,14 @@
 .nameCell {
   display: grid;
   grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.lastNameCell {
+  display: grid;
+  grid-auto-flow: column;
+  justify-content: start;
   align-items: center;
   gap: var(--space-2);
 }

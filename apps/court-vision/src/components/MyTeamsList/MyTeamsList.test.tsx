@@ -290,4 +290,35 @@ describe("MyTeamsList", () => {
       screen.getByText("Managed in Yahoo. Sync from the Leagues page to update."),
     ).toBeInTheDocument();
   });
+
+  it("opens only the team it is told to, and shows its players", () => {
+    const { container } = render(
+      <MyTeamsList
+        teams={[
+          team({ id: "a", name: "Bench Mob", isImported: true }),
+          team({ id: "b", name: "Newfoundlanders", isImported: true, isMine: true }),
+        ]}
+        leagueName="Game of Courts"
+        isImported
+        openTeamId="b"
+      />,
+    );
+
+    const open = Array.from(container.querySelectorAll("details")).map((el) => el.open);
+    // "Your team" sorts first, so the opened team b leads.
+    expect(open).toEqual([true, false]);
+    expect(screen.getAllByRole("link", { name: "Jalen Brunson" })[0]).toBeVisible();
+  });
+
+  it("leaves every team folded without an open id", () => {
+    const { container } = render(
+      <MyTeamsList
+        teams={[team({ id: "a", name: "Bench Mob" })]}
+        leagueName="League"
+        isImported={false}
+      />,
+    );
+
+    expect(Array.from(container.querySelectorAll("details")).some((el) => el.open)).toBe(false);
+  });
 });

@@ -223,7 +223,7 @@ describe("loadYahooLeague", () => {
   });
 
   it("reports a current game Yahoo won't serve as unavailable and logs why", async () => {
-    const fetchImpl = stubYahoo({ routes: routesFor({ game: { status: 403, body: {} } }) });
+    const fetchImpl = stubYahoo({ routes: routesFor({ game: { status: 404, body: {} } }) });
     const logger = vi.fn<Logger>();
 
     const result = await loadYahooLeague({ leagueId: "106344", fetchImpl, logger });
@@ -231,13 +231,13 @@ describe("loadYahooLeague", () => {
     expect(result).toEqual({ status: "unavailable" });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(logger).toHaveBeenCalledWith(
-      "yahoo: Yahoo game read failed: Yahoo responded 403 for game/nba",
+      "yahoo: Yahoo game read failed: Yahoo responded 404 for game/nba",
     );
   });
 
   it("logs the detail when a waiver page fails", async () => {
     const fetchImpl = stubYahoo({
-      routes: routesFor({ waiverPages: [{ status: 403, body: {} }] }),
+      routes: routesFor({ waiverPages: [{ status: 404, body: {} }] }),
     });
     const logger = vi.fn<Logger>();
 
@@ -245,7 +245,7 @@ describe("loadYahooLeague", () => {
 
     expect(result).toEqual({ status: "unavailable" });
     expect(logger).toHaveBeenCalledWith(
-      `yahoo: Yahoo responded 403 for ${waiverPath({ start: 0 })}`,
+      `yahoo: Yahoo responded 404 for ${waiverPath({ start: 0 })}`,
     );
   });
 

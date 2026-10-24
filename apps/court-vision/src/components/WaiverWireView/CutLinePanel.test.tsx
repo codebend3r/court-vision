@@ -52,13 +52,31 @@ const entries: CutLineEntry[] = [
 
 const cutLine: CutLine = { entries, hiddenAbove: 3, hiddenBelow: 7 };
 
+const hidden = makeEntry({
+  playerId: 99,
+  fullName: "Hidden Star",
+  rank: 5,
+  value: 3.2,
+  owner: "free_agent",
+  isUpgrade: true,
+});
+
+// Every row of the scope, including the ones the window hides.
+const fullLine: CutLine = {
+  entries: [hidden, ...entries],
+  hiddenAbove: 0,
+  hiddenBelow: 0,
+};
+
 const renderPanel = ({
   line = cutLine,
+  full = fullLine,
   scope = "all",
   showAll = false,
   noStats = [],
 }: {
   line?: CutLine;
+  full?: CutLine;
   scope?: CutScope;
   showAll?: boolean;
   noStats?: WaiverRosterEntry[];
@@ -69,6 +87,7 @@ const renderPanel = ({
   render(
     <CutLinePanel
       cutLine={line}
+      fullLine={full}
       scope={scope}
       onScope={onScope}
       showAll={showAll}
@@ -118,12 +137,11 @@ describe("CutLinePanel", () => {
     expect(
       screen.getByRole("table", { name: "Your roster and free agents ranked by value" }),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
-      "Rank",
-      "Player",
-      "Owner",
-      "Value",
-    ]);
+    expect(
+      screen
+        .getAllByRole("columnheader")
+        .map((header) => (header.textContent ?? "").replace(/[▲▼]/g, "")),
+    ).toEqual(["Rank", "Player", "Owner", "Value"]);
     expect(within(rowOf({ name: "Isaiah Hartenstein" })).getByText("151")).toHaveClass("numeric");
     expect(within(rowOf({ name: "Yves Missi" })).getByText("−0.51")).toHaveClass("numeric");
   });
@@ -168,11 +186,13 @@ describe("CutLinePanel", () => {
     expect(within(missi).queryByText("Upgrade")).not.toBeInTheDocument();
   });
 
-  it("opens head-to-head from a free agent's name", async () => {
+  it("opens head-to-head from a free agent's Compare button", async () => {
     const user = userEvent.setup();
     const { onCompare } = renderPanel();
 
-    await user.click(screen.getByRole("button", { name: "Wendell Carter Jr." }));
+    await user.click(
+      screen.getByRole("button", { name: "Compare Wendell Carter Jr. head-to-head" }),
+    );
 
     expect(onCompare).toHaveBeenCalledWith({ fa: 10 });
   });
@@ -262,5 +282,115 @@ describe("CutLinePanel", () => {
 
     expect(screen.getByText("No free agents match this range and position.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Paul Reed" })).toBeInTheDocument();
+  });
+});
+
+describe("CutLinePanel sorting", () => {
+  const names = (): string[] =>
+    screen
+      .getAllByRole("row")
+      .slice(1)
+      .flatMap((row) => within(row).queryAllByRole("link").slice(0, 1))
+      .map((link) => link.textContent ?? "");
+
+  const header = ({ name }: { name: string }): HTMLElement =>
+    screen.getByRole("columnheader", { name: new RegExp(`^${name}`) });
+
+  it("opens windowed around the line, with the line drawn", () => {
+    renderPanel();
+    expect(names()).not.toContain("Hidden Star");
+    expect(screen.getByText("Cut line: your worst player")).toBeInTheDocument();
+  });
+
+  it("sorts every row of the scope, the hidden ones too", async () => {
+    const user = userEvent.setup();
+    renderPanel();
+
+    await user.click(within(header({ name: "Value" })).getByRole("button"));
+
+    expect(names()).toEqual([
+      "Hidden Star",
+      "Isaiah Hartenstein",
+      "Wendell Carter Jr.",
+      "Daniel Gafford",
+      "Paul Reed",
+      "Yves Missi",
+    ]);
+  });
+
+  it("drops the cut line and the window while sorted, since the order no longer means a line", async () => {
+    const user = userEvent.setup();
+    renderPanel();
+
+    await user.click(within(header({ name: "Value" })).getByRole("button"));
+
+    expect(screen.queryByText("Cut line: your worst player")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Show all/ })).not.toBeInTheDocument();
+  });
+
+  it("flips on a second click and returns to the window on a third", async () => {
+    const user = userEvent.setup();
+    renderPanel();
+
+    await user.click(within(header({ name: "Value" })).getByRole("button"));
+    await user.click(within(header({ name: "Value" })).getByRole("button"));
+    expect(names().at(0)).toBe("Yves Missi");
+    expect(header({ name: "Value" })).toHaveAttribute("aria-sort", "ascending");
+
+    await user.click(within(header({ name: "Value" })).getByRole("button"));
+    expect(screen.getByText("Cut line: your worst player")).toBeInTheDocument();
+    expect(names()).not.toContain("Hidden Star");
+    expect(screen.getByRole("button", { name: /Show all/ })).toBeInTheDocument();
+  });
+
+  it("sorts by owner and by name alphabetically", async () => {
+    const user = userEvent.setup();
+    renderPanel();
+
+    await user.click(within(header({ name: "Player" })).getByRole("button"));
+    expect(names().at(0)).toBe("Daniel Gafford");
+
+    await user.click(within(header({ name: "Owner" })).getByRole("button"));
+    expect(screen.getByRole("columnheader", { name: /^Owner/ })).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
+    expect(names().slice(0, 3).sort()).toEqual(["Hidden Star", "Wendell Carter Jr.", "Yves Missi"]);
+  });
+
+  it("sorts the rank column from the top down first", async () => {
+    const user = userEvent.setup();
+    renderPanel();
+
+    await user.click(within(header({ name: "Rank" })).getByRole("button"));
+
+    expect(names().at(0)).toBe("Hidden Star");
+  });
+
+  it("windows a long sorted list and shows more on request", async () => {
+    const user = userEvent.setup();
+    const many: CutLine = {
+      entries: Array.from({ length: 60 }, (_, index) =>
+        makeEntry({ playerId: index + 1, value: index, owner: "free_agent" }),
+      ),
+      hiddenAbove: 0,
+      hiddenBelow: 0,
+    };
+    renderPanel({ full: many });
+
+    await user.click(within(header({ name: "Value" })).getByRole("button"));
+    expect(names()).toHaveLength(25);
+    await user.click(screen.getByRole("button", { name: "Show 25 more (35 left)" }));
+    expect(names()).toHaveLength(50);
+    await user.click(screen.getByRole("button", { name: "Show 10 more (10 left)" }));
+    expect(names()).toHaveLength(60);
+    expect(screen.queryByRole("button", { name: /more/ })).not.toBeInTheDocument();
+  });
+
+  it("right-aligns the rank and value headers over their numbers", () => {
+    renderPanel();
+    expect(header({ name: "Rank" })).toHaveClass("numeric");
+    expect(header({ name: "Value" })).toHaveClass("numeric");
+    expect(header({ name: "Player" })).not.toHaveClass("numeric");
   });
 });

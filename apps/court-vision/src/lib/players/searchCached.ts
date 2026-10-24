@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 
 import { PLAYERS_CACHE_OPTIONS } from "@/lib/cache";
+import { filterByOwner, type PlayerOwnerFilter } from "@/lib/players/ownerFilter";
 import {
   fetchRegularPool,
   rankPlayers,
@@ -37,11 +38,51 @@ const cachedAdvancedPool = unstable_cache(
   PLAYERS_CACHE_OPTIONS,
 );
 
+// Who holds each player, which the owner quick filter narrows the pool by;
+// null where the league's rosters are unknown, so the filter has no effect.
+type OwnerScope = { takenIds: ReadonlySet<number> | null };
+
+const ownerFiltered = <Row extends { id: number }>({
+  pool,
+  owner,
+  takenIds,
+}: {
+  pool: readonly Row[];
+  owner: PlayerOwnerFilter;
+  takenIds: ReadonlySet<number> | null;
+}): readonly Row[] => filterByOwner({ rows: pool, owner, takenIds, idOf: (row) => row.id });
+
 export const searchPlayers = async (
-  args: RegularSearchParams & { playerIds?: readonly number[] },
-): Promise<PlayersSearchResult> => rankPlayers({ pool: await cachedRegularPool(args.range), args });
+  args: RegularSearchParams & OwnerScope & { playerIds?: readonly number[] },
+): Promise<PlayersSearchResult> =>
+  rankPlayers({
+    pool: ownerFiltered({
+      pool: await cachedRegularPool(args.range),
+      owner: args.owner,
+      takenIds: args.takenIds,
+    }),
+    args,
+  });
 
 export const searchPlayersAdvanced = async (
-  args: AdvancedSearchParams,
+  args: AdvancedSearchParams & OwnerScope,
 ): Promise<PlayersAdvancedSearchResult> =>
-  rankAdvancedPlayers({ pool: await cachedAdvancedPool(args.range), args });
+  rankAdvancedPlayers({
+    pool: ownerFiltered({
+      pool: await cachedAdvancedPool(args.range),
+      owner: args.owner,
+      takenIds: args.takenIds,
+    }),
+    args,
+  });
+
+// The whole cached pool for a range, for a caller that picks its own players
+// out of it (a team's roster) rather than paging through a ranked list.
+export const getRegularPool = ({ range }: { range: PlayerGameRange }): Promise<PlayerPoolRow[]> =>
+  cachedRegularPool(range);
+
+export const getAdvancedPool = ({
+  range,
+}: {
+  range: PlayerGameRange;
+}): Promise<AdvancedPlayerRow[]> => cachedAdvancedPool(range);

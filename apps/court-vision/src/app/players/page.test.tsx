@@ -16,6 +16,11 @@ vi.mock("@/lib/auth/session", () => ({ getUser }));
 const searchPlayers = vi.fn();
 const searchPlayersAdvanced = vi.fn();
 const getFantasyPool = vi.fn();
+const getLeagueOwners = vi.fn();
+
+// Who holds each player reads the active league through prisma; stubbed so the
+// render stays off the database.
+vi.mock("@/lib/leagues/teamQueries", () => ({ getLeagueOwners }));
 
 // The page reads through the cached wrappers; mocking that module keeps the
 // render off the real query (and off `unstable_cache`, which has no incremental
@@ -37,6 +42,7 @@ vi.mock("next/navigation", () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  getLeagueOwners.mockResolvedValue(null);
 });
 
 // A player with no games yet: every per-game cell and percentage reads "—".
@@ -354,6 +360,27 @@ describe("PlayersPage", () => {
     render(await PlayersPage({ searchParams: Promise.resolve({ q: ["curry", "x"] }) }));
 
     expect(searchPlayers).toHaveBeenCalledWith(expect.objectContaining({ q: "curry" }));
+  });
+
+  it("hands the roster-status filter and the taken ids to the regular and advanced queries", async () => {
+    getLeagueOwners.mockResolvedValue([
+      { playerId: 4, teamName: "Rivals", isMine: false },
+      { playerId: 9, teamName: "Softchoice", isMine: true },
+    ]);
+    searchPlayers.mockResolvedValue({ rows: [], total: 0, page: 1 });
+    searchPlayersAdvanced.mockResolvedValue({ rows: [], total: 0, page: 1 });
+
+    render(await PlayersPage({ searchParams: Promise.resolve({ owner: "free" }) }));
+    render(
+      await PlayersPage({ searchParams: Promise.resolve({ owner: "taken", tab: "advanced" }) }),
+    );
+
+    expect(searchPlayers).toHaveBeenCalledWith(
+      expect.objectContaining({ owner: "free", takenIds: new Set([4, 9]) }),
+    );
+    expect(searchPlayersAdvanced).toHaveBeenCalledWith(
+      expect.objectContaining({ owner: "taken", takenIds: new Set([4, 9]) }),
+    );
   });
 });
 

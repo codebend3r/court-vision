@@ -1,0 +1,72 @@
+@use "@/styles/mixins" as *;
+
+.tableWrapper {
+  @include table-wrapper;
+}
+
+.tableScroller {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  @include data-table;
+  min-width: 56rem;
+}
+
+.slot {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  white-space: nowrap;
+}
+
+.numeric {
+  @include numeric-cell;
+}
+
+// `data-table` left-aligns every th with a rule that out-ranks `.numeric`, so
+// a numeric header says so again, or it sits left over right-aligned numbers.
+.table th.numeric {
+  text-align: right;
+}
+
+.player {
+  min-width: 15rem;
+}
+
+.playerInner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.playerMeta {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.playerName {
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    @include control-focus-ring;
+  }
+}
+
+.playerTags {
+  display: grid;
+  grid-auto-flow: column;
+  justify-content: start;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+}

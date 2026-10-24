@@ -7,6 +7,7 @@ import { WAIVER_VIEWS, type WaiverView } from "@/lib/waiverWire/searchParams";
 import styles from "@/components/WaiverWireView/WaiverWireView.module.scss";
 
 const TAB_LABELS: Record<WaiverView, string> = {
+  available: "Available players",
   swap: "Swap board",
   h2h: "Head-to-head",
   cut: "Cut line",
@@ -28,7 +29,7 @@ export type WaiverWireTabsProps = {
   panels: Record<WaiverView, ReactNode>;
 };
 
-// The Waiver Wire's three comparisons as WAI-ARIA tabs with automatic
+// The Waiver Wire's four views as WAI-ARIA tabs with automatic
 // activation: one tab stop (roving tabIndex), the arrow keys wrap, Home and
 // End jump to the ends, and only the selected panel renders.
 export function WaiverWireTabs({ view, onChange, panels }: WaiverWireTabsProps) {

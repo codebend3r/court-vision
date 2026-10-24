@@ -40,6 +40,7 @@ describe("SessionHydrator", () => {
     const { container } = render(
       <SessionHydrator
         watchlistPlayerIds={[7, 9]}
+        leagueOwners={null}
         rosteredPlayerIds={[115, 237]}
         leagues={[league({ id: "a", name: "Alpha" })]}
         activeLeagueId="a"
@@ -57,6 +58,7 @@ describe("SessionHydrator", () => {
     const { rerender } = render(
       <SessionHydrator
         watchlistPlayerIds={[7]}
+        leagueOwners={null}
         rosteredPlayerIds={[115]}
         leagues={[]}
         activeLeagueId={null}
@@ -65,6 +67,7 @@ describe("SessionHydrator", () => {
     rerender(
       <SessionHydrator
         watchlistPlayerIds={[]}
+        leagueOwners={null}
         rosteredPlayerIds={[237]}
         leagues={[league({ id: "b", name: "Beta" })]}
         activeLeagueId="b"

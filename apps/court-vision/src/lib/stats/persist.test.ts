@@ -24,7 +24,9 @@ const client = {
   player: {
     upsert: vi.fn(),
     updateMany: vi.fn(() => Promise.resolve({ count: 0 })),
+    count: vi.fn(() => Promise.resolve(0)),
   },
+  $executeRaw: vi.fn((_strings: readonly string[], ..._values: unknown[]) => Promise.resolve(0)),
   playerSeasonStats: { upsert: vi.fn() },
   playerGameLog: {
     deleteMany: vi.fn(() => Promise.resolve({ count: 0 })),
@@ -161,28 +163,43 @@ describe("upsertPlayers", () => {
 });
 
 describe("markActiveRoster", () => {
-  it("clears players who left the active list and flags everyone on it", async () => {
-    client.player.updateMany
-      .mockResolvedValueOnce({ count: 4 })
-      .mockResolvedValueOnce({ count: 3 });
+  it("flags the given players active and everyone else not, in one statement", async () => {
+    client.$executeRaw.mockClear();
+    client.player.count.mockResolvedValueOnce(3);
 
     const count = await markActiveRoster({ playerIds: [1, 2, 3] });
 
     expect(count).toBe(3);
-    expect(client.player.updateMany).toHaveBeenCalledWith({
-      where: { isActive: true, id: { notIn: [1, 2, 3] } },
-      data: { isActive: false },
-    });
-    expect(client.player.updateMany).toHaveBeenCalledWith({
-      where: { id: { in: [1, 2, 3] } },
-      data: { isActive: true },
-    });
-    expect(client.$transaction).toHaveBeenCalledTimes(1);
+    expect(client.$executeRaw).toHaveBeenCalledTimes(1);
+    const [strings, ...values] = client.$executeRaw.mock.calls[0] ?? [[]];
+    expect(strings.join("?")).toContain(`SET "isActive" = ("id" = ANY(?))`);
+    expect(values).toEqual([
+      [1, 2, 3],
+      [1, 2, 3],
+    ]);
+  });
+
+  it("writes only the rows whose flag changes, and opens no transaction", async () => {
+    client.$executeRaw.mockClear();
+    client.$transaction.mockClear();
+
+    await markActiveRoster({ playerIds: [1, 2, 3] });
+
+    const [strings = []] = client.$executeRaw.mock.calls[0] ?? [];
+    expect(strings.join("?")).toContain(`WHERE "isActive" <> ("id" = ANY(?))`);
+    expect(client.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("counts the active players after the update", async () => {
+    client.player.count.mockClear();
+    await markActiveRoster({ playerIds: [1] });
+    expect(client.player.count).toHaveBeenCalledWith({ where: { isActive: true } });
   });
 
   it("refuses an empty active list instead of emptying every roster", async () => {
+    client.$executeRaw.mockClear();
     await expect(markActiveRoster({ playerIds: [] })).rejects.toThrow(/empty active roster/);
-    expect(client.player.updateMany).not.toHaveBeenCalled();
+    expect(client.$executeRaw).not.toHaveBeenCalled();
   });
 });
 

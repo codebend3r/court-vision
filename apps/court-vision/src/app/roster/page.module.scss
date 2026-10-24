@@ -1,0 +1,55 @@
+@use "@/styles/mixins" as *;
+
+.page {
+  @include page-shell;
+}
+
+.team {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.teamText {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.teamName {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.teamMeta {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.results {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.notes {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.gate {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+}
+
+.message {
+  margin: 0;
+  color: var(--color-text);
+}

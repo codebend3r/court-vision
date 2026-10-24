@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-import { useRosteredStore } from "@/lib/leagues/rosteredStore";
+import { type LeagueOwner, useRosteredStore } from "@/lib/leagues/rosteredStore";
 import { useLeaguesStore } from "@/lib/leagues/store";
 import { type LeagueSummary } from "@/lib/leagues/types";
 import { useWatchlistStore } from "@/lib/watchlist/store";
@@ -12,6 +12,7 @@ import { useWatchlistStore } from "@/lib/watchlist/store";
 export type SessionHydratorProps = {
   watchlistPlayerIds: number[];
   rosteredPlayerIds: number[];
+  leagueOwners: LeagueOwner[] | null;
   leagues: LeagueSummary[];
   activeLeagueId: string | null;
 };
@@ -23,6 +24,7 @@ export type SessionHydratorProps = {
 export function SessionHydrator({
   watchlistPlayerIds,
   rosteredPlayerIds,
+  leagueOwners,
   leagues,
   activeLeagueId,
 }: SessionHydratorProps) {
@@ -31,8 +33,8 @@ export function SessionHydrator({
   }, [watchlistPlayerIds]);
 
   useEffect(() => {
-    useRosteredStore.getState().hydrate({ playerIds: rosteredPlayerIds });
-  }, [rosteredPlayerIds]);
+    useRosteredStore.getState().hydrate({ playerIds: rosteredPlayerIds, owners: leagueOwners });
+  }, [rosteredPlayerIds, leagueOwners]);
 
   useEffect(() => {
     useLeaguesStore.getState().hydrate({ leagues, activeLeagueId });

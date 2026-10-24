@@ -97,6 +97,36 @@
   font-size: var(--font-size-sm);
 }
 
+// Available players: the search and count over the full list of free agents.
+.available {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.availableHead {
+  display: grid;
+  grid-template-columns: minmax(0, 20rem) auto;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-3);
+
+  @media (width < 40rem) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.search {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.searchField {
+  @include control-field;
+}
+
 // Swap board: my weakest beside the free agents who beat them. The panels sit
 // side by side when the tab is wide enough and stack when it is not.
 .swap {
@@ -152,6 +182,13 @@
   @include numeric-cell;
 }
 
+// `data-table` left-aligns every th with a rule that out-ranks `.numeric`, so
+// a numeric header has to say so again, or it sits left over right-aligned
+// numbers.
+.table th.numeric {
+  text-align: right;
+}
+
 .rank {
   color: var(--color-text-muted);
 }
@@ -175,8 +212,8 @@
 
   // The accent name loses contrast on the tint under the Team-accent theme
   // (an accent close to the win tone), so the name goes full-strength text
-  // and keeps the underline to still read as pressable.
-  .nameButton {
+  // and keeps the underline to still read as a link.
+  .name {
     color: var(--color-text);
     text-decoration: underline;
   }
@@ -217,11 +254,13 @@
   font-weight: var(--font-weight-semibold);
 }
 
-// Name cell: the name, its status badges, then team and position.
+// Name cell: the star, the name, its status badges, team and position, then
+// the free agent's Compare button.
 .player {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  display: inline-grid;
+  grid-auto-flow: column;
+  justify-content: start;
+  align-items: center;
   gap: var(--space-1) var(--space-2);
 }
 
@@ -229,20 +268,22 @@
   font-weight: var(--font-weight-semibold);
 }
 
-// A free agent's name opens head-to-head. It reads as the name link beside
-// it, not as a keycap, since it sits inline in a table row.
-.nameButton {
-  padding: 0;
-  border: 0;
+// Compare opens a free agent head-to-head. A small outlined text button, so it
+// reads as an action beside the name link and never as the name itself.
+.compareButton {
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   background: none;
   color: var(--color-accent);
-  font: inherit;
-  font-weight: var(--font-weight-semibold);
-  text-align: start;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
   cursor: pointer;
 
   &:hover {
-    text-decoration: underline;
+    border-color: var(--color-accent);
   }
 
   &:focus-visible {
@@ -256,7 +297,8 @@
 }
 
 .badges {
-  display: inline-flex;
+  display: inline-grid;
+  grid-auto-flow: column;
   gap: var(--space-1);
 }
 

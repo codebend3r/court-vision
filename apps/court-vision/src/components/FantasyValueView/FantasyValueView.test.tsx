@@ -54,14 +54,16 @@ const renderView = ({
   searchParams = "?",
   onUrlUpdate,
   lines: statLines = lines,
+  rosterPlayerIds,
 }: {
   searchParams?: string;
   onUrlUpdate?: (event: { queryString: string }) => void;
   lines?: FantasyStatLine[];
+  rosterPlayerIds?: readonly number[];
 } = {}) =>
   render(
     <ThemeProvider>
-      <FantasyValueView isSignedIn={false} lines={statLines} />
+      <FantasyValueView isSignedIn={false} lines={statLines} rosterPlayerIds={rosterPlayerIds} />
     </ThemeProvider>,
     { wrapper: withNuqsTestingAdapter({ searchParams, onUrlUpdate }) },
   );
@@ -83,6 +85,34 @@ describe("FantasyValueView chart layout loading", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Loading category charts");
     expect(await screen.findByRole("region", { name: "Fantasy value charts" })).toBeInTheDocument();
     expect(screen.queryByText("Loading category charts")).not.toBeInTheDocument();
+  });
+});
+
+describe("FantasyValueView on a roster", () => {
+  it("lists only the roster's players", () => {
+    renderView({ rosterPlayerIds: [1, 2] });
+    expect(screen.getByText("Showing 1–2 of 2")).toBeInTheDocument();
+    expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(3);
+  });
+
+  it("scores the roster against the whole pool, not just itself", () => {
+    renderView();
+    const wholePool = within(firstDataRow()).getByText("Beta");
+    expect(wholePool).toBeInTheDocument();
+    cleanup();
+    renderView({ rosterPlayerIds: [1, 2, 3] });
+    // Beta still leads Alpha on Z-Score with the fillers standing in as the pool.
+    expect(within(firstDataRow()).getByText("Beta")).toBeInTheDocument();
+  });
+
+  it("offers no pager, since a roster is one short page", () => {
+    renderView({ rosterPlayerIds: [1, 2] });
+    expect(screen.queryByRole("navigation", { name: "Pagination" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the pager for the whole pool", () => {
+    renderView();
+    expect(screen.getAllByRole("navigation", { name: "Pagination" }).length).toBeGreaterThan(0);
   });
 });
 

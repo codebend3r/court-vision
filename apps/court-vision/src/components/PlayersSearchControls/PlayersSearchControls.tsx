@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { ChangeEvent, useOptimistic, useTransition } from "react";
 
+import { OwnerQuickFilter } from "@/components/OwnerQuickFilter/OwnerQuickFilter";
 import { MIN_FG3M, MIN_FGM, MIN_FTM } from "@/lib/players/minimums";
 import {
   buildPlayersHref,
@@ -15,6 +16,7 @@ import {
   type PlayerStatMode,
   type PlayersSearchParams,
 } from "@/lib/players/searchParams";
+import { type PlayerOwnerFilter } from "@/lib/players/ownerFilter";
 import { useDebouncedQuery } from "@/lib/players/useDebouncedQuery";
 
 import { InfoTip } from "@vision/ui/components/InfoTip/InfoTip";
@@ -32,6 +34,7 @@ type FilterSelection = {
   range: PlayerGameRange;
   mode: PlayerStatMode;
   minimums: boolean;
+  owner: PlayerOwnerFilter;
 };
 
 const applyFilterChange = (
@@ -40,12 +43,15 @@ const applyFilterChange = (
 ): FilterSelection => ({ ...current, ...change });
 
 export function PlayersSearchControls({ params }: PlayersSearchControlsProps) {
-  const { q, range, mode, minimums, tab } = params;
+  const { q, range, mode, minimums, owner, tab } = params;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   // Reverts to the props once the navigation's transition settles, so the
   // server's parsed params always have the final word.
-  const [selection, setSelection] = useOptimistic({ range, mode, minimums }, applyFilterChange);
+  const [selection, setSelection] = useOptimistic(
+    { range, mode, minimums, owner },
+    applyFilterChange,
+  );
   const search = useDebouncedQuery({ q, onCommit: ({ q: query }) => navigate({ query }) });
 
   // Builds from the optimistic selection, not the props, so a second change
@@ -115,6 +121,10 @@ export function PlayersSearchControls({ params }: PlayersSearchControlsProps) {
             ))}
           </select>
         </label>
+        <OwnerQuickFilter
+          value={selection.owner}
+          onChange={(next) => navigate({ change: { owner: next } })}
+        />
         {tab === "regular" && (
           <label className={styles.filterLabel}>
             Stats

@@ -260,6 +260,33 @@ describe("PlayerGameLogTable", () => {
   });
 });
 
+describe("PlayerGameLogTable minutes", () => {
+  const minutesCells = (): string[] =>
+    screen
+      .getAllByRole("row")
+      .slice(1)
+      .map((row) => within(row).getAllByRole("cell")[4]?.textContent ?? "");
+
+  it("reads minutes as whole numbers, whatever fraction is stored", () => {
+    renderTable({
+      view: "regular",
+      rows: [
+        buildRow({ id: "a", gameNumber: 1, minutes: 33.2333333333 }),
+        buildRow({ id: "b", gameNumber: 2, minutes: 33.4 }),
+        buildRow({ id: "c", gameNumber: 3, minutes: 33.5 }),
+      ],
+    });
+
+    expect(minutesCells().every((cell) => /^\d+$/.test(cell))).toBe(true);
+    expect(minutesCells().sort()).toEqual(["33", "33", "34"]);
+  });
+
+  it("shows a game with no minutes as 0", () => {
+    renderTable({ view: "regular", rows: [buildRow({ minutes: 0 })] });
+    expect(minutesCells()).toEqual(["0"]);
+  });
+});
+
 describe("PlayerGameLogTable advanced view", () => {
   it("swaps the box score for every advanced metric, after the game columns", () => {
     renderTable({ view: "advanced", rows: [buildRow({ advanced: advancedStats() })] });

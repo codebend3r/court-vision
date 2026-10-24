@@ -9,6 +9,7 @@ import { type WaiverView } from "@/lib/waiverWire/searchParams";
 afterEach(cleanup);
 
 const panels: Record<WaiverView, string> = {
+  available: "available panel",
   swap: "swap panel",
   h2h: "head-to-head panel",
   cut: "cut line panel",
@@ -31,6 +32,7 @@ function Harness({
         setView(next);
       }}
       panels={{
+        available: <p>{panels.available}</p>,
         swap: <p>{panels.swap}</p>,
         h2h: <p>{panels.h2h}</p>,
         cut: <p>{panels.cut}</p>,
@@ -39,7 +41,7 @@ function Harness({
   );
 }
 
-const renderTabs = ({ initial = "swap" }: { initial?: WaiverView } = {}) => {
+const renderTabs = ({ initial = "available" }: { initial?: WaiverView } = {}) => {
   const onChange = vi.fn<({ view }: { view: WaiverView }) => void>();
   render(<Harness initial={initial} onChange={onChange} />);
   return { onChange };
@@ -51,12 +53,17 @@ describe("WaiverWireTabs", () => {
 
     const tablist = screen.getByRole("tablist", { name: "Compare players" });
     const tabs = within(tablist).getAllByRole("tab");
-    expect(tabs.map((tab) => tab.textContent)).toEqual(["Swap board", "Head-to-head", "Cut line"]);
+    expect(tabs.map((tab) => tab.textContent)).toEqual([
+      "Available players",
+      "Swap board",
+      "Head-to-head",
+      "Cut line",
+    ]);
 
     const selected = screen.getByRole("tab", { name: "Head-to-head" });
     expect(selected).toHaveAttribute("aria-selected", "true");
     expect(selected.tabIndex).toBe(0);
-    ["Swap board", "Cut line"].map((name) => {
+    ["Available players", "Swap board", "Cut line"].map((name) => {
       const tab = screen.getByRole("tab", { name });
       expect(tab).toHaveAttribute("aria-selected", "false");
       expect(tab.tabIndex).toBe(-1);
@@ -79,25 +86,25 @@ describe("WaiverWireTabs", () => {
 
     await user.click(screen.getByRole("tab", { name: "Cut line" }));
     await user.keyboard("{ArrowRight}");
-    const swap = screen.getByRole("tab", { name: "Swap board" });
-    expect(onChange).toHaveBeenLastCalledWith({ view: "swap" });
-    expect(swap).toHaveAttribute("aria-selected", "true");
-    expect(swap).toHaveFocus();
-    expect(screen.getByRole("tabpanel", { name: "Swap board" })).toBeInTheDocument();
+    const first = screen.getByRole("tab", { name: "Available players" });
+    expect(onChange).toHaveBeenLastCalledWith({ view: "available" });
+    expect(first).toHaveAttribute("aria-selected", "true");
+    expect(first).toHaveFocus();
+    expect(screen.getByRole("tabpanel", { name: "Available players" })).toBeInTheDocument();
 
     await user.keyboard("{ArrowLeft}");
     expect(screen.getByRole("tab", { name: "Cut line" })).toHaveFocus();
     expect(onChange).toHaveBeenLastCalledWith({ view: "cut" });
 
     await user.keyboard("{Home}");
-    expect(swap).toHaveFocus();
-    expect(onChange).toHaveBeenLastCalledWith({ view: "swap" });
+    expect(first).toHaveFocus();
+    expect(onChange).toHaveBeenLastCalledWith({ view: "available" });
 
     await user.keyboard("{End}");
     expect(screen.getByRole("tab", { name: "Cut line" })).toHaveFocus();
     expect(onChange).toHaveBeenLastCalledWith({ view: "cut" });
 
-    await user.keyboard("{ArrowRight}{ArrowRight}");
+    await user.keyboard("{ArrowRight}{ArrowRight}{ArrowRight}");
     expect(screen.getByRole("tab", { name: "Head-to-head" })).toHaveAttribute(
       "aria-selected",
       "true",

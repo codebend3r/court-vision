@@ -2,7 +2,10 @@
 
 import { type ChangeEvent, useId } from "react";
 
+import { SortHeader } from "@/components/SortHeader/SortHeader";
 import { NO_FREE_AGENTS } from "@/components/WaiverWireView/CutLinePanel";
+import { type SortColumn } from "@/lib/tableSort";
+import { useColumnSort } from "@/lib/useColumnSort";
 import { formatCategoryDelta, formatCategoryValue, formatValue } from "@/lib/waiverWire/format";
 import {
   type HeadToHead,
@@ -14,6 +17,13 @@ import { type WaiverRow } from "@/lib/waiverWire/types";
 import { ReadoutCard, ReadoutRow } from "@vision/ui/components/ReadoutCard/ReadoutCard";
 
 import styles from "@/components/WaiverWireView/HeadToHeadPanel.module.scss";
+
+const CATEGORY_COLUMNS: readonly SortColumn<HeadToHeadRow>[] = [
+  { key: "fa", firstDir: "desc", valueOf: (row) => row.faPerGame },
+  { key: "mine", firstDir: "desc", valueOf: (row) => row.minePerGame },
+  { key: "category", firstDir: "asc", valueOf: (row) => row.label },
+  { key: "delta", firstDir: "desc", valueOf: (row) => row.teamDelta },
+];
 
 export const NO_PAIR = "Pick a free agent and one of your players to compare.";
 
@@ -136,6 +146,7 @@ function CategoryRow({ row }: { row: HeadToHeadRow }) {
 // Tab B: one free agent against one of my players, category by category, with
 // what the swap does to my team's per-game totals.
 export function HeadToHeadPanel({ pair, result, freePool, roster, onPick }: HeadToHeadPanelProps) {
+  const { sort, onSort, sorted } = useColumnSort({ columns: CATEGORY_COLUMNS });
   return (
     <div className={styles.panel}>
       <div className={styles.controls}>
@@ -177,18 +188,33 @@ export function HeadToHeadPanel({ pair, result, freePool, roster, onPick }: Head
               </caption>
               <thead>
                 <tr>
-                  <th scope="col" className={styles.numeric}>
-                    {pair.fa.fullName}
-                  </th>
-                  <th scope="col">{pair.mine.fullName}</th>
-                  <th scope="col">Category</th>
-                  <th scope="col" className={styles.numeric}>
-                    Your team after swap
-                  </th>
+                  <SortHeader
+                    label={pair.fa.fullName}
+                    sortKey="fa"
+                    sort={sort}
+                    onSort={onSort}
+                    align="end"
+                    className={styles.numeric}
+                  />
+                  <SortHeader
+                    label={pair.mine.fullName}
+                    sortKey="mine"
+                    sort={sort}
+                    onSort={onSort}
+                  />
+                  <SortHeader label="Category" sortKey="category" sort={sort} onSort={onSort} />
+                  <SortHeader
+                    label="Your team after swap"
+                    sortKey="delta"
+                    sort={sort}
+                    onSort={onSort}
+                    align="end"
+                    className={styles.numeric}
+                  />
                 </tr>
               </thead>
               <tbody>
-                {result.rows.map((row) => (
+                {sorted(result.rows).map((row) => (
                   <CategoryRow key={row.key} row={row} />
                 ))}
               </tbody>

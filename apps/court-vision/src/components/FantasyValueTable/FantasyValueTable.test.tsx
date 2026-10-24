@@ -9,7 +9,7 @@ import { makeStatLine } from "@/lib/valuation/fixtures";
 import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
 
 beforeEach(() => {
-  useRosteredStore.setState({ playerIds: new Set<number>() });
+  useRosteredStore.setState({ playerIds: new Set<number>(), owners: null });
 });
 
 afterEach(cleanup);
@@ -106,6 +106,17 @@ describe("FantasyValueTable", () => {
     expect(others).toHaveLength(0);
     const row = marker?.closest("tr") ?? document.body;
     expect(within(row).getAllByRole("link")[0]).toHaveAttribute("href", "/players/2");
+  });
+
+  it("chips each row as a free agent or by the team that holds the player", () => {
+    useRosteredStore
+      .getState()
+      .hydrate({ playerIds: [], owners: [{ playerId: 2, teamName: "Rivals", isMine: false }] });
+    render(<FantasyValueTable isSignedIn={false} {...defaultProps} rows={rows} />);
+
+    const heldRow = screen.getByText("Rivals").closest("tr") ?? document.body;
+    expect(within(heldRow).getAllByRole("link")[0]).toHaveAttribute("href", "/players/2");
+    expect(screen.getAllByText("Free agent")).toHaveLength(rows.length - 1);
   });
 
   it("hides the rank column for name sorts", () => {

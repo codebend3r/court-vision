@@ -10,7 +10,15 @@ export const dynamic = "force-dynamic";
 const DESCRIPTION =
   "Your rosters in this league, slot by slot, with the eligibility rules already applied.";
 
-export default async function MyTeamsPage() {
+export default async function MyTeamsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ open?: string | string[] }>;
+}) {
+  // A finished Yahoo import links here with the user's team id, so that team's
+  // roster opens on arrival.
+  const { open } = await searchParams;
+  const openTeamId = typeof open === "string" ? open : null;
   const league = await loadMyTeamsLeague();
 
   if (league === null) {
@@ -27,7 +35,12 @@ export default async function MyTeamsPage() {
         description={DESCRIPTION}
         actions={!league.isImported && <PageAction href="/my-teams/create">New team</PageAction>}
       />
-      <MyTeamsList teams={teams} leagueName={league.name} isImported={league.isImported} />
+      <MyTeamsList
+        teams={teams}
+        leagueName={league.name}
+        isImported={league.isImported}
+        openTeamId={openTeamId}
+      />
     </main>
   );
 }

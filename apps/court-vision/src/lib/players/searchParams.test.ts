@@ -29,6 +29,7 @@ describe("parsePlayersSearchParams", () => {
       range: "all",
       mode: "average",
       minimums: true,
+      owner: "all",
       tab: "regular",
     });
   });
@@ -99,6 +100,15 @@ describe("parsePlayersSearchParams", () => {
   });
 });
 
+describe("owner param", () => {
+  it("parses a known roster status and falls back to all players otherwise", () => {
+    expect(parsePlayersSearchParams({ raw: { owner: "free" } }).owner).toBe("free");
+    expect(parsePlayersSearchParams({ raw: { owner: "taken" } }).owner).toBe("taken");
+    expect(parsePlayersSearchParams({ raw: { owner: "nope" } }).owner).toBe("all");
+    expect(parsePlayersSearchParams({ raw: {} }).owner).toBe("all");
+  });
+});
+
 describe("buildPlayersHref", () => {
   const defaults = {
     q: "",
@@ -109,11 +119,17 @@ describe("buildPlayersHref", () => {
     range: "all",
     mode: "average",
     minimums: true,
+    owner: "all",
     tab: "regular",
   } as const;
 
   it("returns the bare path when everything is default", () => {
     expect(buildPlayersHref(defaults)).toBe("/players");
+  });
+
+  it("serializes the roster-status filter only when it is not all players", () => {
+    expect(buildPlayersHref({ ...defaults, owner: "free" })).toBe("/players?owner=free");
+    expect(buildPlayersHref({ ...defaults, owner: "taken" })).toBe("/players?owner=taken");
   });
 
   it("omits default sort and dir but includes non-default values", () => {
@@ -136,6 +152,7 @@ describe("buildPlayersHref", () => {
         range: "last5",
         mode: "total",
         minimums: false,
+        owner: "all",
         tab: "regular",
       }),
     ).toBe("/players?q=curry&page=2&size=25&sort=lastName&range=last5&mode=total&minimums=0");
@@ -202,6 +219,7 @@ describe("parseStarredSearchParams", () => {
       range: "all",
       mode: "average",
       minimums: true,
+      owner: "all",
       tab: "starred",
     });
   });

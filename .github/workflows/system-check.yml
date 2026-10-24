@@ -2,9 +2,10 @@ name: 🩺 System check
 
 # The format, lint, type, test, build and accessibility gate, shared by
 # pull-request-checks (on every PR) and sanity-check (on every push to main) so
-# the two never drift. It is split into two jobs that run side by side, each
-# shorter than the Lighthouse matrix in pull-request-checks, so neither one
-# sets the pace of a PR run.
+# the two never drift. Both jobs are matrices: every check is its own leg and
+# the legs run side by side, so the gate takes as long as its slowest check
+# instead of the sum of all of them. Each leg installs from the shared package
+# cache (.github/actions/setup), which is what keeps the repeated install cheap.
 
 on:
   workflow_call:
@@ -14,65 +15,69 @@ permissions:
 
 jobs:
   static:
-    name: 🔍 Lint, types & tests
+    name: ${{ matrix.emoji }} ${{ matrix.label }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { emoji: 💅, label: Format (Oxfmt), script: "format:check" }
+          - { emoji: 🔍, label: Lint (Oxlint), script: "lint:ts" }
+          - { emoji: 🎨, label: Lint SCSS (Gale), script: "lint:scss" }
+          - { emoji: 🔤, label: Spelling (typos), script: "lint:spell" }
+          # Lints the workflows in this very directory: bad `uses:` refs,
+          # undefined `needs:`/`steps:` outputs, invalid `${{ }}` expressions,
+          # and, via the shellcheck preinstalled on ubuntu-latest, the `run:`
+          # scripts themselves. Nothing else here parses these files, so a
+          # typo'd expression would otherwise only surface as a silently empty
+          # string at runtime.
+          - { emoji: ⚙️, label: Workflows (actionlint), script: "lint:actions" }
+          - { emoji: 🏷️, label: TypeScript (tsgo), script: "typecheck" }
+          - { emoji: 🧪, label: Tests, script: "test" }
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: 📥 Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: 🥟 Set up Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+      - name: 🥟 Set up Bun and dependencies
+        uses: ./.github/actions/setup
 
-      # The root postinstall runs `prisma generate`, so the client is ready
-      # once this step ends.
-      - name: 📦 Install dependencies
-        run: bun install --frozen-lockfile
+      - name: ${{ matrix.emoji }} ${{ matrix.label }}
+        env:
+          SCRIPT: ${{ matrix.script }}
+        run: bun run "$SCRIPT"
 
-      - name: 💅 Format (Oxfmt)
-        run: bun run format:check
-
-      - name: 🔍 Lint (Oxlint)
-        run: bun run lint:ts
-
-      - name: 🎨 Lint SCSS (Gale)
-        run: bun run lint:scss
-
-      - name: 🔤 Spelling (typos)
-        run: bun run lint:spell
-
-      # Lints the workflows in this very directory: bad `uses:` refs, undefined
-      # `needs:`/`steps:` outputs, invalid `${{ }}` expressions, and — via the
-      # shellcheck preinstalled on ubuntu-latest — the `run:` scripts themselves.
-      # Nothing else here parses these files, so a typo'd expression would
-      # otherwise only surface as a silently empty string at runtime.
-      - name: ⚙️ Workflows (actionlint)
-        run: bun run lint:actions
-
-      - name: 🏷️ TypeScript (tsgo)
-        run: bun run typecheck
-
-      - name: 🧪 Test
-        run: bun run test
-
+  # One leg per app, so the four shells and the extension build while Court
+  # Vision builds and runs its accessibility suite, instead of after it.
   build:
-    name: 🏗️ Build & accessibility
+    name: 🏗️ Build (${{ matrix.project }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { project: court-vision, a11y: true }
+          - { project: rink-vision, a11y: false }
+          - { project: diamond-vision, a11y: false }
+          - { project: field-vision, a11y: false }
+          - { project: court-vision-extension, a11y: false }
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: 📥 Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: 🥟 Set up Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-
-      - name: 📦 Install dependencies
-        run: bun install --frozen-lockfile
+      - name: 🥟 Set up Bun and dependencies
+        uses: ./.github/actions/setup
+        with:
+          next-cache: ${{ matrix.a11y }}
 
       # Chromium's apt dependencies are network-bound and the build is
-      # CPU-bound, so the install runs in the background while the apps build.
+      # CPU-bound, so the install runs in the background while the app builds.
       # A process a step leaves behind keeps running into later steps (the perf
       # job's server relies on the same thing); its exit code lands in a file
       # that the wait step below reads.
       - name: 🌐 Install Chromium (background)
+        if: ${{ matrix.a11y }}
         run: |
           {
             status=0
@@ -81,12 +86,15 @@ jobs:
           } > "$RUNNER_TEMP/chromium.log" 2>&1 &
 
       # Typecheck does not see RSC boundary violations, bad route config, or a
-      # server-only import pulled into a client component — those only surface
+      # server-only import pulled into a client component; those only surface
       # at build. Every data page is dynamic, so this needs no database.
       - name: 🏗️ Build
-        run: bun run build
+        env:
+          PROJECT: ${{ matrix.project }}
+        run: bunx nx run "$PROJECT:build" --output-style=static
 
-      - name: 🌐 Wait for Chromium
+      - name: ⏳ Wait for Chromium
+        if: ${{ matrix.a11y }}
         timeout-minutes: 5
         run: |
           until [ -f "$RUNNER_TEMP/chromium.status" ]; do sleep 1; done
@@ -94,4 +102,5 @@ jobs:
           exit "$(cat "$RUNNER_TEMP/chromium.status")"
 
       - name: ♿ Accessibility
+        if: ${{ matrix.a11y }}
         run: bun run test:a11y

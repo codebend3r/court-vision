@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { StarButton } from "@/components/StarButton/StarButton";
 import { WaiverBadges } from "@/components/WaiverWireView/WaiverBadges";
 import { type WaiverRow } from "@/lib/waiverWire/types";
 
@@ -10,15 +11,18 @@ export type WaiverPlayerProps = {
     WaiverRow,
     "playerId" | "fullName" | "teamAbbr" | "position" | "owner" | "injuryStatus"
   >;
-  // Only a free agent's name compares; a list of my players can leave it out.
+  // Only a free agent can be compared; a list of my players can leave it out.
   onCompare?: ({ fa }: { fa: number }) => void;
-  // The view's one hidden hint saying what the name button does.
+  // The view's one hidden hint saying what the compare button does.
   compareHintId: string;
 };
 
-// One player's name cell: my players link to their page; a free agent's name
-// is a button that opens them head-to-head against my weakest. The badges sit
-// outside the button so its accessible name stays the player's name.
+// One player's name cell: a star to follow them, their name linking to their
+// profile, their badges and team, and, for a free agent, a Compare button that
+// opens them head-to-head against my weakest. The name is only ever a link, so
+// clicking it never means anything else; the two actions are two controls. The
+// badges and the button sit outside the link so its accessible name stays the
+// player's name.
 export function WaiverPlayer({ player, onCompare, compareHintId }: WaiverPlayerProps) {
   const meta = [player.teamAbbr, player.position]
     .flatMap((part) => (part ? [part] : []))
@@ -26,22 +30,23 @@ export function WaiverPlayer({ player, onCompare, compareHintId }: WaiverPlayerP
 
   return (
     <span className={styles.player}>
-      {player.owner === "mine" ? (
-        <Link href={`/players/${player.playerId}`} className={styles.name}>
-          {player.fullName}
-        </Link>
-      ) : (
-        <button
-          type="button"
-          className={styles.nameButton}
-          aria-describedby={compareHintId}
-          onClick={() => onCompare?.({ fa: player.playerId })}
-        >
-          {player.fullName}
-        </button>
-      )}
+      <StarButton playerId={player.playerId} fullName={player.fullName} isSignedIn />
+      <Link href={`/players/${player.playerId}`} className={styles.name}>
+        {player.fullName}
+      </Link>
       <WaiverBadges injuryStatus={player.injuryStatus} owner={player.owner} />
       {!!meta && <span className={styles.meta}>{meta}</span>}
+      {player.owner !== "mine" && !!onCompare && (
+        <button
+          type="button"
+          className={styles.compareButton}
+          aria-label={`Compare ${player.fullName} head-to-head`}
+          aria-describedby={compareHintId}
+          onClick={() => onCompare({ fa: player.playerId })}
+        >
+          Compare
+        </button>
+      )}
     </span>
   );
 }

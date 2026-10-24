@@ -30,6 +30,7 @@ describe("SideNav", () => {
       "/players",
       "/teams",
       "/my-teams",
+      "/roster",
       "/waiver-wire",
       "/leagues",
       "/watchlist",
@@ -54,6 +55,13 @@ describe("SideNav", () => {
     pathnameMock.current = "/players/1234";
     render(<SideNav />);
     expect(screen.getByRole("link", { name: "Players" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("lights Roster on its own route and not My Teams", () => {
+    pathnameMock.current = "/roster";
+    render(<SideNav />);
+    expect(screen.getByRole("link", { name: "Roster" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "My Teams" })).not.toHaveAttribute("aria-current");
   });
 
   it("keeps My Teams active on nested my-team routes", () => {

@@ -317,14 +317,14 @@ describe("YahooImportForm", () => {
     expect(screen.getByRole("button", { name: "Import league" })).toBeEnabled();
   });
 
-  it("imports the picked team and goes to the Waiver Wire", async () => {
+  it("imports the picked team and goes to it in My teams", async () => {
     const user = await findLeague();
 
     const picker = await teamPicker();
     await user.click(within(picker).getByRole("radio", { name: "Newfoundlanders" }));
     await user.click(screen.getByRole("button", { name: "Import league" }));
 
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/waiver-wire"));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/my-teams?open=team-5"));
     expect(importYahooLeagueMock).toHaveBeenCalledWith({
       url: LEAGUE_URL,
       myTeamExternalKey: "478.l.106344.t.5",
@@ -333,7 +333,7 @@ describe("YahooImportForm", () => {
     expect(useLeaguesStore.getState().leagues.map(({ id }) => id)).toEqual(["league-9"]);
   });
 
-  it("names unmatched players before moving on", async () => {
+  it("goes to the team even when some players couldn't be matched", async () => {
     importYahooLeagueMock.mockResolvedValue({
       status: "ok",
       league: importedLeague,
@@ -345,16 +345,49 @@ describe("YahooImportForm", () => {
     await user.click(within(picker).getByRole("radio", { name: "Newfoundlanders" }));
     await user.click(screen.getByRole("button", { name: "Import league" }));
 
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "Imported. 1 player couldn't be matched: Jalen Smith. They won't count as rostered, so they may show up as free agents.",
-      ),
-    );
-    expect(screen.getByRole("link", { name: "Go to the Waiver Wire" })).toHaveAttribute(
-      "href",
-      "/waiver-wire",
-    );
-    expect(pushMock).not.toHaveBeenCalled();
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/my-teams?open=team-5"));
+  });
+
+  it("shows progress and keeps the import button disabled while importing", async () => {
+    const pending = Promise.withResolvers<YahooImportResult>();
+    importYahooLeagueMock.mockReturnValue(pending.promise);
+    const user = await findLeague();
+
+    const picker = await teamPicker();
+    await user.click(within(picker).getByRole("radio", { name: "Newfoundlanders" }));
+    await user.click(screen.getByRole("button", { name: "Import league" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Importing your league");
+    expect(screen.getByRole("button", { name: "Importing league…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Change league" })).toBeDisabled();
+
+    pending.resolve({ status: "ok", league: importedLeague, unmatched: [] });
+    await waitFor(() => expect(pushMock).toHaveBeenCalled());
+  });
+
+  it("stays disabled after the import lands, until the page changes", async () => {
+    const user = await findLeague();
+
+    const picker = await teamPicker();
+    await user.click(within(picker).getByRole("radio", { name: "Newfoundlanders" }));
+    await user.click(screen.getByRole("button", { name: "Import league" }));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledTimes(1));
+
+    expect(screen.getByRole("button", { name: "Importing league…" })).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent("Importing your league");
+  });
+
+  it("hides the progress and re-enables the button when the import fails", async () => {
+    importYahooLeagueMock.mockResolvedValue({ status: "error" });
+    const user = await findLeague();
+
+    const picker = await teamPicker();
+    await user.click(within(picker).getByRole("radio", { name: "Newfoundlanders" }));
+    await user.click(screen.getByRole("button", { name: "Import league" }));
+
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Import league" })).toBeEnabled();
   });
 
   it("links to the existing league on duplicate", async () => {
@@ -465,7 +498,7 @@ describe("YahooImportForm with the extension", () => {
     await user.click(within(picker).getByRole("radio", { name: "Newfoundlanders" }));
     await user.click(screen.getByRole("button", { name: "Import league" }));
 
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/waiver-wire"));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/my-teams?open=team-5"));
     expect(importYahooLeagueMock).toHaveBeenCalledWith({
       url: LEAGUE_URL,
       myTeamExternalKey: "478.l.106344.t.5",
@@ -537,7 +570,7 @@ describe("YahooImportForm with the extension", () => {
     await user.click(within(picker).getByRole("radio", { name: "Newfoundlanders" }));
     await user.click(screen.getByRole("button", { name: "Import league" }));
 
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/waiver-wire"));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/my-teams?open=team-5"));
     expect(fetchLeagueViaExtensionMock).toHaveBeenCalledTimes(2);
     expect(importYahooLeagueFromSnapshotMock).toHaveBeenCalledWith({
       payload: payload({ tag: "second" }),

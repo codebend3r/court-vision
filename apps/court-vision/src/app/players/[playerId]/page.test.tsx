@@ -3,6 +3,7 @@ import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
+import { useRosteredStore } from "@/lib/leagues/rosteredStore";
 import { makeStatLine } from "@/lib/valuation/fixtures";
 import { SEASON_LABEL, SEASON_START_YEAR } from "@/lib/stats/season";
 
@@ -246,6 +247,41 @@ const player = {
   createdAt: new Date("2025-01-01T00:00:00Z"),
   updatedAt: new Date("2025-01-01T00:00:00Z"),
 };
+
+describe("PlayerPage ownership chip", () => {
+  const mount = async () => {
+    findUniquePlayer.mockResolvedValue(player);
+    findManyGameLogs.mockResolvedValue([buildLog({ id: "log-1" })]);
+    await renderPage({ playerId: "3547238" });
+  };
+
+  afterEach(() => useRosteredStore.setState({ owners: null }));
+
+  it("marks a player on no roster as a free agent", async () => {
+    useRosteredStore.getState().hydrate({ playerIds: [], owners: [] });
+
+    await mount();
+
+    expect(screen.getByText("Free agent")).toBeInTheDocument();
+  });
+
+  it("names the team holding the player", async () => {
+    useRosteredStore.getState().hydrate({
+      playerIds: [],
+      owners: [{ playerId: player.id, teamName: "Rivals", isMine: false }],
+    });
+
+    await mount();
+
+    expect(screen.getByText("Rivals")).toHaveAttribute("data-ownership", "other");
+  });
+
+  it("shows no chip while the league's rosters are unknown", async () => {
+    await mount();
+
+    expect(screen.queryByText("Free agent")).toBeNull();
+  });
+});
 
 describe("PlayerPage", () => {
   it("renders the player name and chart chips for a known id with logs", async () => {

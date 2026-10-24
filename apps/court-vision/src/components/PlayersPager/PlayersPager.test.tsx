@@ -49,6 +49,7 @@ const regularParams: RegularSearchParams = {
   range: "all",
   mode: "average",
   minimums: true,
+  owner: "all",
   tab: "regular",
 };
 

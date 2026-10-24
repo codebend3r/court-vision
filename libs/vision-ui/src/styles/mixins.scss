@@ -281,6 +281,26 @@
   border-color: var(--color-control-accent);
 }
 
+// A select's own arrow, with the room for it. The native arrow sits inside the
+// field's padding, so a field padded like a text input draws it against the
+// edge and looks clipped. This drops the native one for a chevron drawn from
+// two gradients (a data-URI image cannot read a theme token) and pads the end
+// of the field past it. Every select must include this, directly or through
+// `control-field`; `selectControls.test.ts` fails the build on one that doesn't.
+@mixin control-select {
+  appearance: none;
+  padding-inline-end: calc(var(--space-3) + 1rem);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--color-text-muted) 50%),
+    linear-gradient(135deg, var(--color-text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - var(--space-3) - 0.3rem) 50%,
+    calc(100% - var(--space-3)) 50%;
+  background-size: 0.3rem 0.3rem;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
 // Text-like fields: text/email/password/date/etc. inputs and selects.
 @mixin control-field {
   height: var(--control-height);
@@ -304,6 +324,16 @@
   &:disabled {
     opacity: var(--control-disabled-opacity);
     cursor: not-allowed;
+  }
+
+  // The same class on a <select> gets its arrow and the room for it; on an
+  // input this matches nothing.
+  &:is(select) {
+    @include control-select;
+
+    &:disabled {
+      cursor: not-allowed;
+    }
   }
 }
 

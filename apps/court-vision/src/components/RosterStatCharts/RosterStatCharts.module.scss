@@ -1,0 +1,104 @@
+@use "@/styles/mixins" as *;
+
+.root {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.caption {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+
+  @media (width < 48rem) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.legend {
+  display: grid;
+  grid-auto-flow: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  list-style: none;
+
+  @media (width < 48rem) {
+    grid-auto-flow: row;
+  }
+}
+
+.legendItem {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-text-muted);
+
+  &[data-tier="strong"] {
+    background: var(--color-win);
+  }
+
+  &[data-tier="weak"] {
+    background: var(--color-loss);
+  }
+
+  &[data-tier="neutral"] {
+    background: var(--color-accent);
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  @include panel-shell;
+}
+
+.title {
+  @include panel-title;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.fullName {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: normal;
+  text-align: right;
+  text-transform: none;
+}
+
+.plot {
+  margin: 0;
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}

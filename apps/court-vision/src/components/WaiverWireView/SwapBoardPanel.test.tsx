@@ -113,11 +113,13 @@ describe("SwapBoardPanel", () => {
     cells.getAllByText("(better)").map((hint) => expect(hint).toHaveClass("srOnly"));
   });
 
-  it("opens head-to-head from a free agent's name", async () => {
+  it("opens head-to-head from a free agent's Compare button", async () => {
     const user = userEvent.setup();
     const { onCompare } = renderPanel();
 
-    await user.click(within(freePanel()).getByRole("button", { name: "Wendell Carter Jr." }));
+    await user.click(
+      within(freePanel()).getByRole("button", { name: "Compare Wendell Carter Jr. head-to-head" }),
+    );
 
     expect(onCompare).toHaveBeenCalledWith({ fa: 10 });
   });
@@ -204,5 +206,107 @@ describe("SwapBoardPanel", () => {
     expect(
       screen.queryByRole("region", { name: "Free agents that beat them" }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("SwapBoardPanel sorting", () => {
+  const gafford: SwapRow = {
+    ...makeRow({ playerId: 11, fullName: "Daniel Gafford", value: 0.3, owner: "free_agent" }),
+    gain: 0.72,
+    chips: [
+      { key: "reb", text: "+REB", improves: true },
+      { key: "pts", text: "+PTS", improves: true },
+      { key: "ast", text: "+AST", improves: true },
+    ],
+  };
+  const missi: SwapRow = {
+    ...makeRow({ playerId: 12, fullName: "Yves Missi", value: 0.5, owner: "free_agent" }),
+    gain: 0.92,
+    chips: [{ key: "fg", text: "−FG%", improves: false }],
+  };
+  const sortBoard: SwapBoard = { target: reed, rows: [carter, missi, gafford] };
+
+  const freeNames = (): string[] =>
+    bodyRows({ panel: freePanel() }).map(
+      (row) => within(row).getAllByRole("link")[0]?.textContent ?? "",
+    );
+  const weakestNames = (): string[] =>
+    bodyRows({ panel: weakestPanel() }).map(
+      (row) => within(row).getAllByRole("link")[0]?.textContent ?? "",
+    );
+  const sortBy = async ({ panel, name }: { panel: HTMLElement; name: string }) =>
+    userEvent.click(
+      within(within(panel).getByRole("columnheader", { name: new RegExp(`^${name}`) })).getByRole(
+        "button",
+      ),
+    );
+
+  it("opens in the board's own order, gain first", () => {
+    renderPanel({ boardOverride: sortBoard });
+    expect(freeNames()).toEqual(["Wendell Carter Jr.", "Yves Missi", "Daniel Gafford"]);
+    expect(within(freePanel()).getByText("sorted by gain over Paul Reed")).toBeInTheDocument();
+  });
+
+  it("sorts the free agents on value, highest first, then lowest, then back", async () => {
+    renderPanel({ boardOverride: sortBoard });
+
+    await sortBy({ panel: freePanel(), name: "Value" });
+    expect(freeNames()).toEqual(["Wendell Carter Jr.", "Yves Missi", "Daniel Gafford"]);
+    await sortBy({ panel: freePanel(), name: "Value" });
+    expect(freeNames()).toEqual(["Daniel Gafford", "Yves Missi", "Wendell Carter Jr."]);
+    await sortBy({ panel: freePanel(), name: "Value" });
+    expect(freeNames()).toEqual(["Wendell Carter Jr.", "Yves Missi", "Daniel Gafford"]);
+  });
+
+  it("sorts the free agents on gain", async () => {
+    renderPanel({ boardOverride: sortBoard });
+
+    await sortBy({ panel: freePanel(), name: "Gain" });
+    await sortBy({ panel: freePanel(), name: "Gain" });
+
+    expect(freeNames()).toEqual(["Daniel Gafford", "Yves Missi", "Wendell Carter Jr."]);
+  });
+
+  it("sorts the free agents on how many categories the swap improves", async () => {
+    renderPanel({ boardOverride: sortBoard });
+
+    await sortBy({ panel: freePanel(), name: "Categories" });
+
+    expect(freeNames()).toEqual(["Daniel Gafford", "Wendell Carter Jr.", "Yves Missi"]);
+  });
+
+  it("sorts the free agents by name, alphabetically first", async () => {
+    renderPanel({ boardOverride: sortBoard });
+
+    await sortBy({ panel: freePanel(), name: "Free agent" });
+
+    expect(freeNames()).toEqual(["Daniel Gafford", "Wendell Carter Jr.", "Yves Missi"]);
+  });
+
+  it("says how many free agents there are once sorted, not that they are sorted by gain", async () => {
+    renderPanel({ boardOverride: sortBoard });
+
+    await sortBy({ panel: freePanel(), name: "Value" });
+
+    expect(within(freePanel()).getByText("3 free agents")).toBeInTheDocument();
+    expect(within(freePanel()).queryByText(/sorted by gain/)).not.toBeInTheDocument();
+  });
+
+  it("sorts your weakest too, independently of the free agents", async () => {
+    renderPanel({ boardOverride: sortBoard });
+    expect(weakestNames()).toEqual(["Paul Reed", "Neemias Queta"]);
+
+    await sortBy({ panel: weakestPanel(), name: "Value" });
+
+    expect(weakestNames()).toEqual(["Neemias Queta", "Paul Reed"]);
+    expect(freeNames()).toEqual(["Wendell Carter Jr.", "Yves Missi", "Daniel Gafford"]);
+  });
+
+  it("right-aligns the numeric headers over their numbers", () => {
+    renderPanel({ boardOverride: sortBoard });
+    const free = within(freePanel());
+    expect(free.getByRole("columnheader", { name: /^Value/ })).toHaveClass("numeric");
+    expect(free.getByRole("columnheader", { name: /^Gain/ })).toHaveClass("numeric");
+    expect(free.getByRole("columnheader", { name: /^Free agent/ })).not.toHaveClass("numeric");
   });
 });

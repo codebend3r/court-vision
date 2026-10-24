@@ -4,7 +4,7 @@ import { Prisma } from "@generated/prisma/client";
 
 import type { PlayerPoolRow, PlayerStats } from "@/lib/players/search";
 import type { RegularSearchParams } from "@/lib/players/searchParams";
-import { SEASON_TYPE } from "@/lib/stats/season";
+import { SEASON_LABEL, SEASON_TYPE } from "@/lib/stats/season";
 
 const queryRaw = vi.fn<(strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>>();
 
@@ -23,11 +23,13 @@ const defaultParams: RegularSearchParams = {
   range: "all",
   mode: "average",
   minimums: true,
+  owner: "all",
   tab: "regular",
 };
 
 const zeroStats: PlayerStats = {
   gamesPlayed: 0,
+  min: 0,
   fgm: 0,
   fga: 0,
   fg3m: 0,
@@ -99,13 +101,13 @@ describe("fetchRegularPool", () => {
     queryRaw.mockReset();
   });
 
-  it("reads the latest regular-season aggregate for the all range, with no window", async () => {
+  it("reads the current-season regular-season aggregate for the all range, with no window", async () => {
     queryRaw.mockResolvedValue([sqlRow({ id: 1, pts: 2000, gamesPlayed: 70 })]);
 
     const pool = await fetchRegularPool({ range: "all" });
 
     expect(firstQuery().sql).toContain('"PlayerSeasonStats"');
-    expect(firstQuery().values).toEqual([SEASON_TYPE]);
+    expect(firstQuery().values).toEqual([SEASON_LABEL, SEASON_TYPE]);
     expect(pool).toEqual([
       {
         id: 1,

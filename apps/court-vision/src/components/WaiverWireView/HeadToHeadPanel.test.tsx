@@ -183,7 +183,7 @@ describe("HeadToHeadPanel", () => {
     });
     const headers = within(table)
       .getAllByRole("columnheader")
-      .map((header) => header.textContent);
+      .map((header) => (header.textContent ?? "").replace(/[▲▼]/g, ""));
     expect(headers).toEqual([
       "Wendell Carter Jr.",
       "Paul Reed",
@@ -275,5 +275,70 @@ describe("HeadToHeadPanel", () => {
     );
     expect(onPick).toHaveBeenLastCalledWith({ mine: 2 });
     expect(onPick).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("HeadToHeadPanel sorting", () => {
+  const categories = (): string[] =>
+    screen.getAllByRole("rowheader").map((cell) => cell.textContent ?? "");
+  const header = ({ name }: { name: string | RegExp }): HTMLElement =>
+    screen.getByRole("columnheader", { name });
+
+  const renderSortable = () =>
+    render(
+      <HeadToHeadPanel
+        pair={pair}
+        result={result}
+        freePool={[carter, gafford]}
+        roster={[reed, hartenstein]}
+        onPick={vi.fn()}
+      />,
+    );
+
+  it("opens in the model's category order", () => {
+    renderSortable();
+    expect(categories().slice(0, 3)).toEqual(["FG%", "PTS", "REB"]);
+  });
+
+  it("sorts the categories by name, alphabetically first, then back to the model's order", async () => {
+    const user = userEvent.setup();
+    renderSortable();
+
+    await user.click(within(header({ name: /^Category/ })).getByRole("button"));
+    expect(categories()).toEqual([...categories()].sort((a, b) => a.localeCompare(b)));
+    expect(header({ name: /^Category/ })).toHaveAttribute("aria-sort", "ascending");
+
+    await user.click(within(header({ name: /^Category/ })).getByRole("button"));
+    await user.click(within(header({ name: /^Category/ })).getByRole("button"));
+    expect(categories().slice(0, 3)).toEqual(["FG%", "PTS", "REB"]);
+  });
+
+  it("sorts by what the swap does to your team, biggest gain first", async () => {
+    const user = userEvent.setup();
+    renderSortable();
+
+    await user.click(within(header({ name: /^Your team after swap/ })).getByRole("button"));
+
+    expect(categories().slice(0, 2)).toEqual(["PTS", "REB"]);
+  });
+
+  it("sorts by each player's number", async () => {
+    const user = userEvent.setup();
+    renderSortable();
+
+    await user.click(within(header({ name: /^Wendell Carter Jr\./ })).getByRole("button"));
+    expect(categories().at(0)).toBe("PTS");
+
+    await user.click(within(header({ name: /^Paul Reed/ })).getByRole("button"));
+    expect(categories().at(0)).toBe("PTS");
+    expect(header({ name: /^Paul Reed/ })).toHaveAttribute("aria-sort", "descending");
+    expect(header({ name: /^Wendell Carter Jr\./ })).not.toHaveAttribute("aria-sort");
+  });
+
+  it("right-aligns the free agent's and the team headers over their numbers", () => {
+    renderSortable();
+    expect(header({ name: /^Wendell Carter Jr\./ })).toHaveClass("numeric");
+    expect(header({ name: /^Your team after swap/ })).toHaveClass("numeric");
+    expect(header({ name: /^Category/ })).not.toHaveClass("numeric");
   });
 });

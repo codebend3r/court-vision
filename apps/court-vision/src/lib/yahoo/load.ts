@@ -31,7 +31,7 @@ const UNAVAILABLE: YahooLoadFailure = { status: "unavailable" };
 const INVALID_PAYLOAD: YahooLoadFailure = { status: "invalid_payload" };
 const PAST_SEASON: YahooLoadFailure = { status: "past_season" };
 
-// A 400 is the expected answer for a private or missing league; anything else
+// A 400, 401 or 403 is the expected answer for a private or missing league; anything else
 // that failed is logged with the client's detail before it becomes `unavailable`.
 const toFailure = ({
   result,

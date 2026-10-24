@@ -13,7 +13,7 @@ import {
   type AdvancedSearchParams,
   type PlayerGameRange,
 } from "@/lib/players/searchParams";
-import { HAS_GAME_LOGS, LATEST_SEASON_JOIN, PLAYER_IDENTITY_COLUMNS } from "@/lib/players/sql";
+import { HAS_GAME_LOGS, CURRENT_SEASON_JOIN, PLAYER_IDENTITY_COLUMNS } from "@/lib/players/sql";
 
 export type PlayerAdvancedStats = Record<AdvancedMetricKey, number | null> & {
   gamesWithData: number;
@@ -56,7 +56,7 @@ const advancedPoolRowSchema = playerRowSchema.extend({
 
 // Per-player advanced averages for a range, aggregated in SQL. A lastN range
 // averages the N most recent advanced logs; the season range averages the most
-// recent 100 that fall in the player's latest Regular Season (null when they
+// recent 100 that fall in the player's current Regular Season (null when they
 // have none, which matches no rows). AVG skips nulls, so each metric averages
 // only the games that recorded it, and gamesWithData is the widest such count,
 // exactly as averageAdvancedLogs does in memory. The per-player LIMIT reads the
@@ -71,7 +71,7 @@ export const fetchAdvancedPool = async ({
   const rows: unknown = await prisma.$queryRaw`
     SELECT ${PLAYER_IDENTITY_COLUMNS}, a.*
     FROM "Player" p
-    ${LATEST_SEASON_JOIN}
+    ${CURRENT_SEASON_JOIN}
     CROSS JOIN LATERAL (
       SELECT GREATEST(
                count(l.pie), count(l.pace), count(l."assistPercentage"), count(l."assistRatio"),

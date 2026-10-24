@@ -137,7 +137,14 @@ const GAME_COLUMNS: readonly GameLogColumn<GameLogRow>[] = [
       );
     },
   },
-  { key: "minutes", label: "MIN", align: "right", value: ({ minutes }) => minutes },
+  {
+    key: "minutes",
+    label: "MIN",
+    align: "right",
+    // Sorts on the exact minutes; reads as whole ones, as a box score does.
+    value: ({ minutes }) => minutes,
+    render: ({ minutes }) => String(Math.round(minutes)),
+  },
 ];
 
 type BoxStatKey = Exclude<keyof GameLogRow, "id" | "gameDate" | "matchup" | "winLoss">;

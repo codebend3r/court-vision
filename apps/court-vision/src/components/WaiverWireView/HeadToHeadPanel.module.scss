@@ -47,6 +47,11 @@
   @include numeric-cell;
 }
 
+// See WaiverWireView.module.scss: `data-table` out-ranks `.numeric` on a th.
+.table th.numeric {
+  text-align: right;
+}
+
 // My player's number mirrors the free agent's across the bar.
 .mineValue {
   @include numeric-cell;

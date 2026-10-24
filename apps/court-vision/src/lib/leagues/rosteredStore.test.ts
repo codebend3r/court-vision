@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { cleanup, renderHook } from "@testing-library/react";
 
-import { useIsRostered, useRosteredStore } from "@/lib/leagues/rosteredStore";
+import { useIsRostered, useOwnership, useRosteredStore } from "@/lib/leagues/rosteredStore";
 
 beforeEach(() => {
-  useRosteredStore.setState({ playerIds: new Set<number>() });
+  useRosteredStore.setState({ playerIds: new Set<number>(), owners: null });
 });
 
 afterEach(cleanup);
@@ -24,5 +24,34 @@ describe("useIsRostered", () => {
 
     expect(renderHook(() => useIsRostered({ playerId: 7 })).result.current).toBe(true);
     expect(renderHook(() => useIsRostered({ playerId: 3 })).result.current).toBe(false);
+  });
+});
+
+describe("useOwnership", () => {
+  const owners = [
+    { playerId: 1, teamName: "Softchoice", isMine: true },
+    { playerId: 2, teamName: "Rivals", isMine: false },
+  ];
+
+  it("is unknown until the league's owners are hydrated", () => {
+    useRosteredStore.getState().hydrate({ playerIds: [1] });
+
+    expect(renderHook(() => useOwnership({ playerId: 1 })).result.current).toBeNull();
+  });
+
+  it("names the holder, and calls an unheld player a free agent", () => {
+    useRosteredStore.getState().hydrate({ playerIds: [1], owners });
+
+    expect(renderHook(() => useOwnership({ playerId: 1 })).result.current).toEqual({
+      status: "mine",
+      teamName: "Softchoice",
+    });
+    expect(renderHook(() => useOwnership({ playerId: 2 })).result.current).toEqual({
+      status: "other",
+      teamName: "Rivals",
+    });
+    expect(renderHook(() => useOwnership({ playerId: 3 })).result.current).toEqual({
+      status: "free",
+    });
   });
 });

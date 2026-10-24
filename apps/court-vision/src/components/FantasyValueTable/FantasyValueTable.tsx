@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { OwnershipChip } from "@/components/OwnershipChip/OwnershipChip";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { RosteredMarker } from "@/components/RosteredMarker/RosteredMarker";
 import { SortButton } from "@/components/SortButton/SortButton";
@@ -117,7 +118,10 @@ export function FantasyValueTable({ rows, sort, dir, isSignedIn, onSort }: Fanta
                 </span>
               </td>
               <td data-sort-active={sort === "lastName" || undefined}>
-                <Link href={`/players/${row.playerId}`}>{row.lastName}</Link>
+                <span className={styles.lastNameCell}>
+                  <Link href={`/players/${row.playerId}`}>{row.lastName}</Link>
+                  <OwnershipChip playerId={row.playerId} />
+                </span>
               </td>
               <td>{row.teamAbbr === null ? "—" : <TeamChip team={row.teamAbbr} size="sm" />}</td>
               <td>{row.position ?? "—"}</td>

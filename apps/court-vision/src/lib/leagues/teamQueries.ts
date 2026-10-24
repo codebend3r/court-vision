@@ -1,5 +1,6 @@
 import { getActiveLeagueRecord } from "@/lib/leagues/queries";
 import { rowsToTeamSlots } from "@/lib/leagues/teams";
+import { type LeagueOwner } from "@/lib/leagues/rosteredStore";
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 import { prisma } from "@/lib/prisma";
 
@@ -170,4 +171,23 @@ export const getRosteredPlayerIds = async (): Promise<number[]> => {
     select: { playerId: true },
   });
   return slots.flatMap((slot) => (slot.playerId === null ? [] : [slot.playerId]));
+};
+
+// Who holds every rostered player in the active league, so the player tables
+// can tell a free agent from a player on a league-mate's team. Only an
+// imported league carries every manager's roster; a hand-built one holds just
+// your own teams, so it answers null rather than call everyone else a free
+// agent.
+export const getLeagueOwners = async (): Promise<LeagueOwner[] | null> => {
+  const league = await getActiveLeagueRecord();
+  if (league === null || !isImportedLeague({ league })) return null;
+  const slots = await prisma.leagueTeamSlot.findMany({
+    where: { team: { leagueId: league.id }, playerId: { not: null } },
+    select: { playerId: true, team: { select: { id: true, name: true } } },
+  });
+  return slots.flatMap(({ playerId, team }) =>
+    playerId === null
+      ? []
+      : [{ playerId, teamName: team.name, isMine: team.id === league.myTeamId }],
+  );
 };
