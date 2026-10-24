@@ -1,6 +1,6 @@
 {
   "name": "court-vision",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "private": true,
   "scripts": {
     "predev": "build-meta --src-folder public --env development",
