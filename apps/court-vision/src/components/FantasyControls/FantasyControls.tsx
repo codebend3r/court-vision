@@ -37,6 +37,9 @@ import {
   type ScoringStatKey,
 } from "@vision/sport-basketball/types";
 
+import { OwnerQuickFilter } from "@/components/OwnerQuickFilter/OwnerQuickFilter";
+import { type PlayerOwnerFilter } from "@/lib/players/ownerFilter";
+
 import styles from "@/components/FantasyControls/FantasyControls.module.scss";
 
 export type FantasyControlsChange = Partial<{
@@ -44,6 +47,7 @@ export type FantasyControlsChange = Partial<{
   page: number;
   range: PlayerGameRange;
   mode: PlayerStatMode;
+  owner: PlayerOwnerFilter;
   x: Category[];
   w: Partial<Record<Category, number>>;
   s: ScoringSettings;
@@ -55,6 +59,7 @@ export type FantasyControlsProps = {
   q: string;
   range: PlayerGameRange;
   mode: PlayerStatMode;
+  owner: PlayerOwnerFilter;
   excluded: readonly Category[];
   weights: Partial<Record<Category, number>>; // the sorted column's set only
   sort: FantasySortKey;
@@ -68,6 +73,7 @@ export function FantasyControls({
   q,
   range,
   mode,
+  owner,
   excluded,
   weights,
   sort,
@@ -170,6 +176,7 @@ export function FantasyControls({
             <option value="total">Totals</option>
           </select>
         </label>
+        <OwnerQuickFilter value={owner} onChange={(next) => onChange({ owner: next, page: 1 })} />
       </span>
 
       <span className={styles.chips} role="group" aria-label="Categories">

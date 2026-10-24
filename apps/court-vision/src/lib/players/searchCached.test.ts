@@ -54,9 +54,31 @@ describe("searchCached", () => {
     fetchRegularPool.mockResolvedValue(pool);
     rankPlayers.mockReturnValue(result);
 
-    await expect(searchPlayers(params)).resolves.toBe(result);
+    await expect(searchPlayers({ ...params, takenIds: null })).resolves.toBe(result);
     expect(fetchRegularPool).toHaveBeenCalledWith({ range: "last10" });
-    expect(rankPlayers).toHaveBeenCalledWith({ pool, args: params });
+    expect(rankPlayers).toHaveBeenCalledWith({ pool, args: { ...params, takenIds: null } });
+  });
+
+  it("narrows the pool to free agents or taken players before ranking", async () => {
+    const params = parsePlayersSearchParams({ raw: { owner: "free" } });
+    if (params.tab === "advanced") throw new Error("expected the regular tab");
+    fetchRegularPool.mockResolvedValue([{ id: 1 }, { id: 2 }, { id: 3 }]);
+
+    await searchPlayers({ ...params, takenIds: new Set([1, 3]) });
+
+    expect(rankPlayers).toHaveBeenCalledWith(expect.objectContaining({ pool: [{ id: 2 }] }));
+  });
+
+  it("leaves the pool whole when the league's rosters are unknown", async () => {
+    const params = parsePlayersSearchParams({ raw: { owner: "free" } });
+    if (params.tab === "advanced") throw new Error("expected the regular tab");
+    fetchRegularPool.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+
+    await searchPlayers({ ...params, takenIds: null });
+
+    expect(rankPlayers).toHaveBeenCalledWith(
+      expect.objectContaining({ pool: [{ id: 1 }, { id: 2 }] }),
+    );
   });
 
   it("hands a watchlist's ids to the ranker with the params", async () => {
@@ -64,9 +86,12 @@ describe("searchCached", () => {
     if (params.tab === "advanced") throw new Error("expected the starred tab");
     fetchRegularPool.mockResolvedValue([]);
 
-    await searchPlayers({ ...params, playerIds: [7, 3] });
+    await searchPlayers({ ...params, takenIds: null, playerIds: [7, 3] });
 
-    expect(rankPlayers).toHaveBeenCalledWith({ pool: [], args: { ...params, playerIds: [7, 3] } });
+    expect(rankPlayers).toHaveBeenCalledWith({
+      pool: [],
+      args: { ...params, takenIds: null, playerIds: [7, 3] },
+    });
   });
 
   it("ranks the advanced pool for the requested range with the full params", async () => {
@@ -77,8 +102,11 @@ describe("searchCached", () => {
     fetchAdvancedPool.mockResolvedValue(pool);
     rankAdvancedPlayers.mockReturnValue(result);
 
-    await expect(searchPlayersAdvanced(params)).resolves.toBe(result);
+    await expect(searchPlayersAdvanced({ ...params, takenIds: null })).resolves.toBe(result);
     expect(fetchAdvancedPool).toHaveBeenCalledWith({ range: "last5" });
-    expect(rankAdvancedPlayers).toHaveBeenCalledWith({ pool, args: params });
+    expect(rankAdvancedPlayers).toHaveBeenCalledWith({
+      pool,
+      args: { ...params, takenIds: null },
+    });
   });
 });

@@ -19,6 +19,17 @@ const UNMATCHED: MatchOutcome = { status: "unmatched" };
 // or more, so a two-word name never loses its last name.
 const GENERATIONAL_SUFFIXES: ReadonlySet<string> = new Set(["jr", "sr", "ii", "iii", "iv", "v"]);
 
+// Names Yahoo prints that Balldontlie spells another way, which no rule below
+// can derive: a nickname that is not the start of the legal first name ("Ace"
+// for Airious). Both sides are match keys, and the last name is the same on
+// both, so an alias only ever picks among players who share it. Each entry
+// is a player Balldontlie lists under the legal name; check one against its
+// `players` endpoint before adding it.
+const NAME_ALIASES: ReadonlyMap<string, string> = new Map([
+  ["ace bailey", "airious bailey"],
+  ["bub carrington", "carlton carrington"],
+]);
+
 // A shortened first name ("nic" for "nicolas") must keep at least this many
 // letters, so a bare initial never stands in for a whole first name.
 const MIN_SHORT_NAME_LENGTH = 2;
@@ -87,7 +98,7 @@ const pickByName = ({
 };
 
 // Order: a stored mapping whose name still agrees; the exact name; the name
-// without a generational suffix; then a shortened first name with the same
+// without a generational suffix; a known alias; then a shortened first name with the same
 // last name on Yahoo's team. Each name rule tries team first, then a name
 // exactly one active player has. A shortened first name always needs the team
 // and exactly one teammate. An ambiguous name stays unmatched rather than
@@ -120,6 +131,13 @@ export const matchPlayer = ({
     pickByName({ ref, sameName: withName((other) => other.key === parts.key) }) ??
     pickByName({ ref, sameName: withName((other) => other.baseKey === parts.baseKey) });
   if (byName) return byName;
+
+  const aliasKey = NAME_ALIASES.get(parts.key);
+  const byAlias =
+    aliasKey === undefined
+      ? null
+      : pickByName({ ref, sameName: withName((other) => other.key === aliasKey) });
+  if (byAlias) return byAlias;
 
   const teammates = withName(
     (other) =>
@@ -154,6 +172,23 @@ const PLAYER_SELECT = { id: true, fullName: true, teamAbbr: true } as const;
 
 const loadCandidates = (): Promise<MatchCandidate[]> =>
   prisma.player.findMany({ where: { isActive: true }, select: PLAYER_SELECT });
+
+// Players the roster sync has not flagged active whose full name is exactly one
+// a Yahoo ref carries. Balldontlie's active list is whoever is on a roster
+// right now, so a player between teams (or a rookie not yet synced) is on
+// Yahoo teams but not in it. Only the unmatched refs ask, and only by their
+// own name, so the huge historical pool never joins the candidates and a
+// namesake from another era is never one of them.
+const loadInactiveByName = ({ names }: { names: readonly string[] }): Promise<MatchCandidate[]> =>
+  names.length
+    ? prisma.player.findMany({
+        where: {
+          isActive: false,
+          OR: names.map((name) => ({ fullName: { equals: name, mode: "insensitive" } })),
+        },
+        select: PLAYER_SELECT,
+      })
+    : Promise.resolve([]);
 
 const loadStoredMappings = async ({
   yahooIds,
@@ -205,6 +240,10 @@ const loadHeldPlayerIds = async ({
   return new Set(rows.map((row) => row.playerId));
 };
 
+// One upsert per Yahoo player (a 12-team league is ~170) is one round trip
+// each, so the batch outlasts Prisma's 5s default over a remote pooler.
+const MAPPING_TRANSACTION_OPTIONS = { timeout: 30_000 };
+
 // PlayerExternalId is shared by every profile, so this runs only on the server
 // path, from data the server fetched from Yahoo itself. Deletes go first.
 const persistMappings = async ({
@@ -243,7 +282,7 @@ const persistMappings = async ({
     ),
   ];
   if (!operations.length) return;
-  await prisma.$transaction(operations);
+  await prisma.$transaction(operations, MAPPING_TRANSACTION_OPTIONS);
 };
 
 const sameStrings = ({
@@ -299,7 +338,7 @@ export const resolveYahooPlayers = async ({
   ]);
   const candidatesByLastName = groupByLastName({ candidates });
 
-  const attempts = uniqueRefs.map((ref): Attempt => {
+  const firstPass = uniqueRefs.map((ref): Attempt => {
     const row = stored.get(ref.yahooPlayerId);
     const outcome = matchPlayer({
       ref,
@@ -319,6 +358,28 @@ export const resolveYahooPlayers = async ({
       match: row && { playerId: outcome.playerId, method: row.method },
       keepsStored: true,
     };
+  });
+
+  // Whoever no active player matched gets a second look among inactive players
+  // of exactly that name, unless a stored mapping already speaks for them.
+  const needsSecondLook = firstPass.filter(
+    ({ ref, match }) => match === undefined && !stored.has(ref.yahooPlayerId),
+  );
+  const inactiveByLastName = groupByLastName({
+    candidates: await loadInactiveByName({
+      names: needsSecondLook.map(({ ref }) => ref.fullName),
+    }),
+  });
+  const attempts = firstPass.map((attempt): Attempt => {
+    if (!needsSecondLook.includes(attempt)) return attempt;
+    const outcome = matchPlayer({
+      ref: attempt.ref,
+      candidates: inactiveByLastName.get(nameParts({ name: attempt.ref.fullName }).last) ?? [],
+      existing: null,
+    });
+    return outcome.status === "unmatched" || outcome.method === "existing"
+      ? attempt
+      : { ...attempt, match: { playerId: outcome.playerId, method: outcome.method } };
   });
 
   // A Court Vision player claimed by several refs belongs to none of them.

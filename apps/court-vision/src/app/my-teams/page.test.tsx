@@ -34,6 +34,8 @@ const redirectTarget = (error: unknown): string =>
     ? error.digest
     : "";
 
+const noParams = Promise.resolve({});
+
 const league = ({ id, name }: { id: string; name: string }): LeagueSummary => ({
   id,
   name,
@@ -66,7 +68,7 @@ afterEach(cleanup);
 describe("MyTeamsPage", () => {
   it("sends a signed-out visitor to the login form", async () => {
     getProfile.mockResolvedValue(null);
-    const thrown = await MyTeamsPage().then(
+    const thrown = await MyTeamsPage({ searchParams: noParams }).then(
       () => null,
       (error: unknown) => error,
     );
@@ -75,7 +77,7 @@ describe("MyTeamsPage", () => {
 
   it("prompts to create a league when there is no active league", async () => {
     getActiveLeague.mockResolvedValue(null);
-    render(await MyTeamsPage());
+    render(await MyTeamsPage({ searchParams: noParams }));
     expect(screen.getByRole("heading", { name: "My teams" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "create a league" })).toHaveAttribute(
       "href",
@@ -91,7 +93,7 @@ describe("MyTeamsPage", () => {
     ];
     getLeagueTeams.mockResolvedValue(teams);
 
-    render(await MyTeamsPage());
+    render(await MyTeamsPage({ searchParams: noParams }));
 
     expect(screen.getByRole("heading", { name: "My teams" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "New team" })).toHaveAttribute(
@@ -103,6 +105,7 @@ describe("MyTeamsPage", () => {
       teams,
       leagueName: "Bench Mob League",
       isImported: false,
+      openTeamId: null,
     });
   });
 
@@ -113,13 +116,30 @@ describe("MyTeamsPage", () => {
       isImported: true,
     });
 
-    render(await MyTeamsPage());
+    render(await MyTeamsPage({ searchParams: noParams }));
 
     expect(screen.queryByRole("link", { name: "New team" })).not.toBeInTheDocument();
     expect(listProps).toHaveBeenCalledWith({
       teams: [],
       leagueName: "Game of Courts",
       isImported: true,
+      openTeamId: null,
     });
+  });
+
+  it("hands the list the team id to open, from the open query", async () => {
+    getActiveLeague.mockResolvedValue(league({ id: "league-1", name: "Game of Courts" }));
+
+    render(await MyTeamsPage({ searchParams: Promise.resolve({ open: "team-5" }) }));
+
+    expect(listProps).toHaveBeenCalledWith(expect.objectContaining({ openTeamId: "team-5" }));
+  });
+
+  it("ignores a repeated open query", async () => {
+    getActiveLeague.mockResolvedValue(league({ id: "league-1", name: "Game of Courts" }));
+
+    render(await MyTeamsPage({ searchParams: Promise.resolve({ open: ["a", "b"] }) }));
+
+    expect(listProps).toHaveBeenCalledWith(expect.objectContaining({ openTeamId: null }));
   });
 });

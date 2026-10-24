@@ -51,6 +51,16 @@ describe("yahooFetch", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
+  it.each([401, 403])(
+    "reports a %i, a private league, as not_found without retrying",
+    async (code) => {
+      const fetchImpl = vi.fn<FetchImpl>().mockImplementation(async () => statusResponse(code));
+      const result = await yahooFetch({ path: "league/x", fetchImpl, sleep: noSleep });
+      expect(result).toEqual({ status: "not_found" });
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
+    },
+  );
+
   it("retries 5xx and 999 then reports unavailable", async () => {
     const statuses = [503, 999, 500];
     const fetchImpl = vi
@@ -64,11 +74,11 @@ describe("yahooFetch", () => {
   });
 
   it("reports any other 4xx as unavailable with the status in the detail", async () => {
-    const fetchImpl = vi.fn<FetchImpl>().mockImplementation(async () => statusResponse(403));
+    const fetchImpl = vi.fn<FetchImpl>().mockImplementation(async () => statusResponse(404));
     const result = await yahooFetch({ path: "game/nba", fetchImpl, sleep: noSleep });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(result).toMatchObject({ status: "unavailable" });
-    expect(result.status === "unavailable" && result.detail).toContain("403");
+    expect(result.status === "unavailable" && result.detail).toContain("404");
   });
 
   it("retries a body that is not JSON", async () => {

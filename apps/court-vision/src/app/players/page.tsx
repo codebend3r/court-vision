@@ -9,15 +9,16 @@ import {
   ADVANCED_COLUMNS,
   PlayersTable,
   regularColumns,
-  type StatColumn,
 } from "@/components/PlayersTable/PlayersTable";
 import { PlayersTabs } from "@/components/PlayersTabs/PlayersTabs";
 import { StarredPlayersView } from "@/components/StarredPlayersView/StarredPlayersView";
 import { getProfile, getUser } from "@/lib/auth/session";
 import { buildLeagueSeed } from "@/lib/leagues/fantasyDefaults";
 import { getActiveLeague } from "@/lib/leagues/queries";
+import { getLeagueOwners } from "@/lib/leagues/teamQueries";
 import { type PlayerIdentity } from "@/lib/players/identity";
 import { type Page } from "@/lib/players/rank";
+import { type StatColumn } from "@/lib/players/statColumn";
 import { searchPlayers, searchPlayersAdvanced } from "@/lib/players/searchCached";
 import {
   parsePlayersSearchParams,
@@ -32,6 +33,13 @@ import { PLAYERS_PAGE_HEADER } from "@/app/players/header";
 import styles from "@/app/players/page.module.scss";
 
 export const dynamic = "force-dynamic";
+
+// The players on some manager's roster, or null where the league's rosters are
+// unknown. The owner quick filter narrows the pool by it.
+const getTakenIds = async (): Promise<ReadonlySet<number> | null> => {
+  const owners = await getLeagueOwners();
+  return owners && new Set(owners.map((owner) => owner.playerId));
+};
 
 const totalPagesOf = ({ total, size }: { total: number; size: number }): number =>
   Math.max(1, Math.ceil(total / size));
@@ -60,7 +68,13 @@ function PlayersScreen({ params, children }: { params: PlayersSearchParams; chil
   return (
     <main className={styles.page}>
       <PageHeader {...PLAYERS_PAGE_HEADER} />
-      <PlayersTabs active={params.tab} q={params.q} size={params.size} range={params.range} />
+      <PlayersTabs
+        active={params.tab}
+        q={params.q}
+        size={params.size}
+        range={params.range}
+        owner={params.owner}
+      />
       {children}
     </main>
   );
@@ -165,7 +179,8 @@ export default async function PlayersPage({
   }
 
   if (params.tab === "advanced") {
-    const [result, isSignedIn] = await Promise.all([searchPlayersAdvanced(params), signedIn()]);
+    const [takenIds, isSignedIn] = await Promise.all([getTakenIds(), signedIn()]);
+    const result = await searchPlayersAdvanced({ ...params, takenIds });
     return (
       <PlayersResults
         params={params}
@@ -178,7 +193,8 @@ export default async function PlayersPage({
     );
   }
 
-  const [result, isSignedIn] = await Promise.all([searchPlayers(params), signedIn()]);
+  const [takenIds, isSignedIn] = await Promise.all([getTakenIds(), signedIn()]);
+  const result = await searchPlayers({ ...params, takenIds });
   return (
     <PlayersResults
       params={params}

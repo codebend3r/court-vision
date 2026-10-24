@@ -2,16 +2,37 @@
 
 import { useId, useState } from "react";
 
+import { SortHeader } from "@/components/SortHeader/SortHeader";
 import { WaiverPlayer } from "@/components/WaiverWireView/WaiverPlayer";
-import { type SwapBoard } from "@/lib/waiverWire/swapBoard";
+import { type SortColumn } from "@/lib/tableSort";
+import { useColumnSort } from "@/lib/useColumnSort";
+import { type SwapBoard, type SwapRow } from "@/lib/waiverWire/swapBoard";
 import { formatValue } from "@/lib/waiverWire/format";
-import { type WaiverModel, type WaiverRosterEntry } from "@/lib/waiverWire/types";
+import { type WaiverModel, type WaiverRosterEntry, type WaiverRow } from "@/lib/waiverWire/types";
 import { formatSigned } from "@vision/core/util/format";
 import { Disclosure } from "@vision/ui/components/Disclosure/Disclosure";
 
 import styles from "@/components/WaiverWireView/WaiverWireView.module.scss";
 
 const ROWS_SHOWN = 25;
+
+const WEAKEST_COLUMNS: readonly SortColumn<WaiverRow>[] = [
+  { key: "player", firstDir: "asc", valueOf: (row) => row.fullName },
+  { key: "value", firstDir: "desc", valueOf: (row) => row.value },
+];
+
+// "Categories" sorts on how many of its chips are improvements: the swap that
+// helps in the most places first.
+const FREE_AGENT_COLUMNS: readonly SortColumn<SwapRow>[] = [
+  { key: "player", firstDir: "asc", valueOf: (row) => row.fullName },
+  { key: "value", firstDir: "desc", valueOf: (row) => row.value },
+  { key: "gain", firstDir: "desc", valueOf: (row) => row.gain },
+  {
+    key: "categories",
+    firstDir: "desc",
+    valueOf: (row) => row.chips.filter((chip) => chip.improves).length,
+  },
+];
 
 export const NO_UPGRADE = "No free agent beats your weakest player in this range.";
 export const NO_ROSTER = "No one on your roster has stats in this range. Try a longer range.";
@@ -65,7 +86,10 @@ export function SwapBoardPanel({ board, model, onCompare, compareHintId }: SwapB
   const weakestId = useId();
   const freeId = useId();
   const [showAll, setShowAll] = useState(false);
-  const rows = showAll ? board.rows : board.rows.slice(0, ROWS_SHOWN);
+  const weakestSort = useColumnSort({ columns: WEAKEST_COLUMNS });
+  const freeSort = useColumnSort({ columns: FREE_AGENT_COLUMNS });
+  const sortedBoard = freeSort.sorted(board.rows);
+  const rows = showAll ? sortedBoard : sortedBoard.slice(0, ROWS_SHOWN);
   // A disclosure that stays mounted once open, so focus never drops.
   const canExpand = board.rows.length > ROWS_SHOWN;
 
@@ -80,14 +104,24 @@ export function SwapBoardPanel({ board, model, onCompare, compareHintId }: SwapB
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th scope="col">Player</th>
-                  <th scope="col" className={styles.numeric}>
-                    Value
-                  </th>
+                  <SortHeader
+                    label="Player"
+                    sortKey="player"
+                    sort={weakestSort.sort}
+                    onSort={weakestSort.onSort}
+                  />
+                  <SortHeader
+                    label="Value"
+                    sortKey="value"
+                    sort={weakestSort.sort}
+                    onSort={weakestSort.onSort}
+                    align="end"
+                    className={styles.numeric}
+                  />
                 </tr>
               </thead>
               <tbody>
-                {model.weakest.map((row) => (
+                {weakestSort.sorted(model.weakest).map((row) => (
                   <tr key={row.playerId} className={styles.mine}>
                     <td>
                       <WaiverPlayer
@@ -115,21 +149,45 @@ export function SwapBoardPanel({ board, model, onCompare, compareHintId }: SwapB
             <h2 id={freeId} className={styles.panelHeading}>
               Free agents that beat them
             </h2>
-            <span className={styles.count}>sorted by gain over {board.target.fullName}</span>
+            <span className={styles.count}>
+              {freeSort.sort === null
+                ? `sorted by gain over ${board.target.fullName}`
+                : `${board.rows.length} free agents`}
+            </span>
           </header>
           {rows.length > 0 ? (
             <div className={styles.tableWrapper}>
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th scope="col">Free agent</th>
-                    <th scope="col" className={styles.numeric}>
-                      Value
-                    </th>
-                    <th scope="col" className={styles.numeric}>
-                      Gain
-                    </th>
-                    <th scope="col">Categories</th>
+                    <SortHeader
+                      label="Free agent"
+                      sortKey="player"
+                      sort={freeSort.sort}
+                      onSort={freeSort.onSort}
+                    />
+                    <SortHeader
+                      label="Value"
+                      sortKey="value"
+                      sort={freeSort.sort}
+                      onSort={freeSort.onSort}
+                      align="end"
+                      className={styles.numeric}
+                    />
+                    <SortHeader
+                      label="Gain"
+                      sortKey="gain"
+                      sort={freeSort.sort}
+                      onSort={freeSort.onSort}
+                      align="end"
+                      className={styles.numeric}
+                    />
+                    <SortHeader
+                      label="Categories"
+                      sortKey="categories"
+                      sort={freeSort.sort}
+                      onSort={freeSort.onSort}
+                    />
                   </tr>
                 </thead>
                 <tbody>

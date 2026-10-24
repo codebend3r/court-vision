@@ -1,5 +1,6 @@
 "use client";
 
+import { type PlayerOwnerFilter } from "@/lib/players/ownerFilter";
 import { StatViewTabs } from "@vision/ui/components/StatViewTabs/StatViewTabs";
 import {
   buildPlayersHref,
@@ -22,11 +23,12 @@ export type PlayersTabsProps = {
   q: string;
   size: number;
   range: PlayerGameRange;
+  owner: PlayerOwnerFilter;
 };
 
-// Switching tabs keeps the search, page size and game range, and lands on the
+// Switching tabs keeps the search, page size, game range and roster status, and lands on the
 // new tab's first page in its own default order.
-export function PlayersTabs({ active, q, size, range }: PlayersTabsProps) {
+export function PlayersTabs({ active, q, size, range, owner }: PlayersTabsProps) {
   return (
     <StatViewTabs
       label="Player stat views"
@@ -42,6 +44,7 @@ export function PlayersTabs({ active, q, size, range }: PlayersTabsProps) {
           dir: DEFAULT_SORT_DIR,
           range,
           mode: DEFAULT_STAT_MODE,
+          owner,
           minimums: true,
           tab: entry.tab,
         }),

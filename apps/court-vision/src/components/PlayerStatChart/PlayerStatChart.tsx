@@ -37,10 +37,12 @@ import {
 // Raw per-game values and totals are whole-number counts; averages and per-36
 // rates keep one decimal.
 const formatValue = ({
+  key,
   value,
   panel,
   mode,
 }: {
+  key: StatKey;
   value: number;
   panel: StatPanel;
   mode: StatMode;
@@ -48,6 +50,8 @@ const formatValue = ({
   if (panel === "shooting") {
     return `${value.toFixed(1)}%`;
   }
+  // Minutes are whole in every mode, an average included.
+  if (key === "min") return value.toFixed(0);
   return mode === "totals" || mode === "game" ? value.toFixed(0) : value.toFixed(1);
 };
 
@@ -96,8 +100,8 @@ export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; m
 
   const formatPanelValue =
     (panel: StatPanel) =>
-    ({ value }: { key: StatKey; value: number }) =>
-      formatValue({ value, panel, mode });
+    ({ key, value }: { key: StatKey; value: number }) =>
+      formatValue({ key, value, panel, mode });
 
   return (
     <div className={chartStyles.root}>

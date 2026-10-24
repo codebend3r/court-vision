@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { SearchParams } from "nuqs/server";
 
 import { PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
+import { OwnershipChip } from "@/components/OwnershipChip/OwnershipChip";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { PlayerGameLogTable } from "@/components/PlayerGameLogTable/PlayerGameLogTable";
 import { PlayerViewTabs } from "@/components/PlayerViewTabs/PlayerViewTabs";
@@ -147,6 +148,7 @@ export default async function PlayerPage({
         />
         <span className={styles.headerText}>
           <p className={styles.meta}>
+            <OwnershipChip playerId={player.id} />
             {!!player.teamAbbr && <TeamChip team={player.teamAbbr} size="sm" />}
             {!!player.position && <span>{player.position}</span>}
             {!!player.jerseyNumber && <span>#{player.jerseyNumber}</span>}

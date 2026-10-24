@@ -4,7 +4,7 @@ import { Prisma } from "@generated/prisma/client";
 
 import type { AdvancedPlayerRow, PlayerAdvancedStats } from "@/lib/players/searchAdvanced";
 import type { AdvancedSearchParams } from "@/lib/players/searchParams";
-import { SEASON_TYPE } from "@/lib/stats/season";
+import { SEASON_LABEL, SEASON_TYPE } from "@/lib/stats/season";
 
 const queryRaw = vi.fn<(strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>>();
 
@@ -31,6 +31,7 @@ const defaultParams: AdvancedSearchParams = {
   range: "all",
   mode: "average",
   minimums: true,
+  owner: "all",
   tab: "advanced",
 };
 
@@ -121,8 +122,8 @@ describe("fetchAdvancedPool", () => {
     const pool = await fetchAdvancedPool({ range: "last10" });
 
     expect(firstQuery().sql).toContain('"PlayerAdvancedGameLog"');
-    // The season type binds through the shared latest-season join.
-    expect(firstQuery().values).toEqual([SEASON_TYPE, 10, false]);
+    // The season type binds through the shared current-season join.
+    expect(firstQuery().values).toEqual([SEASON_LABEL, SEASON_TYPE, 10, false]);
     expect(pool).toEqual([
       {
         id: 1,
@@ -137,12 +138,12 @@ describe("fetchAdvancedPool", () => {
     ]);
   });
 
-  it("scopes the all range to the latest season under the full fetch limit", async () => {
+  it("scopes the all range to the current season under the full fetch limit", async () => {
     queryRaw.mockResolvedValue([]);
 
     await fetchAdvancedPool({ range: "all" });
 
-    expect(firstQuery().values).toEqual([SEASON_TYPE, 100, true]);
+    expect(firstQuery().values).toEqual([SEASON_LABEL, SEASON_TYPE, 100, true]);
   });
 
   it("rejects rows whose metrics are not numbers or null", async () => {

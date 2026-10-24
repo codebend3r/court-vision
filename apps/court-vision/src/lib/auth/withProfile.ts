@@ -21,7 +21,9 @@ export const withProfile = async <R>({
     const profile = await getProfile();
     if (profile === null) return { status: "unauthenticated" };
     return await run({ profile });
-  } catch {
+  } catch (error) {
+    // The client only sees "error", so the cause goes to the server log.
+    console.error("withProfile: server action failed", error);
     return { status: "error" };
   }
 };

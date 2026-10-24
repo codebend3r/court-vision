@@ -47,6 +47,8 @@
   background: var(--color-control-bg);
   color: var(--color-text);
   font-size: var(--font-size-sm);
+  // After the shorthands above, so its arrow and end padding are not reset.
+  @include control-select;
 
   &:focus-visible {
     @include control-focus-ring;

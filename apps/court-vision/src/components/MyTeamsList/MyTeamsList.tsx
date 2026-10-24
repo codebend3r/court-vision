@@ -29,10 +29,11 @@ const mineFirst = ({ teams }: { teams: FantasyTeam[] }): FantasyTeam[] => [
 
 type TeamAccordionProps = {
   team: FantasyTeam;
+  isOpen: boolean;
   onDelete: ({ teamId }: { teamId: string }) => void;
 };
 
-function TeamAccordion({ team, onDelete }: TeamAccordionProps) {
+function TeamAccordion({ team, isOpen, onDelete }: TeamAccordionProps) {
   const router = useRouter();
   const filled = team.slots.filter((slot) => slot.player !== null).length;
   const editHref = `/my-teams/${team.slug}`;
@@ -40,6 +41,7 @@ function TeamAccordion({ team, onDelete }: TeamAccordionProps) {
   return (
     <Disclosure
       className={styles.team}
+      open={isOpen}
       summaryClassName={styles.summary}
       summary={
         <>
@@ -118,9 +120,16 @@ export type MyTeamsListProps = {
   leagueName: string;
   // The league is imported, so its teams are Yahoo's and read-only here.
   isImported: boolean;
+  // The team whose roster starts open, such as the one just imported as yours.
+  openTeamId?: string | null;
 };
 
-export function MyTeamsList({ teams, leagueName, isImported }: MyTeamsListProps) {
+export function MyTeamsList({
+  teams,
+  leagueName,
+  isImported,
+  openTeamId = null,
+}: MyTeamsListProps) {
   const router = useRouter();
   // The server's `teams`, minus a team whose delete has been confirmed but
   // whose refreshed list has not landed yet.
@@ -165,7 +174,12 @@ export function MyTeamsList({ teams, leagueName, isImported }: MyTeamsListProps)
         </p>
       )}
       {mineFirst({ teams: shownTeams }).map((team) => (
-        <TeamAccordion key={team.id} team={team} onDelete={onDelete} />
+        <TeamAccordion
+          key={team.id}
+          team={team}
+          isOpen={team.id === openTeamId}
+          onDelete={onDelete}
+        />
       ))}
       {isImported && <p className={styles.credit}>League data from Yahoo Fantasy</p>}
     </section>

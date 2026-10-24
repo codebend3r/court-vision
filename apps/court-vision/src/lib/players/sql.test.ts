@@ -1,13 +1,14 @@
 import { describe, expect, it } from "bun:test";
 
-import { HAS_GAME_LOGS, LATEST_SEASON_JOIN, PLAYER_IDENTITY_COLUMNS } from "@/lib/players/sql";
-import { SEASON_TYPE } from "@/lib/stats/season";
+import { HAS_GAME_LOGS, CURRENT_SEASON_JOIN, PLAYER_IDENTITY_COLUMNS } from "@/lib/players/sql";
+import { SEASON_LABEL, SEASON_TYPE } from "@/lib/stats/season";
 
 describe("player SQL fragments", () => {
-  it("binds the season type as a parameter in the latest-season join", () => {
-    expect(LATEST_SEASON_JOIN.sql).toContain('"PlayerSeasonStats"');
-    expect(LATEST_SEASON_JOIN.sql).not.toContain(SEASON_TYPE);
-    expect(LATEST_SEASON_JOIN.values).toEqual([SEASON_TYPE]);
+  it("binds the season and season type as parameters in the current-season join", () => {
+    expect(CURRENT_SEASON_JOIN.sql).toContain('"PlayerSeasonStats"');
+    expect(CURRENT_SEASON_JOIN.sql).not.toContain(SEASON_TYPE);
+    expect(CURRENT_SEASON_JOIN.sql).not.toContain(SEASON_LABEL);
+    expect(CURRENT_SEASON_JOIN.values).toEqual([SEASON_LABEL, SEASON_TYPE]);
   });
 
   it("selects every identity column off the player alias", () => {

@@ -3,9 +3,9 @@ import { describe, expect, it } from "bun:test";
 import { loadWaiverWireSearchParams, waiverWireParsers } from "@/lib/waiverWire/searchParams";
 
 describe("loadWaiverWireSearchParams", () => {
-  it("defaults to the swap board over the season", () => {
+  it("defaults to the available players over the season", () => {
     expect(loadWaiverWireSearchParams({})).toEqual({
-      view: "swap",
+      view: "available",
       range: "all",
       pos: "all",
       scope: "all",
@@ -23,7 +23,7 @@ describe("loadWaiverWireSearchParams", () => {
   it("drops unknown views and positions", () => {
     expect(
       loadWaiverWireSearchParams({ view: "trade", pos: "PG", scope: "none", range: "last7" }),
-    ).toMatchObject({ view: "swap", pos: "all", scope: "all", range: "all" });
+    ).toMatchObject({ view: "available", pos: "all", scope: "all", range: "all" });
   });
 
   it("reads player ids as integers", () => {

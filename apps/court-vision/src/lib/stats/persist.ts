@@ -92,20 +92,23 @@ export async function upsertPlayers({ players }: { players: PlayerInput[] }): Pr
 // The active roster is a full replacement: the given players are on an NBA
 // roster today and everyone else is not. An empty list is refused rather than
 // applied, so a bad API response can never empty every team's roster at once.
+// One statement, not a transaction of two updates: it writes only the rows
+// whose flag changes (a handful a day, not every rostered player), so there is
+// little to lock, nothing to time out over a remote pooler, and no second
+// statement to deadlock against a concurrent writer. Returns how many players
+// are now active.
 export async function markActiveRoster({ playerIds }: { playerIds: number[] }): Promise<number> {
   if (playerIds.length === 0) {
     throw new Error("Refusing to apply an empty active roster.");
   }
-  const [, activated] = await withRetry(() =>
-    prisma.$transaction([
-      prisma.player.updateMany({
-        where: { isActive: true, id: { notIn: playerIds } },
-        data: { isActive: false },
-      }),
-      prisma.player.updateMany({ where: { id: { in: playerIds } }, data: { isActive: true } }),
-    ]),
+  await withRetry(
+    () => prisma.$executeRaw`
+      UPDATE "Player"
+      SET "isActive" = ("id" = ANY(${playerIds}))
+      WHERE "isActive" <> ("id" = ANY(${playerIds}))
+    `,
   );
-  return activated.count;
+  return prisma.player.count({ where: { isActive: true } });
 }
 
 export async function upsertSeasonStats({ rows }: { rows: SeasonStatsInput[] }): Promise<number> {

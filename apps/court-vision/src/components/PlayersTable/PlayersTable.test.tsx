@@ -42,7 +42,7 @@ vi.mock("next/navigation", () => ({ usePathname: () => "/players" }));
 vi.mock("@/lib/watchlist/actions", () => ({ starPlayer: vi.fn(), unstarPlayer: vi.fn() }));
 
 beforeEach(() => {
-  useRosteredStore.setState({ playerIds: new Set<number>() });
+  useRosteredStore.setState({ playerIds: new Set<number>(), owners: null });
 });
 
 afterEach(cleanup);
@@ -56,6 +56,7 @@ const params: PlayersSearchParams = {
   range: "all",
   mode: "average",
   minimums: true,
+  owner: "all",
   tab: "regular",
 };
 
@@ -69,6 +70,7 @@ const curry: PlayerPoolRow = {
   nbaPersonId: null,
   stats: {
     gamesPlayed: 10,
+    min: 335,
     fgm: 90,
     fga: 190,
     fg3m: 45,
@@ -99,6 +101,32 @@ const renderRegular = ({ pendingHref = null }: { pendingHref?: string | null } =
 
 const headerLinks = () =>
   within(screen.getAllByRole("rowgroup")[0] ?? document.body).getAllByRole("link");
+
+describe("PlayersTable ownership and minutes", () => {
+  it("shows a free-agent chip in the player cell once the league's owners are known", () => {
+    useRosteredStore.getState().hydrate({ playerIds: [], owners: [] });
+    renderRegular();
+
+    const row = screen.getByRole("row", { name: /Stephen Curry/ });
+    expect(within(row).getByText("Free agent")).toBeInTheDocument();
+  });
+
+  it("shows no ownership chip while ownership is unknown", () => {
+    renderRegular();
+
+    expect(screen.queryByText("Free agent")).toBeNull();
+  });
+
+  it("shows minutes as a whole-number per-game average, or a rounded total", () => {
+    const minutes = regularColumns({ mode: "average" }).find((column) => column.label === "MIN");
+    const totals = regularColumns({ mode: "total" }).find((column) => column.label === "MIN");
+    const row = { ...curry, stats: { ...curry.stats, min: 335, gamesPlayed: 10 } };
+
+    expect(minutes?.cell(row)).toBe("34");
+    expect(totals?.cell(row)).toBe("335");
+    expect(minutes?.cell({ ...row, stats: { ...row.stats, gamesPlayed: 0 } })).toBe("—");
+  });
+});
 
 describe("PlayersTable", () => {
   it("never prefetches the sort header links", () => {

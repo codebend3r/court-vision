@@ -289,6 +289,39 @@ describe("matchPlayer", () => {
     expect(outcome).toEqual({ status: "matched", playerId: 79, method: "existing" });
   });
 
+  it("matches a nickname Balldontlie spells with the legal first name", () => {
+    const airious = { id: 9, fullName: "Airious Bailey", teamAbbr: "UTA" };
+    expect(
+      matchPlayer({
+        ref: ref({ fullName: "Ace Bailey", teamAbbr: "UTA" }),
+        candidates: [airious],
+        existing: null,
+      }),
+    ).toEqual({ status: "matched", playerId: 9, method: "name_team" });
+  });
+
+  it("matches a known nickname without Yahoo's team", () => {
+    const carlton = { id: 7, fullName: "Carlton Carrington", teamAbbr: "WAS" };
+    expect(
+      matchPlayer({
+        ref: ref({ fullName: "Bub Carrington", teamAbbr: null }),
+        candidates: [carlton],
+        existing: null,
+      }),
+    ).toEqual({ status: "matched", playerId: 7, method: "name_only" });
+  });
+
+  it("never applies an alias to another player with the same last name", () => {
+    const amari = { id: 5, fullName: "Amari Bailey", teamAbbr: "BKN" };
+    expect(
+      matchPlayer({
+        ref: ref({ fullName: "Ace Bailey", teamAbbr: "UTA" }),
+        candidates: [amari],
+        existing: null,
+      }),
+    ).toEqual({ status: "unmatched" });
+  });
+
   it("never matches a ref whose name has an empty key", () => {
     const blankCandidate = { id: 6, fullName: "...", teamAbbr: "PHX" };
 
@@ -366,6 +399,75 @@ describe("resolveYahooPlayers", () => {
         create: expect.objectContaining({ externalId: "6", method: "short_name_team" }),
       }),
     );
+  });
+
+  describe("a player no active roster lists", () => {
+    const porter = ref({ yahooPlayerId: "5000", fullName: "Kevin Porter Jr.", teamAbbr: "MIL" });
+    const inactivePorter = { id: 666849, fullName: "Kevin Porter Jr.", teamAbbr: "MIL" };
+
+    it("matches an inactive player of exactly that name", async () => {
+      playerFindMany.mockResolvedValueOnce([green, smith]).mockResolvedValueOnce([inactivePorter]);
+
+      const resolved = await resolveYahooPlayers({ refs: [porter], writeMappings: false });
+
+      expect([...resolved.byYahooId]).toEqual([["5000", 666849]]);
+      expect(resolved.unmatched).toEqual([]);
+    });
+
+    it("asks only for the unmatched refs, by name, among inactive players", async () => {
+      playerFindMany.mockResolvedValueOnce([green, smith]).mockResolvedValueOnce([inactivePorter]);
+
+      await resolveYahooPlayers({ refs: [ref(), porter], writeMappings: false });
+
+      expect(playerFindMany).toHaveBeenCalledTimes(2);
+      expect(playerFindMany).toHaveBeenLastCalledWith({
+        where: {
+          isActive: false,
+          OR: [{ fullName: { equals: "Kevin Porter Jr.", mode: "insensitive" } }],
+        },
+        select: { id: true, fullName: true, teamAbbr: true },
+      });
+    });
+
+    it("asks nothing more when every ref matched an active player", async () => {
+      await resolveYahooPlayers({ refs: [ref()], writeMappings: false });
+      expect(playerFindMany).toHaveBeenCalledTimes(1);
+    });
+
+    it("prefers an active player of the name over an inactive one", async () => {
+      const activePorter = { id: 1, fullName: "Kevin Porter Jr.", teamAbbr: "MIL" };
+      playerFindMany.mockResolvedValueOnce([activePorter]);
+
+      const resolved = await resolveYahooPlayers({ refs: [porter], writeMappings: false });
+
+      expect([...resolved.byYahooId]).toEqual([["5000", 1]]);
+      expect(playerFindMany).toHaveBeenCalledTimes(1);
+    });
+
+    it("leaves a name unmatched when two inactive players share it", async () => {
+      playerFindMany
+        .mockResolvedValueOnce([green])
+        .mockResolvedValueOnce([
+          inactivePorter,
+          { id: 2273, fullName: "Kevin Porter Jr.", teamAbbr: "WAS" },
+        ]);
+
+      const resolved = await resolveYahooPlayers({
+        refs: [ref({ yahooPlayerId: "5000", fullName: "Kevin Porter Jr.", teamAbbr: null })],
+        writeMappings: false,
+      });
+
+      expect(resolved.byYahooId.size).toBe(0);
+    });
+
+    it("never gives one inactive player to two Yahoo ids", async () => {
+      const twin = ref({ yahooPlayerId: "5001", fullName: "Kevin Porter Jr.", teamAbbr: "MIL" });
+      playerFindMany.mockResolvedValueOnce([green]).mockResolvedValueOnce([inactivePorter]);
+
+      const resolved = await resolveYahooPlayers({ refs: [porter, twin], writeMappings: false });
+
+      expect(resolved.byYahooId.size).toBe(0);
+    });
   });
 
   it("resolves a ref listed twice once", async () => {

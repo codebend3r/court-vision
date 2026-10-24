@@ -11,7 +11,7 @@ import { SiteHeader } from "@/components/SiteHeader/SiteHeader";
 import { WatchlistAlert } from "@/components/WatchlistAlert/WatchlistAlert";
 import { getProfile } from "@/lib/auth/session";
 import { fallbackActiveLeagueId, getLeagues } from "@/lib/leagues/queries";
-import { getRosteredPlayerIds } from "@/lib/leagues/teamQueries";
+import { getLeagueOwners, getRosteredPlayerIds } from "@/lib/leagues/teamQueries";
 import { fontScaleOf } from "@/lib/settings/guards";
 import { resolveSiteOrigin } from "@/lib/siteUrl";
 import { getWatchlistPlayerIds } from "@/lib/watchlist/queries";
@@ -57,16 +57,19 @@ export default async function RootLayout({
   children: ReactNode;
 }>) {
   // One watchlist read per navigation seeds every StarButton on the page, and
-  // one rostered read tints every player on your teams. All four reads run
+  // one rostered read tints every player on your teams. All five reads run
   // together rather than as a waterfall on every navigation: the other three
   // each resolve the profile themselves (deduped by React cache) and return []
   // signed out, so nothing here needs to wait for `profile` before starting.
-  const [profile, watchlistPlayerIds, rosteredPlayerIds, leagues] = await Promise.all([
-    getProfile(),
-    getWatchlistPlayerIds(),
-    getRosteredPlayerIds(),
-    getLeagues(),
-  ]);
+  const [profile, watchlistPlayerIds, rosteredPlayerIds, leagueOwners, leagues] = await Promise.all(
+    [
+      getProfile(),
+      getWatchlistPlayerIds(),
+      getRosteredPlayerIds(),
+      getLeagueOwners(),
+      getLeagues(),
+    ],
+  );
   // Matches resolveActiveLeague's DB-side fallback (updatedAt desc), not
   // getLeagues' display order (createdAt asc) — see fallbackActiveLeagueId.
   const activeLeagueId = fallbackActiveLeagueId({
@@ -96,6 +99,7 @@ export default async function RootLayout({
             <SessionHydrator
               watchlistPlayerIds={watchlistPlayerIds}
               rosteredPlayerIds={rosteredPlayerIds}
+              leagueOwners={leagueOwners}
               leagues={leagues}
               activeLeagueId={activeLeagueId}
             />

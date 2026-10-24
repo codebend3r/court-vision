@@ -37,7 +37,7 @@ export async function StarredPlayersView({ params, showCounter }: StarredPlayers
   }
 
   // The ids arrive newest star first; ranking reads star order from them.
-  const { rows, total, page } = await searchPlayers({ ...params, playerIds });
+  const { rows, total, page } = await searchPlayers({ ...params, takenIds: null, playerIds });
 
   return (
     <section className={styles.view}>

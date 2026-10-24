@@ -32,7 +32,7 @@ jobs:
           [ "$RESULT" = "success" ]
 
   # One job per audited route, so the Lighthouse runs (three per route, about
-  # 14s each) happen side by side instead of nine in a row. Keep this list in
+  # 14s each) happen side by side instead of one after another. Keep this list in
   # step with `collect.url` in apps/court-vision/lighthouserc.json, which is
   # what a local `lhci autorun` audits.
   perf:
@@ -41,15 +41,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        route: [login, signup, design]
+        # design/players and design/player are synthetic fixtures (100 players,
+        # one 60 game profile) standing in for the database-backed pages. The
+        # slug names the report artifact, which cannot contain a slash.
+        include:
+          - { route: login, slug: login }
+          - { route: signup, slug: signup }
+          - { route: design, slug: design }
+          - { route: design/players, slug: design-players }
+          - { route: design/player, slug: design-player }
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: 📥 Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: 🥟 Set up Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-
-      - name: 📦 Install dependencies
-        run: bun install --frozen-lockfile
+      - name: 🥟 Set up Bun and dependencies
+        uses: ./.github/actions/setup
+        with:
+          next-cache: "true"
 
       # Only Court Vision is served; the shell apps are built by system-check.
       - name: 🏗️ Build
@@ -102,7 +110,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: lighthouse-reports-${{ matrix.route }}
+          name: lighthouse-reports-${{ matrix.slug }}
           path: apps/court-vision/.lighthouseci/reports
           if-no-files-found: ignore
 
@@ -110,13 +118,11 @@ jobs:
     name: 🔒 Security
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: 📥 Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: 🥟 Set up Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-
-      - name: 📦 Install dependencies
-        run: bun install --frozen-lockfile
+      - name: 🥟 Set up Bun and dependencies
+        uses: ./.github/actions/setup
 
       # 🛑 Blocking. Encodes the invariants the cv-security review agent checks:
       # the server/client secret boundary, unguarded server actions, and raw
@@ -124,10 +130,21 @@ jobs:
       - name: 🛡️ Security scan
         run: bun run security:scan
 
-      # ⚠️ Non-blocking on purpose. Every advisory today is transitive through dev
-      # tooling (sass, prisma) with no runtime exposure, and `bun audit` has no
-      # --prod flag to separate them. Reports to the job summary so regressions
-      # are visible; flip to blocking once the dev-tool advisories clear. 📊
+  # ⚠️ Non-blocking on purpose. Every advisory today is transitive through dev
+  # tooling (sass, prisma) with no runtime exposure, and `bun audit` has no
+  # --prod flag to separate them. Reports to the job summary so regressions
+  # are visible; flip to blocking once the dev-tool advisories clear. 📊
+  # It reads bun.lock alone, so it skips the install and runs beside the scan.
+  audit:
+    name: 🔬 Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 🥟 Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+
       - name: 🔬 Dependency audit
         continue-on-error: true
         run: |
@@ -142,7 +159,8 @@ jobs:
     permissions:
       security-events: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: 📥 Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: 🚀 Initialize CodeQL
         uses: github/codeql-action/init@v3

@@ -71,6 +71,12 @@
   @include numeric-cell;
 }
 
+// The shared header rule left-aligns every th; the rank column's header must
+// follow its right-aligned numbers.
+.table th.numeric {
+  text-align: right;
+}
+
 // The player column is the only flexible track in a table where every other
 // cell is nowrap, so it carries an explicit floor — without it wider row
 // padding squeezes names into overflow.

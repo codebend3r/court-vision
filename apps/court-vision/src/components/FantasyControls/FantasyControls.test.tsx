@@ -6,6 +6,7 @@ import {
   FantasyControls,
   type FantasyControlsProps,
 } from "@/components/FantasyControls/FantasyControls";
+import { useRosteredStore } from "@/lib/leagues/rosteredStore";
 import { DEFAULT_POINTS_SCORING } from "@vision/sport-basketball/engine";
 
 afterEach(cleanup);
@@ -16,6 +17,7 @@ const renderControls = (overrides: Partial<FantasyControlsProps> = {}) => {
     q: "",
     range: "all",
     mode: "average",
+    owner: "all",
     excluded: [],
     weights: {},
     sort: "z",
@@ -28,6 +30,31 @@ const renderControls = (overrides: Partial<FantasyControlsProps> = {}) => {
   render(<FantasyControls {...props} />);
   return { onChange };
 };
+
+describe("FantasyControls roster-status filter", () => {
+  afterEach(() => useRosteredStore.setState({ owners: null }));
+
+  it("offers the three quick filters and emits the choice, back to page one", async () => {
+    useRosteredStore.getState().hydrate({ playerIds: [], owners: [] });
+    const user = userEvent.setup();
+    const { onChange } = renderControls({ owner: "all" });
+
+    const group = screen.getByRole("group", { name: "Roster status" });
+    expect(within(group).getByRole("button", { name: "All players" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await user.click(within(group).getByRole("button", { name: "Free agents" }));
+
+    expect(onChange).toHaveBeenCalledWith({ owner: "free", page: 1 });
+  });
+
+  it("hides the filter while the league's rosters are unknown", () => {
+    renderControls();
+
+    expect(screen.queryByRole("group", { name: "Roster status" })).toBeNull();
+  });
+});
 
 describe("FantasyControls", () => {
   it("emits a debounced trimmed search query", async () => {

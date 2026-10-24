@@ -6,6 +6,7 @@ import {
   PlayersSearchControls,
   type PlayersSearchControlsProps,
 } from "@/components/PlayersSearchControls/PlayersSearchControls";
+import { useRosteredStore } from "@/lib/leagues/rosteredStore";
 import { type AdvancedSearchParams, type RegularSearchParams } from "@/lib/players/searchParams";
 
 const replace = vi.fn();
@@ -46,6 +47,7 @@ function PendingNavigation({ children }: { children: ReactNode }) {
 
 afterEach(() => {
   vi.useRealTimers();
+  useRosteredStore.setState({ owners: null });
 });
 
 const regularParams: RegularSearchParams = {
@@ -57,6 +59,7 @@ const regularParams: RegularSearchParams = {
   range: "all",
   mode: "average",
   minimums: true,
+  owner: "all",
   tab: "regular",
 };
 
@@ -120,6 +123,33 @@ describe("PlayersSearchControls", () => {
     rerender(<PlayersSearchControls {...controlsProps({ range: "last20" })} />);
     fireEvent.change(screen.getByLabelText("Stat display"), { target: { value: "total" } });
     expect(replace).toHaveBeenLastCalledWith("/players?range=last20&mode=total");
+  });
+
+  it("writes the roster-status quick filter to the URL, keeping the other filters", () => {
+    useRosteredStore.getState().hydrate({ playerIds: [], owners: [] });
+    render(<PlayersSearchControls {...controlsProps({ mode: "total" })} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Free agents" }));
+    expect(replace).toHaveBeenLastCalledWith("/players?mode=total&owner=free");
+
+    fireEvent.click(screen.getByRole("button", { name: "Taken" }));
+    expect(replace).toHaveBeenLastCalledWith("/players?mode=total&owner=taken");
+  });
+
+  it("marks the active quick filter pressed and omits it when rosters are unknown", () => {
+    useRosteredStore.getState().hydrate({ playerIds: [], owners: [] });
+    const { unmount } = render(<PlayersSearchControls {...controlsProps({ owner: "taken" })} />);
+
+    expect(screen.getByRole("button", { name: "Taken" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "All players" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+
+    unmount();
+    useRosteredStore.setState({ owners: null });
+    render(<PlayersSearchControls {...controlsProps()} />);
+    expect(screen.queryByRole("group", { name: "Roster status" })).toBeNull();
   });
 
   it("writes minimums=0 to the URL when qualifying minimums is turned off", () => {

@@ -15,6 +15,7 @@ vi.mock("@/lib/prisma", () => ({
 vi.mock("@/lib/leagues/queries", () => ({ getActiveLeagueRecord }));
 
 import {
+  getLeagueOwners,
   getLeagueTeamBySlug,
   getLeagueTeams,
   getRosteredPlayerIds,
@@ -52,6 +53,37 @@ beforeEach(() => {
   leagueTeamFindFirst.mockReset();
   getActiveLeagueRecord.mockReset();
   getActiveLeagueRecord.mockResolvedValue(league);
+});
+
+describe("getLeagueOwners", () => {
+  it("names the team holding each rostered player in an imported league", async () => {
+    getActiveLeagueRecord.mockResolvedValue({ id: "league-1", provider: "yahoo", myTeamId: "t1" });
+    findMany.mockResolvedValue([
+      { playerId: 115, team: { id: "t1", name: "Softchoice" } },
+      { playerId: 237, team: { id: "t2", name: "Rivals" } },
+      { playerId: null, team: { id: "t2", name: "Rivals" } },
+    ]);
+
+    expect(await getLeagueOwners()).toEqual([
+      { playerId: 115, teamName: "Softchoice", isMine: true },
+      { playerId: 237, teamName: "Rivals", isMine: false },
+    ]);
+    expect(findMany).toHaveBeenCalledWith({
+      where: { team: { leagueId: "league-1" }, playerId: { not: null } },
+      select: { playerId: true, team: { select: { id: true, name: true } } },
+    });
+  });
+
+  it("is unknown in a hand-built league, which holds only my own teams", async () => {
+    expect(await getLeagueOwners()).toBeNull();
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
+  it("is unknown with no active league", async () => {
+    getActiveLeagueRecord.mockResolvedValue(null);
+
+    expect(await getLeagueOwners()).toBeNull();
+  });
 });
 
 describe("getRosteredPlayerIds", () => {

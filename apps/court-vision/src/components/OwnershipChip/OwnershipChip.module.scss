@@ -1,0 +1,28 @@
+@use "@/styles/mixins" as *;
+
+.chip {
+  overflow: hidden;
+  max-width: 10rem;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  // The one actionable state, so it is the only filled chip: a green wash and
+  // border on the theme's win color, with body-text ink for AA contrast on
+  // every theme.
+  &[data-ownership="free"] {
+    background: color-mix(in srgb, var(--color-win) 30%, var(--color-bg));
+    border-color: var(--color-win);
+    color: var(--color-text);
+  }
+
+  &[data-ownership="mine"] {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+}

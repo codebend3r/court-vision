@@ -4,6 +4,7 @@ import { type ChangeEvent, type ReactNode, useEffect, useId, useMemo, useState }
 import { useQueryStates } from "nuqs";
 
 import { useValuation } from "@/components/FantasyValueView/useValuation";
+import { AvailablePlayersPanel } from "@/components/WaiverWireView/AvailablePlayersPanel";
 import { CutLinePanel, NO_FREE_AGENTS } from "@/components/WaiverWireView/CutLinePanel";
 import {
   HeadToHeadPanel,
@@ -168,9 +169,18 @@ export function WaiverWireView({
     () => buildCutLine({ model, scope: query.scope, showAll }),
     [model, query.scope, showAll],
   );
+  // The scope's every row, for a sort to order.
+  const fullCutLine = useMemo(
+    () => buildCutLine({ model, scope: query.scope, showAll: true }),
+    [model, query.scope],
+  );
 
   // One sentence for the status region: what the open panel now shows.
   const announcements: Record<WaiverView, () => string> = {
+    available: () =>
+      model.freePool.length === 1
+        ? "1 available player"
+        : `${model.freePool.length} available players`,
     swap: () => {
       if (!board.target) return NO_ROSTER;
       const count = board.rows.length;
@@ -221,6 +231,16 @@ export function WaiverWireView({
   };
 
   const panels: Record<WaiverView, ReactNode> = {
+    // Keyed so a new range or position starts the list from the top again.
+    available: (
+      <AvailablePlayersPanel
+        key={`${query.range}:${query.pos}`}
+        freePool={model.freePool}
+        linesById={linesById}
+        onCompare={onCompare}
+        compareHintId={compareHintId}
+      />
+    ),
     // Keyed so a new range or position opens the board collapsed again.
     swap: (
       <SwapBoardPanel
@@ -243,6 +263,7 @@ export function WaiverWireView({
     cut: (
       <CutLinePanel
         cutLine={cutLine}
+        fullLine={fullCutLine}
         scope={query.scope}
         onScope={onScope}
         showAll={showAll}

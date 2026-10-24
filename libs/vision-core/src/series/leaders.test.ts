@@ -64,6 +64,26 @@ describe("buildLeaderLine", () => {
     expect(line?.[0]?.eligibleCount).toBe(3);
   });
 
+  it("leaves a stat unranked when nobody qualifies for it, the viewed player included", () => {
+    // Five games and under 100 shots each: under both floors, so no one is on
+    // either board.
+    const early: Row[] = [
+      { playerId: 1, games: 5, goals: 50, saves: 85, shots: 90 },
+      { playerId: 2, games: 5, goals: 10, saves: 40, shots: 50 },
+    ];
+    const line = buildLeaderLine({ defs: DEFS, rows: early, playerId: 1 });
+    expect(line?.map((stat) => [stat.key, stat.rank, stat.eligibleCount])).toEqual([
+      ["goals", null, 0],
+      ["svPct", null, 0],
+    ]);
+    expect(line?.[0]?.value).toBe("10.00");
+  });
+
+  it("still ranks a player below the floor when others do qualify", () => {
+    const line = buildLeaderLine({ defs: DEFS, rows: ROWS, playerId: 3 });
+    expect(line?.[0]?.rank).toBe(1);
+  });
+
   it("drops a stat the player has no value for", () => {
     const line = buildLeaderLine({ defs: DEFS, rows: ROWS, playerId: 1 });
     expect(line?.map((stat) => stat.key)).toEqual(["goals"]);

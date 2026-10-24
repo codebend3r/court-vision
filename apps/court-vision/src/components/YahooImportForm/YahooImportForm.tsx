@@ -7,6 +7,7 @@ import { type FormEvent, useEffect, useId, useRef, useState, useTransition } fro
 import { type BridgeErrorReason, type BridgeLeaguePayload } from "@vision/yahoo-bridge/protocol";
 
 import { FantasyTeamLogo } from "@/components/FantasyTeamLogo/FantasyTeamLogo";
+import { ImportProgress } from "@/components/ImportProgress/ImportProgress";
 import { useLeaguesStore } from "@/lib/leagues/store";
 import { importYahooLeague, previewYahooLeague } from "@/lib/yahoo/actions";
 import {
@@ -18,7 +19,6 @@ import {
 import {
   bridgeFailureMessage,
   notValuedMessage,
-  unmatchedPlayersMessage,
   YAHOO_URL_HINT,
   yahooFailureMessage,
   type YahooMessageStatus,
@@ -34,18 +34,23 @@ import { parseYahooLeagueUrl } from "@/lib/yahoo/url";
 
 import styles from "@/components/YahooImportForm/YahooImportForm.module.scss";
 
-const WAIVER_WIRE_PATH = "/waiver-wire";
+const MY_TEAMS_PATH = "/my-teams";
+
+// My teams opens the team whose id it is given, so the user lands on their own
+// roster with the players showing. The league has no "my team" only if the
+// import skipped it, in which case the plain list is the best landing.
+const myTeamPath = ({ myTeamId }: { myTeamId: string | null }): string =>
+  myTeamId === null ? MY_TEAMS_PATH : `${MY_TEAMS_PATH}?open=${encodeURIComponent(myTeamId)}`;
 
 // Where a preview came from: the server reads public leagues itself, and the
 // browser extension reads private ones with the user's own Yahoo login.
 type PreviewMode = "server" | "extension";
 
-// Paste a URL, then pick your team from the league it names, then (only when
-// some players couldn't be matched) read the summary before moving on.
+// Paste a URL, then pick your team from the league it names. A finished import
+// leaves the form for the user's team, so there is no step after this one.
 type Step =
   | { kind: "url" }
-  | { kind: "team"; url: string; preview: YahooPreview; mode: PreviewMode }
-  | { kind: "imported"; unmatched: string[] };
+  | { kind: "team"; url: string; preview: YahooPreview; mode: PreviewMode };
 
 // Unknown until the ping answers; nothing about the extension renders before then.
 type ExtensionState = "unknown" | "absent" | "present";
@@ -139,7 +144,6 @@ const teamDetails = ({ team }: { team: YahooPreviewTeam }): string =>
 type FocusTargets = {
   url: HTMLInputElement | null;
   team: HTMLLegendElement | null;
-  imported: HTMLAnchorElement | null;
 };
 
 export function YahooImportForm() {
@@ -153,6 +157,10 @@ export function YahooImportForm() {
   const [teamKey, setTeamKey] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const [isPending, startTransition] = useTransition();
+  // Set once an import succeeds and never cleared: the transition ends before
+  // the navigation does, and the button must stay disabled across that gap or
+  // a second click would import the league again.
+  const [isRedirecting, setIsRedirecting] = useState(false);
   // Which button started the pending request, for its pending label.
   const [pendingMode, setPendingMode] = useState<PreviewMode>("server");
   // The private-league miss "Try with the extension" is retrying. Clearing the
@@ -166,7 +174,6 @@ export function YahooImportForm() {
   const hasPinged = useRef(false);
   const urlRef = useRef<HTMLInputElement>(null);
   const legendRef = useRef<HTMLLegendElement>(null);
-  const waiverWireRef = useRef<HTMLAnchorElement>(null);
   const alertRef = useRef<HTMLParagraphElement>(null);
   // Set when a step change should move focus; the first render leaves it be.
   const shouldMoveFocus = useRef(false);
@@ -177,7 +184,6 @@ export function YahooImportForm() {
     const targets: FocusTargets = {
       url: urlRef.current,
       team: legendRef.current,
-      imported: waiverWireRef.current,
     };
     const target = targets[step.kind];
     if (target !== null) target.focus();
@@ -269,7 +275,7 @@ export function YahooImportForm() {
 
   const onImport = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (isPending || step.kind !== "team" || teamKey === null) return;
+    if (isPending || isRedirecting || step.kind !== "team" || teamKey === null) return;
     const leagueUrl = step.url;
     const myTeamExternalKey = teamKey;
     const viaExtension = step.mode === "extension";
@@ -286,15 +292,9 @@ export function YahooImportForm() {
       const store = useLeaguesStore.getState();
       store.upsert({ league: result.league });
       store.setActive({ leagueId: result.league.id });
-      if (result.unmatched.length === 0) {
-        router.push(WAIVER_WIRE_PATH);
-        router.refresh();
-        return;
-      }
-      startTransition(() => {
-        setFailure(null);
-        goTo({ next: { kind: "imported", unmatched: result.unmatched } });
-      });
+      // Players Yahoo named that couldn't be matched show in their roster slots.
+      setIsRedirecting(true);
+      router.push(myTeamPath({ myTeamId: result.league.myTeamId }));
       router.refresh();
     });
   };
@@ -309,6 +309,8 @@ export function YahooImportForm() {
   const missedUrl = failure !== null && failure.status === "server_not_found" ? failure.url : null;
   const isFindingOnServer = isPending && pendingMode === "server";
   const isReadingThroughExtension = isPending && pendingMode === "extension";
+  // Only the import runs while the team step is up; the previews run on the URL step.
+  const isImporting = (isPending && step.kind === "team") || isRedirecting;
   const tryUrl = missedUrl ?? (isReadingThroughExtension ? retryUrl : null);
 
   return (
@@ -354,10 +356,6 @@ export function YahooImportForm() {
         </a>
       )}
 
-      <p role="status" className={styles.status}>
-        {step.kind === "imported" && unmatchedPlayersMessage({ names: step.unmatched })}
-      </p>
-
       {step.kind === "url" && (
         <form className={styles.form} onSubmit={onFind}>
           <div className={styles.field}>
@@ -400,6 +398,8 @@ export function YahooImportForm() {
           </div>
         </form>
       )}
+
+      {isImporting && <ImportProgress title="Importing your league" />}
 
       {step.kind === "team" && (
         <form className={styles.form} onSubmit={onImport}>
@@ -455,26 +455,20 @@ export function YahooImportForm() {
             <button
               type="submit"
               className={styles.submit}
-              disabled={teamKey === null || isPending}
+              disabled={teamKey === null || isImporting}
             >
-              {isPending ? "Importing league…" : "Import league"}
+              {isImporting ? "Importing league…" : "Import league"}
             </button>
             <button
               type="button"
               className={styles.secondary}
               onClick={onChangeLeague}
-              disabled={isPending}
+              disabled={isImporting}
             >
               Change league
             </button>
           </div>
         </form>
-      )}
-
-      {step.kind === "imported" && (
-        <Link ref={waiverWireRef} href={WAIVER_WIRE_PATH} className={styles.submit}>
-          Go to the Waiver Wire
-        </Link>
       )}
     </section>
   );

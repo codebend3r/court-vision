@@ -45,8 +45,9 @@ const isPresent = (stat: LeaderStat | null): stat is LeaderStat => stat !== null
 // number of qualified players strictly ahead, so ties share a rank. The viewed
 // player is always ranked (even below the qualifying floor) but only counts
 // toward eligibleCount when they qualify themselves. With applyMinimums off,
-// every player with a computable value is in the pool. Null when the player
-// has no row.
+// every player with a computable value is in the pool. A stat nobody qualifies
+// for has no leaderboard to stand on, so its rank is null (a plain value): "1st
+// of 0" is not a rank. Null when the player has no row.
 export const buildLeaderLine = <Row extends { playerId: number }>({
   defs,
   rows,
@@ -75,13 +76,14 @@ export const buildLeaderLine = <Row extends { playerId: number }>({
         const other = def.valueOf(row);
         return other !== null && other > value ? count + 1 : count;
       }, 0);
+      const eligibleCount = qualifiedOthers.length + (qualifies(playerRow) ? 1 : 0);
       return {
         key: def.key,
         label: def.label,
         value: def.format(value),
-        rank: ahead + 1,
+        rank: eligibleCount === 0 ? null : ahead + 1,
         rankTone: def.rankTone,
-        eligibleCount: qualifiedOthers.length + (qualifies(playerRow) ? 1 : 0),
+        eligibleCount,
       };
     })
     .filter(isPresent);

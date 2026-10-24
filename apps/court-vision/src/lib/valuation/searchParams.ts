@@ -132,6 +132,7 @@ export const fantasyParsers = {
   slots: parseAsClampedInt(LEAGUE_BOUNDS.slots).withDefault(LEAGUE_BOUNDS.slots.fallback),
   range: listParsers.range.withOptions({ shallow: false }),
   mode: listParsers.mode,
+  owner: listParsers.owner,
   layout: parseAsStringLiteral(FANTASY_LAYOUTS).withDefault("table"),
 };
 

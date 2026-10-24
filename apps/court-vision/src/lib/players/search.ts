@@ -12,10 +12,11 @@ import {
   type PlayerSortKey,
   type RegularSearchParams,
 } from "@/lib/players/searchParams";
-import { HAS_GAME_LOGS, LATEST_SEASON_JOIN, PLAYER_IDENTITY_COLUMNS } from "@/lib/players/sql";
+import { HAS_GAME_LOGS, CURRENT_SEASON_JOIN, PLAYER_IDENTITY_COLUMNS } from "@/lib/players/sql";
 
 const PLAYER_STAT_KEYS = [
   "gamesPlayed",
+  "min",
   "fgm",
   "fga",
   "fg3m",
@@ -34,6 +35,7 @@ export type PlayerStats = Record<(typeof PLAYER_STAT_KEYS)[number], number>;
 
 // The counting stats a sort can read as a per-game average or a total.
 const COUNTING_SORT_KEYS = [
+  "min",
   "pts",
   "reb",
   "ast",
@@ -55,17 +57,19 @@ export type PlayerPoolRow = PlayerIdentity & { stats: PlayerStats };
 export type PlayersSearchResult = Page<PlayerPoolRow>;
 
 // The shape both pool queries return. Sums arrive as int4 (the SQL casts the
-// bigint `sum`/`count` results), so every stat is a plain number.
+// bigint `sum`/`count` results) and minutes as float8, so every stat is a plain
+// number.
 const poolRowSchema = playerRowSchema.extend(
   recordFromKeys({ keys: PLAYER_STAT_KEYS, value: () => z.number() }),
 );
 
-// The season range reads each player's latest Regular Season aggregate; a
+// The season range reads each player's current-season Regular Season aggregate; a
 // player with logs but no aggregate row still lists, with zeroed stats.
 const fetchSeasonPool = (): Promise<unknown> =>
   prisma.$queryRaw`
     SELECT ${PLAYER_IDENTITY_COLUMNS},
            COALESCE(s."gamesPlayed", 0) AS "gamesPlayed",
+           COALESCE(s.minutes, 0)::float8 AS min,
            COALESCE(s.fgm, 0) AS fgm, COALESCE(s.fga, 0) AS fga,
            COALESCE(s.fg3m, 0) AS fg3m, COALESCE(s.fg3a, 0) AS fg3a,
            COALESCE(s.ftm, 0) AS ftm, COALESCE(s.fta, 0) AS fta,
@@ -73,7 +77,7 @@ const fetchSeasonPool = (): Promise<unknown> =>
            COALESCE(s.stl, 0) AS stl, COALESCE(s.blk, 0) AS blk,
            COALESCE(s.tov, 0) AS tov, COALESCE(s.pts, 0) AS pts
     FROM "Player" p
-    ${LATEST_SEASON_JOIN}
+    ${CURRENT_SEASON_JOIN}
     WHERE ${HAS_GAME_LOGS}
   `;
 
@@ -85,12 +89,13 @@ const fetchSeasonPool = (): Promise<unknown> =>
 const fetchWindowPool = ({ gameLimit }: { gameLimit: number }): Promise<unknown> =>
   prisma.$queryRaw`
     SELECT ${PLAYER_IDENTITY_COLUMNS},
-           w."gamesPlayed", w.fgm, w.fga, w.fg3m, w.fg3a, w.ftm, w.fta,
+           w."gamesPlayed", w.min, w.fgm, w.fga, w.fg3m, w.fg3a, w.ftm, w.fta,
            w.reb, w.ast, w.stl, w.blk, w.tov, w.pts
     FROM "Player" p
     CROSS JOIN LATERAL (
       SELECT count(*)::int AS games,
              (count(*) FILTER (WHERE g.minutes > 0))::int AS "gamesPlayed",
+             COALESCE(sum(g.minutes), 0)::float8 AS min,
              COALESCE(sum(g.fgm), 0)::int AS fgm, COALESCE(sum(g.fga), 0)::int AS fga,
              COALESCE(sum(g.fg3m), 0)::int AS fg3m, COALESCE(sum(g.fg3a), 0)::int AS fg3a,
              COALESCE(sum(g.ftm), 0)::int AS ftm, COALESCE(sum(g.fta), 0)::int AS fta,

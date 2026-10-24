@@ -20,6 +20,8 @@ import { useTrendLogs } from "@/components/FantasyValueView/useTrendLogs";
 import { useValuation } from "@/components/FantasyValueView/useValuation";
 import { Pager } from "@/components/Pager/Pager";
 import { type FantasySeed } from "@/lib/leagues/fantasyDefaults";
+import { useTakenIds } from "@/lib/leagues/rosteredStore";
+import { filterByOwner } from "@/lib/players/ownerFilter";
 import { GAME_RANGE_LABELS, gamesForRange } from "@/lib/players/searchParams";
 import {
   buildCategoryBreakdown,
@@ -41,14 +43,23 @@ export type FantasyValueViewProps = {
   isSignedIn: boolean;
   lines: FantasyStatLine[];
   leagueSeed?: FantasySeed;
+  // Lists only these players (a team's roster). Every score is still standardized
+  // against the whole pool, so a player's number is the same here as on /players.
+  rosterPlayerIds?: readonly number[];
 };
 
 // Client orchestrator: URL state in, table out. The server ships the window's
 // stat lines once; every config change (weights, exclusions, league size,
 // sort, search, paging) recomputes every method's score in memory with no
 // round trip.
-export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValueViewProps) {
+export function FantasyValueView({
+  lines,
+  isSignedIn,
+  leagueSeed,
+  rosterPlayerIds,
+}: FantasyValueViewProps) {
   const [params, setParams] = useQueryStates(fantasyParsers);
+  const takenIds = useTakenIds();
 
   useEffect(() => {
     if (Object.keys(leagueSeed ?? {}).length === 0) return;
@@ -93,6 +104,20 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
   });
   const { values, poolStats } = valuation;
 
+  // Scored on the whole pool above, listed here: the roster's rows, and only those.
+  const listedLines = useMemo(() => {
+    const onRoster =
+      rosterPlayerIds === undefined
+        ? valuation.lines
+        : valuation.lines.filter((line) => rosterPlayerIds.includes(line.playerId));
+    return filterByOwner({
+      rows: onRoster,
+      owner: params.owner,
+      takenIds,
+      idOf: (line) => line.playerId,
+    });
+  }, [valuation.lines, rosterPlayerIds, params.owner, takenIds]);
+
   const {
     rows: pageRows,
     total,
@@ -100,7 +125,7 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
   } = useMemo(
     () =>
       rankFantasyRows({
-        lines: valuation.lines,
+        lines: listedLines,
         values,
         q: params.q,
         page: params.page,
@@ -108,7 +133,7 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
         dir: params.dir,
         sort: params.sort,
       }),
-    [valuation.lines, values, params.q, params.page, params.size, params.dir, params.sort],
+    [listedLines, values, params.q, params.page, params.size, params.dir, params.sort],
   );
   const totalPages = Math.max(1, Math.ceil(total / params.size));
   const rangeStart = total === 0 ? 0 : (page - 1) * params.size + 1;
@@ -168,7 +193,8 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
         : `No players match "${params.q}".`
       : `Showing ${rangeStart}–${rangeEnd} of ${total}`;
 
-  const pager = (
+  // A roster is one short page, so a pager would only offer a page size to change.
+  const pager = rosterPlayerIds === undefined && (
     <Pager
       page={page}
       totalPages={totalPages}
@@ -184,6 +210,7 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
         q={params.q}
         range={params.range}
         mode={params.mode}
+        owner={params.owner}
         excluded={params.x}
         weights={activeWeights}
         sort={params.sort}
@@ -207,7 +234,7 @@ export function FantasyValueView({ lines, isSignedIn, leagueSeed }: FantasyValue
       <section
         className={styles.results}
         aria-busy={valuation.isPending}
-        key={`${params.sort}:${params.dir}:${params.range}:${params.mode}:${page}:${params.layout}`}
+        key={`${params.sort}:${params.dir}:${params.range}:${params.mode}:${params.owner}:${page}:${params.layout}`}
       >
         <header className={styles.summaryRow}>
           <p className={styles.summary}>{summary}</p>

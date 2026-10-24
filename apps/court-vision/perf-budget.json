@@ -24,6 +24,16 @@
       "budgetMs": { "ttfb": 600, "total": 1500 }
     },
     {
+      "path": "/design/players",
+      "label": "Players fixture (100 rows)",
+      "budgetMs": { "ttfb": 600, "total": 1500 }
+    },
+    {
+      "path": "/design/player",
+      "label": "Player fixture (60 games)",
+      "budgetMs": { "ttfb": 600, "total": 1500 }
+    },
+    {
       "path": "/players",
       "label": "Players list (points sort)",
       "requiresDb": true,

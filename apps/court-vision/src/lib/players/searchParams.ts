@@ -6,6 +6,8 @@ import {
   type inferParserType,
 } from "nuqs/server";
 
+import { DEFAULT_OWNER_FILTER, PLAYER_OWNER_FILTERS } from "@/lib/players/ownerFilter";
+
 export const PAGE_SIZES: readonly number[] = [10, 25, 50, 100];
 export const DEFAULT_PAGE_SIZE = 50;
 export const MAX_QUERY_LENGTH = 100;
@@ -18,6 +20,7 @@ export type PlayerSortKey =
   | "lastName"
   | "starredAt"
   | "gamesPlayed"
+  | "min"
   | "pts"
   | "reb"
   | "ast"
@@ -36,6 +39,7 @@ export const PLAYER_SORT_KEYS: readonly PlayerSortKey[] = [
   "lastName",
   "starredAt",
   "gamesPlayed",
+  "min",
   "pts",
   "reb",
   "ast",
@@ -210,6 +214,7 @@ export const listParsers = {
   dir: parseAsStringLiteral(SORT_DIRECTIONS).withDefault(DEFAULT_SORT_DIR),
   range: parseAsStringLiteral(PLAYER_GAME_RANGES).withDefault(DEFAULT_GAME_RANGE),
   mode: parseAsStringLiteral(PLAYER_STAT_MODES).withDefault(DEFAULT_STAT_MODE),
+  owner: parseAsStringLiteral(PLAYER_OWNER_FILTERS).withDefault(DEFAULT_OWNER_FILTER),
 };
 
 type PlayersListParams = inferParserType<typeof listParsers> & { minimums: boolean };
@@ -301,6 +306,7 @@ export const buildPlayersHref = (args: PlayersHrefParams): string => {
     args.dir !== DEFAULT_SORT_DIR && ["dir", args.dir],
     args.range !== DEFAULT_GAME_RANGE && ["range", args.range],
     args.mode !== DEFAULT_STAT_MODE && ["mode", args.mode],
+    args.owner !== DEFAULT_OWNER_FILTER && ["owner", args.owner],
     !args.minimums && ["minimums", "0"],
   ];
   const query = new URLSearchParams(
