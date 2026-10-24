@@ -147,6 +147,9 @@ export function LoginForm({ next, notice }: { next: string; notice?: string | nu
         </p>
       )}
       <p className={authStyles.alt}>
+        <Link href="/forgot-password">Forgot your password?</Link>
+      </p>
+      <p className={authStyles.alt}>
         No account? <Link href="/signup">Create one</Link>
       </p>
     </form>

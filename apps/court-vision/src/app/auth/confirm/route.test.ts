@@ -41,6 +41,18 @@ describe("GET /auth/confirm", () => {
     expect(response.headers.get("location")).toBe(`${BASE}/login?error=confirm`);
   });
 
+  it("sends a dead reset link to the forgot-password form", async () => {
+    exchangeCodeForSession.mockResolvedValue({ error: { message: "expired" } });
+    const response = await GET(confirmRequest("?code=abc&next=/reset-password"));
+    expect(response.headers.get("location")).toBe(`${BASE}/forgot-password?error=reset`);
+  });
+
+  it("forwards a verified reset link to the new-password form", async () => {
+    exchangeCodeForSession.mockResolvedValue({ error: null });
+    const response = await GET(confirmRequest("?code=abc&next=/reset-password"));
+    expect(response.headers.get("location")).toBe(`${BASE}/reset-password`);
+  });
+
   it("redirects to login when the type is not a valid OTP type", async () => {
     const response = await GET(confirmRequest("?token_hash=abc&type=bogus"));
     expect(verifyOtp).not.toHaveBeenCalled();

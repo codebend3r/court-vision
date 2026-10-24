@@ -87,6 +87,14 @@ describe("LoginForm", () => {
     expect(screen.getByText(/that confirmation link didn't work/i)).toBeInTheDocument();
   });
 
+  it("links to the password reset page", () => {
+    render(<LoginForm next="/" />);
+    expect(screen.getByRole("link", { name: /forgot your password/i })).toHaveAttribute(
+      "href",
+      "/forgot-password",
+    );
+  });
+
   it("does not offer a resend when there is no notice or error", () => {
     render(<LoginForm next="/" />);
     expect(screen.queryByRole("button", { name: /resend/i })).not.toBeInTheDocument();

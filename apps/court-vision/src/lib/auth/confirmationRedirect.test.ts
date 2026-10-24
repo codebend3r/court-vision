@@ -40,4 +40,11 @@ describe("confirmationRedirectTo", () => {
     getHeader.mockReturnValue("https://attacker.example");
     expect(await confirmationRedirectTo()).toBe("https://court-vizion.netlify.app/auth/confirm");
   });
+
+  it("carries a next path through the confirm route", async () => {
+    stubEnv({ key: "URL", value: "https://court-vizion.netlify.app" });
+    expect(await confirmationRedirectTo({ next: "/reset-password" })).toBe(
+      "https://court-vizion.netlify.app/auth/confirm?next=%2Freset-password",
+    );
+  });
 });

@@ -1,6 +1,7 @@
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { RESET_PATH } from "@/lib/auth/loginNotice";
 import { safeNextPath } from "@/lib/auth/safeNextPath";
 import { createClient } from "@/lib/supabase/server";
 
@@ -72,5 +73,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const next = safeNextPath({ next: searchParams.get("next") });
   const confirmed = await isConfirmed(readAttempt(searchParams));
 
-  return NextResponse.redirect(new URL(confirmed ? next : "/login?error=confirm", origin));
+  // A dead reset link goes to the request form, not the sign-in form whose
+  // notice talks about confirming an account.
+  const failure = next === RESET_PATH ? "/forgot-password?error=reset" : "/login?error=confirm";
+
+  return NextResponse.redirect(new URL(confirmed ? next : failure, origin));
 }

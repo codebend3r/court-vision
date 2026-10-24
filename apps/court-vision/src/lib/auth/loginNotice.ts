@@ -20,6 +20,13 @@ export function loginNoticeMessage(code: LoginNoticeCode): string {
   return NOTICE_MESSAGES[code];
 }
 
+// /auth/confirm sends a failed password-reset link to /forgot-password rather
+// than /login, so the user can ask for another one straight away.
+export const RESET_PATH = "/reset-password";
+
+export const RESET_FAILED_MESSAGE =
+  "That reset link didn't work. It may have expired or already been used. Enter your email and we'll send a new one.";
+
 // Supabase rejects a sign-in from an unconfirmed account. Recent versions carry
 // a stable `code`, older ones only the prose message, so check both rather than
 // leaving the user staring at "Email not confirmed" with no way forward.
