@@ -9,7 +9,11 @@ import { resolveSiteOrigin } from "@/lib/siteUrl";
 //
 // Deliberately not in a "use server" module: every export of one of those becomes
 // a callable server action endpoint, and this is an internal helper.
-export async function confirmationRedirectTo(): Promise<string> {
+//
+// `next` is where /auth/confirm sends the user once the link verifies; the
+// password-reset email uses it to land on the new-password form.
+export async function confirmationRedirectTo({ next }: { next?: string } = {}): Promise<string> {
   const requestOrigin = (await headers()).get("origin");
-  return `${resolveSiteOrigin({ requestOrigin })}/auth/confirm`;
+  const confirmUrl = `${resolveSiteOrigin({ requestOrigin })}/auth/confirm`;
+  return !!next ? `${confirmUrl}?next=${encodeURIComponent(next)}` : confirmUrl;
 }
