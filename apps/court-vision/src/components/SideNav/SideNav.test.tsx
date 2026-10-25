@@ -57,17 +57,22 @@ describe("SideNav", () => {
     expect(screen.getByRole("link", { name: "Players" })).toHaveAttribute("aria-current", "page");
   });
 
-  it("lights Roster on its own route and not My Teams", () => {
+  it("lights Roster on its own route and not Fantasy League", () => {
     pathnameMock.current = "/roster";
     render(<SideNav />);
     expect(screen.getByRole("link", { name: "Roster" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "My Teams" })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("link", { name: "Fantasy League" })).not.toHaveAttribute(
+      "aria-current",
+    );
   });
 
-  it("keeps My Teams active on nested my-team routes", () => {
+  it("keeps Fantasy League active on nested my-team routes", () => {
     pathnameMock.current = "/my-teams/rim-protectors";
     render(<SideNav />);
-    expect(screen.getByRole("link", { name: "My Teams" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Fantasy League" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   });
 
   it("lists the Waiver Wire in My league and marks it current on its page", () => {
@@ -104,6 +109,9 @@ describe("SideNav", () => {
     pathnameMock.current = "/my-teams";
     render(<SideNav />);
     expect(screen.getByRole("link", { name: "Teams" })).not.toHaveAttribute("aria-current");
-    expect(screen.getByRole("link", { name: "My Teams" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Fantasy League" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   });
 });

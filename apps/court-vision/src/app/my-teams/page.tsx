@@ -22,7 +22,7 @@ export default async function MyTeamsPage({
   const league = await loadMyTeamsLeague();
 
   if (league === null) {
-    return <NoLeaguePage title="My teams" description={DESCRIPTION} />;
+    return <NoLeaguePage title="Fantasy League" description={DESCRIPTION} />;
   }
 
   const teams = await getLeagueTeams({ leagueId: league.id });
@@ -31,7 +31,7 @@ export default async function MyTeamsPage({
     <main className={styles.page}>
       <PageHeader
         eyebrow="My league"
-        title="My teams"
+        title="Fantasy League"
         description={DESCRIPTION}
         actions={!league.isImported && <PageAction href="/my-teams/create">New team</PageAction>}
       />

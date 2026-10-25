@@ -19,7 +19,7 @@ export default async function CreateTeamPage() {
     return (
       <NoLeaguePage
         title="Create team"
-        actions={<PageAction href="/my-teams">My teams</PageAction>}
+        actions={<PageAction href="/my-teams">Fantasy League</PageAction>}
       />
     );
   }
@@ -43,7 +43,7 @@ export default async function CreateTeamPage() {
         eyebrow="My league"
         title="Create team"
         description="Fill every slot the league defines — eligibility rules apply as you pick."
-        actions={<PageAction href="/my-teams">My teams</PageAction>}
+        actions={<PageAction href="/my-teams">Fantasy League</PageAction>}
       />
       <TeamBuilder leagueId={league.id} team={null} players={players} insights={insights} />
     </main>

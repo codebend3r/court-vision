@@ -10,6 +10,7 @@ import { Disclosure } from "@vision/ui/components/Disclosure/Disclosure";
 import { groupSlotsByKind, slotMeta } from "@vision/sport-basketball/engine";
 import { SLOT_KIND_TITLES } from "@/lib/fantasyTeams/labels";
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
+import { buildRosterHref, DEFAULT_ROSTER_PARAMS } from "@/lib/roster/searchParams";
 import { deleteLeagueTeam } from "@/lib/leagues/teamActions";
 
 import styles from "@/components/MyTeamsList/MyTeamsList.module.scss";
@@ -101,6 +102,12 @@ function TeamAccordion({ team, isOpen, onDelete }: TeamAccordionProps) {
             </ul>
           </span>
         ))}
+        <Link
+          href={buildRosterHref({ ...DEFAULT_ROSTER_PARAMS, team: team.isMine ? null : team.slug })}
+          className={styles.stats}
+        >
+          View stats
+        </Link>
         {!team.isImported && (
           <button
             type="button"

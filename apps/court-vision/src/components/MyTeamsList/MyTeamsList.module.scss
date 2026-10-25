@@ -177,3 +177,9 @@
   @include keycap-danger;
   justify-self: start;
 }
+
+// Opens the team on the roster page: its stats and charts.
+.stats {
+  @include keycap;
+  justify-self: start;
+}
