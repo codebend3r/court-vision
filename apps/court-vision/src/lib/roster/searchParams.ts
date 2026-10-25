@@ -1,4 +1,4 @@
-import { createLoader, parseAsStringLiteral } from "nuqs/server";
+import { createLoader, parseAsString, parseAsStringLiteral } from "nuqs/server";
 
 import {
   DEFAULT_GAME_RANGE,
@@ -27,20 +27,35 @@ const loadRosterParams = createLoader({
   tab: parseAsStringLiteral(ROSTER_TABS).withDefault(DEFAULT_ROSTER_TAB),
   range: listParsers.range,
   mode: listParsers.mode,
+  team: parseAsString,
 });
 
-export type RosterParams = { tab: RosterTab; range: PlayerGameRange; mode: PlayerStatMode };
+// `team` is a league-mate's team slug; null reads the user's own team.
+export type RosterParams = {
+  tab: RosterTab;
+  range: PlayerGameRange;
+  mode: PlayerStatMode;
+  team: string | null;
+};
+
+export const DEFAULT_ROSTER_PARAMS: RosterParams = {
+  tab: DEFAULT_ROSTER_TAB,
+  range: DEFAULT_GAME_RANGE,
+  mode: DEFAULT_STAT_MODE,
+  team: null,
+};
 
 export const parseRosterParams = ({ raw }: { raw: RawSearchParams }): RosterParams =>
   loadRosterParams(raw);
 
 // Defaults stay out of the URL, in a fixed key order, so every view has one
 // canonical href.
-export const buildRosterHref = ({ tab, range, mode }: RosterParams): string => {
+export const buildRosterHref = ({ tab, range, mode, team }: RosterParams): string => {
   const entries: Array<[string, string] | false> = [
     tab !== DEFAULT_ROSTER_TAB && ["tab", tab],
     range !== DEFAULT_GAME_RANGE && ["range", range],
     mode !== DEFAULT_STAT_MODE && ["mode", mode],
+    team !== null && ["team", team],
   ];
   const query = new URLSearchParams(
     entries.filter((entry): entry is [string, string] => entry !== false),

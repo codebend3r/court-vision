@@ -8,12 +8,13 @@ describe("parseRosterParams", () => {
       tab: "regular",
       range: "all",
       mode: "average",
+      team: null,
     });
   });
 
   it("reads each key", () => {
     expect(parseRosterParams({ raw: { tab: "advanced", range: "last10", mode: "total" } })).toEqual(
-      { tab: "advanced", range: "last10", mode: "total" },
+      { tab: "advanced", range: "last10", mode: "total", team: null },
     );
   });
 
@@ -27,12 +28,20 @@ describe("parseRosterParams", () => {
 
 describe("buildRosterHref", () => {
   it("leaves defaults out of the URL", () => {
-    expect(buildRosterHref({ tab: "regular", range: "all", mode: "average" })).toBe("/roster");
+    expect(buildRosterHref({ tab: "regular", range: "all", mode: "average", team: null })).toBe(
+      "/roster",
+    );
   });
 
   it("keeps the rest in a fixed order", () => {
-    expect(buildRosterHref({ tab: "fantasy", range: "last5", mode: "total" })).toBe(
+    expect(buildRosterHref({ tab: "fantasy", range: "last5", mode: "total", team: null })).toBe(
       "/roster?tab=fantasy&range=last5&mode=total",
     );
+  });
+
+  it("carries a league-mate's team slug", () => {
+    expect(
+      buildRosterHref({ tab: "regular", range: "all", mode: "average", team: "5-assassins" }),
+    ).toBe("/roster?team=5-assassins");
   });
 });

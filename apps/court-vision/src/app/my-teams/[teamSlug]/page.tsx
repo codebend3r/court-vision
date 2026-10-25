@@ -21,7 +21,7 @@ export default async function EditTeamPage({ params }: { params: Promise<{ teamS
     return (
       <NoLeaguePage
         title="Edit team"
-        actions={<PageAction href="/my-teams">My teams</PageAction>}
+        actions={<PageAction href="/my-teams">Fantasy League</PageAction>}
       />
     );
   }
@@ -48,7 +48,7 @@ export default async function EditTeamPage({ params }: { params: Promise<{ teamS
       <PageHeader
         eyebrow="My league"
         title={team.name}
-        actions={<PageAction href="/my-teams">My teams</PageAction>}
+        actions={<PageAction href="/my-teams">Fantasy League</PageAction>}
       />
       <TeamBuilder leagueId={league.id} team={team} players={players} insights={insights} />
     </main>

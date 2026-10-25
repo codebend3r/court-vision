@@ -49,7 +49,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "My league",
     entries: [
-      { href: "/my-teams", label: "My Teams", icon: "myTeams" },
+      { href: "/my-teams", label: "Fantasy League", icon: "myTeams" },
       { href: "/roster", label: "Roster", icon: "roster" },
       { href: "/waiver-wire", label: "Waiver Wire", icon: "waiverWire" },
       { href: "/leagues", label: "Leagues", icon: "leagues" },

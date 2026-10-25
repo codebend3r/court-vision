@@ -45,11 +45,14 @@ export const dynamic = "force-dynamic";
 const IMPORT_PATH = "/leagues/import";
 
 function RosterScreen({ children, params }: { children: ReactNode; params?: RosterParams }) {
+  const isOtherTeam = !!params?.team;
   return (
     <main className={styles.page}>
       <PageHeader
         {...ROSTER_PAGE_HEADER}
-        actions={<PageAction href="/my-teams">My teams</PageAction>}
+        actions={
+          <PageAction href="/my-teams">{isOtherTeam ? "All teams" : "Fantasy League"}</PageAction>
+        }
       />
       {params !== undefined && (
         <StatViewTabs
@@ -183,16 +186,18 @@ export default async function RosterPage({
     );
   }
 
-  const team = featuredTeam({ teams });
+  // `?team=<slug>` reads a league-mate's roster through the same view.
+  const params = parseRosterParams({ raw });
+  const requested = params.team === null ? null : teams.find(({ slug }) => slug === params.team);
+  const team = requested ?? featuredTeam({ teams });
   if (team === null) {
     return (
-      <RosterGate message="No team to show yet. Build one in My teams, and its stats land here.">
+      <RosterGate message="No team to show yet. Build one in Fantasy League, and its stats land here.">
         <PageAction href="/my-teams/create">New team</PageAction>
       </RosterGate>
     );
   }
 
-  const params = parseRosterParams({ raw });
   const members = rosterMembers({ team });
   const filled = members.length;
 
