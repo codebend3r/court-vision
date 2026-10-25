@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { PlayerPositionText } from "@/components/PositionTag/PositionTag";
 import { OwnershipChip } from "@/components/OwnershipChip/OwnershipChip";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { RosteredMarker } from "@/components/RosteredMarker/RosteredMarker";
@@ -124,7 +125,9 @@ export function FantasyValueTable({ rows, sort, dir, isSignedIn, onSort }: Fanta
                 </span>
               </td>
               <td>{row.teamAbbr === null ? "—" : <TeamChip team={row.teamAbbr} size="sm" />}</td>
-              <td>{row.position ?? "—"}</td>
+              <td>
+                <PlayerPositionText playerId={row.playerId} position={row.position} />
+              </td>
               {FANTASY_METHODS.map((method) => {
                 const value = row.values[method.valueKey];
                 return (

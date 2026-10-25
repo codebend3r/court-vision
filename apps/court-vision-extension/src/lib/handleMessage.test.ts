@@ -12,6 +12,7 @@ const COURT_VISION = "https://court-vizion.netlify.app";
 const gameBody = { fantasy_content: { game: { game_key: "478" } } };
 const leagueBody = { fantasy_content: { league: { league_key: "478.l.106344" } } };
 const waiverBody = { fantasy_content: { league: { players: [] } } };
+const scoreboardBody = { fantasy_content: { league: { scoreboard: { matchups: [] } } } };
 
 const jsonResponse = (body: unknown): Response =>
   new Response(JSON.stringify(body), {
@@ -24,6 +25,7 @@ const yahooFetch = () =>
   vi.fn<FetchImpl>(async (input) => {
     const url = String(input);
     if (url.includes("/players;status=W;")) return jsonResponse(waiverBody);
+    if (url.includes("/scoreboard")) return jsonResponse(scoreboardBody);
     if (url.includes("/league/")) return jsonResponse(leagueBody);
     return jsonResponse(gameBody);
   });
@@ -121,7 +123,12 @@ describe("handleExternalMessage", () => {
 
     expect(response).toEqual({
       type: "league",
-      payload: { game: gameBody, snapshot: leagueBody, waiverPages: [waiverBody] },
+      payload: {
+        game: gameBody,
+        snapshot: leagueBody,
+        waiverPages: [waiverBody],
+        scoreboard: scoreboardBody,
+      },
     });
   });
 

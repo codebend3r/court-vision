@@ -48,6 +48,7 @@ const loadSnapshot = ({ payload }: { payload: unknown }): LoadedLeague | YahooFa
     currentSeason: game.data.fantasy_content.game.season,
     snapshot: payload.snapshot,
     waiverPages: payload.waiverPages,
+    scoreboard: payload.scoreboard,
   });
   return loaded.status === "ok" ? loaded : loadFailureToResult({ failure: loaded });
 };

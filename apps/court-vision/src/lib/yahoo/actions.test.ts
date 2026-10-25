@@ -63,6 +63,7 @@ const ref = ({ id, name }: { id: string; name: string }): YahooPlayerRef => ({
   fullName: name,
   teamAbbr: "NYK",
   eligiblePositions: ["PG"],
+  displayPosition: null,
   status: null,
 });
 
@@ -72,6 +73,8 @@ const NOBODY = ref({ id: "9999", name: "Nobody Known" });
 const WAIVER = ref({ id: "7000", name: "Waiver Guy" });
 
 const importedLeague: ImportedLeague = {
+  statCategories: [],
+  matchups: null,
   externalKey: "478.l.106344",
   externalUrl: LEAGUE_URL,
   name: "Game of Courts",
@@ -125,6 +128,7 @@ const leagueRow: League = {
   syncedAt: new Date("2026-10-17T12:00:00Z"),
   syncError: null,
   unsupportedCategories: ["DD"],
+  statCategories: null,
   createdAt: new Date("2026-10-17T12:00:00Z"),
   updatedAt: new Date("2026-10-17T12:00:00Z"),
 };

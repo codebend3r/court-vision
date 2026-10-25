@@ -15,6 +15,8 @@ const NAV_ICON_PATHS = {
   // Four bars of different heights: the roster's stats side by side.
   roster: "M9 40 V26 M19 40 V10 M29 40 V18 M39 40 V30",
   // Two opposed arrows: a free agent in, one of yours out.
+  // Two bars facing each other over a divide: this week's head-to-head.
+  matchup: "M9 14 H28 M9 24 H36 M9 34 H22 M39 12 V36",
   waiverWire: "M8 16 H38 M30 8 L38 16 L30 24 M40 32 H10 M18 24 L10 32 L18 40",
   leagues: "M15 7 h18 v11 a9 9 0 0 1-18 0 Z M24 27 v7 M17 41 h14",
   starred: "M24 6 L29.5 18 L42 19.5 L33 28 L35.5 41 L24 34.5 L12.5 41 L15 28 L6 19.5 L18.5 18 Z",
@@ -51,6 +53,7 @@ const NAV_GROUPS: NavGroup[] = [
     entries: [
       { href: "/my-teams", label: "Fantasy League", icon: "myTeams" },
       { href: "/roster", label: "Roster", icon: "roster" },
+      { href: "/matchup", label: "Matchup", icon: "matchup" },
       { href: "/waiver-wire", label: "Waiver Wire", icon: "waiverWire" },
       { href: "/leagues", label: "Leagues", icon: "leagues" },
       { href: "/watchlist", label: "Starred", icon: "starred" },

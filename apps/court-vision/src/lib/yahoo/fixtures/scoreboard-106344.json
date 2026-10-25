@@ -1,0 +1,954 @@
+{
+ "fantasy_content": {
+  "league": {
+   "league_key": "478.l.106344",
+   "scoreboard": {
+    "week": "1",
+    "matchups": [
+     {
+      "matchup": {
+       "week": "1",
+       "week_start": "2026-10-20",
+       "week_end": "2026-10-25",
+       "status": "midevent",
+       "is_playoffs": "0",
+       "teams": [
+        {
+         "team": {
+          "team_key": "478.l.106344.t.1",
+          "team_id": "1",
+          "name": "Team 1",
+          "team_stats": {
+           "coverage_type": "week",
+           "week": "1",
+           "stats": [
+            {
+             "stat": {
+              "stat_id": 9004003,
+              "value": "100/230"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 5,
+              "value": ".430"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 8,
+              "value": ".700"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 10,
+              "value": "25"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 12,
+              "value": "380"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 15,
+              "value": "140"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 16,
+              "value": "80"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 17,
+              "value": "10"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 18,
+              "value": "8"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 19,
+              "value": "70"
+             }
+            }
+           ]
+          }
+         }
+        },
+        {
+         "team": {
+          "team_key": "478.l.106344.t.2",
+          "team_id": "2",
+          "name": "Team 2",
+          "team_stats": {
+           "coverage_type": "week",
+           "week": "1",
+           "stats": [
+            {
+             "stat": {
+              "stat_id": 9004003,
+              "value": "101/231"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 5,
+              "value": ".437"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 8,
+              "value": ".709"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 10,
+              "value": "28"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 12,
+              "value": "397"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 15,
+              "value": "146"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 16,
+              "value": "84"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 17,
+              "value": "12"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 18,
+              "value": "13"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 19,
+              "value": "68"
+             }
+            }
+           ]
+          }
+         }
+        }
+       ]
+      }
+     },
+     {
+      "matchup": {
+       "week": "1",
+       "week_start": "2026-10-20",
+       "week_end": "2026-10-25",
+       "status": "midevent",
+       "is_playoffs": "0",
+       "teams": [
+        {
+         "team": {
+          "team_key": "478.l.106344.t.3",
+          "team_id": "3",
+          "name": "Team 3",
+          "team_stats": {
+           "coverage_type": "week",
+           "week": "1",
+           "stats": [
+            {
+             "stat": {
+              "stat_id": 9004003,
+              "value": "102/232"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 5,
+              "value": ".444"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 8,
+              "value": ".718"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 10,
+              "value": "31"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 12,
+              "value": "414"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 15,
+              "value": "152"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 16,
+              "value": "88"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 17,
+              "value": "14"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 18,
+              "value": "9"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 19,
+              "value": "66"
+             }
+            }
+           ]
+          }
+         }
+        },
+        {
+         "team": {
+          "team_key": "478.l.106344.t.4",
+          "team_id": "4",
+          "name": "Team 4",
+          "team_stats": {
+           "coverage_type": "week",
+           "week": "1",
+           "stats": [
+            {
+             "stat": {
+              "stat_id": 9004003,
+              "value": "103/233"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 5,
+              "value": ".451"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 8,
+              "value": ".727"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 10,
+              "value": "34"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 12,
+              "value": "431"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 15,
+              "value": "158"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 16,
+              "value": "92"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 17,
+              "value": "16"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 18,
+              "value": "14"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 19,
+              "value": "64"
+             }
+            }
+           ]
+          }
+         }
+        }
+       ]
+      }
+     },
+     {
+      "matchup": {
+       "week": "1",
+       "week_start": "2026-10-20",
+       "week_end": "2026-10-25",
+       "status": "midevent",
+       "is_playoffs": "0",
+       "teams": [
+        {
+         "team": {
+          "team_key": "478.l.106344.t.5",
+          "team_id": "5",
+          "name": "Team 5",
+          "team_stats": {
+           "coverage_type": "week",
+           "week": "1",
+           "stats": [
+            {
+             "stat": {
+              "stat_id": 9004003,
+              "value": "104/234"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 5,
+              "value": ".458"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 8,
+              "value": ".736"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 10,
+              "value": "37"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 12,
+              "value": "448"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 15,
+              "value": "164"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 16,
+              "value": "96"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 17,
+              "value": "18"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 18,
+              "value": "10"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 19,
+              "value": "62"
+             }
+            }
+           ]
+          }
+         }
+        },
+        {
+         "team": {
+          "team_key": "478.l.106344.t.6",
+          "team_id": "6",
+          "name": "Team 6",
+          "team_stats": {
+           "coverage_type": "week",
+           "week": "1",
+           "stats": [
+            {
+             "stat": {
+              "stat_id": 9004003,
+              "value": "105/235"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 5,
+              "value": ".465"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 8,
+              "value": ".745"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 10,
+              "value": "40"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 12,
+              "value": "465"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 15,
+              "value": "170"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 16,
+              "value": "100"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 17,
+              "value": "20"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 18,
+              "value": "15"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 19,
+              "value": "60"
+             }
+            }
+           ]
+          }
+         }
+        }
+       ]
+      }
+     },
+     {
+      "matchup": {
+       "week": "1",
+       "week_start": "2026-10-20",
+       "week_end": "2026-10-25",
+       "status": "midevent",
+       "is_playoffs": "0",
+       "teams": [
+        {
+         "team": {
+          "team_key": "478.l.106344.t.7",
+          "team_id": "7",
+          "name": "Team 7",
+          "team_stats": {
+           "coverage_type": "week",
+           "week": "1",
+           "stats": [
+            {
+             "stat": {
+              "stat_id": 9004003,
+              "value": "106/236"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 5,
+              "value": ".472"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 8,
+              "value": ".754"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 10,
+              "value": "43"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 12,
+              "value": "482"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 15,
+              "value": "176"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 16,
+              "value": "104"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 17,
+              "value": "22"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 18,
+              "value": "11"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 19,
+              "value": "58"
+             }
+            }
+           ]
+          }
+         }
+        },
+        {
+         "team": {
+          "team_key": "478.l.106344.t.8",
+          "team_id": "8",
+          "name": "Team 8",
+          "team_stats": {
+           "coverage_type": "week",
+           "week": "1",
+           "stats": [
+            {
+             "stat": {
+              "stat_id": 9004003,
+              "value": "107/237"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 5,
+              "value": ".479"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 8,
+              "value": ".763"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 10,
+              "value": "46"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 12,
+              "value": "499"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 15,
+              "value": "182"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 16,
+              "value": "108"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 17,
+              "value": "24"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 18,
+              "value": "16"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 19,
+              "value": "56"
+             }
+            }
+           ]
+          }
+         }
+        }
+       ]
+      }
+     },
+     {
+      "matchup": {
+       "week": "1",
+       "week_start": "2026-10-20",
+       "week_end": "2026-10-25",
+       "status": "midevent",
+       "is_playoffs": "0",
+       "teams": [
+        {
+         "team": {
+          "team_key": "478.l.106344.t.9",
+          "team_id": "9",
+          "name": "Team 9",
+          "team_stats": {
+           "coverage_type": "week",
+           "week": "1",
+           "stats": [
+            {
+             "stat": {
+              "stat_id": 9004003,
+              "value": "108/238"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 5,
+              "value": ".486"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 8,
+              "value": ".772"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 10,
+              "value": "49"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 12,
+              "value": "516"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 15,
+              "value": "188"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 16,
+              "value": "112"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 17,
+              "value": "26"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 18,
+              "value": "12"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 19,
+              "value": "54"
+             }
+            }
+           ]
+          }
+         }
+        },
+        {
+         "team": {
+          "team_key": "478.l.106344.t.10",
+          "team_id": "10",
+          "name": "Team 10",
+          "team_stats": {
+           "coverage_type": "week",
+           "week": "1",
+           "stats": [
+            {
+             "stat": {
+              "stat_id": 9004003,
+              "value": "109/239"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 5,
+              "value": ".493"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 8,
+              "value": ".781"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 10,
+              "value": "52"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 12,
+              "value": "533"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 15,
+              "value": "194"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 16,
+              "value": "116"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 17,
+              "value": "28"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 18,
+              "value": "8"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 19,
+              "value": "52"
+             }
+            }
+           ]
+          }
+         }
+        }
+       ]
+      }
+     },
+     {
+      "matchup": {
+       "week": "1",
+       "week_start": "2026-10-20",
+       "week_end": "2026-10-25",
+       "status": "midevent",
+       "is_playoffs": "0",
+       "teams": [
+        {
+         "team": {
+          "team_key": "478.l.106344.t.11",
+          "team_id": "11",
+          "name": "Team 11",
+          "team_stats": {
+           "coverage_type": "week",
+           "week": "1",
+           "stats": [
+            {
+             "stat": {
+              "stat_id": 9004003,
+              "value": "110/240"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 5,
+              "value": ".500"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 8,
+              "value": ".790"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 10,
+              "value": "55"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 12,
+              "value": "550"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 15,
+              "value": "200"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 16,
+              "value": "120"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 17,
+              "value": "30"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 18,
+              "value": "13"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 19,
+              "value": "50"
+             }
+            }
+           ]
+          }
+         }
+        },
+        {
+         "team": {
+          "team_key": "478.l.106344.t.12",
+          "team_id": "12",
+          "name": "Team 12",
+          "team_stats": {
+           "coverage_type": "week",
+           "week": "1",
+           "stats": [
+            {
+             "stat": {
+              "stat_id": 9004003,
+              "value": "111/241"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 5,
+              "value": ".507"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 8,
+              "value": ".799"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 10,
+              "value": "58"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 12,
+              "value": "567"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 15,
+              "value": "206"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 16,
+              "value": "124"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 17,
+              "value": "32"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 18,
+              "value": "9"
+             }
+            },
+            {
+             "stat": {
+              "stat_id": 19,
+              "value": "48"
+             }
+            }
+           ]
+          }
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ }
+}

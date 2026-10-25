@@ -8,11 +8,16 @@ import { fetchLeaguePayload } from "@/lib/yahooRequests";
 const GAME_URL = `${YAHOO_API_BASE_URL}/game/nba?format=json_f`;
 const LEAGUE_URL = `${YAHOO_API_BASE_URL}/league/nba.l.106344;out=settings/teams/roster?format=json_f`;
 const LOGIN_PROBE_URL = `${YAHOO_API_BASE_URL}/users;use_login=1/games;game_keys=nba?format=json_f`;
+const SCOREBOARD_URL = `${YAHOO_API_BASE_URL}/league/nba.l.106344/scoreboard?format=json_f`;
 const waiverUrl = ({ start }: { start: number }): string =>
   `${YAHOO_API_BASE_URL}/league/nba.l.106344/players;status=W;start=${start};count=25?format=json_f`;
 
 const gameBody = { fantasy_content: { game: { game_key: "478", season: 2026 } } };
 const leagueBody = { fantasy_content: { league: { league_key: "478.l.106344", teams: [] } } };
+
+const scoreboardBody = {
+  fantasy_content: { league: { scoreboard: { matchups: [] } } },
+};
 
 const waiverPage = ({ size }: { size: number }) => ({
   fantasy_content: {
@@ -104,17 +109,64 @@ describe("fetchLeaguePayload", () => {
         [GAME_URL]: jsonResponse(gameBody),
         [LEAGUE_URL]: jsonResponse(leagueBody),
         [waiverUrl({ start: 0 })]: jsonResponse(page),
+        [SCOREBOARD_URL]: jsonResponse(scoreboardBody),
       },
     });
 
     const result = await fetchLeaguePayload({ leagueId: "106344", fetchImpl });
 
-    expect(requestedUrls({ fetchImpl })).toEqual([GAME_URL, LEAGUE_URL, waiverUrl({ start: 0 })]);
+    expect(requestedUrls({ fetchImpl })).toEqual([
+      GAME_URL,
+      LEAGUE_URL,
+      waiverUrl({ start: 0 }),
+      SCOREBOARD_URL,
+    ]);
     fetchImpl.mock.calls.forEach(([, init]) => {
       expect(init?.credentials ?? null).toBe("include");
       expect(init?.method ?? "GET").toBe("GET");
       expect(init?.signal ?? null).toBeInstanceOf(AbortSignal);
     });
+    expect(result).toEqual({
+      type: "league",
+      payload: {
+        game: gameBody,
+        snapshot: leagueBody,
+        waiverPages: [page],
+        scoreboard: scoreboardBody,
+      },
+    });
+  });
+
+  it("starts the scoreboard before waiver pagination finishes", async () => {
+    const waiver = Promise.withResolvers<Response>();
+    const fetchImpl = fetchByUrl({
+      routes: {
+        [GAME_URL]: jsonResponse(gameBody),
+        [LEAGUE_URL]: jsonResponse(leagueBody),
+        [waiverUrl({ start: 0 })]: () => waiver.promise,
+        [SCOREBOARD_URL]: async () => {
+          waiver.resolve(jsonResponse(waiverPage({ size: 3 })));
+          return jsonResponse(scoreboardBody);
+        },
+      },
+    });
+    const result = await fetchLeaguePayload({ leagueId: "106344", fetchImpl });
+    expect(result.type === "league" && result.payload.scoreboard).toEqual(scoreboardBody);
+  });
+
+  it("still returns the league when the scoreboard can't be read", async () => {
+    const page = waiverPage({ size: 3 });
+    const fetchImpl = fetchByUrl({
+      routes: {
+        [GAME_URL]: jsonResponse(gameBody),
+        [LEAGUE_URL]: jsonResponse(leagueBody),
+        [waiverUrl({ start: 0 })]: jsonResponse(page),
+        [SCOREBOARD_URL]: statusResponse(500),
+      },
+    });
+
+    const result = await fetchLeaguePayload({ leagueId: "106344", fetchImpl });
+
     expect(result).toEqual({
       type: "league",
       payload: { game: gameBody, snapshot: leagueBody, waiverPages: [page] },
@@ -399,10 +451,17 @@ describe("fetchLeaguePayload", () => {
     });
     await advanceBy({ ms: 44_999 });
 
-    // The game, the league and two waiver pages answered; the third page is on its way.
+    // The scoreboard ran alongside waivers; the third waiver page is still on its way.
     expect(settled).toEqual([]);
-    expect(fetchImpl).toHaveBeenCalledTimes(5);
-    expect(signals.map((signal) => signal.aborted)).toEqual([false, false, false, false, false]);
+    expect(fetchImpl).toHaveBeenCalledTimes(6);
+    expect(signals.map((signal) => signal.aborted)).toEqual([
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]);
 
     await advanceBy({ ms: 1 });
 
@@ -410,7 +469,7 @@ describe("fetchLeaguePayload", () => {
     expect(signals.at(-1)?.aborted ?? false).toBe(true);
 
     await advanceBy({ ms: 60_000 });
-    expect(fetchImpl).toHaveBeenCalledTimes(5);
+    expect(fetchImpl).toHaveBeenCalledTimes(6);
   });
 
   it("returns a league that finishes reading inside the deadline", async () => {
@@ -420,8 +479,14 @@ describe("fetchLeaguePayload", () => {
         new Promise<Response>((resolve) => {
           const url = String(input);
           const body =
-            url === GAME_URL ? gameBody : url === LEAGUE_URL ? leagueBody : waiverPage({ size: 3 });
-          setTimeout(() => resolve(jsonResponse(body)), 14_000);
+            url === GAME_URL
+              ? gameBody
+              : url === LEAGUE_URL
+                ? leagueBody
+                : url === SCOREBOARD_URL
+                  ? scoreboardBody
+                  : waiverPage({ size: 3 });
+          setTimeout(() => resolve(jsonResponse(body)), 10_000);
         }),
     );
     const settled: unknown[] = [];
@@ -434,7 +499,12 @@ describe("fetchLeaguePayload", () => {
     expect(settled).toEqual([
       {
         type: "league",
-        payload: { game: gameBody, snapshot: leagueBody, waiverPages: [waiverPage({ size: 3 })] },
+        payload: {
+          game: gameBody,
+          snapshot: leagueBody,
+          waiverPages: [waiverPage({ size: 3 })],
+          scoreboard: scoreboardBody,
+        },
       },
     ]);
   });

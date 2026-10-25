@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { PlayerPositionText } from "@/components/PositionTag/PositionTag";
 import { DashboardPanel, DashboardPanelEmpty } from "@/components/DashboardPanel/DashboardPanel";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import { StarButton } from "@/components/StarButton/StarButton";
@@ -46,7 +47,9 @@ export function HomeStarredPanel({ players, count, className }: HomeStarredPanel
                 ) : (
                   <TeamChip team={player.teamAbbr} size="sm" />
                 )}
-                <span className={styles.meta}>{player.position ?? "—"}</span>
+                <span className={styles.meta}>
+                  <PlayerPositionText playerId={player.playerId} position={player.position} />
+                </span>
                 <StarButton playerId={player.playerId} fullName={player.fullName} isSignedIn />
               </li>
             ))}

@@ -1,3 +1,4 @@
+import { PositionTag } from "@/components/PositionTag/PositionTag";
 import { notFound } from "next/navigation";
 import type { SearchParams } from "nuqs/server";
 
@@ -150,7 +151,7 @@ export default async function PlayerPage({
           <p className={styles.meta}>
             <OwnershipChip playerId={player.id} />
             {!!player.teamAbbr && <TeamChip team={player.teamAbbr} size="sm" />}
-            {!!player.position && <span>{player.position}</span>}
+            {!!player.position && <PositionTag position={player.position} playerId={player.id} />}
             {!!player.jerseyNumber && <span>#{player.jerseyNumber}</span>}
             {playerSeasons.length > 0 ? (
               <>

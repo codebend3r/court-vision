@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PlayerPositionText } from "@/components/PositionTag/PositionTag";
 import { type ReactNode } from "react";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
@@ -123,7 +124,11 @@ export function FantasyChartList<Row extends FantasyTableRow>({
                   </Link>
                   <span className={styles.meta}>
                     {row.teamAbbr === null ? "—" : <TeamChip team={row.teamAbbr} size="sm" />}
-                    {!!row.position && <span>{row.position}</span>}
+                    {!!row.position && (
+                      <span>
+                        <PlayerPositionText playerId={row.playerId} position={row.position} />
+                      </span>
+                    )}
                   </span>
                 </span>
               </span>

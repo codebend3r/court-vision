@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 
+import { usePlayerPosition } from "@/lib/leagues/rosteredStore";
 import { StarButton } from "@/components/StarButton/StarButton";
 import { WaiverBadges } from "@/components/WaiverWireView/WaiverBadges";
 import { type WaiverRow } from "@/lib/waiverWire/types";
@@ -24,9 +27,8 @@ export type WaiverPlayerProps = {
 // badges and the button sit outside the link so its accessible name stays the
 // player's name.
 export function WaiverPlayer({ player, onCompare, compareHintId }: WaiverPlayerProps) {
-  const meta = [player.teamAbbr, player.position]
-    .flatMap((part) => (part ? [part] : []))
-    .join(" · ");
+  const position = usePlayerPosition({ playerId: player.playerId, fallback: player.position });
+  const meta = [player.teamAbbr, position].flatMap((part) => (part ? [part] : [])).join(" · ");
 
   return (
     <span className={styles.player}>

@@ -1,6 +1,6 @@
 import { getActiveLeagueRecord } from "@/lib/leagues/queries";
 import { rowsToTeamSlots } from "@/lib/leagues/teams";
-import { type LeagueOwner } from "@/lib/leagues/rosteredStore";
+import { type LeagueOwner, type LeaguePosition } from "@/lib/leagues/rosteredStore";
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 import { prisma } from "@/lib/prisma";
 
@@ -36,6 +36,7 @@ type TeamWithSlots = {
   slots: Array<{
     slotType: string;
     externalPlayerName: string | null;
+    displayPosition: string | null;
     player: {
       id: number;
       firstName: string;
@@ -81,7 +82,7 @@ export const toFantasyTeam = ({
               lastName: slot.player.lastName,
               fullName: slot.player.fullName,
               teamAbbr: slot.player.teamAbbr,
-              position: slot.player.position,
+              position: slot.displayPosition ?? slot.player.position,
               nbaPersonId: slot.player.nbaPersonId,
             },
     })),
@@ -189,5 +190,27 @@ export const getLeagueOwners = async (): Promise<LeagueOwner[] | null> => {
     playerId === null
       ? []
       : [{ playerId, teamName: team.name, isMine: team.id === league.myTeamId }],
+  );
+};
+
+// The host's own position label for every player the active league's last sync
+// saw, on a roster or in the free pool, so a player reads the same here as on
+// Yahoo. Empty for a hand-built league, which has no host.
+export const getLeaguePositions = async (): Promise<LeaguePosition[]> => {
+  const league = await getActiveLeagueRecord();
+  if (league === null || !isImportedLeague({ league })) return [];
+  const where = { displayPosition: { not: null }, playerId: { not: null } } as const;
+  const [slots, waivers] = await Promise.all([
+    prisma.leagueTeamSlot.findMany({
+      where: { ...where, team: { leagueId: league.id } },
+      select: { playerId: true, displayPosition: true },
+    }),
+    prisma.leagueWaiverPlayer.findMany({
+      where: { leagueId: league.id, displayPosition: { not: null } },
+      select: { playerId: true, displayPosition: true },
+    }),
+  ]);
+  return [...waivers, ...slots].flatMap(({ playerId, displayPosition }) =>
+    playerId === null || displayPosition === null ? [] : [{ playerId, position: displayPosition }],
   );
 };

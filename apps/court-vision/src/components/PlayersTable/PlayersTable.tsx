@@ -181,7 +181,9 @@ function PlayerCell({ row }: { row: PlayerIdentity }) {
         <span className={styles.playerTags}>
           <OwnershipChip playerId={row.id} />
           {!!row.teamAbbr && <TeamChip team={row.teamAbbr} size="sm" />}
-          {!!row.position && <PositionTag position={row.position} className={styles.position} />}
+          {!!row.position && (
+            <PositionTag position={row.position} playerId={row.id} className={styles.position} />
+          )}
         </span>
       </span>
     </span>

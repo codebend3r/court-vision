@@ -40,7 +40,13 @@ function PanelHead({ player, games }: { player: FantasyTeamPlayer; games: ReactN
       <span className={styles.identity}>
         <span className={styles.name}>{player.fullName}</span>
         <span className={styles.meta}>
-          {!!player.position && <PositionTag position={player.position} className={styles.pos} />}
+          {!!player.position && (
+            <PositionTag
+              position={player.position}
+              playerId={player.playerId}
+              className={styles.pos}
+            />
+          )}
           {player.teamAbbr !== null && <TeamChip team={player.teamAbbr} size="sm" />}
           <span className={styles.games}>{games}</span>
         </span>

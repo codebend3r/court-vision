@@ -17,6 +17,7 @@ const OK: SnapshotShape = { status: "ok" };
 const OVER: SnapshotShape = { status: "over" };
 
 const TEAMS_PATH: readonly string[] = ["fantasy_content", "league", "teams"];
+const MATCHUPS_PATH: readonly string[] = ["fantasy_content", "league", "scoreboard", "matchups"];
 const PAGE_PLAYERS_PATH: readonly string[] = ["fantasy_content", "league", "players"];
 // Yahoo wraps each team as `{ team }`, so a roster sits under the wrapper.
 const ROSTER_PLAYERS_PATH: readonly string[] = ["team", "roster", "players"];
@@ -55,6 +56,7 @@ export const checkSnapshotShape = ({
       (page) => arrayAt({ value: page, path: PAGE_PLAYERS_PATH }).length > YAHOO_PAGE_SIZE,
     ) ||
     teams.length > MAX_SNAPSHOT_TEAMS ||
+    arrayAt({ value: payload.scoreboard, path: MATCHUPS_PATH }).length > MAX_SNAPSHOT_TEAMS ||
     teams.some(
       (team) =>
         arrayAt({ value: team, path: ROSTER_PLAYERS_PATH }).length > MAX_SNAPSHOT_ROSTER_PLAYERS,

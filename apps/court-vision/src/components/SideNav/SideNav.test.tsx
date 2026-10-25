@@ -31,6 +31,7 @@ describe("SideNav", () => {
       "/teams",
       "/my-teams",
       "/roster",
+      "/matchup",
       "/waiver-wire",
       "/leagues",
       "/watchlist",

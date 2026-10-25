@@ -23,6 +23,7 @@ const ref = ({ id, name }: { id: string; name: string }): YahooPlayerRef => ({
   fullName: name,
   teamAbbr: "MEM",
   eligiblePositions: ["PF"],
+  displayPosition: null,
   status: null,
 });
 
@@ -51,6 +52,8 @@ const brunson = ref({ id: "1", name: "Jalen Brunson" });
 const mystery = ref({ id: "2", name: "Mystery Man" });
 
 const league: ImportedLeague = {
+  statCategories: [],
+  matchups: null,
   externalKey: "478.l.106344",
   externalUrl: "https://basketball.fantasysports.yahoo.com/nba/106344",
   name: "Game of Courts",

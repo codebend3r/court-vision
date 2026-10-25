@@ -9,6 +9,8 @@ import {
   yahooLeagueSnapshotSchema,
   type YahooPlayersPage,
   yahooPlayersPageSchema,
+  type YahooScoreboard,
+  yahooScoreboardSchema,
 } from "@/lib/yahoo/schemas";
 import { toImportedLeague, toPlayerRefs } from "@/lib/yahoo/transform";
 import { type ImportedLeague, type YahooPlayerRef } from "@/lib/yahoo/types";
@@ -125,6 +127,15 @@ const fetchWaiverPages = async ({
     : { status: "ok", pages: collected };
 };
 
+const toParsedScoreboard = ({
+  scoreboard,
+}: {
+  scoreboard: unknown;
+}): YahooScoreboard | undefined => {
+  const parsed = yahooScoreboardSchema.safeParse(scoreboard);
+  return parsed.success ? parsed.data : undefined;
+};
+
 /**
  * Validates raw Yahoo bodies and turns them into an imported league. Shared by
  * the server path below and the extension path, which hands over the same
@@ -134,10 +145,14 @@ export const parseYahooPayload = ({
   currentSeason,
   snapshot,
   waiverPages,
+  scoreboard,
 }: {
   currentSeason: number;
   snapshot: unknown;
   waiverPages: readonly unknown[];
+  // The current week's scoreboard. Optional and forgiving: one that is missing
+  // or doesn't parse leaves the league without matchups rather than failing the sync.
+  scoreboard?: unknown;
 }): YahooLoadResult => {
   const parsedSnapshot = yahooLeagueSnapshotSchema.safeParse(snapshot);
   const parsedPages = waiverPages.flatMap((page): YahooPlayersPage[] => {
@@ -147,7 +162,12 @@ export const parseYahooPayload = ({
   if (!parsedSnapshot.success || parsedPages.length !== waiverPages.length) return INVALID_PAYLOAD;
   if (parsedSnapshot.data.fantasy_content.league.season !== currentSeason) return PAST_SEASON;
 
-  const transformed = toImportedLeague({ snapshot: parsedSnapshot.data });
+  const parsedScoreboard: YahooScoreboard | undefined =
+    scoreboard === undefined ? undefined : toParsedScoreboard({ scoreboard });
+  const transformed = toImportedLeague({
+    snapshot: parsedSnapshot.data,
+    scoreboard: parsedScoreboard,
+  });
   if (transformed.status !== "ok") return transformed;
   return {
     status: "ok",
@@ -191,8 +211,17 @@ export const loadYahooLeague = async ({
   const checked = parseYahooPayload({ currentSeason, snapshot: snapshot.body, waiverPages: [] });
   if (checked.status !== "ok" || !includeWaivers) return checked;
 
-  const waivers = await fetchWaiverPages({ leagueKey, fetchImpl, logger });
+  // The scoreboard is independent of waiver pagination; a failed read is optional.
+  const [waivers, scoreboard] = await Promise.all([
+    fetchWaiverPages({ leagueKey, fetchImpl, logger }),
+    yahooFetch({ path: `league/${leagueKey}/scoreboard`, fetchImpl }),
+  ]);
   if (waivers.status !== "ok") return waivers;
 
-  return parseYahooPayload({ currentSeason, snapshot: snapshot.body, waiverPages: waivers.pages });
+  return parseYahooPayload({
+    currentSeason,
+    snapshot: snapshot.body,
+    waiverPages: waivers.pages,
+    scoreboard: scoreboard.status === "ok" ? scoreboard.body : undefined,
+  });
 };

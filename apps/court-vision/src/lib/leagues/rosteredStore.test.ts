@@ -1,10 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { cleanup, renderHook } from "@testing-library/react";
 
-import { useIsRostered, useOwnership, useRosteredStore } from "@/lib/leagues/rosteredStore";
+import {
+  useIsRostered,
+  useOwnership,
+  usePlayerPosition,
+  useRosteredStore,
+} from "@/lib/leagues/rosteredStore";
 
 beforeEach(() => {
-  useRosteredStore.setState({ playerIds: new Set<number>(), owners: null });
+  useRosteredStore.setState({
+    playerIds: new Set<number>(),
+    owners: null,
+    positions: new Map<number, string>(),
+  });
 });
 
 afterEach(cleanup);
@@ -53,5 +62,31 @@ describe("useOwnership", () => {
     expect(renderHook(() => useOwnership({ playerId: 3 })).result.current).toEqual({
       status: "free",
     });
+  });
+});
+
+describe("usePlayerPosition", () => {
+  it("prefers the league host's label, else the fallback", () => {
+    useRosteredStore
+      .getState()
+      .hydrate({ playerIds: [], positions: [{ playerId: 7, position: "SG,SF,PF" }] });
+
+    expect(
+      renderHook(() => usePlayerPosition({ playerId: 7, fallback: "G-F" })).result.current,
+    ).toBe("SG,SF,PF");
+    expect(
+      renderHook(() => usePlayerPosition({ playerId: 8, fallback: "G-F" })).result.current,
+    ).toBe("G-F");
+    expect(
+      renderHook(() => usePlayerPosition({ playerId: 8, fallback: null })).result.current,
+    ).toBeNull();
+  });
+
+  it("replaces the labels on every hydrate", () => {
+    const { hydrate } = useRosteredStore.getState();
+    hydrate({ playerIds: [], positions: [{ playerId: 7, position: "PG" }] });
+    hydrate({ playerIds: [] });
+
+    expect(useRosteredStore.getState().positions.size).toBe(0);
   });
 });

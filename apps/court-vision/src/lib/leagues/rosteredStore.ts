@@ -9,12 +9,22 @@ export type LeagueOwner = {
   isMine: boolean;
 };
 
+// A player's position label as the league's host prints it ("SG,SF,PF"), so a
+// player reads the same here as on Yahoo.
+export type LeaguePosition = { playerId: number; position: string };
+
 type RosteredState = {
   playerIds: ReadonlySet<number>;
   // Every rostered player's holder, or null when the league's rosters are not
   // all known (no league, or a hand-built one), so nobody reads as a free agent.
   owners: ReadonlyMap<number, LeagueOwner> | null;
-  hydrate: (args: { playerIds: number[]; owners?: readonly LeagueOwner[] | null }) => void;
+  // The host's position label per player the league's last sync saw, rostered or free.
+  positions: ReadonlyMap<number, string>;
+  hydrate: (args: {
+    playerIds: number[];
+    owners?: readonly LeagueOwner[] | null;
+    positions?: readonly LeaguePosition[];
+  }) => void;
 };
 
 // The players on your teams in the active league. Not persisted, like the
@@ -24,12 +34,23 @@ type RosteredState = {
 export const useRosteredStore = create<RosteredState>()((set) => ({
   playerIds: new Set<number>(),
   owners: null,
-  hydrate: ({ playerIds, owners = null }) =>
+  positions: new Map<number, string>(),
+  hydrate: ({ playerIds, owners = null, positions = [] }) =>
     set({
       playerIds: new Set(playerIds),
       owners: owners && new Map(owners.map((owner) => [owner.playerId, owner])),
+      positions: new Map(positions.map(({ playerId, position }) => [playerId, position])),
     }),
 }));
+
+/** The league host's position label for a player, else `fallback` (the NBA data's). */
+export const usePlayerPosition = ({
+  playerId,
+  fallback,
+}: {
+  playerId: number;
+  fallback: string | null;
+}): string | null => useRosteredStore((state) => state.positions.get(playerId)) ?? fallback;
 
 export const useIsRostered = ({ playerId }: { playerId: number }): boolean =>
   useRosteredStore((state) => state.playerIds.has(playerId));
