@@ -6,7 +6,10 @@ const starPlayer = vi.fn();
 const unstarPlayer = vi.fn();
 
 vi.mock("@/lib/watchlist/actions", () => ({ starPlayer, unstarPlayer }));
-vi.mock("next/navigation", () => ({ usePathname: () => "/waiver-wire" }));
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/waiver-wire",
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
 
 import { WaiverPlayer, type WaiverPlayerProps } from "@/components/WaiverWireView/WaiverPlayer";
 import { useWatchlistStore } from "@/lib/watchlist/store";
@@ -110,7 +113,7 @@ describe("WaiverPlayer", () => {
 
     await user.click(screen.getByRole("button", { name: "Star Daniel Gafford" }));
 
-    expect(starPlayer).toHaveBeenCalledWith({ playerId: 7 });
+    expect(starPlayer).toHaveBeenCalledWith({ playerId: 7, leagueId: null });
     expect(screen.getByRole("button", { name: "Unstar Daniel Gafford" })).toHaveAttribute(
       "aria-pressed",
       "true",

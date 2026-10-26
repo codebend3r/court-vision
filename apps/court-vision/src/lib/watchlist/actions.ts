@@ -1,6 +1,6 @@
 "use server";
 
-import { isActionInt } from "@vision/core/util/argGuards";
+import { isActionInt, isOptionalActionId } from "@vision/core/util/argGuards";
 import { getProfile } from "@/lib/auth/session";
 import { withProfile } from "@/lib/auth/withProfile";
 import { ensureDefaultLeague } from "@/lib/leagues/queries";
@@ -11,15 +11,19 @@ import { type WatchlistActionResult } from "@/lib/watchlist/types";
 
 type StarPlayerProps = {
   playerId: number;
+  leagueId: string | null;
 };
 
-export const starPlayer = async ({ playerId }: StarPlayerProps): Promise<WatchlistActionResult> => {
-  if (!isActionInt(playerId)) return { status: "error" };
+export const starPlayer = async ({
+  playerId,
+  leagueId,
+}: StarPlayerProps): Promise<WatchlistActionResult> => {
+  if (!isActionInt(playerId) || !isOptionalActionId(leagueId)) return { status: "error" };
   return withProfile<WatchlistActionResult>({
     getProfile,
     run: async ({ profile }) => {
-      const league = await ensureDefaultLeague({ profile });
-      if (league === null) return { status: "unauthenticated" };
+      const league = await ensureDefaultLeague({ profile, expectedLeagueId: leagueId });
+      if (league === null) return { status: "error" };
       // Lock the parent before counting so concurrent stars share the same cap.
       return prisma.$transaction(async (tx) => {
         await lockLeague({ tx, leagueId: league.id, profileId: profile.id });
@@ -42,18 +46,20 @@ export const starPlayer = async ({ playerId }: StarPlayerProps): Promise<Watchli
 
 type UnstarPlayerProps = {
   playerId: number;
+  leagueId: string | null;
 };
 
 export const unstarPlayer = async ({
   playerId,
+  leagueId,
 }: UnstarPlayerProps): Promise<WatchlistActionResult> => {
   // `{ gte: 0 }` here would clear the caller's entire watchlist in one call.
-  if (!isActionInt(playerId)) return { status: "error" };
+  if (!isActionInt(playerId) || !isOptionalActionId(leagueId)) return { status: "error" };
   return withProfile<WatchlistActionResult>({
     getProfile,
     run: async ({ profile }) => {
-      const league = await ensureDefaultLeague({ profile });
-      if (league === null) return { status: "unauthenticated" };
+      const league = await ensureDefaultLeague({ profile, expectedLeagueId: leagueId });
+      if (league === null) return { status: "error" };
       // One transaction, like starPlayer, so the count reflects this delete.
       return prisma.$transaction(async (tx) => {
         await lockLeague({ tx, leagueId: league.id, profileId: profile.id });

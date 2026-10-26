@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Star } from "lucide-react";
 
+import { useLeaguesStore } from "@/lib/leagues/store";
 import { starPlayer, unstarPlayer } from "@/lib/watchlist/actions";
 import { isWatchlistActionResult } from "@/lib/watchlist/guards";
 import { useIsStarred, useWatchlistStore } from "@/lib/watchlist/store";
@@ -20,6 +21,8 @@ export type StarButtonProps = {
 
 export function StarButton({ playerId, fullName, isSignedIn, size = "sm" }: StarButtonProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const leagueId = useLeaguesStore((state) => state.activeLeagueId);
   const isStarred = useIsStarred({ playerId });
   const [isPending, startTransition] = useTransition();
 
@@ -50,14 +53,24 @@ export function StarButton({ playerId, fullName, isSignedIn, size = "sm" }: Star
       add({ playerId });
     }
     startTransition(async () => {
-      const result = isStarred ? await unstarPlayer({ playerId }) : await starPlayer({ playerId });
+      const result = await (
+        isStarred ? unstarPlayer({ playerId, leagueId }) : starPlayer({ playerId, leagueId })
+      ).catch(() => null);
+      // A late reply must not patch a different league's freshly hydrated list.
+      if (useLeaguesStore.getState().activeLeagueId !== leagueId) {
+        router.refresh();
+        return;
+      }
       if (!isWatchlistActionResult(result)) {
         rollback();
         setError({ error: "error" });
+        // A lost response may still have committed: reconcile from the server.
+        router.refresh();
         return;
       }
       if (result.status === "ok") {
         setCount({ count: result.count });
+        if (leagueId === null) router.refresh();
         return;
       }
       rollback();
@@ -67,6 +80,7 @@ export function StarButton({ playerId, fullName, isSignedIn, size = "sm" }: Star
         return;
       }
       setError({ error: result.status });
+      router.refresh();
     });
   };
 
@@ -77,6 +91,7 @@ export function StarButton({ playerId, fullName, isSignedIn, size = "sm" }: Star
       data-size={size}
       aria-pressed={isStarred}
       aria-label={isStarred ? `Unstar ${fullName}` : `Star ${fullName}`}
+      disabled={isPending}
       data-pending={isPending || undefined}
       onClick={toggle}
     >

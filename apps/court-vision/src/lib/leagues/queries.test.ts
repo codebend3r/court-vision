@@ -220,6 +220,41 @@ describe("getActiveLeagueRecord", () => {
 });
 
 describe("ensureDefaultLeague", () => {
+  it("refuses a stale tab after another request switched the active league", async () => {
+    lockProfile.mockResolvedValue({ activeLeagueId: "league-2" });
+    leagueFindFirst.mockResolvedValue(
+      dbLeague({ id: "league-2", slug: "b", updatedAt: new Date() }),
+    );
+    expect(await ensureDefaultLeague({ profile, expectedLeagueId: "league-1" })).toBeNull();
+    expect(leagueFindFirst).toHaveBeenCalledWith({
+      where: { id: "league-2", profileId: profile.id },
+    });
+    expect(profileUpdate).not.toHaveBeenCalled();
+    expect(leagueCreate).not.toHaveBeenCalled();
+  });
+
+  it("refuses a missing league instead of creating a replacement for a stale tab", async () => {
+    leagueFindFirst.mockResolvedValue(null);
+    expect(await ensureDefaultLeague({ profile, expectedLeagueId: "deleted-league" })).toBeNull();
+    expect(leagueCreate).not.toHaveBeenCalled();
+  });
+
+  it("does not target an existing league when the tab displayed no league", async () => {
+    leagueFindFirst.mockResolvedValue(
+      dbLeague({ id: "league-1", slug: "a", updatedAt: new Date() }),
+    );
+    expect(await ensureDefaultLeague({ profile, expectedLeagueId: null })).toBeNull();
+    expect(profileUpdate).not.toHaveBeenCalled();
+  });
+
+  it("accepts the displayed owned league", async () => {
+    leagueFindFirst.mockResolvedValue(
+      dbLeague({ id: "league-1", slug: "a", updatedAt: new Date() }),
+    );
+    expect(await ensureDefaultLeague({ profile, expectedLeagueId: "league-1" })).toMatchObject({
+      id: "league-1",
+    });
+  });
   it("activates an existing league without a second write when already active", async () => {
     leagueFindFirst.mockResolvedValue(
       dbLeague({ id: "league-1", slug: "a", updatedAt: new Date() }),
@@ -248,7 +283,7 @@ describe("ensureDefaultLeague", () => {
     leagueCreate.mockResolvedValue(
       dbLeague({ id: "new-league", slug: "my-league", updatedAt: new Date() }),
     );
-    const league = await ensureDefaultLeague({ profile });
+    const league = await ensureDefaultLeague({ profile, expectedLeagueId: null });
     expect(league?.id ?? null).toBe("new-league");
     expect(profileUpdate).toHaveBeenCalledWith({
       where: { id: profile.id },

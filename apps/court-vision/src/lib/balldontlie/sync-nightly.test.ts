@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "bun:test";
 
 import * as persist from "@/lib/stats/persist";
+import { prisma } from "@/lib/prisma";
 
 import * as endpoints from "@/lib/balldontlie/endpoints";
 import { BdlAdvancedStat, BdlStat } from "@/lib/balldontlie/schemas";
@@ -113,6 +114,7 @@ const storedLogs = [
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  vi.spyOn(persist, "withStatsTransaction").mockImplementation((run) => run(prisma));
   vi.spyOn(endpoints, "fetchTeams").mockResolvedValue([
     { id: 10, abbreviation: "GSW", full_name: "Golden State Warriors" },
     { id: 2, abbreviation: "BOS", full_name: "Boston Celtics" },
@@ -149,21 +151,26 @@ describe("syncNightly", () => {
       expect.objectContaining({ dates: ["2026-10-21"] }),
     );
     expect(upsertPlayers).toHaveBeenCalledWith({
+      tx: prisma,
       players: [expect.objectContaining({ id: 115, teamAbbr: "GSW" })],
     });
     expect(replaceGameLogs).toHaveBeenCalledWith({
+      tx: prisma,
       rows: [expect.objectContaining({ gameId: "30001", season: "2026-27", opponentAbbr: "BOS" })],
     });
     expect(findSeasonLogs).toHaveBeenCalledWith({
+      tx: prisma,
       playerIds: [115],
       seasons: ["2026-27"],
       seasonType: "Regular Season",
     });
     // The season line sums every stored game, not just last night's.
     expect(upsertSeasonStats).toHaveBeenCalledWith({
+      tx: prisma,
       rows: [expect.objectContaining({ playerId: 115, gamesPlayed: 2, pts: 51, ast: 14 })],
     });
     expect(replaceAdvanced).toHaveBeenCalledWith({
+      tx: prisma,
       rows: [expect.objectContaining({ playerId: 115, gameId: "30001", pie: 0.152 })],
     });
   });

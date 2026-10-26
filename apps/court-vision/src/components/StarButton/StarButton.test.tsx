@@ -4,16 +4,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 const starPlayer = vi.fn();
 const unstarPlayer = vi.fn();
+const refresh = vi.fn();
 
 vi.mock("@/lib/watchlist/actions", () => ({ starPlayer, unstarPlayer }));
-vi.mock("next/navigation", () => ({ usePathname: () => "/players" }));
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/players",
+  useRouter: () => ({ refresh }),
+}));
 
 import { StarButton } from "@/components/StarButton/StarButton";
+import { useLeaguesStore } from "@/lib/leagues/store";
 import { useWatchlistStore } from "@/lib/watchlist/store";
 
 beforeEach(() => {
   starPlayer.mockReset();
   unstarPlayer.mockReset();
+  refresh.mockReset();
+  useLeaguesStore.setState({ activeLeagueId: "league-1" });
   useWatchlistStore.setState({ playerIds: new Set<number>(), count: 0, lastError: null });
 });
 
@@ -33,6 +40,7 @@ describe("StarButton", () => {
     render(<StarButton playerId={7} fullName="Jalen Brunson" isSignedIn />);
     await userEvent.click(screen.getByRole("button"));
     expect(useWatchlistStore.getState().playerIds.has(7)).toBe(true);
+    expect(screen.getByRole("button")).toBeDisabled();
   });
 
   it("keeps the star and records the server count on success", async () => {
@@ -61,6 +69,49 @@ describe("StarButton", () => {
     expect(button).toHaveAttribute("aria-pressed", "true");
     await userEvent.click(button);
     await waitFor(() => expect(useWatchlistStore.getState().playerIds.has(7)).toBe(false));
+  });
+
+  it("pins the request to the displayed league", async () => {
+    starPlayer.mockResolvedValue({ status: "ok", count: 1 });
+    render(<StarButton playerId={7} fullName="Jalen Brunson" isSignedIn />);
+    await userEvent.click(screen.getByRole("button"));
+    expect(starPlayer).toHaveBeenCalledWith({ playerId: 7, leagueId: "league-1" });
+  });
+
+  it("rolls back a rejected star request and refreshes uncertain saved state", async () => {
+    starPlayer.mockRejectedValue(new Error("offline"));
+    render(<StarButton playerId={7} fullName="Jalen Brunson" isSignedIn />);
+    await userEvent.click(screen.getByRole("button"));
+    await waitFor(() => expect(useWatchlistStore.getState().lastError).toBe("error"));
+    expect(useWatchlistStore.getState().playerIds.has(7)).toBe(false);
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("restores a star when an unstar request rejects", async () => {
+    useWatchlistStore.setState({ playerIds: new Set([7]), count: 1 });
+    unstarPlayer.mockRejectedValue(new Error("offline"));
+    render(<StarButton playerId={7} fullName="Jalen Brunson" isSignedIn />);
+    await userEvent.click(screen.getByRole("button"));
+    await waitFor(() => expect(useWatchlistStore.getState().lastError).toBe("error"));
+    expect(useWatchlistStore.getState().playerIds.has(7)).toBe(true);
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not roll back into another league after a late failure", async () => {
+    let finish: (value: unknown) => void = () => {};
+    starPlayer.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    render(<StarButton playerId={7} fullName="Jalen Brunson" isSignedIn />);
+    await userEvent.click(screen.getByRole("button"));
+    useLeaguesStore.setState({ activeLeagueId: "league-2" });
+    useWatchlistStore.getState().hydrate({ playerIds: [7, 8] });
+    finish({ status: "error" });
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect([...useWatchlistStore.getState().playerIds]).toEqual([7, 8]);
+    expect(useWatchlistStore.getState().lastError).toBeNull();
   });
 
   it("renders a sign-in link instead of a button when signed out", () => {

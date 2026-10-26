@@ -67,6 +67,35 @@ describe("computePoolStats", () => {
     expect(stats.byCategory.pts.mu).toBeCloseTo(17, 10);
   });
 
+  it("qualifies a useful pool before anyone reaches 25 season games", () => {
+    const lines = [
+      line({ playerId: 1, gamesPlayed: 10, minutes: 300, pts: 100 }),
+      line({ playerId: 2, gamesPlayed: 10, minutes: 300, pts: 300 }),
+      line({ playerId: 3, gamesPlayed: 2, minutes: 60, pts: 100 }),
+    ];
+    const stats = computePoolStats({ lines, basis: "perGame", poolSize: 150, windowGames: null });
+    expect(stats.poolSize).toBe(2);
+    expect(stats.byCategory.pts.mu).toBe(20);
+    expect(stats.byCategory.pts.sigma).toBe(10);
+  });
+
+  it("keeps the full-season minimum capped at the sport's schedule", () => {
+    const lines = [
+      line({ playerId: 1, gamesPlayed: 83, minutes: 2490 }),
+      line({ playerId: 2, gamesPlayed: 25, minutes: 750 }),
+      line({ playerId: 3, gamesPlayed: 24, minutes: 720 }),
+    ];
+    expect(
+      computePoolStats({ lines, basis: "perGame", poolSize: 150, windowGames: null }).poolSize,
+    ).toBe(2);
+  });
+
+  it("handles an empty early-season pool", () => {
+    expect(
+      computePoolStats({ lines: [], basis: "perGame", poolSize: 150, windowGames: null }).poolSize,
+    ).toBe(0);
+  });
+
   it("scales the games threshold to lastN windows", () => {
     const lines = [
       line({ playerId: 1, gamesPlayed: 4, minutes: 4 * 30 }),

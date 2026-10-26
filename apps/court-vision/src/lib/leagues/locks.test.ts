@@ -26,13 +26,23 @@ vi.mock("next/cache", () => ({ unstable_cache: <T>(fn: T) => fn }));
 
 import { createLeague, deleteLeague } from "@/lib/leagues/actions";
 import { importLegacyTeams } from "@/lib/leagues/teamActions";
-import { starPlayer } from "@/lib/watchlist/actions";
+import { starPlayer, unstarPlayer } from "@/lib/watchlist/actions";
 import { claimSync, releaseSync } from "@/lib/yahoo/syncLease";
 import { syncImportedLeague } from "@/lib/yahoo/persist";
 import { allowUsernameAttempt, usernameRateKey } from "@/lib/auth/usernameRateLimit";
 import { fetchRegularPool } from "@/lib/players/search";
 import { fetchAdvancedPool } from "@/lib/players/searchAdvanced";
 const { getFantasyPool } = await import("@/lib/valuation/loader");
+import { aggregateSeasonStats } from "@/lib/balldontlie/transform";
+import {
+  findSeasonAggregateLogs,
+  replaceGameLogsForGames,
+  replaceAdvancedGameLogsForGames,
+  upsertPlayers,
+  upsertSeasonStats,
+  withStatsTransaction,
+} from "@/lib/stats/persist";
+import { type AdvancedGameLogInput, type GameLogInput } from "@/lib/stats/inputs";
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 import leagueFixture from "@/lib/yahoo/fixtures/league-106344.json";
 import { yahooLeagueSnapshotSchema } from "@/lib/yahoo/schemas";
@@ -123,10 +133,27 @@ describe.skipIf(testUrl === undefined)("Postgres mutation invariants", () => {
       })),
     });
     const results = await Promise.all(
-      [900_049, 900_050].map((playerId) => starPlayer({ playerId })),
+      [900_049, 900_050].map((playerId) => starPlayer({ playerId, leagueId: league.id })),
     );
     expect(results.map(({ status }) => status).sort()).toEqual(["limit", "ok"]);
     expect(await db.leagueWatchlistPlayer.count({ where: { leagueId: league.id } })).toBe(50);
+  });
+
+  it("refuses an old tab's star after the active league changes", async () => {
+    const a = await createOwnedLeague();
+    const b = await createOwnedLeague();
+    staleProfile = await db.profile.update({
+      where: { id: profileId },
+      data: { activeLeagueId: a.id },
+    });
+    await db.profile.update({ where: { id: profileId }, data: { activeLeagueId: b.id } });
+    expect(await starPlayer({ playerId: 900_000, leagueId: a.id })).toEqual({ status: "error" });
+    expect(await db.leagueWatchlistPlayer.count({ where: { profileId } })).toBe(0);
+    await db.leagueWatchlistPlayer.createMany({
+      data: [a, b].map((league) => ({ leagueId: league.id, profileId, playerId: 900_000 })),
+    });
+    expect(await unstarPlayer({ playerId: 900_000, leagueId: a.id })).toEqual({ status: "error" });
+    expect(await db.leagueWatchlistPlayer.count({ where: { profileId } })).toBe(2);
   });
 
   it("imports only one of two disjoint legacy batches", async () => {
@@ -255,6 +282,106 @@ describe.skipIf(testUrl === undefined)("Postgres mutation invariants", () => {
     expect(advanced[0]?.stats.gamesWithData).toBe(1);
     expect(fantasy[0]?.stats.pts).toBe(10);
     expect(fantasy[0]?.gamesPlayed).toBe(1);
+  });
+
+  it("rolls back every stats surface when the final advanced write fails", async () => {
+    const game = {
+      playerId: 900_000,
+      gameId: "atomic-sync",
+      gameDate: new Date("2026-10-26"),
+      season: "2026-27",
+      seasonType: "Regular Season",
+      teamId: 1,
+      teamAbbr: "BOS",
+    };
+    const log: GameLogInput = {
+      ...game,
+      minutes: 30,
+      fgm: 4,
+      fga: 8,
+      fg3m: 1,
+      fg3a: 2,
+      ftm: 1,
+      fta: 2,
+      oreb: 0,
+      dreb: 2,
+      reb: 2,
+      ast: 2,
+      stl: 1,
+      blk: 0,
+      tov: 1,
+      pts: 10,
+      matchup: "BOS vs NYK",
+      homeAway: "home",
+      opponentAbbr: "NYK",
+      winLoss: "W",
+      teamScore: 100,
+      opponentScore: 90,
+      plusMinus: 1,
+    };
+    await db.playerGameLog.deleteMany({ where: { playerId: game.playerId } });
+    await db.playerSeasonStats.deleteMany({ where: { playerId: game.playerId } });
+    await db.playerAdvancedGameLog.deleteMany({ where: { playerId: game.playerId } });
+    await db.playerGameLog.create({ data: log });
+    await db.playerSeasonStats.createMany({ data: aggregateSeasonStats({ logs: [log] }) });
+    const advanced = await db.playerAdvancedGameLog.create({ data: { ...game, pie: 1 } });
+    const { id: _id, ...advancedInput } = advanced;
+
+    const write = (rows: AdvancedGameLogInput[]) =>
+      withStatsTransaction(async (tx) => {
+        await upsertPlayers({
+          tx,
+          players: [
+            {
+              id: game.playerId,
+              firstName: "Changed",
+              lastName: "0",
+              fullName: "Changed 0",
+              teamId: 1,
+              teamAbbr: "BOS",
+              position: null,
+              jerseyNumber: null,
+            },
+          ],
+        });
+        await replaceGameLogsForGames({ tx, rows: [{ ...log, pts: 30 }] });
+        const logs = await findSeasonAggregateLogs({
+          tx,
+          playerIds: [game.playerId],
+          seasons: [game.season],
+          seasonType: game.seasonType,
+        });
+        await upsertSeasonStats({ tx, rows: aggregateSeasonStats({ logs }) });
+        await replaceAdvancedGameLogsForGames({ tx, rows });
+      });
+    const updatedAdvanced = { ...advancedInput, pie: 2 };
+    // Duplicate input fails the last insert after every earlier surface was written.
+    await expect(write([updatedAdvanced, updatedAdvanced])).rejects.toMatchObject({
+      code: "P2002",
+    });
+    expect((await db.player.findUniqueOrThrow({ where: { id: game.playerId } })).firstName).toBe(
+      "Test",
+    );
+    expect((await db.playerGameLog.findFirstOrThrow({ where: { gameId: game.gameId } })).pts).toBe(
+      10,
+    );
+    expect(
+      (await db.playerSeasonStats.findFirstOrThrow({ where: { playerId: game.playerId } })).pts,
+    ).toBe(10);
+    expect(
+      (await db.playerAdvancedGameLog.findFirstOrThrow({ where: { gameId: game.gameId } })).pie,
+    ).toBe(1);
+
+    await write([updatedAdvanced]);
+    expect((await db.playerGameLog.findFirstOrThrow({ where: { gameId: game.gameId } })).pts).toBe(
+      30,
+    );
+    expect(
+      (await db.playerSeasonStats.findFirstOrThrow({ where: { playerId: game.playerId } })).pts,
+    ).toBe(30);
+    expect(
+      (await db.playerAdvancedGameLog.findFirstOrThrow({ where: { gameId: game.gameId } })).pie,
+    ).toBe(2);
   });
 
   it("shares one atomic username budget across concurrent requests", async () => {

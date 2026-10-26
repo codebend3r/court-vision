@@ -1,6 +1,14 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
+  useRouter: () => ({ refresh: vi.fn() }),
+  redirect: (url: string) => {
+    throw Object.assign(new Error("redirect"), { digest: `NEXT_REDIRECT;push;${url};307;` });
+  },
+}));
+
 const getProfile = vi.fn();
 const getWatchlistPlayers = vi.fn();
 const getWatchlistCount = vi.fn();

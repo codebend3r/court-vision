@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "bun:test";
 
 import * as persist from "@/lib/stats/persist";
+import { prisma } from "@/lib/prisma";
 
 import * as endpoints from "@/lib/balldontlie/endpoints";
 import { BdlAdvancedStat, BdlStat } from "@/lib/balldontlie/schemas";
@@ -82,6 +83,7 @@ const advancedRow2020: BdlAdvancedStat = {
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  vi.spyOn(persist, "withStatsTransaction").mockImplementation((run) => run(prisma));
   vi.spyOn(endpoints, "fetchTeams").mockResolvedValue([
     { id: 10, abbreviation: "GSW", full_name: "Golden State Warriors" },
     { id: 2, abbreviation: "BOS", full_name: "Boston Celtics" },
@@ -103,15 +105,19 @@ describe("syncBalldontlie", () => {
 
     expect(summary).toEqual({ players: 1, seasonStats: 1, gameLogs: 1, advancedGameLogs: 1 });
     expect(upsertPlayers).toHaveBeenCalledWith({
+      tx: prisma,
       players: [expect.objectContaining({ id: 115, teamAbbr: "GSW" })],
     });
     expect(replaceGameLogs).toHaveBeenCalledWith({
+      tx: prisma,
       rows: [expect.objectContaining({ gameId: "18422", opponentAbbr: "BOS", homeAway: "home" })],
     });
     expect(upsertSeasonStats).toHaveBeenCalledWith({
+      tx: prisma,
       rows: [expect.objectContaining({ playerId: 115, gamesPlayed: 1, pts: 29 })],
     });
     expect(replaceAdvancedGameLogs).toHaveBeenCalledWith({
+      tx: prisma,
       rows: [expect.objectContaining({ playerId: 115, gameId: "18422", pie: 0.152 })],
     });
   });
@@ -155,12 +161,15 @@ describe("syncBalldontlie", () => {
     expect(fetchAllAdvancedStats.mock.calls.map(([args]) => args?.season)).toEqual([2020, 2025]);
     // Each season persists its own rows stamped with its own label.
     expect(replaceGameLogs).toHaveBeenNthCalledWith(1, {
+      tx: prisma,
       rows: [expect.objectContaining({ season: "2020-21" })],
     });
     expect(replaceGameLogs).toHaveBeenNthCalledWith(2, {
+      tx: prisma,
       rows: [expect.objectContaining({ season: "2025-26" })],
     });
     expect(replaceAdvancedGameLogs).toHaveBeenNthCalledWith(1, {
+      tx: prisma,
       rows: [expect.objectContaining({ season: "2020-21" })],
     });
     // Counts accumulate across seasons.

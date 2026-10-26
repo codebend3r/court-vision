@@ -38,7 +38,10 @@ vi.mock("next/link", () => ({
   default: MockLink,
   useLinkStatus: () => use(LinkStatus),
 }));
-vi.mock("next/navigation", () => ({ usePathname: () => "/players" }));
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/players",
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
 vi.mock("@/lib/watchlist/actions", () => ({ starPlayer: vi.fn(), unstarPlayer: vi.fn() }));
 
 beforeEach(() => {

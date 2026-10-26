@@ -6,6 +6,11 @@ import { CutLinePanel } from "@/components/WaiverWireView/CutLinePanel";
 import { type CutLine, type CutLineEntry, type CutScope } from "@/lib/waiverWire/cutLine";
 import { type WaiverRosterEntry, type WaiverRow } from "@/lib/waiverWire/types";
 
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/waiver-wire",
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
+
 afterEach(cleanup);
 
 type MakeEntryProps = Partial<WaiverRow> & { playerId: number; isUpgrade?: boolean };

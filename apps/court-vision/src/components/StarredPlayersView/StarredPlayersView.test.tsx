@@ -1,6 +1,11 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/players",
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
+
 const getUser = vi.fn();
 const getWatchlistPlayerIds = vi.fn();
 const searchPlayers = vi.fn();

@@ -4,6 +4,7 @@ import type { Logger } from "@vision/core/util/logger";
 
 import type { SeasonAggregateLog } from "@/lib/stats/inputs";
 import * as persist from "@/lib/stats/persist";
+import { prisma } from "@/lib/prisma";
 
 import * as endpoints from "@/lib/balldontlie/endpoints";
 import {
@@ -97,6 +98,7 @@ const storedLog: SeasonAggregateLog = {
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  vi.spyOn(persist, "withStatsTransaction").mockImplementation((run) => run(prisma));
 });
 
 describe("fetchTeamAbbrById", () => {
@@ -149,17 +151,23 @@ describe("writeBoxScores", () => {
 
     expect(summary).toEqual({ players: 1, gameLogs: 1, seasonStats: 1, advancedGameLogs: 1 });
     expect(order).toEqual(["players", "gameLogs", "seasonStats", "advancedGameLogs"]);
+    expect(persist.withStatsTransaction).toHaveBeenCalledTimes(1);
+    expect(seasonLogs).toHaveBeenCalledWith({ gameLogs: expect.any(Array), tx: prisma });
     expect(upsertPlayers).toHaveBeenCalledWith({
+      tx: prisma,
       players: [expect.objectContaining({ id: 115, teamAbbr: "GSW" })],
     });
     expect(gameLogs).toHaveBeenCalledWith({
+      tx: prisma,
       rows: [expect.objectContaining({ gameId: "30001", opponentAbbr: "BOS" })],
     });
     // The season line sums whatever the writer reads back, not just the batch.
     expect(upsertSeasonStats).toHaveBeenCalledWith({
+      tx: prisma,
       rows: [expect.objectContaining({ playerId: 115, gamesPlayed: 2, pts: 51 })],
     });
     expect(advancedGameLogs).toHaveBeenCalledWith({
+      tx: prisma,
       rows: [expect.objectContaining({ gameId: "30001", pie: 0.152 })],
     });
   });

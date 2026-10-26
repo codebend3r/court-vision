@@ -35,6 +35,7 @@ vi.mock("@/lib/leagues/queries", () => ({
 let currentQuery: Record<string, string> = {};
 vi.mock("next/navigation", () => ({
   usePathname: () => "/players/3547238",
+  useRouter: () => ({ refresh: vi.fn() }),
   useSearchParams: () => new URLSearchParams(currentQuery),
   notFound: () => {
     throw new Error("NEXT_NOT_FOUND");

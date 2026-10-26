@@ -167,7 +167,12 @@ export const computePoolStats = <K extends SportKeys>({
   windowGames,
 }: ComputePoolStatsProps<K>): PoolStats<K> => {
   const { minGamesShare, minPlayingTimePerGame } = resolvePool({ sport, pool });
-  const minGames = Math.ceil((windowGames ?? sport.scheduleGames) * minGamesShare);
+  // Early in a season, qualify against games played so far, not the final schedule.
+  const seasonGames = Math.min(
+    sport.scheduleGames,
+    lines.reduce((most, line) => Math.max(most, line.gamesPlayed), 0),
+  );
+  const minGames = Math.ceil((windowGames ?? seasonGames) * minGamesShare);
   const candidates = lines.filter(
     (line) =>
       line.gamesPlayed >= minGames &&

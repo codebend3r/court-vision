@@ -20,6 +20,23 @@ const config = (overrides: Partial<ValuationConfig> = {}): ValuationConfig => ({
 });
 
 describe("valuePlayers", () => {
+  it("distinguishes early-season players in every comparison-based column", () => {
+    const lines = [100, 300].map((pts, index) =>
+      line({ playerId: index + 1, pts, gamesPlayed: 10, minutes: 300, position: "PG" }),
+    );
+    const { values, poolStats } = valuePlayers({
+      lines,
+      config: config({ categories: ["pts"], basis: "perGame" }),
+      windowGames: null,
+    });
+    expect(poolStats.poolSize).toBe(2);
+    const [lower, higher] = values;
+    if (!lower || !higher) throw new Error("Missing valued players");
+    expect(higher.z).toBeGreaterThan(lower.z);
+    expect(higher.g).toBeGreaterThan(lower.g);
+    expect(higher.vorp).toBeGreaterThan(lower.vorp);
+    expect(higher.positional).toBeGreaterThan(lower.positional);
+  });
   it("applies the 150-player pool floor so tiny leagues keep a broad pool", () => {
     const lines = [
       line({ playerId: 1, pts: 900 }),
