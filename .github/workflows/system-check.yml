@@ -98,20 +98,6 @@ jobs:
         with:
           next-cache: ${{ matrix.a11y }}
 
-      # Chromium's apt dependencies are network-bound and the build is
-      # CPU-bound, so the install runs in the background while the app builds.
-      # A process a step leaves behind keeps running into later steps (the perf
-      # job's server relies on the same thing); its exit code lands in a file
-      # that the wait step below reads.
-      - name: 🌐 Install Chromium (background)
-        if: ${{ matrix.a11y }}
-        run: |
-          {
-            status=0
-            bunx playwright install --with-deps chromium || status=$?
-            echo "$status" > "$RUNNER_TEMP/chromium.status"
-          } > "$RUNNER_TEMP/chromium.log" 2>&1 &
-
       # Typecheck does not see RSC boundary violations, bad route config, or a
       # server-only import pulled into a client component; those only surface
       # at build. Every data page is dynamic, so this needs no database.
@@ -120,13 +106,11 @@ jobs:
           PROJECT: ${{ matrix.project }}
         run: bunx nx run "$PROJECT:build" --output-style=static
 
-      - name: ⏳ Wait for Chromium
+      - name: 🌐 Install Chromium
         if: ${{ matrix.a11y }}
         timeout-minutes: 5
-        run: |
-          until [ -f "$RUNNER_TEMP/chromium.status" ]; do sleep 1; done
-          cat "$RUNNER_TEMP/chromium.log"
-          exit "$(cat "$RUNNER_TEMP/chromium.status")"
+        working-directory: apps/court-vision
+        run: bunx --no-install playwright install --with-deps chromium
 
       - name: ♿ Accessibility
         if: ${{ matrix.a11y }}
