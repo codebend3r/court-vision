@@ -103,7 +103,12 @@ model League {
   syncedAt              DateTime?
   syncError             String?
   unsupportedCategories String[]                @default([])
+  // The scored categories of an imported head-to-head league, in the host's
+  // order: [{ statId, displayName, higherIsBetter }]. Null until a sync has
+  // read them. Matchup stats are keyed by statId.
+  statCategories        Json?
   teams                 LeagueTeam[]            @relation("LeagueTeams")
+  matchups              LeagueMatchup[]
   watchlist             LeagueWatchlistPlayer[]
   waivers               LeagueWaiverPlayer[]
   activeFor             Profile[]               @relation("ActiveLeague")
@@ -131,6 +136,8 @@ model LeagueTeam {
   // Back-relation: set when this is the team its league's user manages.
   myTeamOf    League?          @relation("MyTeam")
   slots       LeagueTeamSlot[]
+  matchupsAsA LeagueMatchup[]  @relation("MatchupTeamA")
+  matchupsAsB LeagueMatchup[]  @relation("MatchupTeamB")
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
@@ -155,8 +162,37 @@ model LeagueTeamSlot {
   externalPlayerKey  String?
   externalPlayerName String?
   injuryStatus       String?
+  // The provider's own position label ("SG,SF,PF"), shown instead of the NBA
+  // data's when present.
+  displayPosition    String?
 
   @@unique([teamId, position])
+  @@index([profileId])
+}
+
+// One head-to-head matchup of an imported league's current week, replaced on
+// every sync. statsA / statsB are the two teams' week totals as the provider
+// wrote them, keyed by statId: { "12": "412", "5": ".481" }. A bye retains
+// team A's totals with no team B. syncedAt is independent of roster syncs.
+model LeagueMatchup {
+  id        String      @id @default(cuid())
+  leagueId  String
+  league    League      @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  // Denormalized owner so RLS is a direct auth.uid() check, not a join.
+  profileId String      @db.Uuid
+  week      Int
+  weekStart String?
+  weekEnd   String?
+  status    String?
+  teamAId   String
+  teamA     LeagueTeam  @relation("MatchupTeamA", fields: [teamAId], references: [id], onDelete: Cascade)
+  teamBId   String?
+  teamB     LeagueTeam? @relation("MatchupTeamB", fields: [teamBId], references: [id], onDelete: Cascade)
+  statsA    Json
+  statsB    Json
+  syncedAt  DateTime? // Null for rows written before scoreboard freshness was tracked.
+
+  @@index([leagueId])
   @@index([profileId])
 }
 
@@ -200,12 +236,14 @@ model PlayerExternalId {
 // denormalized so RLS is a direct auth.uid() check. injuryStatus is the
 // provider's status code at the last sync.
 model LeagueWaiverPlayer {
-  leagueId     String
-  league       League  @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  playerId     Int
-  player       Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  profileId    String  @db.Uuid
-  injuryStatus String?
+  leagueId        String
+  league          League  @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  playerId        Int
+  player          Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  profileId       String  @db.Uuid
+  injuryStatus    String?
+  // The provider's own position label ("PF,C"); see LeagueTeamSlot.
+  displayPosition String?
 
   @@id([leagueId, playerId])
   @@index([profileId])

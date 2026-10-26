@@ -2,12 +2,14 @@ import { describe, expect, it } from "bun:test";
 
 import league106344 from "@/lib/yahoo/fixtures/league-106344.json";
 import playersPage from "@/lib/yahoo/fixtures/players-page-106344.json";
+import scoreboard106344 from "@/lib/yahoo/fixtures/scoreboard-106344.json";
 import waivers from "@/lib/yahoo/fixtures/waivers-106344.json";
 import {
   type YahooLeagueSnapshot,
   type YahooPlayer,
   yahooLeagueSnapshotSchema,
   yahooPlayersPageSchema,
+  yahooScoreboardSchema,
 } from "@/lib/yahoo/schemas";
 import { toImportedLeague, toPlayerRefs } from "@/lib/yahoo/transform";
 import { type ImportedLeague } from "@/lib/yahoo/types";
@@ -44,6 +46,7 @@ const player = ({ id, position }: { id: string; position: string | undefined }):
   player_id: id,
   name: { full: `Player ${id}` },
   editorial_team_abbr: undefined,
+  display_position: undefined,
   eligible_positions: ["C", "Util"],
   status: undefined,
   selected_position: position === undefined ? undefined : { position },
@@ -103,6 +106,84 @@ describe("toImportedLeague", () => {
     expect(centers.map(({ player: seated }) => seated?.yahooPlayerId)).toEqual(["1", "2", "3"]);
     expect(team?.slots.at(-1)).toMatchObject({ slotType: "BENCH" });
     expect(team?.slots.at(-1)?.player?.yahooPlayerId).toBe("4");
+  });
+
+  it("keeps the position label Yahoo prints for each player", () => {
+    const refs = importedLeague({ from: snapshot }).teams.flatMap(({ slots }) =>
+      slots.flatMap(({ player: seated }) => (seated ? [seated] : [])),
+    );
+
+    expect(refs.find(({ fullName }) => fullName === "Anthony Black")?.displayPosition).toBe(
+      "PG,SG,SF",
+    );
+    expect(refs.every(({ displayPosition }) => displayPosition !== "")).toBe(true);
+  });
+
+  it("lists the scored categories in Yahoo's order, turnovers lower-wins, display-only stats left out", () => {
+    const { statCategories } = importedLeague({ from: snapshot });
+
+    expect(statCategories.map(({ displayName }) => displayName)).toEqual([
+      "FG%",
+      "FT%",
+      "3PTM",
+      "PTS",
+      "REB",
+      "AST",
+      "ST",
+      "BLK",
+      "TO",
+    ]);
+    expect(statCategories.filter(({ higherIsBetter }) => !higherIsBetter)).toEqual([
+      { statId: 19, displayName: "TO", higherIsBetter: false },
+    ]);
+  });
+
+  it("turns the scoreboard into matchups of two teams' totals", () => {
+    const result = toImportedLeague({
+      snapshot,
+      scoreboard: yahooScoreboardSchema.parse(scoreboard106344),
+    });
+    if (result.status !== "ok") throw new Error("expected ok");
+
+    expect(result.league.matchups).toHaveLength(6);
+    const [first] = result.league.matchups ?? [];
+    expect(first).toMatchObject({ week: 1, weekStart: "2026-10-20", weekEnd: "2026-10-25" });
+    expect(first?.sides.map(({ teamKey }) => teamKey)).toEqual([
+      "478.l.106344.t.1",
+      "478.l.106344.t.2",
+    ]);
+    expect(first?.sides[0]?.stats["17"]).toBe("10");
+  });
+
+  it("distinguishes an unavailable scoreboard from an empty week", () => {
+    expect(importedLeague({ from: snapshot }).matchups).toBeNull();
+    const result = toImportedLeague({
+      snapshot,
+      scoreboard: { fantasy_content: { league: { scoreboard: { matchups: [] } } } },
+    });
+    expect(result.status === "ok" && result.league.matchups).toEqual([]);
+  });
+
+  it("keeps a bye team's totals without an opponent", () => {
+    const parsed = yahooScoreboardSchema.parse(scoreboard106344);
+    const matchups = parsed.fantasy_content.league.scoreboard.matchups;
+    const [first, ...rest] = matchups;
+    if (!first) throw new Error("fixture");
+    const lopsided = {
+      fantasy_content: {
+        league: {
+          scoreboard: { matchups: [{ ...first, teams: first.teams.slice(0, 1) }, ...rest] },
+        },
+      },
+    };
+
+    const result = toImportedLeague({ snapshot, scoreboard: lopsided });
+    if (result.status !== "ok") throw new Error("expected ok");
+
+    expect(result.league.matchups).toHaveLength(6);
+    expect(result.league.matchups?.[0]?.sides).toEqual([
+      { teamKey: first.teams[0]?.team_key, stats: expect.objectContaining({ "17": "10" }) },
+    ]);
   });
 
   it("reads injury status and eligibility", () => {

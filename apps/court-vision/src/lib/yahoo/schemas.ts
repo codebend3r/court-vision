@@ -56,6 +56,8 @@ const playerSchema = z.object({
   player_id: idSchema,
   name: z.object({ full: z.string() }),
   editorial_team_abbr: absent(z.string()),
+  // What Yahoo prints under a player's name: "SG,SF,PF".
+  display_position: absent(z.string()),
   eligible_positions: unwrapped({
     wrapper: z.object({ position: z.string() }),
     pick: ({ position }) => position,
@@ -98,6 +100,8 @@ const statCategorySchema = z.object({
   name: z.string().optional(),
   display_name: z.string(),
   position_type: absent(z.string()),
+  // "1" when a bigger number wins the category, "0" when a smaller one does (turnovers).
+  sort_order: absent(z.union([z.string(), z.number()]).transform(String)),
   is_only_display_stat: yahooFlagSchema,
 });
 
@@ -128,6 +132,7 @@ const leagueSchema = z.object({
   logo_url: absent(z.string()).transform(toYahooLogoUrl),
   num_teams: numberSchema,
   season: numberSchema,
+  current_week: absent(numberSchema),
   scoring_type: z.string(),
   is_highscore: yahooFlagSchema,
   settings: z.object({
@@ -146,6 +151,36 @@ const leagueSchema = z.object({
     stat_modifiers: statModifiersSchema,
   }),
   teams: unwrapped({ wrapper: z.object({ team: teamSchema }), pick: ({ team }) => team }),
+});
+
+// One team's line in a scoreboard matchup: its week totals by stat id. Values
+// stay strings ("0.481", "12", "42/87"); the stat categories say how to read them.
+const matchupTeamSchema = z.object({
+  team_key: z.string(),
+  team_stats: z
+    .object({
+      stats: unwrapped({
+        wrapper: z.object({
+          stat: z.object({
+            stat_id: numberSchema,
+            value: z.union([z.string(), z.number()]).transform(String),
+          }),
+        }),
+        pick: ({ stat }) => stat,
+      }).default([]),
+    })
+    .default({ stats: [] }),
+});
+
+const matchupSchema = z.object({
+  week: numberSchema,
+  week_start: absent(z.string()),
+  week_end: absent(z.string()),
+  status: absent(z.string()),
+  teams: unwrapped({
+    wrapper: z.object({ team: matchupTeamSchema }),
+    pick: ({ team }) => team,
+  }),
 });
 
 const gameSchema = z.object({
@@ -172,6 +207,20 @@ export const yahooPlayersPageSchema = z.object({
   }),
 });
 
+/** Body of `league/{key}/scoreboard`: the current week's matchups. No `matchups` key is an empty week. */
+export const yahooScoreboardSchema = z.object({
+  fantasy_content: z.object({
+    league: z.object({
+      scoreboard: z.object({
+        matchups: unwrapped({
+          wrapper: z.object({ matchup: matchupSchema }),
+          pick: ({ matchup }) => matchup,
+        }).default([]),
+      }),
+    }),
+  }),
+});
+
 // `YahooGame` is the inner `game` object, not the `{ fantasy_content }` body.
 export type YahooGame = z.infer<typeof gameSchema>;
 // `YahooLeagueSnapshot` is the whole parsed body; read `.fantasy_content.league`.
@@ -184,3 +233,8 @@ export type YahooTeam = z.infer<typeof teamSchema>;
 export type YahooPlayer = z.infer<typeof playerSchema>;
 // `YahooPlayersPage` is the whole parsed body; read `.fantasy_content.league.players`.
 export type YahooPlayersPage = z.infer<typeof yahooPlayersPageSchema>;
+// `YahooScoreboard` is the whole parsed body; read `.fantasy_content.league.scoreboard.matchups`.
+export type YahooScoreboard = z.infer<typeof yahooScoreboardSchema>;
+// `YahooMatchup` is one matchup, not the `{ matchup }` wrapper.
+export type YahooMatchup =
+  YahooScoreboard["fantasy_content"]["league"]["scoreboard"]["matchups"][number];

@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "bun:test";
 
@@ -32,7 +32,7 @@ const renderControls = (overrides: Partial<FantasyControlsProps> = {}) => {
 };
 
 describe("FantasyControls roster-status filter", () => {
-  afterEach(() => useRosteredStore.setState({ owners: null }));
+  afterEach(() => act(() => useRosteredStore.setState({ owners: null })));
 
   it("offers the three quick filters and emits the choice, back to page one", async () => {
     useRosteredStore.getState().hydrate({ playerIds: [], owners: [] });

@@ -55,6 +55,7 @@ const dbLeague = ({ id, slug, updatedAt }: { id: string; slug: string; updatedAt
   syncedAt: null,
   syncError: null,
   unsupportedCategories: [],
+  statCategories: null,
   createdAt: new Date("2026-07-01"),
   updatedAt,
 });

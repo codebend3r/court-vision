@@ -91,7 +91,9 @@ export function RosterStatTable({ label, rows, columns }: RosterStatTableProps) 
                       </Link>
                       <span className={styles.playerTags}>
                         {!!row.teamAbbr && <TeamChip team={row.teamAbbr} size="sm" />}
-                        {!!row.position && <PositionTag position={row.position} />}
+                        {!!row.position && (
+                          <PositionTag position={row.position} playerId={row.id} />
+                        )}
                       </span>
                     </span>
                   </span>

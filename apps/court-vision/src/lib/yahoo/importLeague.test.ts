@@ -65,6 +65,7 @@ const WAIVER: YahooPlayerRef = {
   fullName: "Waiver Guy",
   teamAbbr: "NYK",
   eligiblePositions: ["PG"],
+  displayPosition: null,
   status: null,
 };
 
@@ -93,6 +94,7 @@ const leagueRow: League = {
   syncedAt: new Date("2026-10-17T12:00:00Z"),
   syncError: null,
   unsupportedCategories: [],
+  statCategories: null,
   createdAt: new Date("2026-10-17T12:00:00Z"),
   updatedAt: new Date("2026-10-17T12:00:00Z"),
 };

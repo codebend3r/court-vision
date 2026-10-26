@@ -6,6 +6,7 @@ import { type Logger, silentLogger } from "@vision/core/util/logger";
 import { YAHOO_API_BASE_URL, YAHOO_MAX_WAIVER_PAGES, YAHOO_PAGE_SIZE } from "@/lib/yahoo/constants";
 import gameNba from "@/lib/yahoo/fixtures/game-nba.json";
 import league106344 from "@/lib/yahoo/fixtures/league-106344.json";
+import scoreboard106344 from "@/lib/yahoo/fixtures/scoreboard-106344.json";
 import waivers106344 from "@/lib/yahoo/fixtures/waivers-106344.json";
 
 // A pass-through: bun:test has no Next incremental cache. The double is still
@@ -24,6 +25,7 @@ type Route = { status: number; body: unknown };
 
 const GAME_PATH = "game/nba";
 const SNAPSHOT_PATH = "league/478.l.106344;out=settings/teams/roster";
+const SCOREBOARD_PATH = "league/478.l.106344/scoreboard";
 const waiverPath = ({ start }: { start: number }): string =>
   `league/478.l.106344/players;status=W;start=${start};count=${YAHOO_PAGE_SIZE}`;
 
@@ -47,14 +49,17 @@ const routesFor = ({
   game = ok(gameNba),
   snapshot = ok(league106344),
   waiverPages = [ok(waivers106344)],
+  scoreboard = ok(scoreboard106344),
 }: {
   game?: Route;
   snapshot?: Route;
   waiverPages?: readonly Route[];
+  scoreboard?: Route;
 }): ReadonlyMap<string, Route> =>
   new Map([
     [yahooUrl({ path: GAME_PATH }), game],
     [yahooUrl({ path: SNAPSHOT_PATH }), snapshot],
+    [yahooUrl({ path: SCOREBOARD_PATH }), scoreboard],
     ...waiverPages.map((page, index): [string, Route] => [
       yahooUrl({ path: waiverPath({ start: index * YAHOO_PAGE_SIZE }) }),
       page,
@@ -92,8 +97,21 @@ describe("loadYahooLeague", () => {
       yahooUrl({ path: GAME_PATH }),
       yahooUrl({ path: SNAPSHOT_PATH }),
       yahooUrl({ path: waiverPath({ start: 0 }) }),
+      yahooUrl({ path: SCOREBOARD_PATH }),
     ]);
     expect(result.league.externalKey).toBe("478.l.106344");
+    expect(result.league.matchups).toHaveLength(6);
+    expect(result.league.statCategories.map(({ displayName }) => displayName)).toEqual([
+      "FG%",
+      "FT%",
+      "3PTM",
+      "PTS",
+      "REB",
+      "AST",
+      "ST",
+      "BLK",
+      "TO",
+    ]);
     expect(result.league.name).toBe("Game of Courts");
     expect(result.league.teams).toHaveLength(12);
     expect(result.league.scoring.scoringType).toBe("h2h_categories");
@@ -103,9 +121,41 @@ describe("loadYahooLeague", () => {
         fullName: "Isaiah Stewart",
         teamAbbr: "MEM",
         eligiblePositions: ["PF", "F", "C", "Util", "IL"],
+        displayPosition: "PF,C",
         status: "O",
       },
     ]);
+  });
+
+  it("starts the scoreboard while the waiver read is still pending", async () => {
+    const waiver = Promise.withResolvers<Response>();
+    const baseFetch = stubYahoo({ routes: routesFor({}) });
+    const fetchImpl = vi.fn<FetchImpl>(async (input, init) => {
+      if (String(input) === yahooUrl({ path: waiverPath({ start: 0 }) })) return waiver.promise;
+      if (String(input) === yahooUrl({ path: SCOREBOARD_PATH })) {
+        waiver.resolve(new Response(JSON.stringify(waivers106344)));
+      }
+      return baseFetch(input, init);
+    });
+    const result = loaded({
+      result: await loadYahooLeague({ leagueId: "106344", fetchImpl, logger: silentLogger }),
+    });
+    expect(result.league.matchups).toHaveLength(6);
+    expect(result.waiverRefs).toHaveLength(1);
+  });
+
+  it("still loads the league when the scoreboard can't be read", async () => {
+    const fetchImpl = stubYahoo({
+      routes: routesFor({ scoreboard: { status: 500, body: {} } }),
+    });
+
+    const result = loaded({
+      result: await loadYahooLeague({ leagueId: "106344", fetchImpl, logger: silentLogger }),
+    });
+
+    expect(result.league.teams).toHaveLength(12);
+    expect(result.league.matchups).toBeNull();
+    expect(result.league.statCategories).toHaveLength(9);
   });
 
   it("reads only the game and the snapshot when waivers are left out", async () => {
@@ -143,7 +193,9 @@ describe("loadYahooLeague", () => {
       result: await loadYahooLeague({ leagueId: "106344", fetchImpl, logger: silentLogger }),
     });
 
-    expect(requestedUrls({ fetchImpl }).slice(2)).toEqual([
+    expect(
+      requestedUrls({ fetchImpl }).filter((url) => url.includes("/players;status=W;")),
+    ).toEqual([
       yahooUrl({ path: waiverPath({ start: 0 }) }),
       yahooUrl({ path: waiverPath({ start: 25 }) }),
       yahooUrl({ path: waiverPath({ start: 50 }) }),
@@ -164,7 +216,7 @@ describe("loadYahooLeague", () => {
       result: await loadYahooLeague({ leagueId: "106344", fetchImpl, logger: silentLogger }),
     });
 
-    expect(fetchImpl).toHaveBeenCalledTimes(2 + YAHOO_MAX_WAIVER_PAGES);
+    expect(fetchImpl).toHaveBeenCalledTimes(3 + YAHOO_MAX_WAIVER_PAGES);
     expect(result.waiverRefs).toHaveLength(YAHOO_MAX_WAIVER_PAGES * YAHOO_PAGE_SIZE);
   });
 
@@ -303,6 +355,21 @@ describe("parseYahooPayload", () => {
 
     expect(result.league.teams).toHaveLength(12);
     expect(result.waiverRefs.map(({ fullName }) => fullName)).toEqual(["Isaiah Stewart"]);
+  });
+
+  it("preserves unavailable versus successfully empty scoreboards at the raw boundary", () => {
+    const parse = (scoreboard: unknown) =>
+      loaded({
+        result: parseYahooPayload({
+          currentSeason: 2026,
+          snapshot: league106344,
+          waiverPages: [],
+          scoreboard,
+        }),
+      }).league.matchups;
+    expect(parse(undefined)).toBeNull();
+    expect(parse({ broken: true })).toBeNull();
+    expect(parse({ fantasy_content: { league: { scoreboard: { matchups: [] } } } })).toEqual([]);
   });
 
   it("refuses a waiver page that doesn't parse", () => {

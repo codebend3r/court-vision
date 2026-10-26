@@ -2,6 +2,8 @@
 
 import { type ChangeEvent, useId } from "react";
 
+import { useRosteredStore } from "@/lib/leagues/rosteredStore";
+
 import { SortHeader } from "@/components/SortHeader/SortHeader";
 import { NO_FREE_AGENTS } from "@/components/WaiverWireView/CutLinePanel";
 import { type SortColumn } from "@/lib/tableSort";
@@ -39,10 +41,14 @@ export type HeadToHeadPanelProps = {
 };
 
 // "Wendell Carter Jr. · ORL · C".
-const describePlayer = ({ player }: { player: WaiverRow }): string =>
-  [player.fullName, player.teamAbbr, player.position]
-    .flatMap((part) => (part ? [part] : []))
-    .join(" · ");
+const describePlayer = ({
+  player,
+  position,
+}: {
+  player: WaiverRow;
+  position: string | null;
+}): string =>
+  [player.fullName, player.teamAbbr, position].flatMap((part) => (part ? [part] : [])).join(" · ");
 
 // The free agent's share of the two per-game numbers, as a percentage. Two
 // zeros split the bar evenly.
@@ -147,6 +153,9 @@ function CategoryRow({ row }: { row: HeadToHeadRow }) {
 // what the swap does to my team's per-game totals.
 export function HeadToHeadPanel({ pair, result, freePool, roster, onPick }: HeadToHeadPanelProps) {
   const { sort, onSort, sorted } = useColumnSort({ columns: CATEGORY_COLUMNS });
+  const positions = useRosteredStore((state) => state.positions);
+  const positionOf = ({ player }: { player: WaiverRow }): string | null =>
+    positions.get(player.playerId) ?? player.position;
   return (
     <div className={styles.panel}>
       <div className={styles.controls}>
@@ -173,12 +182,15 @@ export function HeadToHeadPanel({ pair, result, freePool, roster, onPick }: Head
             <ReadoutCard
               label="Free agent"
               value={formatValue({ value: pair.fa.value })}
-              note={describePlayer({ player: pair.fa })}
+              note={describePlayer({ player: pair.fa, position: positionOf({ player: pair.fa }) })}
             />
             <ReadoutCard
               label="Your team"
               value={formatValue({ value: pair.mine.value })}
-              note={describePlayer({ player: pair.mine })}
+              note={describePlayer({
+                player: pair.mine,
+                position: positionOf({ player: pair.mine }),
+              })}
             />
           </ReadoutRow>
           <div className={styles.tableWrapper}>

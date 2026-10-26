@@ -40,6 +40,7 @@ describe("SessionHydrator", () => {
     const { container } = render(
       <SessionHydrator
         watchlistPlayerIds={[7, 9]}
+        leaguePositions={[{ playerId: 115, position: "PG,SG" }]}
         leagueOwners={null}
         rosteredPlayerIds={[115, 237]}
         leagues={[league({ id: "a", name: "Alpha" })]}
@@ -50,6 +51,7 @@ describe("SessionHydrator", () => {
     expect(useWatchlistStore.getState().playerIds.has(7)).toBe(true);
     expect(useWatchlistStore.getState().count).toBe(2);
     expect([...useRosteredStore.getState().playerIds]).toEqual([115, 237]);
+    expect(useRosteredStore.getState().positions.get(115)).toBe("PG,SG");
     expect(useLeaguesStore.getState().leagues.map((entry) => entry.id)).toEqual(["a"]);
     expect(useLeaguesStore.getState().activeLeagueId).toBe("a");
   });
@@ -58,6 +60,7 @@ describe("SessionHydrator", () => {
     const { rerender } = render(
       <SessionHydrator
         watchlistPlayerIds={[7]}
+        leaguePositions={[{ playerId: 115, position: "PG,SG" }]}
         leagueOwners={null}
         rosteredPlayerIds={[115]}
         leagues={[]}
@@ -67,6 +70,7 @@ describe("SessionHydrator", () => {
     rerender(
       <SessionHydrator
         watchlistPlayerIds={[]}
+        leaguePositions={[]}
         leagueOwners={null}
         rosteredPlayerIds={[237]}
         leagues={[league({ id: "b", name: "Beta" })]}
@@ -75,6 +79,7 @@ describe("SessionHydrator", () => {
     );
     expect(useWatchlistStore.getState().count).toBe(0);
     expect([...useRosteredStore.getState().playerIds]).toEqual([237]);
+    expect(useRosteredStore.getState().positions.size).toBe(0);
     expect(useLeaguesStore.getState().activeLeagueId).toBe("b");
   });
 });

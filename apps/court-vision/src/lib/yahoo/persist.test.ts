@@ -9,12 +9,24 @@ type SlotRow = {
   externalPlayerKey: string | null;
   externalPlayerName: string | null;
   injuryStatus: string | null;
+  displayPosition: string | null;
 };
 type WaiverRow = {
   leagueId: string;
   playerId: number;
   profileId: string;
   injuryStatus: string | null;
+  displayPosition: string | null;
+};
+type MatchupRow = {
+  leagueId: string;
+  profileId: string;
+  week: number;
+  teamAId: string;
+  teamBId: string | null;
+  syncedAt: Date;
+  statsA: Record<string, string>;
+  statsB: Record<string, string>;
 };
 type TeamData = {
   leagueId: string;
@@ -44,6 +56,8 @@ const slotCreateMany = vi.fn<(args: { data: SlotRow[] }) => Promise<{ count: num
 const waiverDeleteMany = vi.fn<() => Promise<{ count: number }>>();
 const waiverCreateMany =
   vi.fn<(args: { data: WaiverRow[]; skipDuplicates: boolean }) => Promise<{ count: number }>>();
+const matchupDeleteMany = vi.fn<() => Promise<{ count: number }>>();
+const matchupCreateMany = vi.fn<(args: { data: MatchupRow[] }) => Promise<{ count: number }>>();
 const profileUpdate = vi.fn<() => Promise<{ id: string }>>();
 const leagueFindUniqueOrThrow = vi.fn<() => Promise<League>>();
 
@@ -62,6 +76,7 @@ const tx = {
   },
   leagueTeamSlot: { deleteMany: slotDeleteMany, createMany: slotCreateMany },
   leagueWaiverPlayer: { deleteMany: waiverDeleteMany, createMany: waiverCreateMany },
+  leagueMatchup: { deleteMany: matchupDeleteMany, createMany: matchupCreateMany },
   profile: { update: profileUpdate },
 };
 
@@ -77,7 +92,8 @@ import { prisma } from "@/lib/prisma";
 import league106344 from "@/lib/yahoo/fixtures/league-106344.json";
 import { type ResolvedPlayers } from "@/lib/yahoo/matchPlayers";
 import { createImportedLeague, syncImportedLeague } from "@/lib/yahoo/persist";
-import { yahooLeagueSnapshotSchema } from "@/lib/yahoo/schemas";
+import scoreboard106344 from "@/lib/yahoo/fixtures/scoreboard-106344.json";
+import { yahooLeagueSnapshotSchema, yahooScoreboardSchema } from "@/lib/yahoo/schemas";
 import { toImportedLeague } from "@/lib/yahoo/transform";
 import { type ImportedLeague, type ImportedTeam, type YahooPlayerRef } from "@/lib/yahoo/types";
 
@@ -96,11 +112,21 @@ const importedLeague = (): ImportedLeague => {
   return result.league;
 };
 
+const importedLeagueWithMatchups = (): ImportedLeague => {
+  const result = toImportedLeague({
+    snapshot: yahooLeagueSnapshotSchema.parse(league106344),
+    scoreboard: yahooScoreboardSchema.parse(scoreboard106344),
+  });
+  if (result.status !== "ok") throw new Error(`expected ok, got ${result.reason}`);
+  return result.league;
+};
+
 const ref = (overrides: Partial<YahooPlayerRef>): YahooPlayerRef => ({
   yahooPlayerId: "1",
   fullName: "Someone",
   teamAbbr: null,
   eligiblePositions: [],
+  displayPosition: null,
   status: null,
   ...overrides,
 });
@@ -127,6 +153,7 @@ const leagueRow: League = {
   syncedAt: new Date("2026-10-16T12:00:00Z"),
   syncError: null,
   unsupportedCategories: [],
+  statCategories: null,
   createdAt: new Date("2026-10-16T12:00:00Z"),
   updatedAt: new Date("2026-10-16T12:00:00Z"),
 };
@@ -186,6 +213,8 @@ beforeEach(() => {
     slotCreateMany,
     waiverDeleteMany,
     waiverCreateMany,
+    matchupDeleteMany,
+    matchupCreateMany,
     profileUpdate,
     leagueFindUniqueOrThrow,
   ].forEach((mock) => mock.mockReset());
@@ -207,6 +236,8 @@ beforeEach(() => {
   slotCreateMany.mockResolvedValue({ count: 0 });
   waiverDeleteMany.mockResolvedValue({ count: 0 });
   waiverCreateMany.mockResolvedValue({ count: 0 });
+  matchupDeleteMany.mockResolvedValue({ count: 0 });
+  matchupCreateMany.mockResolvedValue({ count: 0 });
   profileUpdate.mockResolvedValue({ id: PROFILE_ID });
 });
 
@@ -237,6 +268,7 @@ describe("createImportedLeague", () => {
         unsupportedCategories: league.scoring.unsupportedCategories,
         teamCount: 12,
         rosterSlots: 13,
+        statCategories: league.statCategories,
         syncedAt: expect.any(Date),
       },
     });
@@ -264,6 +296,7 @@ describe("createImportedLeague", () => {
         externalPlayerKey: null,
         externalPlayerName: null,
         injuryStatus: "Q",
+        displayPosition: "PG,SG,SF",
       },
     ]);
     expect(
@@ -278,6 +311,7 @@ describe("createImportedLeague", () => {
         externalPlayerKey: KEVIN_PORTER,
         externalPlayerName: "Kevin Porter Jr.",
         injuryStatus: "Q",
+        displayPosition: "PG,SG",
       },
     ]);
     const gasolRows = slotRows().filter((row) => row.teamId === teamIdOf({ externalKey: GASOL }));
@@ -290,13 +324,22 @@ describe("createImportedLeague", () => {
       externalPlayerKey: null,
       externalPlayerName: null,
       injuryStatus: null,
+      displayPosition: null,
     });
     expect(slotRows()).toHaveLength(
       league.teams.reduce((total, team) => total + team.slots.length, 0),
     );
 
     expect(waiverCreateMany).toHaveBeenCalledWith({
-      data: [{ leagueId: LEAGUE_ID, playerId: 701, profileId: PROFILE_ID, injuryStatus: "O" }],
+      data: [
+        {
+          leagueId: LEAGUE_ID,
+          playerId: 701,
+          profileId: PROFILE_ID,
+          injuryStatus: "O",
+          displayPosition: null,
+        },
+      ],
       skipDuplicates: true,
     });
     expect(leagueUpdate).toHaveBeenCalledWith({
@@ -374,18 +417,60 @@ describe("createImportedLeague", () => {
       waiverRefs: [
         ref({ yahooPlayerId: "6408", fullName: "Isaiah Stewart", status: "O" }),
         ref({ yahooPlayerId: "9999", fullName: "Nobody Known", status: "INJ" }),
-        ref({ yahooPlayerId: "7001", fullName: "Healthy Guard", status: null }),
+        ref({
+          yahooPlayerId: "7001",
+          fullName: "Healthy Guard",
+          status: null,
+          displayPosition: "PG,SG",
+        }),
       ],
       myTeamExternalKey: NEWFOUNDLANDERS,
     });
 
     expect(waiverCreateMany).toHaveBeenCalledWith({
       data: [
-        { leagueId: LEAGUE_ID, playerId: 701, profileId: PROFILE_ID, injuryStatus: "O" },
-        { leagueId: LEAGUE_ID, playerId: 702, profileId: PROFILE_ID, injuryStatus: null },
+        {
+          leagueId: LEAGUE_ID,
+          playerId: 701,
+          profileId: PROFILE_ID,
+          injuryStatus: "O",
+          displayPosition: null,
+        },
+        {
+          leagueId: LEAGUE_ID,
+          playerId: 702,
+          profileId: PROFILE_ID,
+          injuryStatus: null,
+          displayPosition: "PG,SG",
+        },
       ],
       skipDuplicates: true,
     });
+  });
+
+  it("writes the week's matchups against the team rows", async () => {
+    await create({
+      profileId: PROFILE_ID,
+      league: importedLeagueWithMatchups(),
+      resolved,
+      waiverRefs: [],
+      myTeamExternalKey: NEWFOUNDLANDERS,
+    });
+
+    const rows = matchupCreateMany.mock.calls[0]?.[0]?.data ?? [];
+    expect(rows).toHaveLength(6);
+    expect(rows[0]).toMatchObject({
+      leagueId: LEAGUE_ID,
+      profileId: PROFILE_ID,
+      week: 1,
+      weekStart: "2026-10-20",
+      weekEnd: "2026-10-25",
+      status: "midevent",
+      teamAId: teamIdOf({ externalKey: GASOL }),
+      teamBId: teamIdOf({ externalKey: KEEPERS }),
+    });
+    expect(rows[0]?.statsA["12"]).toBe("380");
+    expect(rows[0]?.statsB["5"]).toBe(".437");
   });
 
   it("writes no waiver rows when no waiver player matched", async () => {
@@ -518,7 +603,15 @@ describe("syncImportedLeague", () => {
       where: { leagueId: LEAGUE_ID, profileId: PROFILE_ID },
     });
     expect(waiverCreateMany).toHaveBeenCalledWith({
-      data: [{ leagueId: LEAGUE_ID, playerId: 501, profileId: PROFILE_ID, injuryStatus: "Q" }],
+      data: [
+        {
+          leagueId: LEAGUE_ID,
+          playerId: 501,
+          profileId: PROFILE_ID,
+          injuryStatus: "Q",
+          displayPosition: null,
+        },
+      ],
       skipDuplicates: true,
     });
     expect(waiverDeleteMany.mock.invocationCallOrder[0] ?? 0).toBeLessThan(
@@ -530,5 +623,60 @@ describe("syncImportedLeague", () => {
 
     expect(teamCreate).not.toHaveBeenCalled();
     expect(profileUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe("syncImportedLeague matchups", () => {
+  const syncWith = ({ league }: { league: ImportedLeague }) =>
+    sync({ profileId: PROFILE_ID, leagueId: LEAGUE_ID, league, resolved, waiverRefs: [] });
+
+  it("replaces the matchups when Yahoo sent a scoreboard", async () => {
+    await syncWith({ league: importedLeagueWithMatchups() });
+
+    expect(matchupDeleteMany).toHaveBeenCalledWith({
+      where: { leagueId: LEAGUE_ID, profileId: PROFILE_ID },
+    });
+    expect(matchupCreateMany.mock.calls[0]?.[0]?.data).toHaveLength(6);
+    expect(matchupDeleteMany.mock.invocationCallOrder[0] ?? Infinity).toBeLessThan(
+      matchupCreateMany.mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
+  it("clears old matchups when Yahoo successfully reports an empty week", async () => {
+    await syncWith({ league: { ...importedLeague(), matchups: [] } });
+    expect(matchupDeleteMany).toHaveBeenCalledWith({
+      where: { leagueId: LEAGUE_ID, profileId: PROFILE_ID },
+    });
+    expect(matchupCreateMany).not.toHaveBeenCalled();
+  });
+
+  it("stores bye totals with no opponent and a scoreboard-specific timestamp", async () => {
+    const league = importedLeagueWithMatchups();
+    const first = league.matchups?.[0];
+    if (!first) throw new Error("fixture");
+    await syncWith({ league: { ...league, matchups: [{ ...first, sides: [first.sides[0]] }] } });
+    expect(matchupCreateMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          teamAId: teamIdOf({ externalKey: GASOL }),
+          teamBId: null,
+          statsA: first.sides[0].stats,
+          statsB: {},
+          syncedAt: expect.any(Date),
+        }),
+      ],
+    });
+  });
+
+  it("keeps the stored matchups and their freshness when the scoreboard is unavailable", async () => {
+    await syncWith({ league: importedLeague() });
+
+    expect(matchupDeleteMany).not.toHaveBeenCalled();
+    expect(matchupCreateMany).not.toHaveBeenCalled();
+    expect(leagueUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.not.objectContaining({ statCategories: expect.anything() }),
+      }),
+    );
   });
 });

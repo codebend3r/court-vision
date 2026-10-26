@@ -1,5 +1,6 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "bun:test";
+import { type ReactElement } from "react";
 
 import { RosterStatCharts } from "@/components/RosterStatCharts/RosterStatCharts";
 import { type RosterChart } from "@/lib/roster/charts";
@@ -45,22 +46,33 @@ const points = chart({
   ],
 });
 
+// The bar plot is a next/dynamic chunk, and recharts dispatches store updates
+// once it mounts. Render inside an async act so both settle before the test
+// ends, otherwise React warns that those updates were not wrapped in act.
+const renderCharts = async (ui: ReactElement) => {
+  const result = render(ui);
+  await act(async () => {
+    await Promise.resolve();
+  });
+  return result;
+};
+
 describe("RosterStatCharts", () => {
-  it("names the region and gives each stat a card", () => {
-    render(<RosterStatCharts label="Regular stats charts" charts={[points]} />);
+  it("names the region and gives each stat a card", async () => {
+    await renderCharts(<RosterStatCharts label="Regular stats charts" charts={[points]} />);
     const region = screen.getByRole("region", { name: "Regular stats charts" });
     expect(within(region).getByRole("heading", { name: /PTS/ })).toBeInTheDocument();
   });
 
-  it("reads each chart out in words, best first, so it never rests on colour", () => {
-    render(<RosterStatCharts label="Charts" charts={[points]} />);
+  it("reads each chart out in words, best first, so it never rests on colour", async () => {
+    await renderCharts(<RosterStatCharts label="Charts" charts={[points]} />);
     expect(screen.getByRole("img")).toHaveAccessibleName(
       "pts full, best first: A Brunson 28, A Hart 9",
     );
   });
 
-  it("keys only the colours the charts use", () => {
-    render(<RosterStatCharts label="Charts" charts={[points]} />);
+  it("keys only the colours the charts use", async () => {
+    await renderCharts(<RosterStatCharts label="Charts" charts={[points]} />);
     const key = screen.getByRole("list", { name: "Colour key" });
     expect(within(key).getByText("Top third of the league")).toBeInTheDocument();
     expect(within(key).getByText("Bottom third")).toBeInTheDocument();
@@ -68,18 +80,20 @@ describe("RosterStatCharts", () => {
     expect(within(key).queryByText("Role, not quality")).not.toBeInTheDocument();
   });
 
-  it("keys the role colour when a stat describes a role", () => {
+  it("keys the role colour when a stat describes a role", async () => {
     const pace = chart({
       key: "pace",
       direction: "neutral",
       bars: [bar({ id: 1, name: "Brunson", label: "99", tier: "neutral" })],
     });
-    render(<RosterStatCharts label="Charts" charts={[pace]} />);
+    await renderCharts(<RosterStatCharts label="Charts" charts={[pace]} />);
     expect(screen.getByText("Role, not quality")).toBeInTheDocument();
   });
 
-  it("says so when a stat has no data, rather than drawing an empty chart", () => {
-    render(<RosterStatCharts label="Charts" charts={[chart({ key: "blk", bars: [] })]} />);
+  it("says so when a stat has no data, rather than drawing an empty chart", async () => {
+    await renderCharts(
+      <RosterStatCharts label="Charts" charts={[chart({ key: "blk", bars: [] })]} />,
+    );
     expect(screen.getByText("No data yet.")).toBeInTheDocument();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });

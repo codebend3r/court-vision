@@ -6,6 +6,9 @@ export type BridgeLeaguePayload = {
   game: unknown;
   snapshot: unknown;
   waiverPages: unknown[];
+  // The current week's scoreboard. Absent when the extension couldn't read it
+  // (or is an older build); the league still imports without matchups.
+  scoreboard?: unknown;
 };
 
 export type BridgeErrorReason =

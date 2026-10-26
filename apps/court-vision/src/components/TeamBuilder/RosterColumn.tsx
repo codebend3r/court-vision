@@ -103,7 +103,11 @@ function FilledSlot({ slot, player, onRemove }: FilledSlotProps) {
         />
         <span className={styles.slotPlayerName}>{player.fullName}</span>
         {!!player.position && (
-          <PositionTag position={player.position} className={styles.slotPlayerPosition} />
+          <PositionTag
+            position={player.position}
+            playerId={player.playerId}
+            className={styles.slotPlayerPosition}
+          />
         )}
       </Link>
       <button

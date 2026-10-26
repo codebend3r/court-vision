@@ -27,6 +27,7 @@ const toLeagueSettings = ({ league }: { league: ImportedLeague }) => ({
   unsupportedCategories: league.scoring.unsupportedCategories,
   teamCount: league.teamCount,
   rosterSlots: league.rosterSlots,
+  statCategories: league.statCategories.map((category) => ({ ...category })),
 });
 
 // A slug per team: a kept team keeps its own (`kept` maps Yahoo key to slug),
@@ -75,6 +76,7 @@ const toSlotRows = ({
       externalPlayerKey: unmatched?.yahooPlayerId ?? null,
       externalPlayerName: unmatched?.fullName ?? null,
       injuryStatus: player?.status ?? null,
+      displayPosition: player?.displayPosition ?? null,
     };
   });
 
@@ -107,10 +109,61 @@ const writeWaivers = async ({
     const playerId = resolved.byYahooId.get(ref.yahooPlayerId);
     return playerId === undefined
       ? []
-      : [{ leagueId, playerId, profileId, injuryStatus: ref.status }];
+      : [
+          {
+            leagueId,
+            playerId,
+            profileId,
+            injuryStatus: ref.status,
+            displayPosition: ref.displayPosition,
+          },
+        ];
   });
   if (!data.length) return;
   await tx.leagueWaiverPlayer.createMany({ data, skipDuplicates: true });
+};
+
+// The current week's matchups, each side pointed at the team row its Yahoo key
+// names. A matchup naming a team the league doesn't have is skipped.
+const writeMatchups = async ({
+  tx,
+  profileId,
+  leagueId,
+  league,
+  teams,
+}: {
+  tx: Prisma.TransactionClient;
+  profileId: string;
+  leagueId: string;
+  league: ImportedLeague;
+  teams: readonly WrittenTeam[];
+}): Promise<void> => {
+  const idByKey = new Map(teams.map(({ teamId, team }) => [team.externalKey, teamId]));
+  const syncedAt = new Date();
+  const data = (league.matchups ?? []).flatMap(({ week, weekStart, weekEnd, status, sides }) => {
+    const [a, b] = sides;
+    const teamAId = idByKey.get(a.teamKey);
+    const teamBId = b === undefined ? null : idByKey.get(b.teamKey);
+    return teamAId === undefined || teamBId === undefined
+      ? []
+      : [
+          {
+            leagueId,
+            profileId,
+            week,
+            weekStart,
+            weekEnd,
+            status,
+            teamAId,
+            teamBId,
+            statsA: a.stats,
+            statsB: b?.stats ?? {},
+            syncedAt,
+          },
+        ];
+  });
+  if (!data.length) return;
+  await tx.leagueMatchup.createMany({ data });
 };
 
 /**
@@ -172,6 +225,7 @@ export const createImportedLeague = async ({
   });
   await writeSlots({ tx, profileId, resolved, teams });
   await writeWaivers({ tx, profileId, resolved, waiverRefs, leagueId: created.id });
+  await writeMatchups({ tx, profileId, leagueId: created.id, league, teams });
 
   const myTeam = teams.find(({ team }) => team.externalKey === myTeamExternalKey);
   const withMyTeam = await tx.league.update({
@@ -185,8 +239,8 @@ export const createImportedLeague = async ({
 /**
  * Re-syncs an imported league in place: refreshes its settings, upserts its
  * teams by Yahoo key (keeping each slug, so links and `myTeamId` survive),
- * deletes teams Yahoo no longer has, and rewrites every roster and the waiver
- * list. The league's name and slug are left alone.
+ * deletes teams Yahoo no longer has, and rewrites every roster, the waiver
+ * list and the current week's matchups. The league's name and slug are left alone.
  */
 export const syncImportedLeague = async ({
   tx,
@@ -198,9 +252,16 @@ export const syncImportedLeague = async ({
 }: PersistArgs & { leagueId: string }): Promise<League> => {
   // First, so a league that isn't this owner's import of this Yahoo league
   // fails (P2025) before anything else is touched.
+  const { statCategories, ...settings } = toLeagueSettings({ league });
   await tx.league.update({
     where: { id: leagueId, profileId, provider: YAHOO_PROVIDER, externalKey: league.externalKey },
-    data: { ...toLeagueSettings({ league }), syncedAt: new Date(), syncError: null },
+    data: {
+      ...settings,
+      // Retained totals must keep the category definitions they were read with.
+      ...(league.matchups !== null && { statCategories }),
+      syncedAt: new Date(),
+      syncError: null,
+    },
   });
 
   const existing = await tx.leagueTeam.findMany({
@@ -252,6 +313,13 @@ export const syncImportedLeague = async ({
 
   await tx.leagueWaiverPlayer.deleteMany({ where: { leagueId, profileId } });
   await writeWaivers({ tx, profileId, resolved, waiverRefs, leagueId });
+
+  // An unavailable scoreboard preserves its own timestamp; a successful empty
+  // read clears last week's rows just like a successful populated read.
+  if (league.matchups !== null) {
+    await tx.leagueMatchup.deleteMany({ where: { leagueId, profileId } });
+    await writeMatchups({ tx, profileId, leagueId, league, teams });
+  }
 
   // Read back rather than returning the update above: deleting a vanished team
   // may since have cleared `myTeamId` (SetNull).

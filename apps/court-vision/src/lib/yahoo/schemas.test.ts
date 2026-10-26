@@ -4,12 +4,14 @@ import game from "@/lib/yahoo/fixtures/game-nba.json";
 import league1000 from "@/lib/yahoo/fixtures/league-1000.json";
 import league106344 from "@/lib/yahoo/fixtures/league-106344.json";
 import playersPage from "@/lib/yahoo/fixtures/players-page-106344.json";
+import scoreboard from "@/lib/yahoo/fixtures/scoreboard-106344.json";
 import waivers from "@/lib/yahoo/fixtures/waivers-106344.json";
 import {
   yahooFlagSchema,
   yahooGameSchema,
   yahooLeagueSnapshotSchema,
   yahooPlayersPageSchema,
+  yahooScoreboardSchema,
 } from "@/lib/yahoo/schemas";
 
 const base106344LogoUrl = league106344.fantasy_content.league.logo_url;
@@ -229,6 +231,65 @@ describe("yahooLeagueSnapshotSchema", () => {
 
   it("rejects a body without fantasy_content", () => {
     expect(yahooLeagueSnapshotSchema.safeParse({ error: { description: "x" } }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe("player display position", () => {
+  it("reads the label Yahoo prints under a player's name", () => {
+    const page = yahooPlayersPageSchema.parse(waivers);
+
+    expect(page.fantasy_content.league.players[0]?.display_position).toBe("PF,C");
+  });
+
+  it("treats a player without one as absent", () => {
+    const page = yahooPlayersPageSchema.parse({
+      fantasy_content: {
+        league: { players: [{ player: { player_id: "1", name: { full: "No Label" } } }] },
+      },
+    });
+
+    expect(page.fantasy_content.league.players[0]?.display_position).toBeUndefined();
+  });
+});
+
+describe("league stat categories and week", () => {
+  it("reads the sort order that says which way a category is won", () => {
+    const league = yahooLeagueSnapshotSchema.parse(league106344).fantasy_content.league;
+    const byName = new Map(
+      league.settings.stat_categories.stats.map((stat) => [stat.display_name, stat.sort_order]),
+    );
+
+    expect(byName.get("TO")).toBe("0");
+    expect(byName.get("PTS")).toBe("1");
+    expect(league.current_week).toBe(1);
+  });
+});
+
+describe("yahooScoreboardSchema", () => {
+  it("unwraps matchups, their teams and each team's week totals", () => {
+    const { matchups } = yahooScoreboardSchema.parse(scoreboard).fantasy_content.league.scoreboard;
+
+    expect(matchups).toHaveLength(6);
+    const [first] = matchups;
+    expect(first).toMatchObject({ week: 1, week_start: "2026-10-20", status: "midevent" });
+    expect(first?.teams.map(({ team_key }) => team_key)).toEqual([
+      "478.l.106344.t.1",
+      "478.l.106344.t.2",
+    ]);
+    expect(first?.teams[0]?.team_stats.stats).toContainEqual({ stat_id: 17, value: "10" });
+  });
+
+  it("reads a scoreboard with no matchups as an empty week", () => {
+    expect(
+      yahooScoreboardSchema.parse({ fantasy_content: { league: { scoreboard: {} } } })
+        .fantasy_content.league.scoreboard.matchups,
+    ).toEqual([]);
+  });
+
+  it("rejects a body without a scoreboard", () => {
+    expect(yahooScoreboardSchema.safeParse({ fantasy_content: { league: {} } }).success).toBe(
       false,
     );
   });

@@ -87,7 +87,11 @@ export function SearchResults({
               <span className={styles.cardName}>{player.fullName}</span>
               {player.teamAbbr !== null && <TeamChip team={player.teamAbbr} size="sm" />}
               {player.position !== null ? (
-                <PositionTag position={player.position} className={styles.cardPosition} />
+                <PositionTag
+                  position={player.position}
+                  playerId={player.playerId}
+                  className={styles.cardPosition}
+                />
               ) : (
                 <span className={styles.cardPosition}>—</span>
               )}

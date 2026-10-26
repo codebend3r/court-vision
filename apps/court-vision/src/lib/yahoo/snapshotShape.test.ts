@@ -31,6 +31,33 @@ describe("checkSnapshotShape", () => {
     expect(checkSnapshotShape({ payload: overCap })).toEqual(OVER);
   });
 
+  it("caps the scoreboard at 32 matchups", () => {
+    const scoreboard = ({ count }: { count: number }) => ({
+      fantasy_content: {
+        league: {
+          scoreboard: { matchups: Array.from({ length: count }, () => ({ matchup: {} })) },
+        },
+      },
+    });
+
+    expect(
+      checkSnapshotShape({
+        payload: { ...gameOfCourtsPayload(), scoreboard: scoreboard({ count: 32 }) },
+      }),
+    ).toEqual(OK);
+    expect(
+      checkSnapshotShape({
+        payload: { ...gameOfCourtsPayload(), scoreboard: scoreboard({ count: 33 }) },
+      }),
+    ).toEqual(OVER);
+  });
+
+  it("passes a payload with no scoreboard", () => {
+    expect(
+      checkSnapshotShape({ payload: { ...gameOfCourtsPayload(), scoreboard: "junk" } }),
+    ).toEqual(OK);
+  });
+
   it("caps any one team's roster at 64 players", () => {
     expect(MAX_SNAPSHOT_ROSTER_PLAYERS).toBe(64);
     const atCap = gameOfCourtsPayload({ snapshot: snapshotWithRosterSize({ count: 64 }) });

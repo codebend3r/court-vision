@@ -7,6 +7,7 @@ export type YahooPlayerRef = {
   fullName: string;
   teamAbbr: string | null; // Yahoo's abbreviations equal Balldontlie's (all 30 checked 2026-10-16)
   eligiblePositions: string[];
+  displayPosition: string | null; // "SG,SF,PF", as Yahoo prints it under the name
   status: string | null; // "Q", "O", "INJ", "P", … or null
 };
 
@@ -21,6 +22,25 @@ export type ImportedTeam = {
   slots: ImportedSlot[];
 };
 
+// A scored category of a head-to-head league, in Yahoo's order.
+export type ImportedStatCategory = {
+  statId: number;
+  displayName: string; // "FG%", "3PTM", "ST"
+  higherIsBetter: boolean; // false for turnovers
+};
+
+// One side of a matchup: the team's week totals, Yahoo's own strings by stat id.
+export type ImportedMatchupSide = { teamKey: string; stats: Record<string, string> };
+
+// A week's totals, with one side for a bye or two for a head-to-head.
+export type ImportedMatchup = {
+  week: number;
+  weekStart: string | null; // "2026-10-20"
+  weekEnd: string | null;
+  status: string | null; // "preevent" | "midevent" | "postevent"
+  sides: readonly [ImportedMatchupSide] | readonly [ImportedMatchupSide, ImportedMatchupSide];
+};
+
 export type ImportedLeague = {
   externalKey: string; // "478.l.106344"
   externalUrl: string;
@@ -30,6 +50,8 @@ export type ImportedLeague = {
   teamCount: number;
   rosterSlots: number;
   scoring: MappedScoring;
+  statCategories: ImportedStatCategory[]; // empty unless the league is head-to-head categories
+  matchups: ImportedMatchup[] | null; // null when unavailable; [] when successfully read but empty
   teams: ImportedTeam[];
 };
 

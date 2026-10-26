@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
@@ -255,7 +255,7 @@ describe("PlayerPage ownership chip", () => {
     await renderPage({ playerId: "3547238" });
   };
 
-  afterEach(() => useRosteredStore.setState({ owners: null }));
+  afterEach(() => act(() => useRosteredStore.setState({ owners: null })));
 
   it("marks a player on no roster as a free agent", async () => {
     useRosteredStore.getState().hydrate({ playerIds: [], owners: [] });

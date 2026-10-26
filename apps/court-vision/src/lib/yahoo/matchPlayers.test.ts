@@ -25,6 +25,7 @@ const ref = (overrides: Partial<YahooPlayerRef> = {}): YahooPlayerRef => ({
   fullName: "Jalen Green",
   teamAbbr: "PHX",
   eligiblePositions: ["SG", "G", "Util"],
+  displayPosition: null,
   status: null,
   ...overrides,
 });

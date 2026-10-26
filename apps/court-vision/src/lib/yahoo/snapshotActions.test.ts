@@ -95,6 +95,7 @@ const leagueRow = ({ syncVia }: { syncVia: LeagueSyncVia }): League => ({
   syncedAt: new Date("2026-10-17T12:00:00Z"),
   syncError: null,
   unsupportedCategories: [],
+  statCategories: null,
   createdAt: new Date("2026-10-17T12:00:00Z"),
   updatedAt: new Date("2026-10-17T12:00:00Z"),
 });

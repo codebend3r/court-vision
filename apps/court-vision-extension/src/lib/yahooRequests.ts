@@ -23,7 +23,7 @@ type ProbeOutcome = Exclude<RequestOutcome, { type: "body" }>;
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
-// One league read is up to 12 requests, 15 seconds each, but the page stops
+// One league read is up to 13 requests, 15 seconds each, but the page stops
 // waiting for an answer after 60 seconds. The whole read gives up well before
 // that, so the page hears `unavailable` instead of nothing.
 const OVERALL_DEADLINE_MS = 45_000;
@@ -34,6 +34,8 @@ const GAME_PATH = "game/nba";
 const LOGIN_PROBE_PATH = "users;use_login=1/games;game_keys=nba";
 const leaguePath = ({ leagueId }: { leagueId: string }): string =>
   `league/nba.l.${leagueId};out=settings/teams/roster`;
+const scoreboardPath = ({ leagueId }: { leagueId: string }): string =>
+  `league/nba.l.${leagueId}/scoreboard`;
 const waiverPath = ({ leagueId, start }: { leagueId: string; start: number }): string =>
   `league/nba.l.${leagueId}/players;status=W;start=${start};count=${YAHOO_PAGE_SIZE}`;
 
@@ -190,12 +192,21 @@ const readLeague = async ({
   }
   if (league.type !== "body") return UNAVAILABLE;
 
-  const waivers = await fetchWaiverPages({ leagueId, fetchImpl, deadline });
+  // Start the optional scoreboard alongside pagination, under the same deadline.
+  const [waivers, scoreboard] = await Promise.all([
+    fetchWaiverPages({ leagueId, fetchImpl, deadline }),
+    requestYahoo({ path: scoreboardPath({ leagueId }), fetchImpl, deadline }),
+  ]);
   if (waivers.type !== "pages") return waivers;
 
   return {
     type: "league",
-    payload: { game: game.body, snapshot: league.body, waiverPages: waivers.pages },
+    payload: {
+      game: game.body,
+      snapshot: league.body,
+      waiverPages: waivers.pages,
+      ...(scoreboard.type === "body" && { scoreboard: scoreboard.body }),
+    },
   };
 };
 
