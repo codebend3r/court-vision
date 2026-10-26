@@ -14,6 +14,10 @@ const leagueTeamSlotCreateMany = vi.fn();
 const getProfile = vi.fn();
 const ensureDefaultLeague = vi.fn();
 
+const lockProfile = vi.fn();
+const lockLeague = vi.fn(async () => {});
+vi.mock("@/lib/leagues/locks", () => ({ lockProfile, lockLeague }));
+
 const tx = {
   leagueTeam: {
     findMany: leagueTeamFindMany,

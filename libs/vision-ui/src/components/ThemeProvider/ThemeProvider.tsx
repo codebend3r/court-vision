@@ -6,14 +6,18 @@ import { type Theme, isTheme } from "#ui/theme/themes";
 
 export type { Theme } from "#ui/theme/themes";
 
+type SetThemeProps = { theme: Theme };
+
 export type ThemeContextValue = {
   theme: Theme;
-  setTheme: (args: { theme: Theme }) => void;
+  setTheme: (args: SetThemeProps) => void;
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
+type ThemeProviderProps = { children: ReactNode };
+
+export function ThemeProvider({ children }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<Theme>("dark");
 
   // ThemeInitScript stamped data-theme on <html> before first paint; adopt it
@@ -23,7 +27,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeState(isTheme(stamped) ? stamped : "dark");
   }, []);
 
-  const setTheme = ({ theme: next }: { theme: Theme }) => {
+  const setTheme = ({ theme: next }: SetThemeProps) => {
     document.documentElement.dataset.theme = next;
     window.localStorage.setItem("theme", next);
     setThemeState(next);

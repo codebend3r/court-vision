@@ -4,7 +4,9 @@ import { type CategoryStanding } from "@/lib/matchups/standings";
 
 import styles from "@/components/MatchupView/MatchupView.module.scss";
 
-const badgeFor = ({ standing }: { standing: CategoryStanding }): string | null => {
+type BadgeForProps = { standing: CategoryStanding };
+
+const badgeFor = ({ standing }: BadgeForProps): string | null => {
   if (standing.isBest) return "Best in league";
   if (standing.isWorst) return "Worst in league";
   return null;
@@ -12,13 +14,12 @@ const badgeFor = ({ standing }: { standing: CategoryStanding }): string | null =
 
 // Where your team's totals place in every category this week, so the best and
 // the worst of them are visible without reading the whole table.
-export function StandingsSummary({
-  standings,
-  teamName,
-}: {
+type StandingsSummaryProps = {
   standings: readonly CategoryStanding[];
   teamName: string;
-}) {
+};
+
+export function StandingsSummary({ standings, teamName }: StandingsSummaryProps) {
   return (
     <section className={styles.summary} aria-label={`${teamName} standing by category`}>
       <h2 className={styles.summaryTitle}>Where you stand</h2>

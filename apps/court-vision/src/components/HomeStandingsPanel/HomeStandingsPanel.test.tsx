@@ -9,13 +9,12 @@ import { type ConferenceTeamStanding } from "@/lib/standings/standings";
 
 afterEach(cleanup);
 
-const team = ({
-  rank,
-  conference,
-}: {
+type TeamProps = {
   rank: number;
   conference: string;
-}): ConferenceTeamStanding => ({
+};
+
+const team = ({ rank, conference }: TeamProps): ConferenceTeamStanding => ({
   teamId: rank * (conference === "East" ? 1 : 100),
   abbreviation: `${conference === "East" ? "E" : "W"}${rank}`,
   fullName: `${conference} Team ${rank}`,
@@ -24,7 +23,9 @@ const team = ({
   losses: 22 + rank,
 });
 
-const ladder = ({ conference, size }: { conference: string; size: number }) =>
+type LadderProps = { conference: string; size: number };
+
+const ladder = ({ conference, size }: LadderProps) =>
   Array.from({ length: size }, (_, index) => team({ rank: index + 1, conference }));
 
 describe("HomeStandingsPanel", () => {

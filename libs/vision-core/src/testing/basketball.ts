@@ -174,11 +174,16 @@ export const makeStatLine = (overrides: FixtureOverrides): FantasyStatLine => ({
 });
 
 // A game log from flat box-score fields (absent ones are 0) and minutes.
-export const makeLog = (overrides: Partial<FlatStats> & { minutes: number }): WindowLog => ({
+type MakeLogProps = Partial<FlatStats> & { minutes: number };
+
+export const makeLog = (overrides: MakeLogProps): WindowLog => ({
   playingTime: overrides.minutes,
   stats: recordFromKeys({ keys: VALUED_STATS, value: (key) => overrides[key] ?? 0 }),
 });
 
-export const makeDatedLog = (
-  overrides: Partial<FlatStats> & { minutes: number; gameDate: Date },
-): DatedLog => ({ ...makeLog(overrides), gameDate: overrides.gameDate });
+type MakeDatedLogProps = Partial<FlatStats> & { minutes: number; gameDate: Date };
+
+export const makeDatedLog = (overrides: MakeDatedLogProps): DatedLog => ({
+  ...makeLog(overrides),
+  gameDate: overrides.gameDate,
+});

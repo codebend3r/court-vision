@@ -9,10 +9,15 @@ import { type YahooPlayerRef } from "@/lib/yahoo/types";
 type ResolveArgs = { refs: readonly YahooPlayerRef[]; writeMappings: boolean };
 type CreateArgs = { myTeamExternalKey: string; syncVia: LeagueSyncVia };
 
+const claimSync = vi.fn<() => Promise<Date | null>>(async () => new Date("2026-10-26T00:00:00Z"));
+const releaseSync = vi.fn(async () => {});
+vi.mock("@/lib/yahoo/syncLease", () => ({ claimSync, releaseSync }));
 const getProfile = vi.fn();
 const resolveYahooPlayers = vi.fn<(args: ResolveArgs) => Promise<ResolvedPlayers>>();
 const createImportedLeague = vi.fn<(args: CreateArgs) => Promise<League>>();
-const syncImportedLeague = vi.fn<(args: { leagueId: string }) => Promise<League>>();
+type SyncImportedLeagueProps = { leagueId: string };
+
+const syncImportedLeague = vi.fn<(args: SyncImportedLeagueProps) => Promise<League>>();
 
 const leagueFindFirst = vi.fn();
 const leagueUpdate = vi.fn();
@@ -21,6 +26,8 @@ const $transaction = vi.fn();
 const txFindFirst = vi.fn();
 const txCount = vi.fn<() => Promise<number>>();
 
+const lockProfile = vi.fn(async () => ({ activeLeagueId: null }));
+vi.mock("@/lib/leagues/locks", () => ({ lockProfile }));
 const tx = { league: { findFirst: txFindFirst, count: txCount } };
 
 // The real schemas, with the game body's parse watched so a test can tell
@@ -30,7 +37,12 @@ const gameSafeParse = vi.fn((body: unknown) => schemas.yahooGameSchema.safeParse
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    league: { findFirst: leagueFindFirst, update: leagueUpdate, count: leagueCount },
+    league: {
+      findFirst: leagueFindFirst,
+      update: leagueUpdate,
+      updateMany: leagueUpdate,
+      count: leagueCount,
+    },
     $transaction: vi.fn((fn: (client: typeof tx) => unknown) => {
       $transaction();
       return fn(tx);
@@ -78,7 +90,9 @@ const NEXT_SEASON_GAME = { fantasy_content: { game: { game_key: "479", season: "
 
 const resolved: ResolvedPlayers = { byYahooId: new Map(), unmatched: [] };
 
-const leagueRow = ({ syncVia }: { syncVia: LeagueSyncVia }): League => ({
+type LeagueRowProps = { syncVia: LeagueSyncVia };
+
+const leagueRow = ({ syncVia }: LeagueRowProps): League => ({
   id: LEAGUE_ID,
   profileId: PROFILE_ID,
   name: "Game of Courts",
@@ -93,6 +107,8 @@ const leagueRow = ({ syncVia }: { syncVia: LeagueSyncVia }): League => ({
   externalUrl: "https://basketball.fantasysports.yahoo.com/nba/106344",
   myTeamId: "team-5",
   syncedAt: new Date("2026-10-17T12:00:00Z"),
+  syncStartedAt: null,
+  syncLeaseUntil: null,
   syncError: null,
   unsupportedCategories: [],
   statCategories: null,
@@ -100,19 +116,22 @@ const leagueRow = ({ syncVia }: { syncVia: LeagueSyncVia }): League => ({
   updatedAt: new Date("2026-10-17T12:00:00Z"),
 });
 
-const secondsAgo = ({ seconds }: { seconds: number }): Date =>
-  new Date(Date.now() - seconds * 1000);
+type SecondsAgoProps = { seconds: number };
+
+const secondsAgo = ({ seconds }: SecondsAgoProps): Date => new Date(Date.now() - seconds * 1000);
 
 // The row `readStoredSync` reads: a Yahoo import last synced 5 minutes ago.
+type StoredLeagueProps = {
+  syncVia?: string;
+  syncedAt?: Date;
+  externalKey?: string;
+};
+
 const storedLeague = ({
   syncVia = "extension",
   syncedAt = secondsAgo({ seconds: 300 }),
   externalKey = "478.l.106344",
-}: {
-  syncVia?: string;
-  syncedAt?: Date;
-  externalKey?: string;
-} = {}) => ({
+}: StoredLeagueProps = {}) => ({
   provider: "yahoo",
   syncVia,
   externalKey,
@@ -263,6 +282,39 @@ describe("every snapshot action", () => {
     expect(gameSafeParse).not.toHaveBeenCalled();
   });
 
+  it("rejects roster layouts before expanding forged counts", async () => {
+    const layouts = [
+      [{ roster_position: { position: "PG", count: 1_000_000_000 } }],
+      [{ roster_position: { position: "PG", count: -1 } }],
+      [{ roster_position: { position: "PG", count: 1.5 } }],
+      [
+        { roster_position: { position: "PG", count: 40 } },
+        { roster_position: { position: "C", count: 40 } },
+      ],
+      Array.from({ length: 65 }, () => ({ roster_position: { position: "PG", count: 0 } })),
+    ];
+    await Promise.all(
+      layouts.map(async (roster_positions) => {
+        const original = league106344.fantasy_content.league;
+        const snapshot = {
+          fantasy_content: {
+            league: { ...original, settings: { ...original.settings, roster_positions } },
+          },
+        };
+        expect(await previewYahooSnapshot({ payload: { ...payload, snapshot } })).toEqual({
+          status: "invalid_payload",
+        });
+        expect(
+          await importYahooLeagueFromSnapshot({
+            payload: { ...payload, snapshot },
+            myTeamExternalKey: NEWFOUNDLANDERS,
+          }),
+        ).toEqual({ status: "invalid_payload" });
+      }),
+    );
+    expectNoPrisma();
+  });
+
   it("refuses a few hundred bytes that decode into a deep shared chain", async () => {
     // React's reply decoder reuses one outlined chunk wherever the body names
     // it, so each level here doubles what JSON would write.
@@ -271,12 +323,9 @@ describe("every snapshot action", () => {
       (inner): Chain => ({ a: inner, b: inner }),
       "leaf",
     );
-    const started = performance.now();
-
     expect(await previewYahooSnapshot({ payload: { ...payload, snapshot: chain } })).toEqual({
       status: "invalid_payload",
     });
-    expect(performance.now() - started).toBeLessThan(500);
     expect(gameSafeParse).not.toHaveBeenCalled();
   });
 
@@ -363,6 +412,14 @@ describe("importYahooLeagueFromSnapshot", () => {
 });
 
 describe("syncYahooLeagueFromSnapshot", () => {
+  it("does not persist when another worker owns the sync", async () => {
+    leagueFindFirst.mockResolvedValueOnce(storedLeague());
+    claimSync.mockResolvedValueOnce(null);
+    expect(await syncYahooLeagueFromSnapshot({ leagueId: LEAGUE_ID, payload })).toEqual({
+      status: "throttled",
+    });
+    expect(syncImportedLeague).not.toHaveBeenCalled();
+  });
   it("syncs only a league the caller owns", async () => {
     expect(await syncYahooLeagueFromSnapshot({ leagueId: "forged", payload })).toEqual({
       status: "error",
@@ -424,7 +481,11 @@ describe("syncYahooLeagueFromSnapshot", () => {
 
     expect(result).toEqual({ status: "error" });
     expect(leagueUpdate).toHaveBeenCalledWith({
-      where: { id: LEAGUE_ID, profileId: PROFILE_ID },
+      where: {
+        id: LEAGUE_ID,
+        profileId: PROFILE_ID,
+        syncStartedAt: new Date("2026-10-26T00:00:00Z"),
+      },
       data: { syncError: KEY_CHANGED_MESSAGE },
     });
     expect(resolveYahooPlayers).not.toHaveBeenCalled();

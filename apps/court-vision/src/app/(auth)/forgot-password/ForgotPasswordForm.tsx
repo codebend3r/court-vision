@@ -8,7 +8,9 @@ import { requestPasswordReset } from "@/lib/auth/passwordReset";
 import authStyles from "@/app/(auth)/auth.module.scss";
 import styles from "@/app/(auth)/forgot-password/forgot-password.module.scss";
 
-export function ForgotPasswordForm({ notice }: { notice?: string | null }) {
+type ForgotPasswordFormProps = { notice?: string | null };
+
+export function ForgotPasswordForm({ notice }: ForgotPasswordFormProps) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);

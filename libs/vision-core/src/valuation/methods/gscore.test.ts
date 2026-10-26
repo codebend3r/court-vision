@@ -12,7 +12,9 @@ import { describe, expect, it } from "bun:test";
 // Per-game points 2, 4, 6, 8 across the pool (n = 50 games). Every player
 // carries a game-level points variance of 100, injected via sq:
 // sq = n · (variance + mean²).
-const volatileLine = ({ playerId, pts }: { playerId: number; pts: number }): FantasyStatLine => {
+type VolatileLineProps = { playerId: number; pts: number };
+
+const volatileLine = ({ playerId, pts }: VolatileLineProps): FantasyStatLine => {
   const base = makeStatLine({ playerId, pts });
   const mean = pts / base.gamesPlayed;
   return {

@@ -3,7 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { type FantasyTrendLogsResult } from "@/lib/valuation/trendLogs";
 
-type LoadTrendLogs = (args: { playerIds: number[] }) => Promise<FantasyTrendLogsResult>;
+type LoadTrendLogsProps = { playerIds: number[] };
+
+type LoadTrendLogs = (args: LoadTrendLogsProps) => Promise<FantasyTrendLogsResult>;
 
 const load = vi.fn<LoadTrendLogs>();
 
@@ -17,7 +19,9 @@ import { type FantasyStatLine } from "@/lib/valuation/types";
 afterEach(cleanup);
 
 const lines: FantasyStatLine[] = [1, 2, 3].map((playerId) => makeStatLine({ playerId }));
-const rowsFor = ({ ids }: { ids: readonly number[] }) => ids.map((playerId) => ({ playerId }));
+type RowsForProps = { ids: readonly number[] };
+
+const rowsFor = ({ ids }: RowsForProps) => ids.map((playerId) => ({ playerId }));
 
 type HookProps = {
   enabled: boolean;

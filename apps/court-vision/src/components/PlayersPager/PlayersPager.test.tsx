@@ -27,7 +27,9 @@ function AwaitNavigation() {
   return null;
 }
 
-function PendingNavigation({ children }: { children: ReactNode }) {
+type PendingNavigationProps = { children: ReactNode };
+
+function PendingNavigation({ children }: PendingNavigationProps) {
   const [hasNavigated, setHasNavigated] = useState(false);
   useEffect(() => {
     replace.mockImplementation(() => setHasNavigated(true));
@@ -158,7 +160,9 @@ describe("PlayersPager", () => {
       );
 
     // Awaited, as React asks when a render suspends inside the act scope.
-    const click = async ({ name }: { name: string }) => {
+    type ClickProps = { name: string };
+
+    const click = async ({ name }: ClickProps) => {
       await act(async () => {
         fireEvent.click(screen.getByRole("button", { name }));
       });

@@ -4,7 +4,9 @@ import { formatSyncedAgo } from "@/lib/yahoo/format";
 
 const NOW = new Date("2026-10-17T12:00:00.000Z");
 
-const before = ({ seconds }: { seconds: number }): string =>
+type BeforeProps = { seconds: number };
+
+const before = ({ seconds }: BeforeProps): string =>
   new Date(NOW.getTime() - seconds * 1000).toISOString();
 
 describe("formatSyncedAgo", () => {

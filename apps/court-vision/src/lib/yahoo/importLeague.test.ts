@@ -14,7 +14,9 @@ type CreateArgs = { myTeamExternalKey: string; syncVia: LeagueSyncVia };
 const loadYahooLeague = vi.fn<() => Promise<YahooLoadResult>>();
 const resolveYahooPlayers = vi.fn<(args: ResolveArgs) => Promise<ResolvedPlayers>>();
 const createImportedLeague = vi.fn<(args: CreateArgs) => Promise<League>>();
-const syncImportedLeague = vi.fn<(args: { leagueId: string }) => Promise<League>>();
+type SyncImportedLeagueProps = { leagueId: string };
+
+const syncImportedLeague = vi.fn<(args: SyncImportedLeagueProps) => Promise<League>>();
 
 const leagueFindFirst = vi.fn();
 const leagueUpdate = vi.fn();
@@ -23,11 +25,18 @@ const $transaction = vi.fn();
 const txFindFirst = vi.fn();
 const txCount = vi.fn<() => Promise<number>>();
 
+const lockProfile = vi.fn(async () => ({ activeLeagueId: null }));
+vi.mock("@/lib/leagues/locks", () => ({ lockProfile }));
 const tx = { league: { findFirst: txFindFirst, count: txCount } };
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    league: { findFirst: leagueFindFirst, update: leagueUpdate, count: leagueCount },
+    league: {
+      findFirst: leagueFindFirst,
+      update: leagueUpdate,
+      updateMany: leagueUpdate,
+      count: leagueCount,
+    },
     $transaction: vi.fn((fn: (client: typeof tx) => unknown) => {
       $transaction();
       return fn(tx);
@@ -92,6 +101,8 @@ const leagueRow: League = {
   externalUrl: "https://basketball.fantasysports.yahoo.com/nba/106344",
   myTeamId: "team-5",
   syncedAt: new Date("2026-10-17T12:00:00Z"),
+  syncStartedAt: null,
+  syncLeaseUntil: null,
   syncError: null,
   unsupportedCategories: [],
   statCategories: null,
@@ -99,8 +110,9 @@ const leagueRow: League = {
   updatedAt: new Date("2026-10-17T12:00:00Z"),
 };
 
-const secondsAgo = ({ seconds }: { seconds: number }): Date =>
-  new Date(Date.now() - seconds * 1000);
+type SecondsAgoProps = { seconds: number };
+
+const secondsAgo = ({ seconds }: SecondsAgoProps): Date => new Date(Date.now() - seconds * 1000);
 
 const expectNoWrites = () => {
   expect(resolveYahooPlayers).not.toHaveBeenCalled();
@@ -214,7 +226,9 @@ describe("importLoadedLeague", () => {
   });
 
   it("refuses a duplicate, the cap, and a team key outside the league", async () => {
-    const importWith = ({ myTeamExternalKey }: { myTeamExternalKey: string }) =>
+    type ImportWithProps = { myTeamExternalKey: string };
+
+    const importWith = ({ myTeamExternalKey }: ImportWithProps) =>
       importLoadedLeague({
         profileId: PROFILE_ID,
         loaded: loaded(),
@@ -240,7 +254,9 @@ describe("importLoadedLeague", () => {
 });
 
 describe("readStoredSync", () => {
-  const stored = ({ syncedAt }: { syncedAt: Date }) => ({
+  type StoredProps = { syncedAt: Date };
+
+  const stored = ({ syncedAt }: StoredProps) => ({
     provider: "yahoo",
     syncVia: "server",
     externalKey: "478.l.106344",
@@ -279,6 +295,7 @@ describe("syncLoadedLeague", () => {
       leagueId: LEAGUE_ID,
       loaded: loaded(),
       writeMappings: false,
+      syncStartedAt: new Date("2026-10-26T00:00:00Z"),
       storedExternalKey: "478.l.106344",
     });
 
@@ -301,12 +318,17 @@ describe("syncLoadedLeague", () => {
       leagueId: LEAGUE_ID,
       loaded: loaded(),
       writeMappings: false,
+      syncStartedAt: new Date("2026-10-26T00:00:00Z"),
       storedExternalKey: "466.l.106344",
     });
 
     expect(result).toEqual({ status: "error" });
     expect(leagueUpdate).toHaveBeenCalledWith({
-      where: { id: LEAGUE_ID, profileId: PROFILE_ID },
+      where: {
+        id: LEAGUE_ID,
+        profileId: PROFILE_ID,
+        syncStartedAt: new Date("2026-10-26T00:00:00Z"),
+      },
       data: { syncError: "This league's Yahoo key changed; import it again." },
     });
     expect(resolveYahooPlayers).not.toHaveBeenCalled();
@@ -328,12 +350,17 @@ describe("recordLoadFailure", () => {
     const result = await recordLoadFailure({
       profileId: PROFILE_ID,
       leagueId: LEAGUE_ID,
+      syncStartedAt: new Date("2026-10-26T00:00:00Z"),
       failure: { status: "not_found" },
     });
 
     expect(result).toEqual({ status: "not_found" });
     expect(leagueUpdate).toHaveBeenCalledWith({
-      where: { id: LEAGUE_ID, profileId: PROFILE_ID },
+      where: {
+        id: LEAGUE_ID,
+        profileId: PROFILE_ID,
+        syncStartedAt: new Date("2026-10-26T00:00:00Z"),
+      },
       data: {
         syncError:
           "Couldn't read this league. If it's private, the commissioner can make it publicly viewable in Yahoo's league settings.",

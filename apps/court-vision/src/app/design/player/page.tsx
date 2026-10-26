@@ -22,10 +22,14 @@ import styles from "@/app/design/player/page.module.scss";
 // A synthetic perf fixture, not a product page: nothing here should be indexed.
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-const average = ({ total }: { total: number }): string =>
+type AverageProps = { total: number };
+
+const average = ({ total }: AverageProps): string =>
   (total / FIXTURE_GAME_LOG_ROWS.length).toFixed(1);
 
-const sumOf = ({ pick }: { pick: (row: (typeof FIXTURE_GAME_LOG_ROWS)[number]) => number }) =>
+type SumOfProps = { pick: (row: (typeof FIXTURE_GAME_LOG_ROWS)[number]) => number };
+
+const sumOf = ({ pick }: SumOfProps) =>
   FIXTURE_GAME_LOG_ROWS.reduce((total, row) => total + pick(row), 0);
 
 const SEASON_STATS: readonly SeasonStat[] = [

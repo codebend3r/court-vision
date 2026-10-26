@@ -27,17 +27,19 @@ const metas = [
   { key: "beta" as const, label: "Beta", color: "#222222" },
 ];
 
+type RenderChartProps = {
+  showDnp?: boolean;
+  only?: Key[];
+  endLabels?: boolean;
+  points?: MetricSeriesPoint<Key>[];
+};
+
 const renderChart = ({
   showDnp = false,
   only,
   endLabels,
   points = series,
-}: {
-  showDnp?: boolean;
-  only?: Key[];
-  endLabels?: boolean;
-  points?: MetricSeriesPoint<Key>[];
-} = {}) =>
+}: RenderChartProps = {}) =>
   render(
     <ThemeProvider>
       <MetricLineChart

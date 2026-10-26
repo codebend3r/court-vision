@@ -36,46 +36,47 @@ const defaultSleep = (ms: number): Promise<void> =>
 
 // A stats fetch covers either a whole season or, for the nightly sync, just
 // the listed game dates (`YYYY-MM-DD`); dates win when both are given.
-const scopeParams = ({
-  season,
-  dates,
-}: {
+type ScopeParamsProps = {
   season: number;
   dates?: string[];
-}): Record<string, BdlParamValue> =>
+};
+
+const scopeParams = ({ season, dates }: ScopeParamsProps): Record<string, BdlParamValue> =>
   dates === undefined ? { seasons: [String(season)] } : { dates };
 
 // The transform stamps every row "Regular Season", and these endpoints do not
 // honour `postseason=false` reliably, so playoff rows are dropped here rather
 // than written into the regular-season tables. Every sync shares the filter.
-const isRegularSeason = (row: { game: { postseason: boolean } }): boolean => !row.game.postseason;
+type IsRegularSeasonProps = { game: { postseason: boolean } };
+
+const isRegularSeason = (row: IsRegularSeasonProps): boolean => !row.game.postseason;
 
 // Walks a cursor-paginated endpoint: one request per page, each parsed against
 // `item`, following `meta.next_cursor` with the standard throttle between
 // pages until the API reports no next page.
+type FetchAllPagesProps<T> = {
+  endpoint: string;
+  params: Record<string, BdlParamValue>;
+  item: z.ZodType<T>;
+  deps: BdlClientDeps;
+};
+
 const fetchAllPages = async <T>({
   endpoint,
   params,
   item,
   deps,
-}: {
-  endpoint: string;
-  params: Record<string, BdlParamValue>;
-  item: z.ZodType<T>;
-  deps: BdlClientDeps;
-}): Promise<T[]> => {
+}: FetchAllPagesProps<T>): Promise<T[]> => {
   const { sleep = defaultSleep, logger = silentLogger } = deps;
   const pageSchema = bdlPaginatedPage(item);
 
-  const loadPage = async ({
-    cursor,
-    rows,
-    page,
-  }: {
+  type LoadPageProps = {
     cursor: number | null;
     rows: T[];
     page: number;
-  }): Promise<T[]> => {
+  };
+
+  const loadPage = async ({ cursor, rows, page }: LoadPageProps): Promise<T[]> => {
     const cursorParam: Record<string, BdlParamValue> =
       cursor === null ? {} : { cursor: String(cursor) };
     const raw = await bdlFetch({
@@ -101,9 +102,9 @@ const fetchAllPages = async <T>({
   return loadPage({ cursor: null, rows: [], page: 1 });
 };
 
-export const fetchTeams = async ({ deps = {} }: { deps?: BdlClientDeps } = {}): Promise<
-  BdlTeam[]
-> => {
+type FetchTeamsProps = { deps?: BdlClientDeps };
+
+export const fetchTeams = async ({ deps = {} }: FetchTeamsProps = {}): Promise<BdlTeam[]> => {
   const raw = await bdlFetch({
     endpoint: "teams",
     apiKey: deps.apiKey,
@@ -115,10 +116,12 @@ export const fetchTeams = async ({ deps = {} }: { deps?: BdlClientDeps } = {}): 
 
 // `/v1/standings` (GOAT tier) returns every team's regular-season standing in
 // one unpaginated page, so the tolerant `bdlPage` envelope fits.
+type FetchStandingsProps = { deps?: BdlClientDeps; season?: number };
+
 export const fetchStandings = async ({
   deps = {},
   season = SEASON_START_YEAR,
-}: { deps?: BdlClientDeps; season?: number } = {}): Promise<BdlStanding[]> => {
+}: FetchStandingsProps = {}): Promise<BdlStanding[]> => {
   const raw = await bdlFetch({
     endpoint: "standings",
     params: { season: String(season) },
@@ -129,11 +132,13 @@ export const fetchStandings = async ({
   return bdlPage(bdlStandingSchema).parse(raw).data;
 };
 
+type FetchAllStatsProps = { deps?: BdlClientDeps; season?: number; dates?: string[] };
+
 export const fetchAllStats = async ({
   deps = {},
   season = SEASON_START_YEAR,
   dates,
-}: { deps?: BdlClientDeps; season?: number; dates?: string[] } = {}): Promise<BdlStat[]> =>
+}: FetchAllStatsProps = {}): Promise<BdlStat[]> =>
   (
     await fetchAllPages({
       endpoint: "stats",
@@ -143,11 +148,13 @@ export const fetchAllStats = async ({
     })
   ).filter(isRegularSeason);
 
+type FetchAllAdvancedStatsProps = { deps?: BdlClientDeps; season?: number; dates?: string[] };
+
 export const fetchAllAdvancedStats = async ({
   deps = {},
   season = SEASON_START_YEAR,
   dates,
-}: { deps?: BdlClientDeps; season?: number; dates?: string[] } = {}): Promise<BdlAdvancedStat[]> =>
+}: FetchAllAdvancedStatsProps = {}): Promise<BdlAdvancedStat[]> =>
   (
     await fetchAllPages({
       endpoint: "stats/advanced",
@@ -160,21 +167,27 @@ export const fetchAllAdvancedStats = async ({
 // `players` is every player Balldontlie has ever listed, each on their last
 // team; `players/active` is only the players on a current NBA roster, rookies
 // included as soon as they sign. Both pages share the player row schema.
-export const fetchAllPlayers = async ({ deps = {} }: { deps?: BdlClientDeps } = {}): Promise<
+type FetchAllPlayersProps = { deps?: BdlClientDeps };
+
+export const fetchAllPlayers = async ({ deps = {} }: FetchAllPlayersProps = {}): Promise<
   BdlPlayer[]
 > => fetchAllPages({ endpoint: "players", params: {}, item: bdlPlayerSchema, deps });
 
-export const fetchActivePlayers = async ({ deps = {} }: { deps?: BdlClientDeps } = {}): Promise<
+type FetchActivePlayersProps = { deps?: BdlClientDeps };
+
+export const fetchActivePlayers = async ({ deps = {} }: FetchActivePlayersProps = {}): Promise<
   BdlPlayer[]
 > => fetchAllPages({ endpoint: "players/active", params: {}, item: bdlPlayerSchema, deps });
+
+type FetchTeamGamesProps = {
+  teamId: number;
+  deps?: BdlClientDeps;
+};
 
 export const fetchTeamGames = async ({
   teamId,
   deps = {},
-}: {
-  teamId: number;
-  deps?: BdlClientDeps;
-}): Promise<BdlGame[]> =>
+}: FetchTeamGamesProps): Promise<BdlGame[]> =>
   fetchAllPages({
     endpoint: "games",
     params: {

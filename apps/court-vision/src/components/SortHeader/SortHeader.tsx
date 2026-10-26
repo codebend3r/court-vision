@@ -4,11 +4,13 @@ import { ariaSortFor, type SortState } from "@/lib/tableSort";
 
 import styles from "@/components/SortHeader/SortHeader.module.scss";
 
+type OnSortProps = { key: string };
+
 export type SortHeaderProps = {
   label: ReactNode;
   sortKey: string;
   sort: SortState;
-  onSort: ({ key }: { key: string }) => void;
+  onSort: ({ key }: OnSortProps) => void;
   // Which edge the column's cells sit on, so the label lines up with them.
   align?: "start" | "end";
   // The th's own class: the panel's `numeric` where its cells are numbers.

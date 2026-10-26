@@ -5,6 +5,7 @@ import { z } from "zod";
 import { confirmationRedirectTo } from "@/lib/auth/confirmationRedirect";
 import { usernameSchema } from "@/lib/auth/username";
 import { isUsernameTaken } from "@/lib/auth/usernameTaken";
+import { allowUsernameAttempt, USERNAME_RATE_LIMIT_MESSAGE } from "@/lib/auth/usernameRateLimit";
 import { createClient } from "@/lib/supabase/server";
 
 const inputSchema = z.object({
@@ -15,11 +16,13 @@ const inputSchema = z.object({
 
 type SignUpResult = { ok: true } | { ok: false; error: string };
 
-export async function signUp(input: {
+type SignUpProps = {
   email: string;
   username: string;
   password: string;
-}): Promise<SignUpResult> {
+};
+
+export async function signUp(input: SignUpProps): Promise<SignUpResult> {
   const parsed = inputSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -27,6 +30,7 @@ export async function signUp(input: {
 
   const { email, username, password } = parsed.data;
 
+  if (!(await allowUsernameAttempt())) return { ok: false, error: USERNAME_RATE_LIMIT_MESSAGE };
   if (await isUsernameTaken({ username })) {
     return { ok: false, error: "That username is taken." };
   }
@@ -60,7 +64,11 @@ const emailSchema = z.string().email("Enter a valid email.");
 // localhost URL they could never click, so they are stuck unconfirmed with no
 // way out of the sign-in form. This re-sends the signup confirmation, now
 // pointing at a reachable origin.
-export async function resendConfirmation({ email }: { email: string }): Promise<SignUpResult> {
+type ResendConfirmationProps = { email: string };
+
+export async function resendConfirmation({
+  email,
+}: ResendConfirmationProps): Promise<SignUpResult> {
   const parsed = emailSchema.safeParse(email);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Enter a valid email." };

@@ -14,7 +14,9 @@ import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider
 afterEach(cleanup);
 
 // Every category scores the same z so a row's extent is easy to reason about.
-const breakdownAt = ({ z }: { z: number }): FantasyCategoryBreakdown[] =>
+type BreakdownAtProps = { z: number };
+
+const breakdownAt = ({ z }: BreakdownAtProps): FantasyCategoryBreakdown[] =>
   CATEGORY_META.map((meta) => ({
     key: meta.key,
     label: meta.label,
@@ -25,15 +27,13 @@ const breakdownAt = ({ z }: { z: number }): FantasyCategoryBreakdown[] =>
     g: z * 0.8,
   }));
 
-const row = ({
-  playerId,
-  z,
-  rank,
-}: {
+type RowProps = {
   playerId: number;
   z: number;
   rank: number;
-}): FantasyChartRow => ({
+};
+
+const row = ({ playerId, z, rank }: RowProps): FantasyChartRow => ({
   ...makeStatLine({ playerId }),
   rank,
   values: { playerId, z, g: z * 0.8, points: 40, vorp: z, positional: z, sgp: z, sim: z },

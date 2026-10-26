@@ -41,20 +41,19 @@ const getTakenIds = async (): Promise<ReadonlySet<number> | null> => {
   return owners && new Set(owners.map((owner) => owner.playerId));
 };
 
-const totalPagesOf = ({ total, size }: { total: number; size: number }): number =>
+type TotalPagesOfProps = { total: number; size: number };
+
+const totalPagesOf = ({ total, size }: TotalPagesOfProps): number =>
   Math.max(1, Math.ceil(total / size));
 
-const renderSummary = ({
-  total,
-  q,
-  rangeStart,
-  rangeEnd,
-}: {
+type RenderSummaryProps = {
   total: number;
   q: string;
   rangeStart: number;
   rangeEnd: number;
-}): string =>
+};
+
+const renderSummary = ({ total, q, rangeStart, rangeEnd }: RenderSummaryProps): string =>
   total === 0
     ? q === ""
       ? "No players yet — the season data hasn't been synced."
@@ -64,7 +63,9 @@ const renderSummary = ({
 // The frame all four tabs share. Kept in this file rather than src/components
 // because it renders page.module.scss: a shared component would have to import
 // another segment's stylesheet to do the same job.
-function PlayersScreen({ params, children }: { params: PlayersSearchParams; children: ReactNode }) {
+type PlayersScreenProps = { params: PlayersSearchParams; children: ReactNode };
+
+function PlayersScreen({ params, children }: PlayersScreenProps) {
   return (
     <main className={styles.page}>
       <PageHeader {...PLAYERS_PAGE_HEADER} />
@@ -83,19 +84,21 @@ function PlayersScreen({ params, children }: { params: PlayersSearchParams; chil
 // The table tabs (regular and advanced) share everything around the table:
 // the same controls, the same counter, the same empty state, the same pager.
 // Only the query, the columns, and the advanced legend (`children`) differ.
+type PlayersResultsProps<Row extends PlayerIdentity> = {
+  params: PlayersSearchParams;
+  result: Page<Row>;
+  columns: readonly StatColumn<Row>[];
+  isSignedIn: boolean;
+  children?: ReactNode;
+};
+
 function PlayersResults<Row extends PlayerIdentity>({
   params,
   result: { rows, total, page },
   columns,
   isSignedIn,
   children,
-}: {
-  params: PlayersSearchParams;
-  result: Page<Row>;
-  columns: readonly StatColumn<Row>[];
-  isSignedIn: boolean;
-  children?: ReactNode;
-}) {
+}: PlayersResultsProps<Row>) {
   const rangeStart = total === 0 ? 0 : (page - 1) * params.size + 1;
   const rangeEnd = Math.min(total, page * params.size);
   // Remounting the results on any reorder/repage (tab, sort, range, mode, page)
@@ -134,11 +137,11 @@ function PlayersResults<Row extends PlayerIdentity>({
   );
 }
 
-export default async function PlayersPage({
-  searchParams,
-}: {
+type PlayersPageProps = {
   searchParams: Promise<RawSearchParams>;
-}) {
+};
+
+export default async function PlayersPage({ searchParams }: PlayersPageProps) {
   const raw = await searchParams;
   const params = parsePlayersSearchParams({ raw });
 

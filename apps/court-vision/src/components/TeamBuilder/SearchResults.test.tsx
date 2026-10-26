@@ -7,9 +7,9 @@ import { type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
 
 afterEach(cleanup);
 
-const player = (
-  overrides: Partial<FantasyTeamPlayer> & { playerId: number; fullName: string },
-): FantasyTeamPlayer => ({
+type PlayerProps = Partial<FantasyTeamPlayer> & { playerId: number; fullName: string };
+
+const player = (overrides: PlayerProps): FantasyTeamPlayer => ({
   firstName: overrides.fullName.split(" ")[0] ?? "",
   lastName: overrides.fullName.split(" ")[1] ?? "",
   teamAbbr: "NYK",

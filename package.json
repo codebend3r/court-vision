@@ -1,6 +1,9 @@
 {
   "name": "@vision/source",
   "private": true,
+  "imports": {
+    "#scripts/*": "./scripts/*.ts"
+  },
   "packageManager": "bun@1.4.2",
   "workspaces": [
     "apps/*",
@@ -15,9 +18,10 @@
     "build": "nx run-many -t build --output-style=static",
     "start": "bun run --cwd apps/court-vision start",
     "zip:extension": "bun run --cwd apps/court-vision-extension zip",
-    "lint": "bun run --sequential lint:spell lint:actions lint:ts lint:scss",
+    "lint": "bun run --sequential lint:spell lint:actions lint:ts lint:scss lint:params",
     "lint:fix": "bun run --sequential lint:spell:fix lint:ts:fix lint:scss:fix",
     "lint:ts": "oxlint",
+    "lint:params": "bun run scripts/parameter-types.ts",
     "lint:ts:fix": "oxlint --fix",
     "lint:scss": "gale \"{apps,libs}/*/src/**/*.scss\"",
     "lint:scss:fix": "gale --fix \"{apps,libs}/*/src/**/*.scss\"",
@@ -25,7 +29,8 @@
     "lint:spell:fix": "typos --write-changes",
     "lint:actions": "github-actionlint",
     "typecheck": "nx run-many -t typecheck --output-style=static && tsgo --noEmit",
-    "test": "nx run-many -t test --output-style=static",
+    "test": "nx run-many -t test --parallel=2 --output-style=static && bun run test:tooling",
+    "test:tooling": "bun test scripts/parameter-types.test.ts",
     "test:a11y": "bun run --cwd apps/court-vision test:a11y",
     "security:scan": "bun run scripts/security-scan.ts",
     "perf:budget": "bun run --cwd apps/court-vision perf:budget",
@@ -44,6 +49,7 @@
     "system-check": "bun run --sequential format:check typecheck lint test build"
   },
   "devDependencies": {
+    "@babel/parser": "7.29.9",
     "@codebend3r/gale": "0.2.4",
     "@ocular-d/typos-bin": "1.50.3",
     "@types/bun": "1.4.2",

@@ -5,30 +5,41 @@ import { makeStatLine } from "@/lib/valuation/fixtures";
 import { type FantasyPlayerValues } from "@vision/core/valuation/types";
 import { type FantasyStatLine } from "@/lib/valuation/types";
 
+type LineProps = {
+  playerId: number;
+  firstName?: string;
+  lastName?: string;
+};
+
 const line = ({
   playerId,
   firstName = `First${playerId}`,
   lastName = `Last${playerId}`,
-}: {
-  playerId: number;
-  firstName?: string;
-  lastName?: string;
-}): FantasyStatLine =>
+}: LineProps): FantasyStatLine =>
   makeStatLine({ playerId, firstName, lastName, fullName: `${firstName} ${lastName}` });
 
-const scores = ({
-  playerId,
-  z = 0,
-  positional = 0,
-}: {
+type ScoresProps = {
   playerId: number;
   z?: number;
   positional?: number;
-}): FantasyPlayerValues => ({ playerId, z, g: 0, points: 0, vorp: 0, positional, sgp: 0, sim: 0 });
+};
+
+const scores = ({ playerId, z = 0, positional = 0 }: ScoresProps): FantasyPlayerValues => ({
+  playerId,
+  z,
+  g: 0,
+  points: 0,
+  vorp: 0,
+  positional,
+  sgp: 0,
+  sim: 0,
+});
 
 const base = { q: "", page: 1, size: 50, dir: "desc", sort: "z" } as const;
 
-const idsOf = (rows: readonly { playerId: number }[]): number[] => rows.map((row) => row.playerId);
+type IdsOfProps = readonly { playerId: number }[];
+
+const idsOf = (rows: IdsOfProps): number[] => rows.map((row) => row.playerId);
 
 describe("rankFantasyRows", () => {
   it("orders by the sorted column's value field and numbers every row", () => {

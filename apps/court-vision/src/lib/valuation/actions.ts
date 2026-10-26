@@ -18,13 +18,12 @@ const isPlayerId = (value: unknown): value is number => isActionInt(value) && va
 
 type PlayerTrendLog = FantasyTrendLog & { playerId: number };
 
-const fetchLogs = async ({
-  season,
-  playerIds,
-}: {
+type FetchLogsProps = {
   season: string;
   playerIds: readonly number[];
-}): Promise<PlayerTrendLog[]> => {
+};
+
+const fetchLogs = async ({ season, playerIds }: FetchLogsProps): Promise<PlayerTrendLog[]> => {
   const rows = await prisma.playerGameLog.findMany({
     where: { playerId: { in: [...playerIds] }, season, seasonType: SEASON_TYPE },
     orderBy: { gameDate: "asc" },
@@ -51,11 +50,13 @@ const cachedLogs = unstable_cache(
 // draw each player's rolling value against the pool it already holds. Only
 // the box-score fields travel: the rolling scorers need nothing else, and a
 // page of a hundred players is thousands of rows.
+type LoadFantasyTrendLogsProps = {
+  playerIds: readonly number[];
+};
+
 export const loadFantasyTrendLogs = async ({
   playerIds,
-}: {
-  playerIds: readonly number[];
-}): Promise<FantasyTrendLogsResult> => {
+}: LoadFantasyTrendLogsProps): Promise<FantasyTrendLogsResult> => {
   if (
     !isActionArray(playerIds) ||
     playerIds.length > MAX_TREND_PLAYERS ||

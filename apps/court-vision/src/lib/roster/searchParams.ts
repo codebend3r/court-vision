@@ -45,7 +45,9 @@ export const DEFAULT_ROSTER_PARAMS: RosterParams = {
   team: null,
 };
 
-export const parseRosterParams = ({ raw }: { raw: RawSearchParams }): RosterParams =>
+type ParseRosterParamsProps = { raw: RawSearchParams };
+
+export const parseRosterParams = ({ raw }: ParseRosterParamsProps): RosterParams =>
   loadRosterParams(raw);
 
 // Defaults stay out of the URL, in a fixed key order, so every view has one

@@ -6,15 +6,13 @@ import authStyles from "@/app/(auth)/auth.module.scss";
 
 // The centred card every auth screen is: the vertical logo lockup over the
 // screen's h1, then its form. `titleId` ties the card's region to that h1.
-export function AuthCard({
-  titleId,
-  title,
-  children,
-}: {
+type AuthCardProps = {
   titleId: string;
   title: string;
   children: ReactNode;
-}) {
+};
+
+export function AuthCard({ titleId, title, children }: AuthCardProps) {
   return (
     <main className={authStyles.shell} data-centered>
       <section className={authStyles.card} aria-labelledby={titleId}>

@@ -20,16 +20,14 @@ export type SeriesChip<K extends string> = {
 
 // The toggle row above a series chart: one pressed/unpressed keycap per series
 // and a bulk "Clear all / Select all" companion at the end.
-export function SeriesChips<K extends string>({
-  chips,
-  selection,
-  all,
-}: {
+type SeriesChipsProps<K extends string> = {
   chips: readonly SeriesChip<K>[];
   selection: SeriesSelection<K>;
   // What "Select all" turns on.
   all: readonly K[];
-}) {
+};
+
+export function SeriesChips<K extends string>({ chips, selection, all }: SeriesChipsProps<K>) {
   return (
     <div className={styles.chips}>
       {chips.map((chip) => (

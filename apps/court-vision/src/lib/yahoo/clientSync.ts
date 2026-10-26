@@ -18,16 +18,18 @@ export type ClientSyncResult =
 // browser and handed to the server as a snapshot. An extension league never
 // reaches the server sync, which can't read a private league and would record
 // a syncError for it.
-export const syncLeagueFromClient = async ({
-  leagueId,
-  syncVia,
-  externalUrl,
-}: {
+type SyncLeagueFromClientProps = {
   leagueId: string;
   syncVia: LeagueSyncVia;
   // The Yahoo league id is parsed back out of it.
   externalUrl: string | null;
-}): Promise<ClientSyncResult> => {
+};
+
+export const syncLeagueFromClient = async ({
+  leagueId,
+  syncVia,
+  externalUrl,
+}: SyncLeagueFromClientProps): Promise<ClientSyncResult> => {
   if (syncVia === "server") return syncYahooLeague({ leagueId });
 
   const extensionId = getExtensionId();

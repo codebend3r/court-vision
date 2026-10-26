@@ -32,13 +32,12 @@ export const dynamic = "force-dynamic";
 // throw (a 500) instead of rendering a 404.
 const MAX_INT4 = 2147483647;
 
-export default async function PlayerPage({
-  params,
-  searchParams,
-}: {
+type PlayerPageProps = {
   params: Promise<{ playerId: string }>;
   searchParams?: Promise<SearchParams>;
-}) {
+};
+
+export default async function PlayerPage({ params, searchParams }: PlayerPageProps) {
   const { playerId } = await params;
   if (!/^\d+$/.test(playerId)) {
     notFound();

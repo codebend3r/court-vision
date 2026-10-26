@@ -26,7 +26,9 @@ const toStanding = (row: BdlStanding): ConferenceTeamStanding => ({
 // The API sends all 30 teams in one flat list; the homepage wants each
 // conference ranked on its own ladder. Anything that is not "East" or "West"
 // is dropped rather than guessed at.
-export const groupStandings = ({ rows }: { rows: readonly BdlStanding[] }): ConferenceStandings => {
+type GroupStandingsProps = { rows: readonly BdlStanding[] };
+
+export const groupStandings = ({ rows }: GroupStandingsProps): ConferenceStandings => {
   const conference = (name: string): ConferenceTeamStanding[] =>
     rows
       .filter((row) => row.team.conference === name)

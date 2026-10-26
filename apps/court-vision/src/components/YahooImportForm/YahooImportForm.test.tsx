@@ -15,38 +15,64 @@ import {
   type YahooPreviewResult,
 } from "@/lib/yahoo/types";
 
-const previewYahooLeagueMock = vi.fn<(args: { url: string }) => Promise<YahooPreviewResult>>();
+type PreviewYahooLeagueMockProps = { url: string };
+
+const previewYahooLeagueMock =
+  vi.fn<(args: PreviewYahooLeagueMockProps) => Promise<YahooPreviewResult>>();
+type ImportYahooLeagueMockProps = { url: string; myTeamExternalKey: string };
+
 const importYahooLeagueMock =
-  vi.fn<(args: { url: string; myTeamExternalKey: string }) => Promise<YahooImportResult>>();
+  vi.fn<(args: ImportYahooLeagueMockProps) => Promise<YahooImportResult>>();
+
+type PreviewYahooLeagueProps = { url: string };
+
+type ImportYahooLeagueProps = { url: string; myTeamExternalKey: string };
 
 vi.mock("@/lib/yahoo/actions", () => ({
-  previewYahooLeague: (args: { url: string }) => previewYahooLeagueMock(args),
-  importYahooLeague: (args: { url: string; myTeamExternalKey: string }) =>
-    importYahooLeagueMock(args),
+  previewYahooLeague: (args: PreviewYahooLeagueProps) => previewYahooLeagueMock(args),
+  importYahooLeague: (args: ImportYahooLeagueProps) => importYahooLeagueMock(args),
 }));
 
+type PreviewYahooSnapshotMockProps = { payload: unknown };
+
 const previewYahooSnapshotMock =
-  vi.fn<(args: { payload: unknown }) => Promise<YahooPreviewResult>>();
+  vi.fn<(args: PreviewYahooSnapshotMockProps) => Promise<YahooPreviewResult>>();
+type ImportYahooLeagueFromSnapshotMockProps = { payload: unknown; myTeamExternalKey: string };
+
 const importYahooLeagueFromSnapshotMock =
-  vi.fn<(args: { payload: unknown; myTeamExternalKey: string }) => Promise<YahooImportResult>>();
+  vi.fn<(args: ImportYahooLeagueFromSnapshotMockProps) => Promise<YahooImportResult>>();
+
+type PreviewYahooSnapshotProps = { payload: unknown };
+
+type ImportYahooLeagueFromSnapshotProps = { payload: unknown; myTeamExternalKey: string };
 
 vi.mock("@/lib/yahoo/snapshotActions", () => ({
-  previewYahooSnapshot: (args: { payload: unknown }) => previewYahooSnapshotMock(args),
-  importYahooLeagueFromSnapshot: (args: { payload: unknown; myTeamExternalKey: string }) =>
+  previewYahooSnapshot: (args: PreviewYahooSnapshotProps) => previewYahooSnapshotMock(args),
+  importYahooLeagueFromSnapshot: (args: ImportYahooLeagueFromSnapshotProps) =>
     importYahooLeagueFromSnapshotMock(args),
 }));
 
 const getExtensionIdMock = vi.fn<() => string | null>();
-const pingExtensionMock = vi.fn<(args: { extensionId: string }) => Promise<boolean>>();
+type PingExtensionMockProps = { extensionId: string };
+
+const pingExtensionMock = vi.fn<(args: PingExtensionMockProps) => Promise<boolean>>();
+type FetchLeagueViaExtensionMockProps = { extensionId: string; leagueId: string };
+
 const fetchLeagueViaExtensionMock =
-  vi.fn<(args: { extensionId: string; leagueId: string }) => Promise<ExtensionLeagueResult>>();
+  vi.fn<(args: FetchLeagueViaExtensionMockProps) => Promise<ExtensionLeagueResult>>();
+
+type PingExtensionProps = { extensionId: string };
+
+type FetchLeagueViaExtensionProps = { extensionId: string; leagueId: string };
+
+type ExtensionStoreUrlProps = { extensionId: string };
 
 vi.mock("@/lib/yahoo/extensionClient", () => ({
   getExtensionId: () => getExtensionIdMock(),
-  pingExtension: (args: { extensionId: string }) => pingExtensionMock(args),
-  fetchLeagueViaExtension: (args: { extensionId: string; leagueId: string }) =>
+  pingExtension: (args: PingExtensionProps) => pingExtensionMock(args),
+  fetchLeagueViaExtension: (args: FetchLeagueViaExtensionProps) =>
     fetchLeagueViaExtensionMock(args),
-  extensionStoreUrl: ({ extensionId }: { extensionId: string }) =>
+  extensionStoreUrl: ({ extensionId }: ExtensionStoreUrlProps) =>
     `https://chromewebstore.google.com/detail/${extensionId}`,
 }));
 
@@ -112,7 +138,9 @@ const importedLeague: LeagueSummary = {
 
 const EXTENSION_ID = "court-vision-extension-id";
 
-const payload = ({ tag }: { tag: string }): BridgeLeaguePayload => ({
+type PayloadProps = { tag: string };
+
+const payload = ({ tag }: PayloadProps): BridgeLeaguePayload => ({
   game: { tag },
   snapshot: { tag },
   waiverPages: [],
@@ -434,7 +462,9 @@ const NOT_FOUND_WITH_EXTENSION =
   "Couldn't read this league. If it's private, the commissioner can make it publicly viewable in Yahoo's league settings, or you can import it with the Court Vision extension.";
 
 // Renders with an id configured and waits until the ping has answered.
-const renderWithExtension = async ({ answers }: { answers: boolean }) => {
+type RenderWithExtensionProps = { answers: boolean };
+
+const renderWithExtension = async ({ answers }: RenderWithExtensionProps) => {
   getExtensionIdMock.mockReturnValue(EXTENSION_ID);
   pingExtensionMock.mockResolvedValue(answers);
   const user = userEvent.setup();

@@ -5,15 +5,13 @@ import { useEffect, useEffectEvent, type RefObject } from "react";
 // trigger as well as the panel, so a click on the trigger toggles rather than
 // closing and immediately reopening. Escape and focus handling stay with the
 // widget, which knows where focus should land.
-export const useDismiss = ({
-  open,
-  ref,
-  onDismiss,
-}: {
+type UseDismissProps = {
   open: boolean;
   ref: RefObject<HTMLElement | null>;
   onDismiss: () => void;
-}): void => {
+};
+
+export const useDismiss = ({ open, ref, onDismiss }: UseDismissProps): void => {
   const dismiss = useEffectEvent(onDismiss);
 
   useEffect(() => {

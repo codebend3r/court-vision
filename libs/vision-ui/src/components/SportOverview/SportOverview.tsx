@@ -5,7 +5,9 @@ import { categoryDef } from "@vision/core/valuation/categories";
 
 import styles from "#ui/components/SportOverview/SportOverview.module.scss";
 
-const formatPoints = ({ value }: { value: number }): string =>
+type FormatPointsProps = { value: number };
+
+const formatPoints = ({ value }: FormatPointsProps): string =>
   value > 0 ? `+${value}` : String(value);
 
 type OverviewColumn = {
@@ -22,17 +24,14 @@ type OverviewRow = {
 };
 
 // One titled panel holding one table: the shape every overview section shares.
-const OverviewTable = ({
-  id,
-  title,
-  columns,
-  rows,
-}: {
+type OverviewTableProps = {
   id: string;
   title: string;
   columns: readonly OverviewColumn[];
   rows: readonly OverviewRow[];
-}) => (
+};
+
+const OverviewTable = ({ id, title, columns, rows }: OverviewTableProps) => (
   <section className={styles.panel} aria-labelledby={id}>
     <h2 id={id} className={styles.title}>
       {title}
@@ -72,7 +71,9 @@ const OverviewTable = ({
 // What a sport's fantasy game is made of, read straight from its descriptor:
 // the categories each pool competes in, the points table, and the roster.
 // Server-safe; the descriptor never crosses to the client.
-export const SportOverview = <K extends SportKeys>({ sport }: { sport: SportDescriptor<K> }) => (
+type SportOverviewProps<K extends SportKeys> = { sport: SportDescriptor<K> };
+
+export const SportOverview = <K extends SportKeys>({ sport }: SportOverviewProps<K>) => (
   <div className={styles.overview}>
     {sport.pools
       .filter((pool) => pool.categories.length > 0)

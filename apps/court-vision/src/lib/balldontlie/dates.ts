@@ -15,11 +15,15 @@ export const isIsoDate = (value: string): boolean => {
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().startsWith(value);
 };
 
-const shiftDays = ({ date, days }: { date: string; days: number }): string =>
+type ShiftDaysProps = { date: string; days: number };
+
+const shiftDays = ({ date, days }: ShiftDaysProps): string =>
   new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 
 // The calendar date it is right now in New York. `en-CA` formats as YYYY-MM-DD.
-const todayInNewYork = ({ now }: { now: Date }): string =>
+type TodayInNewYorkProps = { now: Date };
+
+const todayInNewYork = ({ now }: TodayInNewYorkProps): string =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/New_York",
     year: "numeric",
@@ -29,11 +33,15 @@ const todayInNewYork = ({ now }: { now: Date }): string =>
 
 // "Last night" for a job that runs in the early hours Eastern: the game date
 // before today's in New York, regardless of the machine's own time zone.
-export const yesterdayInNewYork = ({ now }: { now: Date }): string =>
+type YesterdayInNewYorkProps = { now: Date };
+
+export const yesterdayInNewYork = ({ now }: YesterdayInNewYorkProps): string =>
   shiftDays({ date: todayInNewYork({ now }), days: -1 });
 
 // Every date from `from` through `to`, inclusive.
-export const datesBetween = ({ from, to }: { from: string; to: string }): string[] => {
+type DatesBetweenProps = { from: string; to: string };
+
+export const datesBetween = ({ from, to }: DatesBetweenProps): string[] => {
   const span = Math.round(
     (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS,
   );

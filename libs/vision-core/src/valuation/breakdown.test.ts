@@ -54,13 +54,12 @@ const config: ValuationConfig = {
   scoring: DEFAULT_POINTS_SCORING,
 };
 
-const entryFor = ({
-  breakdown,
-  key,
-}: {
+type EntryForProps = {
   breakdown: ReturnType<typeof buildCategoryBreakdown>;
   key: Category;
-}) => {
+};
+
+const entryFor = ({ breakdown, key }: EntryForProps) => {
   const entry = breakdown.find((candidate) => candidate.key === key);
   if (entry === undefined) throw new Error(`no ${key} entry`);
   return entry;

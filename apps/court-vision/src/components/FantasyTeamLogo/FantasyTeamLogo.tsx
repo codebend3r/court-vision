@@ -17,11 +17,15 @@ export type FantasyTeamLogoProps = {
   size?: FantasyTeamLogoSize;
 };
 
-const firstLetter = ({ word }: { word: string }): string => Array.from(word)[0] ?? "";
+type FirstLetterProps = { word: string };
+
+const firstLetter = ({ word }: FirstLetterProps): string => Array.from(word)[0] ?? "";
 
 // "Better Call Gasol" → "BC"; a one-word name gives its first two letters,
 // "Newfoundlanders" → "NE".
-const initialsFor = ({ name }: { name: string }): string => {
+type InitialsForProps = { name: string };
+
+const initialsFor = ({ name }: InitialsForProps): string => {
   const words = name.trim().split(/\s+/).filter(Boolean);
   const [first = "", second] = words;
   const initials =

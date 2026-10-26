@@ -8,17 +8,19 @@ import { replacementLevel } from "#core/valuation/modifiers/replacement";
 // replacement sits at rank teams × the sport's replacement slots for it.
 // Players with no parseable position fall back to the global replacement
 // level.
+type PositionalValuesProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  players: readonly { playerId: number; total: number; position: string | null }[];
+  teams: number;
+  fallbackReplacement: number;
+};
+
 export const positionalValues = <K extends SportKeys>({
   sport,
   players,
   teams,
   fallbackReplacement,
-}: {
-  sport: SportDescriptor<K>;
-  players: readonly { playerId: number; total: number; position: string | null }[];
-  teams: number;
-  fallbackReplacement: number;
-}): Map<number, number> => {
+}: PositionalValuesProps<K>): Map<number, number> => {
   const { groups, parse, replacementSlots } = sport.positions;
   const levelByGroup = groups.reduce<Partial<Record<K["group"], number>>>((acc, group) => {
     const eligible = players.filter((player) =>

@@ -1,4 +1,6 @@
-export const formatHeight = (args: { heightInches: number | null }): string | null => {
+type FormatHeightProps = { heightInches: number | null };
+
+export const formatHeight = (args: FormatHeightProps): string | null => {
   const { heightInches } = args;
   if (heightInches === null || heightInches <= 0) {
     return null;
@@ -8,12 +10,16 @@ export const formatHeight = (args: { heightInches: number | null }): string | nu
   return `${feet}'${inches}"`;
 };
 
-export const formatWeight = (args: { weightLbs: number | null }): string | null => {
+type FormatWeightProps = { weightLbs: number | null };
+
+export const formatWeight = (args: FormatWeightProps): string | null => {
   const { weightLbs } = args;
   return weightLbs === null || weightLbs <= 0 ? null : `${weightLbs} lb`;
 };
 
-export const formatBirthDate = (args: { birthDate: Date | null }): string | null => {
+type FormatBirthDateProps = { birthDate: Date | null };
+
+export const formatBirthDate = (args: FormatBirthDateProps): string | null => {
   const { birthDate } = args;
   return (
     birthDate?.toLocaleDateString("en-US", {
@@ -28,10 +34,12 @@ export const formatBirthDate = (args: { birthDate: Date | null }): string | null
 // Seasons in the league counted inclusively from the draft season: a player
 // drafted in 2021 is in their 5th season during 2025-26. Undrafted players
 // (null draft year) have no derivable count and return null.
-export const formatExperience = (args: {
+type FormatExperienceProps = {
   draftYear: number | null;
   seasonStartYear: number;
-}): string | null => {
+};
+
+export const formatExperience = (args: FormatExperienceProps): string | null => {
   const { draftYear, seasonStartYear } = args;
   if (draftYear === null || draftYear > seasonStartYear) {
     return null;
@@ -40,7 +48,9 @@ export const formatExperience = (args: {
   return seasons === 1 ? "1 season" : `${seasons} seasons`;
 };
 
-export const formatOrdinal = (args: { value: number }): string => {
+type FormatOrdinalProps = { value: number };
+
+export const formatOrdinal = (args: FormatOrdinalProps): string => {
   const { value } = args;
   const mod100 = value % 100;
   const suffix =
@@ -48,11 +58,13 @@ export const formatOrdinal = (args: { value: number }): string => {
   return `${value}${suffix}`;
 };
 
-export const formatDraft = (args: {
+type FormatDraftProps = {
   draftYear: number | null;
   draftRound: number | null;
   draftNumber: number | null;
-}): string | null => {
+};
+
+export const formatDraft = (args: FormatDraftProps): string | null => {
   const { draftYear, draftRound, draftNumber } = args;
   if (draftYear === null) {
     return null;
@@ -70,11 +82,13 @@ export const formatDraft = (args: {
 // A fixed-precision number with an explicit "+" on gains: "+1.4" / "-2.1".
 // Zero is unsigned ("0.0") unless `signZero` asks for "+0.00", the reading a
 // z-score panel wants, where zero means "exactly average" rather than "none".
-export const formatSigned = (args: {
+type FormatSignedProps = {
   value: number;
   digits: number;
   signZero?: boolean;
-}): string => {
+};
+
+export const formatSigned = (args: FormatSignedProps): string => {
   const { value, digits, signZero = false } = args;
   const isPlus = signZero ? value >= 0 : value > 0;
   return `${isPlus ? "+" : ""}${value.toFixed(digits)}`;
@@ -82,5 +96,7 @@ export const formatSigned = (args: {
 
 // A make rate the way box scores print it, to three places with the leading
 // zero dropped: 0.48 reads ".480". A perfect 1 keeps its digit ("1.000").
-export const formatRate = (args: { value: number }): string =>
+type FormatRateProps = { value: number };
+
+export const formatRate = (args: FormatRateProps): string =>
   args.value.toFixed(3).replace(/^0(?=\.)/, "");

@@ -2,14 +2,18 @@ import { beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { type SetActiveLeagueResult } from "@/lib/leagues/types";
 
-const setActiveLeague = vi.fn<(args: { leagueId: string }) => Promise<SetActiveLeagueResult>>();
+type SetActiveLeagueProps = { leagueId: string };
+
+const setActiveLeague = vi.fn<(args: SetActiveLeagueProps) => Promise<SetActiveLeagueResult>>();
 
 vi.mock("@/lib/leagues/actions", () => ({ setActiveLeague }));
 
 import { useLeaguesStore } from "@/lib/leagues/store";
 import { type LeagueSummary } from "@/lib/leagues/types";
 
-const league = ({ id, name }: { id: string; name: string }): LeagueSummary => ({
+type LeagueProps = { id: string; name: string };
+
+const league = ({ id, name }: LeagueProps): LeagueSummary => ({
   id,
   name,
   slug: name.toLowerCase(),

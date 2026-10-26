@@ -14,7 +14,9 @@ import { type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
 
 // Per-game display beside a category's score: counting stats to one decimal,
 // ratio categories as the make rate the Fantasy tab prints (".480").
-const formatPerGame = ({ entry }: { entry: FantasyCategoryBreakdown }): string =>
+type FormatPerGameProps = { entry: FantasyCategoryBreakdown };
+
+const formatPerGame = ({ entry }: FormatPerGameProps): string =>
   entry.kind === "ratio" ? formatRate({ value: entry.perGame }) : entry.perGame.toFixed(1);
 
 // A bar's rounded end belongs at the data end. Recharts applies `radius` to

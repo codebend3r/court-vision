@@ -42,6 +42,12 @@ const CUT_COLUMNS: readonly SortColumn<CutRow>[] = [
   { key: "value", firstDir: "desc", valueOf: ({ row }) => row.value },
 ];
 
+type OnScopeProps = { scope: CutScope };
+
+type OnShowAllProps = { showAll: boolean };
+
+type OnCompareProps = { fa: number };
+
 export type CutLinePanelProps = {
   cutLine: CutLine;
   // Every row of the scope, line and all, however the window is set: what a
@@ -49,10 +55,10 @@ export type CutLinePanelProps = {
   // are in another order.
   fullLine: CutLine;
   scope: CutScope;
-  onScope: ({ scope }: { scope: CutScope }) => void;
+  onScope: ({ scope }: OnScopeProps) => void;
   showAll: boolean;
-  onShowAll: ({ showAll }: { showAll: boolean }) => void;
-  onCompare: ({ fa }: { fa: number }) => void;
+  onShowAll: ({ showAll }: OnShowAllProps) => void;
+  onCompare: ({ fa }: OnCompareProps) => void;
   compareHintId: string;
   // My rostered players with no line in the range, listed under the table.
   noStats: WaiverRosterEntry[];
@@ -70,7 +76,9 @@ const showAllLabel = ({ hiddenAbove, hiddenBelow }: Omit<CutLine, "entries">): s
 };
 
 // My rows carry the leading bar; free agents above the line are the upgrades.
-const rowClassName = ({ entry }: { entry: Extract<CutLineEntry, { kind: "row" }> }) => {
+type RowClassNameProps = { entry: Extract<CutLineEntry, { kind: "row" }> };
+
+const rowClassName = ({ entry }: RowClassNameProps) => {
   if (entry.row.owner === "mine") return styles.mine;
   return entry.isUpgrade ? styles.upgrade : undefined;
 };

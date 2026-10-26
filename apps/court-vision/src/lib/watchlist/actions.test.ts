@@ -8,6 +8,8 @@ const ensureDefaultLeague = vi.fn();
 
 // Both actions run inside an interactive transaction, so the mock hands the
 // callback the same delegate shape Prisma would.
+const lockLeague = vi.fn(async () => {});
+vi.mock("@/lib/leagues/locks", () => ({ lockLeague }));
 const tx = { leagueWatchlistPlayer: { count, createMany, deleteMany } };
 const $transaction = vi.fn((fn: (client: typeof tx) => unknown) => fn(tx));
 

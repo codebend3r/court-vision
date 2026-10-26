@@ -6,11 +6,11 @@ import { getUser } from "@/lib/auth/session";
 import { AuthCard } from "@/app/(auth)/AuthCard";
 import { ForgotPasswordForm } from "@/app/(auth)/forgot-password/ForgotPasswordForm";
 
-export default async function ForgotPasswordPage({
-  searchParams,
-}: {
+type ForgotPasswordPageProps = {
   searchParams: Promise<{ error?: string }>;
-}) {
+};
+
+export default async function ForgotPasswordPage({ searchParams }: ForgotPasswordPageProps) {
   const user = await getUser();
   if (user) {
     redirect("/");

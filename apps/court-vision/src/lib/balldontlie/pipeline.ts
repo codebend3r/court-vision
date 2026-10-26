@@ -14,11 +14,13 @@ import {
 
 // Every team's abbreviation by Balldontlie team id, which the transforms use to
 // name a log's team and opponent.
+type FetchTeamAbbrByIdProps = {
+  deps: BdlClientDeps;
+};
+
 export const fetchTeamAbbrById = async ({
   deps,
-}: {
-  deps: BdlClientDeps;
-}): Promise<Map<number, string>> => {
+}: FetchTeamAbbrByIdProps): Promise<Map<number, string>> => {
   const teams = await fetchTeams({ deps });
   return new Map(teams.map((team) => [team.id, team.abbreviation]));
 };
@@ -27,28 +29,36 @@ export const fetchTeamAbbrById = async ({
 // so it replaces them and sums season lines from the logs it just fetched; the
 // nightly sync owns whole games, so it replaces those and sums season lines
 // from every stored log of the players who appeared.
+type GameLogsProps = { rows: GameLogInput[] };
+
+type AdvancedGameLogsProps = { rows: AdvancedGameLogInput[] };
+
+type SeasonLogsProps = { gameLogs: GameLogInput[] };
+
 export type BoxScoreWriters = {
-  gameLogs: (args: { rows: GameLogInput[] }) => Promise<number>;
-  advancedGameLogs: (args: { rows: AdvancedGameLogInput[] }) => Promise<number>;
-  seasonLogs: (args: { gameLogs: GameLogInput[] }) => Promise<SeasonAggregateLog[]>;
+  gameLogs: (args: GameLogsProps) => Promise<number>;
+  advancedGameLogs: (args: AdvancedGameLogsProps) => Promise<number>;
+  seasonLogs: (args: SeasonLogsProps) => Promise<SeasonAggregateLog[]>;
 };
 
 // Writes one fetched batch of box scores. Callers fetch everything first, so a
 // failed fetch leaves the database untouched. Players go first because the
 // logs reference them; season lines follow the game logs they are summed from.
+type WriteBoxScoresProps = {
+  stats: BdlStat[];
+  advanced: BdlAdvancedStat[];
+  teamAbbrById: Map<number, string>;
+  writers: BoxScoreWriters;
+  logger: Logger;
+};
+
 export const writeBoxScores = async ({
   stats,
   advanced,
   teamAbbrById,
   writers,
   logger,
-}: {
-  stats: BdlStat[];
-  advanced: BdlAdvancedStat[];
-  teamAbbrById: Map<number, string>;
-  writers: BoxScoreWriters;
-  logger: Logger;
-}): Promise<SyncSummary> => {
+}: WriteBoxScoresProps): Promise<SyncSummary> => {
   const gameLogInputs = stats.map((stat) => toGameLogInput({ stat, teamAbbrById }));
 
   const players = await upsertPlayers({ players: toPlayerInputs({ stats, teamAbbrById }) });

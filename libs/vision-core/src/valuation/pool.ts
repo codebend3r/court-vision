@@ -18,13 +18,15 @@ import {
 
 // Each ratio category's league rate over `lines`: Σ numerator ÷ Σ denominator,
 // so high-volume players weigh in proportion (attempt-weighted FG%).
+type LeagueRatesProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+};
+
 export const leagueRates = <K extends SportKeys>({
   sport,
   lines,
-}: {
-  sport: SportDescriptor<K>;
-  lines: readonly ValuationLine<K>[];
-}): Record<K["ratio"], number> => {
+}: LeagueRatesProps<K>): Record<K["ratio"], number> => {
   const defs = ratioDefs({ sport });
   return recordFromKeys({
     keys: defs.map((def) => def.key),
@@ -45,11 +47,11 @@ export const leagueRates = <K extends SportKeys>({
 // Population mean and standard deviation, two-pass for numeric stability.
 // Fewer than two values (or no spread) yields sigma 0, which downstream
 // scoring treats as "no signal" rather than dividing by it.
-export const meanSigma = ({
-  values,
-}: {
+type MeanSigmaProps = {
   values: readonly number[];
-}): { mu: number; sigma: number } => {
+};
+
+export const meanSigma = ({ values }: MeanSigmaProps): { mu: number; sigma: number } => {
   if (values.length < 2) return { mu: values[0] ?? 0, sigma: 0 };
   const mu = values.reduce((sum, value) => sum + value, 0) / values.length;
   const variance = values.reduce((sum, value) => sum + (value - mu) ** 2, 0) / values.length;
@@ -62,19 +64,21 @@ export const meanSigma = ({
 // − E[num − L·den]²), which the (sq, cross) sums reconstruct for any league
 // rate L. A lower-is-better sign flip leaves variance unchanged. Totals basis
 // scales by games played (variance of a sum of n games).
+type WithinVarianceProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  line: ValuationLine<K>;
+  category: Category<K>;
+  basis: Basis;
+  leagueRate: Record<K["ratio"], number>;
+};
+
 const withinVariance = <K extends SportKeys>({
   sport,
   line,
   category,
   basis,
   leagueRate,
-}: {
-  sport: SportDescriptor<K>;
-  line: ValuationLine<K>;
-  category: Category<K>;
-  basis: Basis;
-  leagueRate: Record<K["ratio"], number>;
-}): number => {
+}: WithinVarianceProps<K>): number => {
   const games = line.gamesPlayed;
   if (games < 2) return 0;
   const def = categoryDef({ sport, category });
@@ -96,15 +100,17 @@ const withinVariance = <K extends SportKeys>({
   return basis === "perGame" ? perGameVariance : perGameVariance * games;
 };
 
+type StatsOverProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+  basis: Basis;
+};
+
 const statsOver = <K extends SportKeys>({
   sport,
   lines,
   basis,
-}: {
-  sport: SportDescriptor<K>;
-  lines: readonly ValuationLine<K>[];
-  basis: Basis;
-}): PoolStats<K> => {
+}: StatsOverProps<K>): PoolStats<K> => {
   const leagueRate = leagueRates({ sport, lines });
   const stat = (category: Category<K>): CategoryPoolStats => {
     const between = meanSigma({
@@ -130,19 +136,28 @@ const statsOver = <K extends SportKeys>({
 
 // The sport's first pool unless the caller names one: single-pool sports never
 // pass it, split-pool sports value each pool on its own.
-const resolvePool = <K extends SportKeys>({
-  sport,
-  pool,
-}: {
+type ResolvePoolProps<K extends SportKeys> = {
   sport: SportDescriptor<K>;
   pool?: PoolDef<K>;
-}): PoolDef<K> => pool ?? sport.pools[0];
+};
+
+const resolvePool = <K extends SportKeys>({ sport, pool }: ResolvePoolProps<K>): PoolDef<K> =>
+  pool ?? sport.pools[0];
 
 // Pool selection with one refinement pass (PRD §5.1): threshold the
 // population, rank provisionally on an equal-weight z total, trim to
 // poolSize, then recompute league rates and per-category mu/sigma on the
 // trimmed pool. Every displayed player is scored against these stats, pool
 // member or not. `windowGames` is the lastN window, or null for the season.
+type ComputePoolStatsProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  pool?: PoolDef<K>;
+  lines: readonly ValuationLine<K>[];
+  basis: Basis;
+  poolSize: number;
+  windowGames: number | null;
+};
+
 export const computePoolStats = <K extends SportKeys>({
   sport,
   pool,
@@ -150,14 +165,7 @@ export const computePoolStats = <K extends SportKeys>({
   basis,
   poolSize,
   windowGames,
-}: {
-  sport: SportDescriptor<K>;
-  pool?: PoolDef<K>;
-  lines: readonly ValuationLine<K>[];
-  basis: Basis;
-  poolSize: number;
-  windowGames: number | null;
-}): PoolStats<K> => {
+}: ComputePoolStatsProps<K>): PoolStats<K> => {
   const { minGamesShare, minPlayingTimePerGame } = resolvePool({ sport, pool });
   const minGames = Math.ceil((windowGames ?? sport.scheduleGames) * minGamesShare);
   const candidates = lines.filter(
@@ -188,29 +196,31 @@ export const computePoolStats = <K extends SportKeys>({
 
 // Small leagues still standardize against a broad pool so values stay stable
 // (PRD §5.1); deep leagues widen it to everyone rosterable.
-const poolSizeFor = <K extends SportKeys>({
-  pool,
-  config,
-}: {
+type PoolSizeForProps<K extends SportKeys> = {
   pool: PoolDef<K>;
   config: Pick<ValuationConfig<K>, "teams" | "rosterSlots">;
-}): number => Math.max(pool.poolFloor, config.teams * config.rosterSlots);
+};
+
+const poolSizeFor = <K extends SportKeys>({ pool, config }: PoolSizeForProps<K>): number =>
+  Math.max(pool.poolFloor, config.teams * config.rosterSlots);
 
 // The pool a configured league standardizes against: its basis, and a pool
 // sized to the league (never under the pool's floor).
+type PoolStatsForProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  pool?: PoolDef<K>;
+  lines: readonly ValuationLine<K>[];
+  config: Pick<ValuationConfig<K>, "basis" | "teams" | "rosterSlots">;
+  windowGames: number | null;
+};
+
 export const poolStatsFor = <K extends SportKeys>({
   sport,
   pool,
   lines,
   config,
   windowGames,
-}: {
-  sport: SportDescriptor<K>;
-  pool?: PoolDef<K>;
-  lines: readonly ValuationLine<K>[];
-  config: Pick<ValuationConfig<K>, "basis" | "teams" | "rosterSlots">;
-  windowGames: number | null;
-}): PoolStats<K> => {
+}: PoolStatsForProps<K>): PoolStats<K> => {
   const resolved = resolvePool({ sport, pool });
   return computePoolStats({
     sport,

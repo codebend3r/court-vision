@@ -31,17 +31,14 @@ const collator = new Intl.Collator();
 
 // Name sorts order by the chosen name, then the other name, in the requested
 // direction; id breaks exact ties ascending so paging is stable.
-export const compareByName = ({
-  a,
-  b,
-  sort,
-  dir,
-}: {
+type CompareByNameProps = {
   a: NamedRow;
   b: NamedRow;
   sort: NameSortKey;
   dir: SortDirection;
-}): number => {
+};
+
+export const compareByName = ({ a, b, sort, dir }: CompareByNameProps): number => {
   const primary = (row: NamedRow): string => (sort === "lastName" ? row.lastName : row.firstName);
   const secondary = (row: NamedRow): string => (sort === "lastName" ? row.firstName : row.lastName);
   const difference =
@@ -50,27 +47,29 @@ export const compareByName = ({
 };
 
 // Stat-sort ties fall back to last name, first name, id, always ascending.
-export const compareByNameAscending = ({ a, b }: { a: NamedRow; b: NamedRow }): number =>
+type CompareByNameAscendingProps = { a: NamedRow; b: NamedRow };
+
+export const compareByNameAscending = ({ a, b }: CompareByNameAscendingProps): number =>
   collator.compare(a.lastName, b.lastName) ||
   collator.compare(a.firstName, b.firstName) ||
   a.id - b.id;
 
 // Case-insensitive substring match on the full name, the in-memory twin of
 // Prisma's `contains` + `mode: "insensitive"`.
-export const matchesQuery = ({ fullName, q }: { fullName: string; q: string }): boolean =>
+type MatchesQueryProps = { fullName: string; q: string };
+
+export const matchesQuery = ({ fullName, q }: MatchesQueryProps): boolean =>
   q === "" || fullName.toLowerCase().includes(q.toLowerCase());
 
 // The requested page of an ordered list, clamped to the last page so a stale
 // page number (after a narrowing search) still lands on real rows.
-export const pageOf = <Row>({
-  rows,
-  page,
-  size,
-}: {
+type PageOfProps<Row> = {
   rows: readonly Row[];
   page: number;
   size: number;
-}): Page<Row> => {
+};
+
+export const pageOf = <Row>({ rows, page, size }: PageOfProps<Row>): Page<Row> => {
   const total = rows.length;
   const lastPage = Math.max(1, Math.ceil(total / size));
   const clampedPage = Math.min(page, lastPage);
@@ -86,6 +85,16 @@ export const pageOf = <Row>({
 // millisecond-scale sort, not a query. `nameOf` reads a row's identity, so
 // rows that nest it (a scored line, say) rank without being reshaped; each
 // row's name and sort key are read once, not once per comparison.
+type RankRowsProps<Row> = {
+  rows: readonly Row[];
+  nameOf: (row: Row) => NamedRow;
+  q: string;
+  page: number;
+  size: number;
+  dir: SortDirection;
+  order: RankOrder<Row>;
+};
+
 export const rankRows = <Row>({
   rows,
   nameOf,
@@ -94,15 +103,7 @@ export const rankRows = <Row>({
   size,
   dir,
   order,
-}: {
-  rows: readonly Row[];
-  nameOf: (row: Row) => NamedRow;
-  q: string;
-  page: number;
-  size: number;
-  dir: SortDirection;
-  order: RankOrder<Row>;
-}): Page<Row> => {
+}: RankRowsProps<Row>): Page<Row> => {
   const candidates = rows
     .map((row) => ({ row, name: nameOf(row) }))
     .filter(({ name }) => matchesQuery({ fullName: name.fullName, q }));

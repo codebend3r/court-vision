@@ -42,19 +42,22 @@ const cachedAdvancedPool = unstable_cache(
 // null where the league's rosters are unknown, so the filter has no effect.
 type OwnerScope = { takenIds: ReadonlySet<number> | null };
 
+type OwnerFilteredProps<Row extends { id: number }> = {
+  pool: readonly Row[];
+  owner: PlayerOwnerFilter;
+  takenIds: ReadonlySet<number> | null;
+};
+
 const ownerFiltered = <Row extends { id: number }>({
   pool,
   owner,
   takenIds,
-}: {
-  pool: readonly Row[];
-  owner: PlayerOwnerFilter;
-  takenIds: ReadonlySet<number> | null;
-}): readonly Row[] => filterByOwner({ rows: pool, owner, takenIds, idOf: (row) => row.id });
+}: OwnerFilteredProps<Row>): readonly Row[] =>
+  filterByOwner({ rows: pool, owner, takenIds, idOf: (row) => row.id });
 
-export const searchPlayers = async (
-  args: RegularSearchParams & OwnerScope & { playerIds?: readonly number[] },
-): Promise<PlayersSearchResult> =>
+type SearchPlayersProps = RegularSearchParams & OwnerScope & { playerIds?: readonly number[] };
+
+export const searchPlayers = async (args: SearchPlayersProps): Promise<PlayersSearchResult> =>
   rankPlayers({
     pool: ownerFiltered({
       pool: await cachedRegularPool(args.range),
@@ -78,11 +81,14 @@ export const searchPlayersAdvanced = async (
 
 // The whole cached pool for a range, for a caller that picks its own players
 // out of it (a team's roster) rather than paging through a ranked list.
-export const getRegularPool = ({ range }: { range: PlayerGameRange }): Promise<PlayerPoolRow[]> =>
+type GetRegularPoolProps = { range: PlayerGameRange };
+
+export const getRegularPool = ({ range }: GetRegularPoolProps): Promise<PlayerPoolRow[]> =>
   cachedRegularPool(range);
 
-export const getAdvancedPool = ({
-  range,
-}: {
+type GetAdvancedPoolProps = {
   range: PlayerGameRange;
-}): Promise<AdvancedPlayerRow[]> => cachedAdvancedPool(range);
+};
+
+export const getAdvancedPool = ({ range }: GetAdvancedPoolProps): Promise<AdvancedPlayerRow[]> =>
+  cachedAdvancedPool(range);

@@ -4,12 +4,14 @@ import { type ChangeEvent } from "react";
 
 import styles from "#ui/components/Switch/Switch.module.scss";
 
+type OnChangeProps = { checked: boolean };
+
 export type SwitchProps = {
   label: string;
   checked?: boolean;
   defaultChecked?: boolean;
   disabled?: boolean;
-  onChange?: ({ checked }: { checked: boolean }) => void;
+  onChange?: ({ checked }: OnChangeProps) => void;
 };
 
 export function Switch({ label, checked, defaultChecked, disabled, onChange }: SwitchProps) {

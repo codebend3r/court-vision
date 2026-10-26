@@ -15,8 +15,10 @@ const saveLeagueTeam = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({ getProfile: () => getProfile() }));
 vi.mock("@/lib/leagues/queries", () => ({ getActiveLeague: () => getActiveLeague() }));
+type GetLeagueTeamBySlugProps = { leagueId: string; slug: string };
+
 vi.mock("@/lib/leagues/teamQueries", () => ({
-  getLeagueTeamBySlug: (args: { leagueId: string; slug: string }) => getLeagueTeamBySlug(args),
+  getLeagueTeamBySlug: (args: GetLeagueTeamBySlugProps) => getLeagueTeamBySlug(args),
 }));
 vi.mock("@/lib/valuation/loader", () => ({ getFantasyPool }));
 vi.mock("@/lib/fantasyTeams/loader", () => ({ getActiveRosterPlayers }));
@@ -39,7 +41,9 @@ const digestOf = (error: unknown): string =>
     ? error.digest
     : "";
 
-const league = ({ id, name }: { id: string; name: string }): LeagueSummary => ({
+type LeagueProps = { id: string; name: string };
+
+const league = ({ id, name }: LeagueProps): LeagueSummary => ({
   id,
   name,
   slug: name.toLowerCase(),

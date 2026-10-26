@@ -41,15 +41,13 @@ const breakdown: FantasyCategoryBreakdown[] = [
   },
 ];
 
-const trendPoint = ({
-  gameIndex,
-  z,
-  g,
-}: {
+type TrendPointProps = {
   gameIndex: number;
   z: number | null;
   g: number | null;
-}): FantasyTrendPoint => ({
+};
+
+const trendPoint = ({ gameIndex, z, g }: TrendPointProps): FantasyTrendPoint => ({
   gameIndex,
   gameNumber: gameIndex,
   gameDate: new Date(Date.UTC(2026, 0, gameIndex)).toISOString(),
@@ -60,7 +58,9 @@ const trendPoint = ({
   g,
 });
 
-const renderChart = ({ trend }: { trend: FantasyTrendPoint[] }) =>
+type RenderChartProps = { trend: FantasyTrendPoint[] };
+
+const renderChart = ({ trend }: RenderChartProps) =>
   render(
     <ThemeProvider>
       <PlayerFantasyChart breakdown={breakdown} trend={trend} />

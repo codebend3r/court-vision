@@ -54,8 +54,10 @@ const VALUE_KEYS: readonly (keyof FantasyPlayerValues)[] = [
 ];
 const RATIO_KEYS = CATEGORY_KEYS.filter(isKeyOf({ record: basketball.ratio }));
 
+type IsNumbersForProps<K extends string> = { keys: readonly K[] };
+
 const isNumbersFor =
-  <K extends string>({ keys }: { keys: readonly K[] }) =>
+  <K extends string>({ keys }: IsNumbersForProps<K>) =>
   (value: unknown): value is Record<K, number> =>
     isRecord(value) && keys.every((key) => typeof value[key] === "number");
 

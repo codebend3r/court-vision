@@ -3,8 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 const importLegacyTeamsMock = vi.fn();
 
+type ImportLegacyTeamsProps = { teams: unknown };
+
 vi.mock("@/lib/leagues/teamActions", () => ({
-  importLegacyTeams: (args: { teams: unknown }) => importLegacyTeamsMock(args),
+  importLegacyTeams: (args: ImportLegacyTeamsProps) => importLegacyTeamsMock(args),
 }));
 
 import { LegacyTeamsMigrator } from "@/components/LegacyTeamsMigrator/LegacyTeamsMigrator";

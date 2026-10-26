@@ -9,13 +9,15 @@ import { type WaiverRow } from "@/lib/waiverWire/types";
 
 import styles from "@/components/WaiverWireView/WaiverWireView.module.scss";
 
+type OnCompareProps = { fa: number };
+
 export type WaiverPlayerProps = {
   player: Pick<
     WaiverRow,
     "playerId" | "fullName" | "teamAbbr" | "position" | "owner" | "injuryStatus"
   >;
   // Only a free agent can be compared; a list of my players can leave it out.
-  onCompare?: ({ fa }: { fa: number }) => void;
+  onCompare?: ({ fa }: OnCompareProps) => void;
   // The view's one hidden hint saying what the compare button does.
   compareHintId: string;
 };

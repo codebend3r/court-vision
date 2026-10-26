@@ -16,9 +16,9 @@ import {
 } from "#core/testing/basketball";
 import { rosteredIds } from "#core/roster/slots";
 
-const player = (
-  overrides: Partial<FantasyTeamPlayer> & { playerId: number },
-): FantasyTeamPlayer => ({
+type PlayerProps = Partial<FantasyTeamPlayer> & { playerId: number };
+
+const player = (overrides: PlayerProps): FantasyTeamPlayer => ({
   firstName: "Test",
   lastName: `Player ${overrides.playerId}`,
   fullName: `Test Player ${overrides.playerId}`,

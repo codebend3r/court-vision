@@ -10,7 +10,9 @@ export const SEASON_START_YEAR = 2026;
 export const SEASON_TYPE = "Regular Season";
 
 // "2026-27" for 2026, padded so 1999 → "1999-00", per basketball's descriptor.
-export const seasonLabel = ({ startYear }: { startYear: number }): string =>
+type SeasonLabelProps = { startYear: number };
+
+export const seasonLabel = ({ startYear }: SeasonLabelProps): string =>
   basketball.season.label({ startYear });
 
 export const SEASON_LABEL = seasonLabel({ startYear: SEASON_START_YEAR });

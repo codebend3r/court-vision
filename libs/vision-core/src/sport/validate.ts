@@ -8,11 +8,13 @@ const duplicates = (values: readonly string[]): string[] =>
 // Every way a descriptor can be internally inconsistent that its types cannot
 // catch: categories missing from the table order, stats nothing declares,
 // groups with no replacement depth. Each sport lib asserts this returns [].
+type DescribeSportIssuesProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+};
+
 export const describeSportIssues = <K extends SportKeys>({
   sport,
-}: {
-  sport: SportDescriptor<K>;
-}): string[] => {
+}: DescribeSportIssuesProps<K>): string[] => {
   const declared = [...Object.keys(sport.counting), ...Object.keys(sport.ratio)];
   const ordered: readonly string[] = sport.categoryOrder;
   const valued: readonly string[] = sport.valuedStats;

@@ -12,17 +12,21 @@ export type FantasyTableRow = FantasyStatLine & { values: FantasyPlayerValues; r
 // What every Fantasy layout (the table and both chart lists) reads to order
 // its rows, mark the sorted column, and offer the star column: the view hands
 // the one object to whichever layout is showing.
+type OnSortProps = { sort: FantasySortKey };
+
 export type ListSortProps = {
   sort: FantasySortKey;
   dir: SortDirection;
   isSignedIn: boolean;
-  onSort: (args: { sort: FantasySortKey }) => void;
+  onSort: (args: OnSortProps) => void;
 };
 
 type ScoredLine = { line: FantasyStatLine; values: FantasyPlayerValues };
 
 // A line the pool has no score for yet reads as exactly average.
-const neutralValues = ({ playerId }: { playerId: number }): FantasyPlayerValues => ({
+type NeutralValuesProps = { playerId: number };
+
+const neutralValues = ({ playerId }: NeutralValuesProps): FantasyPlayerValues => ({
   playerId,
   z: 0,
   g: 0,
@@ -43,7 +47,9 @@ const nameOf = ({ line }: ScoredLine): NamedRow => ({
 // Name sorts rank alphabetically; a method column ranks by the value field
 // the registry names for its sort key, ties broken by player id so a page
 // never reshuffles.
-const orderFor = ({ sort }: { sort: FantasySortKey }): RankOrder<ScoredLine> => {
+type OrderForProps = { sort: FantasySortKey };
+
+const orderFor = ({ sort }: OrderForProps): RankOrder<ScoredLine> => {
   if (isNameSort(sort)) return { by: "name", sort };
   const valueKey = VALUE_KEY_BY_SORT[sort];
   return {
@@ -56,6 +62,16 @@ const orderFor = ({ sort }: { sort: FantasySortKey }): RankOrder<ScoredLine> => 
 // Pairs each line with its scores, then searches, orders and pages them the
 // way every Fantasy layout lists them, numbering each row by its place in
 // the whole ordered list.
+type RankFantasyRowsProps = {
+  lines: readonly FantasyStatLine[];
+  values: readonly FantasyPlayerValues[];
+  q: string;
+  page: number;
+  size: number;
+  dir: SortDirection;
+  sort: FantasySortKey;
+};
+
 export const rankFantasyRows = ({
   lines,
   values,
@@ -64,15 +80,7 @@ export const rankFantasyRows = ({
   size,
   dir,
   sort,
-}: {
-  lines: readonly FantasyStatLine[];
-  values: readonly FantasyPlayerValues[];
-  q: string;
-  page: number;
-  size: number;
-  dir: SortDirection;
-  sort: FantasySortKey;
-}): Page<FantasyTableRow> => {
+}: RankFantasyRowsProps): Page<FantasyTableRow> => {
   const byId = new Map(values.map((value) => [value.playerId, value]));
   const ranked = rankRows({
     rows: lines.map((line): ScoredLine => ({

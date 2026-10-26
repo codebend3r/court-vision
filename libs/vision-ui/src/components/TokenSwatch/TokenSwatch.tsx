@@ -6,7 +6,9 @@ import { useTheme } from "#ui/components/ThemeProvider/ThemeProvider";
 
 import styles from "#ui/components/TokenSwatch/TokenSwatch.module.scss";
 
-export function TokenSwatch({ token }: { token: string }) {
+type TokenSwatchProps = { token: string };
+
+export function TokenSwatch({ token }: TokenSwatchProps) {
   const { theme } = useTheme();
   const [value, setValue] = useState("");
 

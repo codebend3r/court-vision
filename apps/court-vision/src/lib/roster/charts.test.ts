@@ -5,7 +5,9 @@ import { type StatSpec } from "@/lib/roster/compare";
 
 type Row = { id: number; lastName: string; fullName: string; games: number; pts: number };
 
-const row = ({ id, games, pts }: { id: number; games: number; pts: number }): Row => ({
+type RowProps = { id: number; games: number; pts: number };
+
+const row = ({ id, games, pts }: RowProps): Row => ({
   id,
   lastName: `P${id}`,
   fullName: `A P${id}`,

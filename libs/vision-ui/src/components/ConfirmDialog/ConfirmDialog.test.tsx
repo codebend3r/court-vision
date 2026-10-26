@@ -5,7 +5,9 @@ import { useState } from "react";
 
 import { ConfirmDialog } from "#ui/components/ConfirmDialog/ConfirmDialog";
 
-const Harness = ({ onConfirm = () => {} }: { onConfirm?: () => void }) => {
+type HarnessProps = { onConfirm?: () => void };
+
+const Harness = ({ onConfirm = () => {} }: HarnessProps) => {
   const [open, setOpen] = useState(false);
   return (
     <section>

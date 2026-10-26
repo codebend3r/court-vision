@@ -8,11 +8,18 @@ import { type ImportedLeague, type YahooPlayerRef } from "@/lib/yahoo/types";
 type LoadArgs = { leagueId: string; includeWaivers?: boolean };
 type ResolveArgs = { refs: readonly YahooPlayerRef[]; writeMappings: boolean };
 
+const claimSync = vi.fn<() => Promise<Date | null>>(async () => new Date("2026-10-26T00:00:00Z"));
+const releaseSync = vi.fn(async () => {});
+vi.mock("@/lib/yahoo/syncLease", () => ({ claimSync, releaseSync }));
 const getProfile = vi.fn();
 const loadYahooLeague = vi.fn<(args: LoadArgs) => Promise<YahooLoadResult>>();
 const resolveYahooPlayers = vi.fn<(args: ResolveArgs) => Promise<ResolvedPlayers>>();
-const createImportedLeague = vi.fn<(args: { myTeamExternalKey: string }) => Promise<League>>();
-const syncImportedLeague = vi.fn<(args: { leagueId: string }) => Promise<League>>();
+type CreateImportedLeagueProps = { myTeamExternalKey: string };
+
+const createImportedLeague = vi.fn<(args: CreateImportedLeagueProps) => Promise<League>>();
+type SyncImportedLeagueProps = { leagueId: string };
+
+const syncImportedLeague = vi.fn<(args: SyncImportedLeagueProps) => Promise<League>>();
 
 const leagueFindFirst = vi.fn();
 const leagueUpdate = vi.fn();
@@ -24,7 +31,14 @@ const $transaction = vi.fn();
 const txFindFirst = vi.fn();
 const txCount = vi.fn<() => Promise<number>>();
 
-const leagueDelegate = { findFirst: leagueFindFirst, update: leagueUpdate, count: leagueCount };
+const leagueDelegate = {
+  findFirst: leagueFindFirst,
+  update: leagueUpdate,
+  updateMany: leagueUpdate,
+  count: leagueCount,
+};
+const lockProfile = vi.fn(async () => ({ activeLeagueId: null }));
+vi.mock("@/lib/leagues/locks", () => ({ lockProfile }));
 const tx = { league: { findFirst: txFindFirst, count: txCount } };
 
 vi.mock("@/lib/prisma", () => ({
@@ -58,7 +72,9 @@ const UNAVAILABLE_MESSAGE = "Yahoo isn't answering right now; try again in a min
 
 const profile = { id: PROFILE_ID, activeLeagueId: null };
 
-const ref = ({ id, name }: { id: string; name: string }): YahooPlayerRef => ({
+type RefProps = { id: string; name: string };
+
+const ref = ({ id, name }: RefProps): YahooPlayerRef => ({
   yahooPlayerId: id,
   fullName: name,
   teamAbbr: "NYK",
@@ -126,6 +142,8 @@ const leagueRow: League = {
   externalUrl: LEAGUE_URL,
   myTeamId: "team-5",
   syncedAt: new Date("2026-10-17T12:00:00Z"),
+  syncStartedAt: null,
+  syncLeaseUntil: null,
   syncError: null,
   unsupportedCategories: ["DD"],
   statCategories: null,
@@ -142,8 +160,9 @@ const resolved: ResolvedPlayers = {
   unmatched: [NOBODY, WAIVER],
 };
 
-const secondsAgo = ({ seconds }: { seconds: number }): Date =>
-  new Date(Date.now() - seconds * 1000);
+type SecondsAgoProps = { seconds: number };
+
+const secondsAgo = ({ seconds }: SecondsAgoProps): Date => new Date(Date.now() - seconds * 1000);
 
 type StoredLeague = {
   provider: string;
@@ -165,10 +184,16 @@ const storedLeague = (overrides: Partial<StoredLeague> = {}): StoredLeague => ({
   ...overrides,
 });
 
-const expectSyncError = ({ message }: { message: string }) => {
+type ExpectSyncErrorProps = { message: string };
+
+const expectSyncError = ({ message }: ExpectSyncErrorProps) => {
   expect(leagueUpdate).toHaveBeenCalledTimes(1);
   expect(leagueUpdate).toHaveBeenCalledWith({
-    where: { id: LEAGUE_ID, profileId: PROFILE_ID },
+    where: {
+      id: LEAGUE_ID,
+      profileId: PROFILE_ID,
+      syncStartedAt: new Date("2026-10-26T00:00:00Z"),
+    },
     data: { syncError: message },
   });
 };
@@ -451,6 +476,13 @@ describe("importYahooLeague", () => {
 });
 
 describe("syncYahooLeague", () => {
+  it("does not fetch or persist when another worker owns the sync", async () => {
+    leagueFindFirst.mockResolvedValueOnce(storedLeague());
+    claimSync.mockResolvedValueOnce(null);
+    expect(await syncYahooLeague({ leagueId: LEAGUE_ID })).toEqual({ status: "throttled" });
+    expect(loadYahooLeague).not.toHaveBeenCalled();
+    expect(syncImportedLeague).not.toHaveBeenCalled();
+  });
   it("throttles a sync within 60 seconds", async () => {
     leagueFindFirst.mockResolvedValueOnce(storedLeague({ syncedAt: secondsAgo({ seconds: 30 }) }));
 

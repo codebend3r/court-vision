@@ -145,18 +145,19 @@ export const ADVANCED_STAT_META: readonly AdvancedStatMeta[] = ADVANCED_METRIC_K
   (key) => ADVANCED_STAT_BY_KEY[key],
 );
 
-export const advancedStatMeta = ({ key }: { key: AdvancedMetricKey }): AdvancedStatMeta =>
+type AdvancedStatMetaProps = { key: AdvancedMetricKey };
+
+export const advancedStatMeta = ({ key }: AdvancedStatMetaProps): AdvancedStatMeta =>
   ADVANCED_STAT_BY_KEY[key];
 
 // Player-page display: percentages read like the season card's FG% ("58.8%"),
 // ratings to one decimal; a game with no advanced row is a dash.
-export const formatAdvancedStat = ({
-  key,
-  value,
-}: {
+type FormatAdvancedStatProps = {
   key: AdvancedMetricKey;
   value: number | null;
-}): string => {
+};
+
+export const formatAdvancedStat = ({ key, value }: FormatAdvancedStatProps): string => {
   if (value === null) return "—";
   return advancedStatMeta({ key }).kind === "percentage"
     ? `${(value * 100).toFixed(1)}%`

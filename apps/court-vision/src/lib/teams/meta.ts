@@ -297,7 +297,9 @@ export type TeamColors = { name: string; primary: string; secondary: string };
 
 // Single source of truth for team colors so every surface that wears them (the
 // chip, the player avatar border, the standings lines) always matches.
-export const teamColorsFor = ({ team }: { team: string | null }): TeamColors | null =>
+type TeamColorsForProps = { team: string | null };
+
+export const teamColorsFor = ({ team }: TeamColorsForProps): TeamColors | null =>
   team === null ? null : (TEAM_BY_ABBREVIATION.get(team) ?? null);
 
 export const CONFERENCES: readonly Conference[] = ["East", "West"];
@@ -322,5 +324,7 @@ export const CONFERENCE_BY_DIVISION: Record<Division, Conference> = {
 };
 
 // The team a /team?is=<slug> URL names, matched case-insensitively.
-export const teamBySlug = ({ slug }: { slug: string }): NbaTeam | undefined =>
+type TeamBySlugProps = { slug: string };
+
+export const teamBySlug = ({ slug }: TeamBySlugProps): NbaTeam | undefined =>
   NBA_TEAMS.find((team) => team.slug === slug.toLowerCase());

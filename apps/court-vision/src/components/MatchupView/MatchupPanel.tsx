@@ -12,7 +12,9 @@ export type MatchupPanelProps = {
   opponent: WeekTeam;
 };
 
-function Side({ team, align }: { team: WeekTeam; align: "start" | "end" }) {
+type SideProps = { team: WeekTeam; align: "start" | "end" };
+
+function Side({ team, align }: SideProps) {
   return (
     <span className={styles.side} data-align={align}>
       <span className={styles.logo}>

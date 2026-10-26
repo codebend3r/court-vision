@@ -15,5 +15,7 @@ export const matchupParsers = {
 
 export const loadMatchupSearchParams = createLoader(matchupParsers);
 
-export const matchupHref = ({ view }: { view: MatchupView }): string =>
+type MatchupHrefProps = { view: MatchupView };
+
+export const matchupHref = ({ view }: MatchupHrefProps): string =>
   view === "matchup" ? "/matchup" : `/matchup?view=${view}`;

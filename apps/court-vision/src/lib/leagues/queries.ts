@@ -1,4 +1,4 @@
-import { type League, type Profile } from "@generated/prisma/client";
+import { type League, type Profile, type Prisma } from "@generated/prisma/client";
 import { cache } from "react";
 
 import { getProfile } from "@/lib/auth/session";
@@ -7,13 +7,15 @@ import { isLeagueScoringType } from "@vision/core/league/scoring";
 import { defaultScoringConfig, parseScoringConfig } from "@vision/sport-basketball/engine";
 import { type LeagueSummary, toLeagueProvider, toLeagueSyncVia } from "@/lib/leagues/types";
 import { prisma } from "@/lib/prisma";
-import { hasPrismaCode, PRISMA_UNIQUE_VIOLATION } from "@/lib/prismaErrors";
+import { lockProfile } from "@/lib/leagues/locks";
 
 // A stored scoringType predates a rename or was tampered with → treat the
 // league as h2h_categories rather than crash. An unknown provider likewise
 // displays as "manual", but `isImported` tests the raw column so it stays
 // locked.
-export const toLeagueSummary = ({ league }: { league: League }): LeagueSummary => {
+type ToLeagueSummaryProps = { league: League };
+
+export const toLeagueSummary = ({ league }: ToLeagueSummaryProps): LeagueSummary => {
   const scoringType = isLeagueScoringType(league.scoringType)
     ? league.scoringType
     : "h2h_categories";
@@ -43,13 +45,15 @@ export const toLeagueSummary = ({ league }: { league: League }): LeagueSummary =
 // against a league can never disagree about which one is "active" when the
 // profile's pointer is missing or stale. Pure so layout/leagues-page can call
 // it directly against the LeagueSummary[] they already fetched, no extra query.
+type FallbackActiveLeagueIdProps = {
+  leagues: readonly LeagueSummary[];
+  activeLeagueId: string | null;
+};
+
 export const fallbackActiveLeagueId = ({
   leagues,
   activeLeagueId,
-}: {
-  leagues: readonly LeagueSummary[];
-  activeLeagueId: string | null;
-}): string | null => {
+}: FallbackActiveLeagueIdProps): string | null => {
   if (activeLeagueId !== null && leagues.some((league) => league.id === activeLeagueId)) {
     return activeLeagueId;
   }
@@ -70,21 +74,25 @@ export const getLeagues = async (): Promise<LeagueSummary[]> => {
 // Read-only resolution for RSC render paths: prefers activeLeagueId, falls
 // back to the most recently updated league WITHOUT persisting anything —
 // writes during render are ensureDefaultLeague's job, called from actions.
+type ResolveActiveLeagueProps = {
+  profile: Profile;
+  client?: Prisma.TransactionClient;
+};
+
 export const resolveActiveLeague = async ({
   profile,
-}: {
-  profile: Profile;
-}): Promise<League | null> => {
+  client = prisma,
+}: ResolveActiveLeagueProps): Promise<League | null> => {
   if (profile.activeLeagueId !== null) {
     // Scoped by owner: a stale/forged activeLeagueId pointing at someone
     // else's league must fall through to this profile's own leagues, never
     // resolve to a row it doesn't own.
-    const active = await prisma.league.findFirst({
+    const active = await client.league.findFirst({
       where: { id: profile.activeLeagueId, profileId: profile.id },
     });
     if (active !== null) return active;
   }
-  return prisma.league.findFirst({
+  return client.league.findFirst({
     where: { profileId: profile.id },
     orderBy: { updatedAt: "desc" },
   });
@@ -113,17 +121,21 @@ export const getActiveLeague = async (): Promise<LeagueSummary | null> => {
 // reason (e.g. to stamp profileId on rows it's about to write) doesn't pay
 // for a second session lookup.
 // Points the profile's activeLeagueId at `league` if it isn't already there,
-// then summarizes. Shared by both the "found one" and "just created/won the
-// create race" paths below.
+// then summarizes. Both the existing-league and creation paths hold the same
+// profile lock, so activation cannot overwrite another concurrent selection.
+type ActivateAndSummarizeProps = {
+  profile: Profile;
+  league: League;
+  tx: Prisma.TransactionClient;
+};
+
 const activateAndSummarize = async ({
   profile,
   league,
-}: {
-  profile: Profile;
-  league: League;
-}): Promise<LeagueSummary> => {
+  tx,
+}: ActivateAndSummarizeProps): Promise<LeagueSummary> => {
   if (profile.activeLeagueId !== league.id) {
-    await prisma.profile.update({
+    await tx.profile.update({
       where: { id: profile.id },
       data: { activeLeagueId: league.id },
     });
@@ -131,17 +143,20 @@ const activateAndSummarize = async ({
   return toLeagueSummary({ league });
 };
 
+type EnsureDefaultLeagueProps = { profile?: Profile };
+
 export const ensureDefaultLeague = async ({
   profile: providedProfile,
-}: { profile?: Profile } = {}): Promise<LeagueSummary | null> => {
+}: EnsureDefaultLeagueProps = {}): Promise<LeagueSummary | null> => {
   const profile = providedProfile ?? (await getProfile());
   if (profile === null) return null;
-  const existing = await resolveActiveLeague({ profile });
-  if (existing !== null) return activateAndSummarize({ profile, league: existing });
+  return prisma.$transaction(async (tx) => {
+    const current = { ...profile, ...(await lockProfile({ tx, profileId: profile.id })) };
+    const existing = await resolveActiveLeague({ profile: current, client: tx });
+    if (existing !== null) return activateAndSummarize({ profile: current, league: existing, tx });
 
-  const config = defaultScoringConfig({ scoringType: "h2h_categories" });
-  try {
-    const created = await prisma.league.create({
+    const config = defaultScoringConfig({ scoringType: "h2h_categories" });
+    const created = await tx.league.create({
       data: {
         profileId: profile.id,
         name: DEFAULT_LEAGUE_NAME,
@@ -150,16 +165,6 @@ export const ensureDefaultLeague = async ({
         scoringConfig: { ...config },
       },
     });
-    return await activateAndSummarize({ profile, league: created });
-  } catch (error) {
-    if (!hasPrismaCode({ error, code: PRISMA_UNIQUE_VIOLATION })) throw error;
-    // Lost the create race, a "someone else already did it" outcome rather
-    // than an error: a concurrent call for the same profile already
-    // created the default league (profileId+slug is unique) between our
-    // resolve above and this create. Converge on that winner instead of
-    // throwing — re-resolving finds the row the other caller just wrote.
-    const winner = await resolveActiveLeague({ profile });
-    if (winner === null) throw error;
-    return activateAndSummarize({ profile, league: winner });
-  }
+    return activateAndSummarize({ profile: current, league: created, tx });
+  });
 };

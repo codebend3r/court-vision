@@ -32,11 +32,17 @@ const OVERALL_DEADLINE_MS = 45_000;
 // build these paths.
 const GAME_PATH = "game/nba";
 const LOGIN_PROBE_PATH = "users;use_login=1/games;game_keys=nba";
-const leaguePath = ({ leagueId }: { leagueId: string }): string =>
+type LeaguePathProps = { leagueId: string };
+
+const leaguePath = ({ leagueId }: LeaguePathProps): string =>
   `league/nba.l.${leagueId};out=settings/teams/roster`;
-const scoreboardPath = ({ leagueId }: { leagueId: string }): string =>
+type ScoreboardPathProps = { leagueId: string };
+
+const scoreboardPath = ({ leagueId }: ScoreboardPathProps): string =>
   `league/nba.l.${leagueId}/scoreboard`;
-const waiverPath = ({ leagueId, start }: { leagueId: string; start: number }): string =>
+type WaiverPathProps = { leagueId: string; start: number };
+
+const waiverPath = ({ leagueId, start }: WaiverPathProps): string =>
   `league/nba.l.${leagueId}/players;status=W;start=${start};count=${YAHOO_PAGE_SIZE}`;
 
 const UNAVAILABLE: LeagueFetchError = { type: "error", reason: "unavailable" };
@@ -49,17 +55,19 @@ const FAILED: Failed = { type: "failed" };
  * the deadline has passed no request starts. No retries: the user can press
  * again.
  */
+type TimedYahooRequestProps<Outcome> = {
+  path: string;
+  fetchImpl: FetchImpl;
+  deadline: AbortSignal;
+  read: (response: Response) => Promise<Outcome> | Outcome;
+};
+
 const timedYahooRequest = async <Outcome>({
   path,
   fetchImpl,
   deadline,
   read,
-}: {
-  path: string;
-  fetchImpl: FetchImpl;
-  deadline: AbortSignal;
-  read: (response: Response) => Promise<Outcome> | Outcome;
-}): Promise<Outcome | Failed> => {
+}: TimedYahooRequestProps<Outcome>): Promise<Outcome | Failed> => {
   if (deadline.aborted) return FAILED;
   const controller = new AbortController();
   const abort = () => controller.abort();
@@ -81,15 +89,13 @@ const timedYahooRequest = async <Outcome>({
 };
 
 // A data request: a non-2xx status, or a 2xx whose body isn't JSON, is no body.
-const requestYahoo = ({
-  path,
-  fetchImpl,
-  deadline,
-}: {
+type RequestYahooProps = {
   path: string;
   fetchImpl: FetchImpl;
   deadline: AbortSignal;
-}): Promise<RequestOutcome> =>
+};
+
+const requestYahoo = ({ path, fetchImpl, deadline }: RequestYahooProps): Promise<RequestOutcome> =>
   timedYahooRequest<RequestOutcome>({
     path,
     fetchImpl,
@@ -102,15 +108,13 @@ const requestYahoo = ({
   });
 
 // The session check: its status, whatever the body says.
-const probeYahoo = ({
-  path,
-  fetchImpl,
-  deadline,
-}: {
+type ProbeYahooProps = {
   path: string;
   fetchImpl: FetchImpl;
   deadline: AbortSignal;
-}): Promise<ProbeOutcome> =>
+};
+
+const probeYahoo = ({ path, fetchImpl, deadline }: ProbeYahooProps): Promise<ProbeOutcome> =>
   timedYahooRequest<ProbeOutcome>({
     path,
     fetchImpl,
@@ -120,7 +124,9 @@ const probeYahoo = ({
 
 // The one shape the extension reads: how many players a waiver page holds, to
 // decide whether to ask for the next one. Anything unexpected counts as empty.
-const playerCount = ({ page }: { page: unknown }): number => {
+type PlayerCountProps = { page: unknown };
+
+const playerCount = ({ page }: PlayerCountProps): number => {
   if (typeof page !== "object" || page === null || !("fantasy_content" in page)) return 0;
   const content = page.fantasy_content;
   if (typeof content !== "object" || content === null || !("league" in content)) return 0;
@@ -130,17 +136,19 @@ const playerCount = ({ page }: { page: unknown }): number => {
 };
 
 // The waiver list a page at a time, until a short page or the page cap.
+type FetchWaiverPagesProps = {
+  leagueId: string;
+  fetchImpl: FetchImpl;
+  deadline: AbortSignal;
+  pages?: readonly unknown[];
+};
+
 const fetchWaiverPages = async ({
   leagueId,
   fetchImpl,
   deadline,
   pages = [],
-}: {
-  leagueId: string;
-  fetchImpl: FetchImpl;
-  deadline: AbortSignal;
-  pages?: readonly unknown[];
-}): Promise<{ type: "pages"; pages: unknown[] } | LeagueFetchError> => {
+}: FetchWaiverPagesProps): Promise<{ type: "pages"; pages: unknown[] } | LeagueFetchError> => {
   const outcome = await requestYahoo({
     path: waiverPath({ leagueId, start: pages.length * YAHOO_PAGE_SIZE }),
     fetchImpl,
@@ -160,13 +168,15 @@ const fetchWaiverPages = async ({
 // by status alone: 401 means no session; a 5xx (Yahoo's 999 included), a network
 // error or a timeout means Yahoo couldn't say; any other answer means the session
 // is fine and the league is out of its reach.
+type ExplainLeague400Props = {
+  fetchImpl: FetchImpl;
+  deadline: AbortSignal;
+};
+
 const explainLeague400 = async ({
   fetchImpl,
   deadline,
-}: {
-  fetchImpl: FetchImpl;
-  deadline: AbortSignal;
-}): Promise<LeagueFetchError> => {
+}: ExplainLeague400Props): Promise<LeagueFetchError> => {
   const probe = await probeYahoo({ path: LOGIN_PROBE_PATH, fetchImpl, deadline });
   if (probe.type === "failed" || probe.status >= 500) return UNAVAILABLE;
   if (probe.status === 401) return { type: "error", reason: "logged_out" };
@@ -174,15 +184,17 @@ const explainLeague400 = async ({
 };
 
 // The league read itself, every request of it bounded by the one `deadline`.
+type ReadLeagueProps = {
+  leagueId: string;
+  fetchImpl: FetchImpl;
+  deadline: AbortSignal;
+};
+
 const readLeague = async ({
   leagueId,
   fetchImpl,
   deadline,
-}: {
-  leagueId: string;
-  fetchImpl: FetchImpl;
-  deadline: AbortSignal;
-}): Promise<LeagueFetchResult> => {
+}: ReadLeagueProps): Promise<LeagueFetchResult> => {
   const game = await requestYahoo({ path: GAME_PATH, fetchImpl, deadline });
   if (game.type !== "body") return UNAVAILABLE;
 
@@ -216,13 +228,15 @@ const readLeague = async ({
  * go back untouched; Court Vision validates them. The whole read gives up as
  * `unavailable` after `OVERALL_DEADLINE_MS`, whatever request it is on.
  */
+type FetchLeaguePayloadProps = {
+  leagueId: string;
+  fetchImpl: FetchImpl;
+};
+
 export const fetchLeaguePayload = async ({
   leagueId,
   fetchImpl,
-}: {
-  leagueId: string;
-  fetchImpl: FetchImpl;
-}): Promise<LeagueFetchResult> => {
+}: FetchLeaguePayloadProps): Promise<LeagueFetchResult> => {
   const overall = new AbortController();
   const timer = setTimeout(() => overall.abort(), OVERALL_DEADLINE_MS);
   try {

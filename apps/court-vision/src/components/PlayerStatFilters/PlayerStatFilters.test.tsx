@@ -20,10 +20,9 @@ beforeEach(() => {
   useStatModeStore.setState({ mode: DEFAULT_MODE });
 });
 
-const renderFilters = ({
-  searchParams = "",
-  modes,
-}: { searchParams?: string; modes?: readonly StatMode[] } = {}) => {
+type RenderFiltersProps = { searchParams?: string; modes?: readonly StatMode[] };
+
+const renderFilters = ({ searchParams = "", modes }: RenderFiltersProps = {}) => {
   currentSearch = searchParams;
   const onUrlUpdate = vi.fn<(event: UrlUpdateEvent) => void>();
   render(<PlayerStatFilters modes={modes} />, {
@@ -32,7 +31,9 @@ const renderFilters = ({
   return { onUrlUpdate };
 };
 
-const clickAndFlush = ({ name }: { name: string }) => {
+type ClickAndFlushProps = { name: string };
+
+const clickAndFlush = ({ name }: ClickAndFlushProps) => {
   vi.useFakeTimers();
   try {
     act(() => {

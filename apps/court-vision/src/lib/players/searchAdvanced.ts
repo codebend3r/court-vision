@@ -13,7 +13,9 @@ import {
   type AdvancedSearchParams,
   type PlayerGameRange,
 } from "@/lib/players/searchParams";
-import { HAS_GAME_LOGS, CURRENT_SEASON_JOIN, PLAYER_IDENTITY_COLUMNS } from "@/lib/players/sql";
+import { hasSeasonLogs, PLAYER_IDENTITY_COLUMNS } from "@/lib/players/sql";
+import { SEASON_TYPE } from "@/lib/stats/season";
+import { latestSeason } from "@/lib/valuation/season";
 
 export type PlayerAdvancedStats = Record<AdvancedMetricKey, number | null> & {
   gamesWithData: number;
@@ -35,11 +37,11 @@ const average = (values: readonly number[]): number | null =>
 // null when the player logged no minutes), and gamesWithData is the widest
 // such set. Shared by the player page's advanced card; the Advanced tab runs
 // the same reduction in SQL (fetchAdvancedPool).
-export const averageAdvancedLogs = ({
-  logs,
-}: {
+type AverageAdvancedLogsProps = {
   logs: readonly Record<AdvancedMetricKey, number | null>[];
-}): PlayerAdvancedStats => {
+};
+
+export const averageAdvancedLogs = ({ logs }: AverageAdvancedLogsProps): PlayerAdvancedStats => {
   const recorded = (key: AdvancedMetricKey): number[] =>
     logs.map((log) => log[key]).filter((value): value is number => value !== null);
   return {
@@ -55,23 +57,25 @@ const advancedPoolRowSchema = playerRowSchema.extend({
 });
 
 // Per-player advanced averages for a range, aggregated in SQL. A lastN range
-// averages the N most recent advanced logs; the season range averages the most
-// recent 100 that fall in the player's current Regular Season (null when they
-// have none, which matches no rows). AVG skips nulls, so each metric averages
+// averages the N most recent advanced logs within the same season as Fantasy;
+// the season range averages up to 100 regular-season rows. AVG skips nulls, so each metric averages
 // only the games that recorded it, and gamesWithData is the widest such count,
 // exactly as averageAdvancedLogs does in memory. The per-player LIMIT reads the
 // (playerId, gameDate) index instead of the whole 300k-row table.
+type FetchAdvancedPoolProps = {
+  range: PlayerGameRange;
+};
+
 export const fetchAdvancedPool = async ({
   range,
-}: {
-  range: PlayerGameRange;
-}): Promise<AdvancedPlayerRow[]> => {
+}: FetchAdvancedPoolProps): Promise<AdvancedPlayerRow[]> => {
+  const season = await latestSeason();
+  if (season === null) return [];
   const gameLimit = gamesForRange({ range }) ?? ADVANCED_GAME_LOG_FETCH_LIMIT;
-  const scopeToLatestSeason = range === "all";
+  const logs = hasSeasonLogs({ season });
   const rows: unknown = await prisma.$queryRaw`
     SELECT ${PLAYER_IDENTITY_COLUMNS}, a.*
     FROM "Player" p
-    ${CURRENT_SEASON_JOIN}
     CROSS JOIN LATERAL (
       SELECT GREATEST(
                count(l.pie), count(l.pace), count(l."assistPercentage"), count(l."assistRatio"),
@@ -99,25 +103,27 @@ export const fetchAdvancedPool = async ({
       FROM (
         SELECT al.* FROM "PlayerAdvancedGameLog" al
         WHERE al."playerId" = p.id
+          AND al.season = ${season} AND al."seasonType" = ${SEASON_TYPE}
         ORDER BY al."gameDate" DESC
         LIMIT ${gameLimit}
       ) l
-      WHERE NOT ${scopeToLatestSeason} OR l.season = s.season
     ) a
-    WHERE ${HAS_GAME_LOGS}
+    WHERE ${logs}
   `;
   return z.array(advancedPoolRowSchema).parse(rows).map(splitPlayerRow);
 };
 
 // Filters, orders and pages an advanced pool in memory. Metric sorts sink
 // players with no value for that metric to the bottom in either direction.
+type RankAdvancedPlayersProps = {
+  pool: readonly AdvancedPlayerRow[];
+  args: AdvancedSearchParams;
+};
+
 export const rankAdvancedPlayers = ({
   pool,
   args,
-}: {
-  pool: readonly AdvancedPlayerRow[];
-  args: AdvancedSearchParams;
-}): PlayersAdvancedSearchResult => {
+}: RankAdvancedPlayersProps): PlayersAdvancedSearchResult => {
   const { q, page, size, dir, sort } = args;
   return rankRows({
     rows: pool,

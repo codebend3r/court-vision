@@ -7,13 +7,15 @@ import { isFontScale, isPreferredFormula } from "@/lib/settings/guards";
 import { type PreferencesActionResult } from "@/lib/settings/types";
 
 // null preferredFormula = "no preference", falls back to app defaults.
+type UpdatePreferencesProps = {
+  preferredFormula?: string | null;
+  fontScale?: string;
+};
+
 export const updatePreferences = async ({
   preferredFormula,
   fontScale,
-}: {
-  preferredFormula?: string | null;
-  fontScale?: string;
-}): Promise<PreferencesActionResult> =>
+}: UpdatePreferencesProps): Promise<PreferencesActionResult> =>
   withProfile<PreferencesActionResult>({
     getProfile,
     run: async ({ profile }) => {

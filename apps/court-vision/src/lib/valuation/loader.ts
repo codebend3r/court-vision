@@ -111,13 +111,15 @@ const toStatLine = ({
 // the in-memory reduce adds them in, so the totals match to the bit. Prisma's
 // nested `take` shipped every log of the season (~26k rows) to trim here.
 // Players with no appearance in the window are dropped.
+type FetchWindowLinesProps = {
+  season: string;
+  gameLimit: number | null;
+};
+
 const fetchWindowLines = async ({
   season,
   gameLimit,
-}: {
-  season: string;
-  gameLimit: number | null;
-}): Promise<FantasyStatLine[]> => {
+}: FetchWindowLinesProps): Promise<FantasyStatLine[]> => {
   const rows: unknown = await prisma.$queryRaw`
     WITH ranked AS (
       SELECT gl."playerId", gl."gameDate", gl.minutes, gl.pts, gl.reb, gl.ast, gl.stl,
@@ -154,13 +156,15 @@ const fetchWindowLines = async ({
   return z.array(windowLineSchema).parse(rows).map(toStatLine);
 };
 
+type FetchPoolProps = {
+  range: PlayerGameRange;
+  season: string | null;
+};
+
 const fetchPool = async ({
   range,
   season: requestedSeason,
-}: {
-  range: PlayerGameRange;
-  season: string | null;
-}): Promise<FantasyStatLine[]> => {
+}: FetchPoolProps): Promise<FantasyStatLine[]> => {
   const season = requestedSeason ?? (await latestSeason());
   if (season === null) return [];
   return fetchWindowLines({ season, gameLimit: gamesForRange({ range }) });
@@ -181,10 +185,12 @@ const cachedPool = unstable_cache(
 // The Fantasy tab and the home/team surfaces value the latest season; the
 // player page passes the season its dropdown selected so a past season is
 // measured against its own pool.
+type GetFantasyPoolProps = {
+  range: PlayerGameRange;
+  season?: string | null;
+};
+
 export const getFantasyPool = ({
   range,
   season = null,
-}: {
-  range: PlayerGameRange;
-  season?: string | null;
-}): Promise<FantasyStatLine[]> => cachedPool(range, season);
+}: GetFantasyPoolProps): Promise<FantasyStatLine[]> => cachedPool(range, season);

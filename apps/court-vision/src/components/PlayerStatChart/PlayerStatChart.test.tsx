@@ -29,15 +29,13 @@ const buildSeries = (): CumulativePoint[] =>
     ftPct: 80 + gameIndex,
   }));
 
-const renderChart = ({
-  mode = "avg",
-  searchParams = {},
-  onUrlUpdate,
-}: {
+type RenderChartProps = {
   mode?: "avg" | "game" | "totals" | "per36";
   searchParams?: Record<string, string>;
   onUrlUpdate?: (event: UrlUpdateEvent) => void;
-} = {}) =>
+};
+
+const renderChart = ({ mode = "avg", searchParams = {}, onUrlUpdate }: RenderChartProps = {}) =>
   render(
     <ThemeProvider>
       <PlayerStatChart series={buildSeries()} mode={mode} />

@@ -62,5 +62,7 @@ export const DEFAULT_SLOT_COUNTS = basketballEngine.defaultSlotCounts;
 export const DEFAULT_VALUATION_CONFIG = basketballEngine.defaultValuationConfig;
 export const parseEligibleGroups = parseBasketballPosition;
 
-export const methodMeta = ({ key }: { key: FantasyMethodKey }): FantasyMethodMeta | undefined =>
+type MethodMetaProps = { key: FantasyMethodKey };
+
+export const methodMeta = ({ key }: MethodMetaProps): FantasyMethodMeta | undefined =>
   FANTASY_METHODS.find((method) => method.key === key);

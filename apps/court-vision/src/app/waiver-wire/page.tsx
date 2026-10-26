@@ -27,7 +27,9 @@ const IMPORT_PATH = "/leagues/import";
 
 // Every state short of the comparison: the page's own header, then why the
 // Waiver Wire can't run yet and what to do about it.
-function WaiverWireGate({ message, children }: { message: string; children?: ReactNode }) {
+type WaiverWireGateProps = { message: string; children?: ReactNode };
+
+function WaiverWireGate({ message, children }: WaiverWireGateProps) {
   return (
     <main className={styles.page}>
       <PageHeader {...WAIVER_WIRE_PAGE_HEADER} />
@@ -39,11 +41,11 @@ function WaiverWireGate({ message, children }: { message: string; children?: Rea
   );
 }
 
-export default async function WaiverWirePage({
-  searchParams,
-}: {
+type WaiverWirePageProps = {
   searchParams: Promise<RawSearchParams>;
-}) {
+};
+
+export default async function WaiverWirePage({ searchParams }: WaiverWirePageProps) {
   const [profile, league] = await Promise.all([getProfile(), getActiveLeague()]);
   if (profile === null) redirect("/login?next=/waiver-wire");
 

@@ -3,17 +3,14 @@ import { describe, expect, it } from "bun:test";
 import { featuredTeam } from "@/lib/fantasyTeams/featured";
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 
-const team = ({
-  id,
-  createdAt,
-  isMine = false,
-  isImported = false,
-}: {
+type TeamProps = {
   id: string;
   createdAt: string;
   isMine?: boolean;
   isImported?: boolean;
-}): FantasyTeam => ({
+};
+
+const team = ({ id, createdAt, isMine = false, isImported = false }: TeamProps): FantasyTeam => ({
   id,
   name: id,
   slug: id,

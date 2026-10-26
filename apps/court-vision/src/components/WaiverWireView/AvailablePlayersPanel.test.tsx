@@ -9,7 +9,9 @@ import { type WaiverRow } from "@/lib/waiverWire/types";
 
 afterEach(cleanup);
 
-const row = ({ playerId, rank }: { playerId: number; rank: number }): WaiverRow => ({
+type RowProps = { playerId: number; rank: number };
+
+const row = ({ playerId, rank }: RowProps): WaiverRow => ({
   playerId,
   fullName: `Player ${playerId}`,
   teamAbbr: "NYK",
@@ -24,7 +26,9 @@ const row = ({ playerId, rank }: { playerId: number; rank: number }): WaiverRow 
 const pool = (count: number): WaiverRow[] =>
   Array.from({ length: count }, (_, index) => row({ playerId: index + 1, rank: index + 1 }));
 
-const linesFor = ({ count }: { count: number }): Map<number, FantasyStatLine> =>
+type LinesForProps = { count: number };
+
+const linesFor = ({ count }: LinesForProps): Map<number, FantasyStatLine> =>
   new Map(
     Array.from({ length: count }, (_, index) => [
       index + 1,
@@ -32,10 +36,11 @@ const linesFor = ({ count }: { count: number }): Map<number, FantasyStatLine> =>
     ]),
   );
 
-const renderPanel = ({
-  count = 3,
-  onCompare = vi.fn(),
-}: { count?: number; onCompare?: ({ fa }: { fa: number }) => void } = {}) =>
+type OnCompareProps = { fa: number };
+
+type RenderPanelProps = { count?: number; onCompare?: ({ fa }: OnCompareProps) => void };
+
+const renderPanel = ({ count = 3, onCompare = vi.fn() }: RenderPanelProps = {}) =>
   render(
     <AvailablePlayersPanel
       freePool={pool(count)}
@@ -154,7 +159,9 @@ describe("AvailablePlayersPanel sorting", () => {
   const order = (): string[] =>
     bodyRows().map((row) => within(row).getAllByRole("link")[0]?.textContent ?? "");
 
-  const header = ({ name }: { name: string }): HTMLElement =>
+  type HeaderProps = { name: string };
+
+  const header = ({ name }: HeaderProps): HTMLElement =>
     screen.getByRole("columnheader", { name: new RegExp(`^${name}`) });
 
   it("lists in rank order until a header is clicked", () => {

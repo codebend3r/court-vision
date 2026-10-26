@@ -15,6 +15,7 @@ import {
   toYahooPreview,
 } from "@/lib/yahoo/importLeague";
 import { loadYahooLeague } from "@/lib/yahoo/load";
+import { claimSync, releaseSync } from "@/lib/yahoo/syncLease";
 import {
   type SetMyTeamResult,
   type YahooImportResult,
@@ -25,7 +26,11 @@ import {
 // The server path: Court Vision reads Yahoo itself, so player matches may be
 // stored for every user's imports. The shared steps live in `importLeague.ts`.
 
-export const previewYahooLeague = async ({ url }: { url: string }): Promise<YahooPreviewResult> => {
+type PreviewYahooLeagueProps = { url: string };
+
+export const previewYahooLeague = async ({
+  url,
+}: PreviewYahooLeagueProps): Promise<YahooPreviewResult> => {
   if (!isActionText(url)) return { status: "invalid_url" };
   return withProfile<YahooPreviewResult>({
     getProfile,
@@ -37,13 +42,15 @@ export const previewYahooLeague = async ({ url }: { url: string }): Promise<Yaho
   });
 };
 
+type ImportYahooLeagueProps = {
+  url: string;
+  myTeamExternalKey: string;
+};
+
 export const importYahooLeague = async ({
   url,
   myTeamExternalKey,
-}: {
-  url: string;
-  myTeamExternalKey: string;
-}): Promise<YahooImportResult> => {
+}: ImportYahooLeagueProps): Promise<YahooImportResult> => {
   if (!isActionText(url)) return { status: "invalid_url" };
   if (!isActionId(myTeamExternalKey)) return { status: "invalid_team" };
   return withProfile<YahooImportResult>({
@@ -62,11 +69,13 @@ export const importYahooLeague = async ({
   });
 };
 
+type SyncYahooLeagueProps = {
+  leagueId: string;
+};
+
 export const syncYahooLeague = async ({
   leagueId,
-}: {
-  leagueId: string;
-}): Promise<YahooSyncResult> => {
+}: SyncYahooLeagueProps): Promise<YahooSyncResult> => {
   if (!isActionId(leagueId)) return { status: "error" };
   return withProfile<YahooSyncResult>({
     getProfile,
@@ -79,28 +88,39 @@ export const syncYahooLeague = async ({
       if (stored.league.syncVia !== "server") return { status: "needs_extension" };
       if (stored.league.throttled) return { status: "throttled" };
 
-      const loaded = await loadYahooLeague({ leagueId: stored.league.yahooLeagueId });
-      if (loaded.status !== "ok") {
-        return recordLoadFailure({ profileId: profile.id, leagueId, failure: loaded });
+      const syncStartedAt = await claimSync({ profileId: profile.id, leagueId });
+      if (syncStartedAt === null) return { status: "throttled" };
+      try {
+        const loaded = await loadYahooLeague({ leagueId: stored.league.yahooLeagueId });
+        if (loaded.status !== "ok") {
+          return await recordLoadFailure({
+            profileId: profile.id,
+            leagueId,
+            failure: loaded,
+            syncStartedAt,
+          });
+        }
+        return await syncLoadedLeague({
+          profileId: profile.id,
+          leagueId,
+          loaded,
+          writeMappings: true,
+          storedExternalKey: stored.league.externalKey,
+          syncStartedAt,
+        });
+      } finally {
+        await releaseSync({ profileId: profile.id, leagueId, syncStartedAt });
       }
-      return syncLoadedLeague({
-        profileId: profile.id,
-        leagueId,
-        loaded,
-        writeMappings: true,
-        storedExternalKey: stored.league.externalKey,
-      });
     },
   });
 };
 
-export const setMyTeam = async ({
-  leagueId,
-  teamId,
-}: {
+type SetMyTeamProps = {
   leagueId: string;
   teamId: string;
-}): Promise<SetMyTeamResult> => {
+};
+
+export const setMyTeam = async ({ leagueId, teamId }: SetMyTeamProps): Promise<SetMyTeamResult> => {
   if (!isActionId(leagueId) || !isActionId(teamId)) return { status: "invalid" };
   return withProfile<SetMyTeamResult>({
     getProfile,

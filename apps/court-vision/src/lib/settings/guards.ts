@@ -13,7 +13,9 @@ export const isPreferredFormula = (value: string): value is FantasyMethodKey =>
 
 // Validate and extract the font scale from a profile object. Falls back to
 // "default" if the stored value is invalid or missing.
-export const fontScaleOf = ({ profile }: { profile: { fontScale: string } | null }): FontScale => {
+type FontScaleOfProps = { profile: { fontScale: string } | null };
+
+export const fontScaleOf = ({ profile }: FontScaleOfProps): FontScale => {
   const value = profile?.fontScale ?? "";
   return isFontScale(value) ? value : "default";
 };

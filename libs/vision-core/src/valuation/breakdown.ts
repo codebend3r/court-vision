@@ -27,19 +27,21 @@ export type FantasyCategoryBreakdown<K extends SportKeys> = {
 // category still shows what is being given up. The player page's breakdown
 // panel and the Fantasy tab's chart rows both read from here, so the two
 // agree to the decimal.
+type BuildCategoryBreakdownProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  line: ValuationLine<K>;
+  poolStats: PoolStats<K>;
+  config: ValuationConfig<K>;
+  methodWeights: MethodWeights<K>;
+};
+
 export const buildCategoryBreakdown = <K extends SportKeys>({
   sport,
   line,
   poolStats,
   config,
   methodWeights,
-}: {
-  sport: SportDescriptor<K>;
-  line: ValuationLine<K>;
-  poolStats: PoolStats<K>;
-  config: ValuationConfig<K>;
-  methodWeights: MethodWeights<K>;
-}): FantasyCategoryBreakdown<K>[] => {
+}: BuildCategoryBreakdownProps<K>): FantasyCategoryBreakdown<K>[] => {
   const zConfig = weightedConfig({ config, methodWeights, method: "z" });
   const gConfig = weightedConfig({ config, methodWeights, method: "g" });
   const [zValue] = scoreZScore({ sport, lines: [line], poolStats, config: zConfig });

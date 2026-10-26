@@ -3,15 +3,13 @@ import { describe, expect, it } from "bun:test";
 import { buildCutLine, type CutLineEntry } from "@/lib/waiverWire/cutLine";
 import { type WaiverModel, type WaiverRow } from "@/lib/waiverWire/types";
 
-const row = ({
-  playerId,
-  value,
-  owner = "free_agent",
-}: {
+type RowProps = {
   playerId: number;
   value: number;
   owner?: WaiverRow["owner"];
-}): WaiverRow => ({
+};
+
+const row = ({ playerId, value, owner = "free_agent" }: RowProps): WaiverRow => ({
   playerId,
   fullName: `Test Player ${playerId}`,
   teamAbbr: "BOS",
@@ -23,16 +21,21 @@ const row = ({
   injuryStatus: null,
 });
 
-const mine = ({ playerId, value }: { playerId: number; value: number }): WaiverRow =>
-  row({ playerId, value, owner: "mine" });
+type MineProps = { playerId: number; value: number };
 
-const model = ({
-  roster,
-  freePool,
-}: {
+const mine = ({ playerId, value }: MineProps): WaiverRow => row({ playerId, value, owner: "mine" });
+
+type ModelProps = {
   roster: WaiverRow[];
   freePool: WaiverRow[];
-}): WaiverModel => ({ roster, noStats: [], weakest: [], freePool });
+};
+
+const model = ({ roster, freePool }: ModelProps): WaiverModel => ({
+  roster,
+  noStats: [],
+  weakest: [],
+  freePool,
+});
 
 // A compact label for each entry: the player id, or `-` for the line.
 const ids = (entries: CutLineEntry[]): (number | "-")[] =>

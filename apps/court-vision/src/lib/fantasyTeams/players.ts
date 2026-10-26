@@ -5,13 +5,15 @@ import { type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
 // lines, plus every active-roster player who has no line yet (rookies, new
 // signings, anyone still to play), so they can be found and drafted too.
 // Alphabetized for stable results.
+type FantasyPlayersFromPoolProps = {
+  lines: readonly FantasyStatLine[];
+  activePlayers?: readonly FantasyTeamPlayer[];
+};
+
 export const fantasyPlayersFromPool = ({
   lines,
   activePlayers = [],
-}: {
-  lines: readonly FantasyStatLine[];
-  activePlayers?: readonly FantasyTeamPlayer[];
-}): FantasyTeamPlayer[] => {
+}: FantasyPlayersFromPoolProps): FantasyTeamPlayer[] => {
   const fromLines = lines.map((line) => ({
     playerId: line.playerId,
     firstName: line.firstName,

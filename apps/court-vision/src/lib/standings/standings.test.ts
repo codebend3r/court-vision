@@ -3,17 +3,14 @@ import { describe, expect, it } from "bun:test";
 import { type BdlStanding } from "@/lib/balldontlie/schemas";
 import { groupStandings } from "@/lib/standings/standings";
 
-const standing = ({
-  id,
-  conference,
-  rank,
-  wins,
-}: {
+type StandingProps = {
   id: number;
   conference: string;
   rank: number;
   wins: number;
-}): BdlStanding => ({
+};
+
+const standing = ({ id, conference, rank, wins }: StandingProps): BdlStanding => ({
   team: {
     id,
     conference,

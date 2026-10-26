@@ -41,7 +41,9 @@ export type RosterBarPlotProps = {
   bars: readonly BarDatum[];
 };
 
-const ordinal = ({ value }: { value: number }): string => {
+type OrdinalProps = { value: number };
+
+const ordinal = ({ value }: OrdinalProps): string => {
   const whole = Math.round(value);
   const lastTwo = whole % 100;
   if (lastTwo >= 11 && lastTwo <= 13) return `${whole}th`;

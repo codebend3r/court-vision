@@ -19,17 +19,19 @@ const named = ({ id, firstName, lastName }: Omit<NamedRow, "fullName">): NamedRo
 // A row that nests its identity, the way a scored line does.
 type ScoredRow = { player: NamedRow; value: number | null };
 
+type ScoredProps = {
+  id: number;
+  firstName?: string;
+  lastName?: string;
+  value?: number | null;
+};
+
 const scored = ({
   id,
   firstName = `First${id}`,
   lastName = `Last${id}`,
   value = null,
-}: {
-  id: number;
-  firstName?: string;
-  lastName?: string;
-  value?: number | null;
-}): ScoredRow => ({ player: named({ id, firstName, lastName }), value });
+}: ScoredProps): ScoredRow => ({ player: named({ id, firstName, lastName }), value });
 
 const nameOf = (row: ScoredRow): NamedRow => row.player;
 

@@ -6,7 +6,9 @@ import { buildRosterTable } from "@/lib/roster/table";
 
 type Row = PlayerIdentity & { pts: number | null };
 
-const row = ({ id, pts }: { id: number; pts: number | null }): Row => ({
+type RowProps = { id: number; pts: number | null };
+
+const row = ({ id, pts }: RowProps): Row => ({
   id,
   firstName: "A",
   lastName: `P${id}`,

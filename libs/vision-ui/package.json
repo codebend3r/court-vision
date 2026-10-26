@@ -7,7 +7,7 @@
     "**/*.scss"
   ],
   "scripts": {
-    "test": "bun test --parallel --dots",
+    "test": "bun test --parallel=2 --dots",
     "typecheck": "tsgo --noEmit"
   },
   "imports": {

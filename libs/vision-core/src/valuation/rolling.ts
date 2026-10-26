@@ -29,6 +29,8 @@ export type RollingSeriesArgs<K extends SportKeys> = {
 // The rolling stat line ending at a game: that game and the windowSize − 1
 // before it. Null until the window fills. Bound to one player's logs so a
 // caller scoring a window more than once (Z and G) aggregates it only once.
+type RollingWindowLinesProps = { index: number };
+
 export const rollingWindowLines =
   <K extends SportKeys>({
     sport,
@@ -36,7 +38,7 @@ export const rollingWindowLines =
     logs,
     windowSize = ROLLING_WINDOW_GAMES,
   }: Pick<RollingSeriesArgs<K>, "sport" | "playerId" | "logs" | "windowSize">) =>
-  ({ index }: { index: number }): ValuationLine<K> | null =>
+  ({ index }: RollingWindowLinesProps): ValuationLine<K> | null =>
     index + 1 < windowSize
       ? null
       : {
@@ -48,19 +50,21 @@ export const rollingWindowLines =
 // One rolling line's total under a method, against a pool the caller holds
 // fixed. Every rolling reading (the watchlist series, the Fantasy tab's and
 // the player page's trends) is scored here.
+type RollingValueProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  method: RollingMethod;
+  line: ValuationLine<K>;
+  poolStats: PoolStats<K>;
+  config: CategoryScoringConfig<K>;
+};
+
 export const rollingValue = <K extends SportKeys>({
   sport,
   method,
   line,
   poolStats,
   config,
-}: {
-  sport: SportDescriptor<K>;
-  method: RollingMethod;
-  line: ValuationLine<K>;
-  poolStats: PoolStats<K>;
-  config: CategoryScoringConfig<K>;
-}): number => {
+}: RollingValueProps<K>): number => {
   const args = { sport, lines: [line], poolStats, config };
   const [value] = method === "z" ? scoreZScore(args) : scoreGScore(args);
   return value?.total ?? 0;
@@ -71,6 +75,10 @@ export const rollingValue = <K extends SportKeys>({
 // whole season. A rising line is the player improving, not the yardstick
 // moving. Under a full window there is no honest number to plot, so a player
 // short of one gets no points and the chart says so in its legend.
+type BuildRollingSeriesProps<K extends SportKeys> = RollingSeriesArgs<K> & {
+  method: RollingMethod;
+};
+
 export const buildRollingSeries = <K extends SportKeys>({
   sport,
   method,
@@ -80,7 +88,7 @@ export const buildRollingSeries = <K extends SportKeys>({
   poolStats,
   config,
   windowSize = ROLLING_WINDOW_GAMES,
-}: RollingSeriesArgs<K> & { method: RollingMethod }): TrendSeries => {
+}: BuildRollingSeriesProps<K>): TrendSeries => {
   const lineEndingAt = rollingWindowLines({ sport, playerId, logs, windowSize });
   const points = logs.flatMap((log, index): TrendPoint[] => {
     const line = lineEndingAt({ index });

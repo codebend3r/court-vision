@@ -11,7 +11,9 @@ import { blankToNull, parseGameDate, parseMinutes } from "@vision/core/util/pars
 import { BdlAdvancedStat, BdlGame, BdlPlayer, BdlStat } from "@/lib/balldontlie/schemas";
 
 // Balldontlie writes height as feet-inches ("6-4").
-const parseHeightInches = ({ height }: { height: string | null | undefined }): number | null => {
+type ParseHeightInchesProps = { height: string | null | undefined };
+
+const parseHeightInches = ({ height }: ParseHeightInchesProps): number | null => {
   const match = /^(\d+)\s*-\s*(\d+)$/.exec((height ?? "").trim());
   if (match === null) return null;
   const feet = Number(match[1]);
@@ -19,7 +21,9 @@ const parseHeightInches = ({ height }: { height: string | null | undefined }): n
   return inches < 12 ? feet * 12 + inches : null;
 };
 
-const parseWeightLbs = ({ weight }: { weight: string | null | undefined }): number | null => {
+type ParseWeightLbsProps = { weight: string | null | undefined };
+
+const parseWeightLbs = ({ weight }: ParseWeightLbsProps): number | null => {
   const normalized = (weight ?? "").trim();
   if (!/^\d+$/.test(normalized)) return null;
   const pounds = Number(normalized);
@@ -40,12 +44,14 @@ type GameContext = {
 export const isGamePlayed = (game: BdlGame): boolean =>
   game.home_team_score > 0 || game.visitor_team_score > 0;
 
-export const deriveGameContext = (args: {
+type DeriveGameContextProps = {
   game: BdlGame;
   teamId: number;
   teamAbbr: string;
   teamAbbrById: Map<number, string>;
-}): GameContext => {
+};
+
+export const deriveGameContext = (args: DeriveGameContextProps): GameContext => {
   const { game, teamId, teamAbbr, teamAbbrById } = args;
   const homeAway = teamId === game.home_team_id ? "home" : "away";
   const opponentTeamId = homeAway === "home" ? game.visitor_team_id : game.home_team_id;
@@ -66,13 +72,12 @@ export const deriveGameContext = (args: {
   };
 };
 
-export const toPlayerInputs = ({
-  stats,
-  teamAbbrById,
-}: {
+type ToPlayerInputsProps = {
   stats: BdlStat[];
   teamAbbrById: Map<number, string>;
-}): PlayerInput[] => {
+};
+
+export const toPlayerInputs = ({ stats, teamAbbrById }: ToPlayerInputsProps): PlayerInput[] => {
   const byId = stats.reduce((acc, stat) => {
     const player = stat.player;
     const rawTeamId = player.team_id ?? null;
@@ -92,10 +97,12 @@ export const toPlayerInputs = ({
   return Array.from(byId.values());
 };
 
-export const toGameLogInput = (args: {
+type ToGameLogInputProps = {
   stat: BdlStat;
   teamAbbrById: Map<number, string>;
-}): GameLogInput => {
+};
+
+export const toGameLogInput = (args: ToGameLogInputProps): GameLogInput => {
   const { stat, teamAbbrById } = args;
   const { game, team } = stat;
   const context = deriveGameContext({
@@ -138,11 +145,11 @@ export const toGameLogInput = (args: {
   };
 };
 
-export const aggregateSeasonStats = ({
-  logs,
-}: {
+type AggregateSeasonStatsProps = {
   logs: SeasonAggregateLog[];
-}): SeasonStatsInput[] => {
+};
+
+export const aggregateSeasonStats = ({ logs }: AggregateSeasonStatsProps): SeasonStatsInput[] => {
   // Keyed by player AND season so a multi-season backfill aggregates each
   // season separately instead of collapsing a career into one row.
   const byPlayer = logs.reduce((acc, log) => {
@@ -194,7 +201,9 @@ export const aggregateSeasonStats = ({
   return Array.from(byPlayer.values());
 };
 
-export const toAdvancedGameLogInput = (args: { stat: BdlAdvancedStat }): AdvancedGameLogInput => {
+type ToAdvancedGameLogInputProps = { stat: BdlAdvancedStat };
+
+export const toAdvancedGameLogInput = (args: ToAdvancedGameLogInputProps): AdvancedGameLogInput => {
   const { stat } = args;
   const { game, team } = stat;
   return {
@@ -223,7 +232,9 @@ export const toAdvancedGameLogInput = (args: { stat: BdlAdvancedStat }): Advance
   };
 };
 
-export const toPlayerInput = (args: { player: BdlPlayer }): PlayerInput => {
+type ToPlayerInputProps = { player: BdlPlayer };
+
+export const toPlayerInput = (args: ToPlayerInputProps): PlayerInput => {
   const { player } = args;
   return {
     id: player.id,

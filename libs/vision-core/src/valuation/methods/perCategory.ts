@@ -20,19 +20,23 @@ export type CategoryScoringConfig<K extends SportKeys> = Pick<
 // weight (absent = 1), and summed in category order. Weights scale the
 // contribution, never the raw score, so a punted category (weight 0) still
 // shows what is being given up.
+type RawProps<K extends SportKeys> = { category: Category<K>; value: number };
+
+type ScorePerCategoryProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+  poolStats: Pick<PoolStats<K>, "leagueRate">;
+  config: CategoryScoringConfig<K>;
+  raw: (args: RawProps<K>) => number;
+};
+
 export const scorePerCategory = <K extends SportKeys>({
   sport,
   lines,
   poolStats,
   config,
   raw,
-}: {
-  sport: SportDescriptor<K>;
-  lines: readonly ValuationLine<K>[];
-  poolStats: Pick<PoolStats<K>, "leagueRate">;
-  config: CategoryScoringConfig<K>;
-  raw: (args: { category: Category<K>; value: number }) => number;
-}): PlayerValue<K>[] =>
+}: ScorePerCategoryProps<K>): PlayerValue<K>[] =>
   lines.map((line) => {
     const { breakdown, total } = config.categories.reduce<{
       breakdown: Partial<Record<Category<K>, CategoryContribution>>;

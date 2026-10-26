@@ -54,17 +54,14 @@ const lines = [star, ...Array.from({ length: 20 }, (_, index) => poolLine(index)
 const config = DEFAULT_VALUATION_CONFIG;
 const methodWeights: MethodWeights = {};
 
-const log = ({
-  gameId,
-  day,
-  pts = 30,
-  minutes = 34,
-}: {
+type LogProps = {
   gameId: string;
   day: number;
   pts?: number;
   minutes?: number;
-}): FantasyProfileLog => ({
+};
+
+const log = ({ gameId, day, pts = 30, minutes = 34 }: LogProps): FantasyProfileLog => ({
   ...makeDatedLog({
     gameDate: new Date(Date.UTC(2025, 9, day)),
     minutes,

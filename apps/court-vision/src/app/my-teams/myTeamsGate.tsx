@@ -20,15 +20,13 @@ export const loadMyTeamsLeague = async (): Promise<LeagueSummary | null> => {
 
 // What a /my-teams page shows without a league: its own header, then the
 // pointer to create one.
-export function NoLeaguePage({
-  title,
-  description,
-  actions,
-}: {
+type NoLeaguePageProps = {
   title: string;
   description?: string;
   actions?: ReactNode;
-}) {
+};
+
+export function NoLeaguePage({ title, description, actions }: NoLeaguePageProps) {
   return (
     <main className={styles.page}>
       <PageHeader eyebrow="My league" title={title} description={description} actions={actions} />

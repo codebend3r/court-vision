@@ -19,15 +19,13 @@ import { weightedConfig } from "#core/valuation/config";
 import { DEFAULT_TREND_GAMES, type FantasyTrendValue } from "#core/valuation/trend";
 import { ROLLING_WINDOW_GAMES } from "#core/valuation/rolling";
 
-const log = ({
-  day,
-  pts = 30,
-  minutes = 34,
-}: {
+type LogProps = {
   day: number;
   pts?: number;
   minutes?: number;
-}): DatedLog =>
+};
+
+const log = ({ day, pts = 30, minutes = 34 }: LogProps): DatedLog =>
   makeDatedLog({
     gameDate: new Date(Date.UTC(2026, 0, day)),
     minutes,
@@ -73,7 +71,9 @@ const config: ValuationConfig = {
   scoring: DEFAULT_POINTS_SCORING,
 };
 
-const build = ({ logs, windowGames = null }: { logs: DatedLog[]; windowGames?: number | null }) =>
+type BuildProps = { logs: DatedLog[]; windowGames?: number | null };
+
+const build = ({ logs, windowGames = null }: BuildProps) =>
   buildFantasyTrend({ line: star, logs, poolStats, config, methodWeights: {}, windowGames });
 
 describe("buildFantasyTrend", () => {
@@ -141,6 +141,15 @@ describe("buildFantasyTrend", () => {
 // The score-the-whole-season-then-cut implementation, kept verbatim so the
 // windowed one is held to exactly its output. Its series builders are the
 // current ones, which their own test holds to the previous per-window output.
+type ReferenceBuildFantasyTrendProps = {
+  line: Pick<FantasyStatLine, "playerId" | "fullName">;
+  logs: readonly DatedLog[];
+  poolStats: PoolStats;
+  config: ValuationConfig;
+  methodWeights: MethodWeights;
+  windowGames: number | null;
+};
+
 const referenceBuildFantasyTrend = ({
   line,
   logs,
@@ -148,14 +157,7 @@ const referenceBuildFantasyTrend = ({
   config,
   methodWeights,
   windowGames,
-}: {
-  line: Pick<FantasyStatLine, "playerId" | "fullName">;
-  logs: readonly DatedLog[];
-  poolStats: PoolStats;
-  config: ValuationConfig;
-  methodWeights: MethodWeights;
-  windowGames: number | null;
-}): FantasyTrendValue[] => {
+}: ReferenceBuildFantasyTrendProps): FantasyTrendValue[] => {
   const seriesArgs = { playerId: line.playerId, fullName: line.fullName, logs, poolStats };
   const zPoints = buildRollingSeries({
     ...seriesArgs,
@@ -181,7 +183,9 @@ const referenceBuildFantasyTrend = ({
 };
 
 // Deterministic PRNG (mulberry32) for the seeded seasons below.
-const seeded = ({ seed }: { seed: number }) => {
+type SeededProps = { seed: number };
+
+const seeded = ({ seed }: SeededProps) => {
   let state = seed >>> 0;
   return (): number => {
     state = (state + 0x6d2b79f5) >>> 0;
@@ -192,7 +196,9 @@ const seeded = ({ seed }: { seed: number }) => {
   };
 };
 
-const seededSeason = ({ seed, length }: { seed: number; length: number }): DatedLog[] => {
+type SeededSeasonProps = { seed: number; length: number };
+
+const seededSeason = ({ seed, length }: SeededSeasonProps): DatedLog[] => {
   const random = seeded({ seed });
   const between = (low: number, high: number): number =>
     Math.floor(low + random() * (high - low + 1));

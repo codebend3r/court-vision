@@ -21,6 +21,10 @@ import { type FantasyTableRow, type ListSortProps } from "@/lib/valuation/fantas
 
 import styles from "@/components/FantasyChartList/FantasyChartList.module.scss";
 
+type RenderChartProps<Row extends FantasyTableRow> = { row: Row; colors: MethodColors };
+
+type DescribeChartProps<Row extends FantasyTableRow> = { row: Row };
+
 export type FantasyChartListProps<Row extends FantasyTableRow> = ListSortProps & {
   // Names the region for assistive tech; the list inside is "Players".
   label: string;
@@ -31,9 +35,9 @@ export type FantasyChartListProps<Row extends FantasyTableRow> = ListSortProps &
   bands: ReactNode;
   // The chart itself, drawn inside the row's chart slot in the list's Z/G
   // colours.
-  renderChart: (args: { row: Row; colors: MethodColors }) => ReactNode;
+  renderChart: (args: RenderChartProps<Row>) => ReactNode;
   // The chart is hover-only, so its reading is spelled out per row.
-  describeChart: (args: { row: Row }) => string;
+  describeChart: (args: DescribeChartProps<Row>) => string;
   // Marks the region busy while a layout's data is still arriving.
   busy?: boolean;
   // A status line under the caption (a failed load, say), already marked up.

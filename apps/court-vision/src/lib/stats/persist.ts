@@ -59,18 +59,22 @@ const withRetry = async <T>(run: () => Promise<T>): Promise<T> => {
   return attempt(0);
 };
 
-const chunk = <T>({ rows, size }: { rows: readonly T[]; size: number }): T[][] =>
+type ChunkProps<T> = { rows: readonly T[]; size: number };
+
+const chunk = <T>({ rows, size }: ChunkProps<T>): T[][] =>
   Array.from({ length: Math.ceil(rows.length / size) }, (_, index) =>
     rows.slice(index * size, (index + 1) * size),
   );
 
+type UpsertInChunksProps<T> = {
+  rows: readonly T[];
+  toOperation: (row: T) => Prisma.PrismaPromise<unknown>;
+};
+
 const upsertInChunks = async <T>({
   rows,
   toOperation,
-}: {
-  rows: readonly T[];
-  toOperation: (row: T) => Prisma.PrismaPromise<unknown>;
-}): Promise<number> => {
+}: UpsertInChunksProps<T>): Promise<number> => {
   await sequentially({
     items: chunk({ rows, size: CHUNK_SIZE }),
     run: ({ item: batch }) =>
@@ -79,7 +83,9 @@ const upsertInChunks = async <T>({
   return rows.length;
 };
 
-export async function upsertPlayers({ players }: { players: PlayerInput[] }): Promise<number> {
+type UpsertPlayersProps = { players: PlayerInput[] };
+
+export async function upsertPlayers({ players }: UpsertPlayersProps): Promise<number> {
   return upsertInChunks({
     rows: players,
     toOperation: (player) => {
@@ -97,7 +103,9 @@ export async function upsertPlayers({ players }: { players: PlayerInput[] }): Pr
 // little to lock, nothing to time out over a remote pooler, and no second
 // statement to deadlock against a concurrent writer. Returns how many players
 // are now active.
-export async function markActiveRoster({ playerIds }: { playerIds: number[] }): Promise<number> {
+type MarkActiveRosterProps = { playerIds: number[] };
+
+export async function markActiveRoster({ playerIds }: MarkActiveRosterProps): Promise<number> {
   if (playerIds.length === 0) {
     throw new Error("Refusing to apply an empty active roster.");
   }
@@ -111,7 +119,9 @@ export async function markActiveRoster({ playerIds }: { playerIds: number[] }): 
   return prisma.player.count({ where: { isActive: true } });
 }
 
-export async function upsertSeasonStats({ rows }: { rows: SeasonStatsInput[] }): Promise<number> {
+type UpsertSeasonStatsProps = { rows: SeasonStatsInput[] };
+
+export async function upsertSeasonStats({ rows }: UpsertSeasonStatsProps): Promise<number> {
   return upsertInChunks({
     rows,
     toOperation: (row) =>
@@ -134,15 +144,15 @@ export async function upsertSeasonStats({ rows }: { rows: SeasonStatsInput[] }):
 // multi-row createMany is one round-trip per chunk instead of one per row,
 // cutting a season's write from ~90 minutes to seconds. The delete and inserts
 // share a transaction so readers never see a partially-written slice.
-const replaceRows = async <T>({
-  rows,
-  remove,
-  insert,
-}: {
+type InsertProps<T> = { tx: Prisma.TransactionClient; batch: T[] };
+
+type ReplaceRowsProps<T> = {
   rows: readonly T[];
   remove: (tx: Prisma.TransactionClient) => Promise<unknown>;
-  insert: (args: { tx: Prisma.TransactionClient; batch: T[] }) => Promise<unknown>;
-}): Promise<number> => {
+  insert: (args: InsertProps<T>) => Promise<unknown>;
+};
+
+const replaceRows = async <T>({ rows, remove, insert }: ReplaceRowsProps<T>): Promise<number> => {
   if (rows.length === 0) {
     return 0;
   }
@@ -169,13 +179,15 @@ const seasonScopes = (rows: readonly SeasonScope[]): SeasonScope[] => [
 ];
 
 // The distinct game ids the incoming rows cover.
-const gameIdsOf = (rows: readonly { gameId: string }[]): string[] => [
-  ...new Set(rows.map((row) => row.gameId)),
-];
+type GameIdsOfProps = readonly { gameId: string }[];
+
+const gameIdsOf = (rows: GameIdsOfProps): string[] => [...new Set(rows.map((row) => row.gameId))];
 
 // The season sync (`sync:bdl`) and the demo seed own whole seasons: every log
 // in the seasons the rows cover is replaced.
-export async function replaceGameLogs({ rows }: { rows: GameLogInput[] }): Promise<number> {
+type ReplaceGameLogsProps = { rows: GameLogInput[] };
+
+export async function replaceGameLogs({ rows }: ReplaceGameLogsProps): Promise<number> {
   return replaceRows({
     rows,
     remove: (tx) => tx.playerGameLog.deleteMany({ where: { OR: seasonScopes(rows) } }),
@@ -183,11 +195,13 @@ export async function replaceGameLogs({ rows }: { rows: GameLogInput[] }): Promi
   });
 }
 
+type ReplaceAdvancedGameLogsProps = {
+  rows: AdvancedGameLogInput[];
+};
+
 export async function replaceAdvancedGameLogs({
   rows,
-}: {
-  rows: AdvancedGameLogInput[];
-}): Promise<number> {
+}: ReplaceAdvancedGameLogsProps): Promise<number> {
   return replaceRows({
     rows,
     remove: (tx) => tx.playerAdvancedGameLog.deleteMany({ where: { OR: seasonScopes(rows) } }),
@@ -198,7 +212,11 @@ export async function replaceAdvancedGameLogs({
 // The nightly sync owns whole games rather than whole seasons: it deletes every
 // log for the games it fetched and re-inserts them, so a re-run (or a stat
 // correction) replaces the night cleanly and leaves the rest of the season alone.
-export async function replaceGameLogsForGames({ rows }: { rows: GameLogInput[] }): Promise<number> {
+type ReplaceGameLogsForGamesProps = { rows: GameLogInput[] };
+
+export async function replaceGameLogsForGames({
+  rows,
+}: ReplaceGameLogsForGamesProps): Promise<number> {
   return replaceRows({
     rows,
     remove: (tx) => tx.playerGameLog.deleteMany({ where: { gameId: { in: gameIdsOf(rows) } } }),
@@ -206,11 +224,13 @@ export async function replaceGameLogsForGames({ rows }: { rows: GameLogInput[] }
   });
 }
 
+type ReplaceAdvancedGameLogsForGamesProps = {
+  rows: AdvancedGameLogInput[];
+};
+
 export async function replaceAdvancedGameLogsForGames({
   rows,
-}: {
-  rows: AdvancedGameLogInput[];
-}): Promise<number> {
+}: ReplaceAdvancedGameLogsForGamesProps): Promise<number> {
   return replaceRows({
     rows,
     remove: (tx) =>
@@ -221,11 +241,15 @@ export async function replaceAdvancedGameLogsForGames({
 
 // Every stored log for these players in these seasons, trimmed to the fields a
 // season line sums, so the nightly sync can rebuild just their season rows.
-export async function findSeasonAggregateLogs(args: {
+type FindSeasonAggregateLogsProps = {
   playerIds: number[];
   seasons: string[];
   seasonType: string;
-}): Promise<SeasonAggregateLog[]> {
+};
+
+export async function findSeasonAggregateLogs(
+  args: FindSeasonAggregateLogsProps,
+): Promise<SeasonAggregateLog[]> {
   const { playerIds, seasons, seasonType } = args;
   if (playerIds.length === 0 || seasons.length === 0) {
     return [];

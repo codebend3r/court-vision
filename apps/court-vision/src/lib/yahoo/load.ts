@@ -35,19 +35,20 @@ const PAST_SEASON: YahooLoadFailure = { status: "past_season" };
 
 // A 400, 401 or 403 is the expected answer for a private or missing league; anything else
 // that failed is logged with the client's detail before it becomes `unavailable`.
-const toFailure = ({
-  result,
-  logger,
-}: {
+type ToFailureProps = {
   result: Exclude<YahooFetchResult, { status: "ok" }>;
   logger: Logger;
-}): YahooLoadFailure => {
+};
+
+const toFailure = ({ result, logger }: ToFailureProps): YahooLoadFailure => {
   if (result.status === "not_found") return NOT_FOUND;
   logger(`yahoo: ${result.detail}`);
   return UNAVAILABLE;
 };
 
-type ReadGame = (args: { fetchImpl?: FetchImpl }) => Promise<CurrentGame>;
+type ReadGameProps = { fetchImpl?: FetchImpl };
+
+type ReadGame = (args: ReadGameProps) => Promise<CurrentGame>;
 
 // The uncached read. A failed read throws instead of returning, so a caching
 // wrapper never stores it; the failure rides out on `cause`. The probe CLI
@@ -75,15 +76,17 @@ const readCurrentGame: ReadGame = unstable_cache(readCurrentGameUncached, ["yaho
 
 // Anything thrown that isn't a parse failure, including `unstable_cache`
 // missing its incremental cache outside Next, reads as Yahoo being unavailable.
+type LoadCurrentGameProps = {
+  fetchImpl?: FetchImpl;
+  logger: Logger;
+  readGame: ReadGame;
+};
+
 const loadCurrentGame = async ({
   fetchImpl,
   logger,
   readGame,
-}: {
-  fetchImpl?: FetchImpl;
-  logger: Logger;
-  readGame: ReadGame;
-}): Promise<{ status: "ok"; game: CurrentGame } | YahooLoadFailure> => {
+}: LoadCurrentGameProps): Promise<{ status: "ok"; game: CurrentGame } | YahooLoadFailure> => {
   try {
     return { status: "ok", game: await readGame({ fetchImpl }) };
   } catch (error) {
@@ -96,23 +99,27 @@ const loadCurrentGame = async ({
 
 // Only the page length is read here, to decide whether to fetch the next one.
 // A page that doesn't parse ends the paging; `parseYahooPayload` rejects it.
-const playerCount = ({ body }: { body: unknown }): number => {
+type PlayerCountProps = { body: unknown };
+
+const playerCount = ({ body }: PlayerCountProps): number => {
   const parsed = yahooPlayersPageSchema.safeParse(body);
   return parsed.success ? parsed.data.fantasy_content.league.players.length : 0;
 };
 
 // Yahoo's waiver list, a page at a time, until a short page or the page cap.
+type FetchWaiverPagesProps = {
+  leagueKey: string;
+  fetchImpl?: FetchImpl;
+  logger: Logger;
+  pages?: readonly unknown[];
+};
+
 const fetchWaiverPages = async ({
   leagueKey,
   fetchImpl,
   logger,
   pages = [],
-}: {
-  leagueKey: string;
-  fetchImpl?: FetchImpl;
-  logger: Logger;
-  pages?: readonly unknown[];
-}): Promise<{ status: "ok"; pages: unknown[] } | YahooLoadFailure> => {
+}: FetchWaiverPagesProps): Promise<{ status: "ok"; pages: unknown[] } | YahooLoadFailure> => {
   const start = pages.length * YAHOO_PAGE_SIZE;
   const result = await yahooFetch({
     path: `league/${leagueKey}/players;status=W;start=${start};count=${YAHOO_PAGE_SIZE}`,
@@ -127,11 +134,13 @@ const fetchWaiverPages = async ({
     : { status: "ok", pages: collected };
 };
 
+type ToParsedScoreboardProps = {
+  scoreboard: unknown;
+};
+
 const toParsedScoreboard = ({
   scoreboard,
-}: {
-  scoreboard: unknown;
-}): YahooScoreboard | undefined => {
+}: ToParsedScoreboardProps): YahooScoreboard | undefined => {
   const parsed = yahooScoreboardSchema.safeParse(scoreboard);
   return parsed.success ? parsed.data : undefined;
 };
@@ -141,19 +150,21 @@ const toParsedScoreboard = ({
  * the server path below and the extension path, which hands over the same
  * bodies fetched in the user's browser.
  */
-export const parseYahooPayload = ({
-  currentSeason,
-  snapshot,
-  waiverPages,
-  scoreboard,
-}: {
+type ParseYahooPayloadProps = {
   currentSeason: number;
   snapshot: unknown;
   waiverPages: readonly unknown[];
   // The current week's scoreboard. Optional and forgiving: one that is missing
   // or doesn't parse leaves the league without matchups rather than failing the sync.
   scoreboard?: unknown;
-}): YahooLoadResult => {
+};
+
+export const parseYahooPayload = ({
+  currentSeason,
+  snapshot,
+  waiverPages,
+  scoreboard,
+}: ParseYahooPayloadProps): YahooLoadResult => {
   const parsedSnapshot = yahooLeagueSnapshotSchema.safeParse(snapshot);
   const parsedPages = waiverPages.flatMap((page): YahooPlayersPage[] => {
     const parsed = yahooPlayersPageSchema.safeParse(page);
@@ -184,19 +195,21 @@ export const parseYahooPayload = ({
  * `readGame` defaults to the cached read; outside Next, pass
  * `readCurrentGameUncached`.
  */
+type LoadYahooLeagueProps = {
+  leagueId: string;
+  fetchImpl?: FetchImpl;
+  logger?: Logger;
+  readGame?: ReadGame;
+  includeWaivers?: boolean;
+};
+
 export const loadYahooLeague = async ({
   leagueId,
   fetchImpl,
   logger = consoleLogger,
   readGame = readCurrentGame,
   includeWaivers = true,
-}: {
-  leagueId: string;
-  fetchImpl?: FetchImpl;
-  logger?: Logger;
-  readGame?: ReadGame;
-  includeWaivers?: boolean;
-}): Promise<YahooLoadResult> => {
+}: LoadYahooLeagueProps): Promise<YahooLoadResult> => {
   const current = await loadCurrentGame({ fetchImpl, logger, readGame });
   if (current.status !== "ok") return current;
 

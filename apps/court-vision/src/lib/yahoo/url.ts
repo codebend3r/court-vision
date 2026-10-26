@@ -13,7 +13,9 @@ const SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i;
 
 const INVALID: YahooUrlParse = { status: "invalid" };
 
-const parseSegments = ({ segments }: { segments: string[] }): YahooUrlParse => {
+type ParseSegmentsProps = { segments: string[] };
+
+const parseSegments = ({ segments }: ParseSegmentsProps): YahooUrlParse => {
   const [first, second, third, fourth] = segments;
   if (first === "nba") {
     return LEAGUE_ID.test(second ?? "") ? { status: "ok", leagueId: second ?? "" } : INVALID;
@@ -32,7 +34,9 @@ const parseSegments = ({ segments }: { segments: string[] }): YahooUrlParse => {
   return INVALID;
 };
 
-export const parseYahooLeagueUrl = ({ input }: { input: string }): YahooUrlParse => {
+type ParseYahooLeagueUrlProps = { input: string };
+
+export const parseYahooLeagueUrl = ({ input }: ParseYahooLeagueUrlProps): YahooUrlParse => {
   const trimmed = input.trim();
   if (LEAGUE_ID.test(trimmed)) {
     return { status: "ok", leagueId: trimmed };

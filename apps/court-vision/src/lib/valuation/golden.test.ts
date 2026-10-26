@@ -90,7 +90,9 @@ const sha256 = (text: string): string => new Bun.CryptoHasher("sha256").update(t
 
 // A snapshot entry: the hash pins every value, the sample keeps a readable
 // slice so a failure shows what moved.
-const golden = ({ value, sample }: { value: unknown; sample?: unknown }) => ({
+type GoldenProps = { value: unknown; sample?: unknown };
+
+const golden = ({ value, sample }: GoldenProps) => ({
   sha256: sha256(canonical(value)),
   sample: canonical(sample ?? value).slice(0, 4000),
 });
@@ -282,17 +284,14 @@ const projectLine = (line: FantasyStatLine) => ({
   cross: line.cross,
 });
 
-const runValuePlayers = ({
-  lines,
-  config,
-  methodWeights,
-  range,
-}: {
+type RunValuePlayersProps = {
   lines: readonly FantasyStatLine[];
   config: ValuationConfig;
   methodWeights: MethodWeights;
   range: WindowRange;
-}) => {
+};
+
+const runValuePlayers = ({ lines, config, methodWeights, range }: RunValuePlayersProps) => {
   const { values, poolStats } = valuePlayers({
     lines,
     config,
@@ -302,19 +301,19 @@ const runValuePlayers = ({
   return { values, poolStats: projectPool(poolStats) };
 };
 
-const runPoolStats = ({
-  lines,
-  basis,
-  poolSize,
-  range,
-}: {
+type RunPoolStatsProps = {
   lines: readonly FantasyStatLine[];
   basis: ValuationConfig["basis"];
   poolSize: number;
   range: WindowRange;
-}) => computePoolStats({ lines, basis, poolSize, windowGames: windowGamesFor(range) });
+};
 
-const runLeaguePcts = ({ lines }: { lines: readonly FantasyStatLine[] }) => {
+const runPoolStats = ({ lines, basis, poolSize, range }: RunPoolStatsProps) =>
+  computePoolStats({ lines, basis, poolSize, windowGames: windowGamesFor(range) });
+
+type RunLeaguePctsProps = { lines: readonly FantasyStatLine[] };
+
+const runLeaguePcts = ({ lines }: RunLeaguePctsProps) => {
   const rates = leagueRates({ lines });
   return { leagueFgPct: rates.fg, leagueFtPct: rates.ft };
 };

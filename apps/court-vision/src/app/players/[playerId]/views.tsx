@@ -88,13 +88,12 @@ const toSeasonStat = (stat: SeasonAverageStat): SeasonStat => ({
 
 // The fantasy view with nothing to value: no card, no charts, the box-score
 // log, and a line on why.
-const fantasyEmptyView = ({
-  message,
-  rows,
-}: {
+type FantasyEmptyViewProps = {
   message: string;
   rows: ViewContext["rows"];
-}): PlayerViewResult => ({
+};
+
+const fantasyEmptyView = ({ message, rows }: FantasyEmptyViewProps): PlayerViewResult => ({
   card: null,
   content: (
     <>

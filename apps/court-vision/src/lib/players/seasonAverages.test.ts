@@ -8,9 +8,9 @@ import {
   type SeasonStatTotals,
 } from "@/lib/players/seasonAverages";
 
-const buildRow = (
-  overrides: Partial<SeasonStatTotals> & { playerId: number },
-): SeasonStatTotals => ({
+type BuildRowProps = Partial<SeasonStatTotals> & { playerId: number };
+
+const buildRow = (overrides: BuildRowProps): SeasonStatTotals => ({
   gamesPlayed: 50,
   minutes: 1500,
   fgm: 400,
@@ -163,9 +163,9 @@ describe("buildCareerAverageLine", () => {
 
 // Two games into a season: nobody has played 20 games or made 300 field goals.
 describe("early in a season", () => {
-  const twoGames = (
-    overrides: Partial<SeasonStatTotals> & { playerId: number },
-  ): SeasonStatTotals =>
+  type TwoGamesProps = Partial<SeasonStatTotals> & { playerId: number };
+
+  const twoGames = (overrides: TwoGamesProps): SeasonStatTotals =>
     buildRow({
       gamesPlayed: 2,
       minutes: 66,
@@ -190,7 +190,9 @@ describe("early in a season", () => {
     twoGames({ playerId: 3, pts: 20, fgm: 8, ftm: 2, fta: 4 }),
   ];
 
-  const rankOf = ({ playerId, key }: { playerId: number; key: string }) =>
+  type RankOfProps = { playerId: number; key: string };
+
+  const rankOf = ({ playerId, key }: RankOfProps) =>
     buildSeasonAverageLine({ rows, playerId })?.find((stat) => stat.key === key);
 
   it("does not call the only player in the room first in the league", () => {

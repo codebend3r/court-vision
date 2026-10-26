@@ -11,13 +11,17 @@ type SearchChange = { target: { value: string } };
 // 300ms after the last keystroke, and only when it differs from the query
 // already applied. `cancel` drops a pending commit, for a control that
 // navigates on its own before the timer fires.
+type OnCommitProps = { q: string };
+
+type UseDebouncedQueryProps = {
+  q: string;
+  onCommit: (args: OnCommitProps) => void;
+};
+
 export const useDebouncedQuery = ({
   q,
   onCommit,
-}: {
-  q: string;
-  onCommit: (args: { q: string }) => void;
-}): {
+}: UseDebouncedQueryProps): {
   onChange: (event: SearchChange) => void;
   cancel: () => void;
 } => {

@@ -156,17 +156,21 @@ const DEFAULT_SORT_BY_TAB = {
   starred: "starredAt",
 } as const satisfies Record<PlayersTab, PlayerSortKey | AdvancedSortKey>;
 
+type DefaultSortForProps<Tab extends PlayersTab> = {
+  tab: Tab;
+};
+
 export const defaultSortFor = <Tab extends PlayersTab>({
   tab,
-}: {
-  tab: Tab;
-}): (typeof DEFAULT_SORT_BY_TAB)[Tab] => DEFAULT_SORT_BY_TAB[tab];
+}: DefaultSortForProps<Tab>): (typeof DEFAULT_SORT_BY_TAB)[Tab] => DEFAULT_SORT_BY_TAB[tab];
 
 export const isPlayerGameRange = (value: string | undefined): value is PlayerGameRange =>
   PLAYER_GAME_RANGES.some((range) => range === value);
 
 // The window a lastN range covers, in games; the whole season has no cap.
-export const gamesForRange = ({ range }: { range: PlayerGameRange }): number | null =>
+type GamesForRangeProps = { range: PlayerGameRange };
+
+export const gamesForRange = ({ range }: GamesForRangeProps): number | null =>
   range === "all" ? null : Number.parseInt(range.replace("last", ""), 10);
 
 export const isPlayerStatMode = (value: string | undefined): value is PlayerStatMode =>
@@ -174,7 +178,9 @@ export const isPlayerStatMode = (value: string | undefined): value is PlayerStat
 
 // A whole number clamped to [min, max]; anything else reads as absent, so the
 // parser's default applies.
-export const parseAsClampedInt = ({ min, max }: { min: number; max: number }) =>
+type ParseAsClampedIntProps = { min: number; max: number };
+
+export const parseAsClampedInt = ({ min, max }: ParseAsClampedIntProps) =>
   createParser({
     parse: (value: string) => {
       const parsed = Number.parseInt(value, 10);
@@ -253,43 +259,53 @@ const loadTabParams = createLoader({
 });
 
 // The sort, validated against the tab's own key set, else the tab's default.
+type RegularTabSortProps = {
+  tab: RegularSearchParams["tab"];
+  sort: string | undefined;
+};
+
 const regularTabSort = ({
   tab,
   sort,
-}: {
-  tab: RegularSearchParams["tab"];
-  sort: string | undefined;
-}): Pick<RegularSearchParams, "tab" | "sort"> => ({
+}: RegularTabSortProps): Pick<RegularSearchParams, "tab" | "sort"> => ({
   tab,
   sort: isPlayerSortKey(sort) ? sort : defaultSortFor({ tab }),
 });
 
+type TabSortForProps = {
+  tab: PlayersTab;
+  sort: string | undefined;
+};
+
 const tabSortFor = ({
   tab,
   sort,
-}: {
-  tab: PlayersTab;
-  sort: string | undefined;
-}): Pick<RegularSearchParams, "tab" | "sort"> | Pick<AdvancedSearchParams, "tab" | "sort"> =>
+}: TabSortForProps):
+  | Pick<RegularSearchParams, "tab" | "sort">
+  | Pick<AdvancedSearchParams, "tab" | "sort"> =>
   tab === "advanced"
     ? { tab, sort: isAdvancedSortKey(sort) ? sort : defaultSortFor({ tab }) }
     : regularTabSort({ tab, sort });
 
+type ParsePlayersSearchParamsProps = {
+  raw: RawSearchParams;
+};
+
 export const parsePlayersSearchParams = ({
   raw,
-}: {
-  raw: RawSearchParams;
-}): PlayersSearchParams => {
+}: ParsePlayersSearchParamsProps): PlayersSearchParams => {
   const { tab, sort } = loadTabParams(raw);
   return { ...loadListParams(raw), ...tabSortFor({ tab, sort: sort ?? undefined }) };
 };
 
 // /watchlist is the starred view whatever the query's `tab` says.
+type ParseStarredSearchParamsProps = {
+  raw: RawSearchParams;
+};
+
 export const parseStarredSearchParams = ({
   raw,
-}: {
-  raw: RawSearchParams;
-}): RegularSearchParams => ({
+}: ParseStarredSearchParamsProps): RegularSearchParams => ({
   ...loadListParams(raw),
   ...regularTabSort({ tab: "starred", sort: loadTabParams(raw).sort ?? undefined }),
 });

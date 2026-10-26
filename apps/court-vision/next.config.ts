@@ -1,10 +1,20 @@
 import { resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { strict as assert } from "node:assert";
 
 import type { NextConfig } from "next";
 
 import { SECURITY_HEADERS } from "@vision/ui/next/securityHeaders";
 
-import packageJson from "./package.json";
+const packageJson: unknown = JSON.parse(
+  readFileSync(resolve(import.meta.dirname, "package.json"), "utf8"),
+);
+assert(
+  packageJson !== null &&
+    typeof packageJson === "object" &&
+    "version" in packageJson &&
+    typeof packageJson.version === "string",
+);
 
 // The monorepo root. Turbopack only compiles files under its root, and the
 // workspace libs (libs/*) live beside this app, not inside it; file tracing

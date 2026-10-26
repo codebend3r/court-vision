@@ -30,9 +30,9 @@ export const RESET_FAILED_MESSAGE =
 // Supabase rejects a sign-in from an unconfirmed account. Recent versions carry
 // a stable `code`, older ones only the prose message, so check both rather than
 // leaving the user staring at "Email not confirmed" with no way forward.
-export function isUnconfirmedEmailError(
-  error: { code?: string; message?: string } | null | undefined,
-): boolean {
+type IsUnconfirmedEmailErrorProps = { code?: string; message?: string } | null | undefined;
+
+export function isUnconfirmedEmailError(error: IsUnconfirmedEmailErrorProps): boolean {
   if (!error) {
     return false;
   }

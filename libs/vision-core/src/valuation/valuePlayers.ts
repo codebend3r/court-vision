@@ -28,6 +28,15 @@ import {
 //
 // Lines are valued against one pool (the sport's first unless `pool` names
 // another); a split-pool sport values each pool's lines separately.
+type ValuePlayersProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  pool?: PoolDef<K>;
+  lines: readonly ValuationLine<K>[];
+  config: ValuationConfig<K>;
+  methodWeights?: MethodWeights<K>;
+  windowGames: number | null;
+};
+
 export const valuePlayers = <K extends SportKeys>({
   sport,
   pool,
@@ -35,14 +44,7 @@ export const valuePlayers = <K extends SportKeys>({
   config,
   methodWeights = {},
   windowGames,
-}: {
-  sport: SportDescriptor<K>;
-  pool?: PoolDef<K>;
-  lines: readonly ValuationLine<K>[];
-  config: ValuationConfig<K>;
-  methodWeights?: MethodWeights<K>;
-  windowGames: number | null;
-}): { values: FantasyPlayerValues[]; poolStats: PoolStats<K> } => {
+}: ValuePlayersProps<K>): { values: FantasyPlayerValues[]; poolStats: PoolStats<K> } => {
   const poolStats = poolStatsFor({ sport, pool, lines, config, windowGames });
   const configFor = (method: WeightedMethodKey): ValuationConfig<K> =>
     weightedConfig({ config, methodWeights, method });

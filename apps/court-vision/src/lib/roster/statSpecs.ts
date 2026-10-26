@@ -17,16 +17,24 @@ const COUNTING = [
   { key: "tov", label: "TOV", fullName: "Turnovers" },
 ] as const;
 
-const perGame = ({ total, gamesPlayed }: { total: number; gamesPlayed: number }): number | null =>
+type PerGameProps = { total: number; gamesPlayed: number };
+
+const perGame = ({ total, gamesPlayed }: PerGameProps): number | null =>
   gamesPlayed > 0 ? total / gamesPlayed : null;
 
-const rate = ({ made, attempted }: { made: number; attempted: number }): number | null =>
+type RateProps = { made: number; attempted: number };
+
+const rate = ({ made, attempted }: RateProps): number | null =>
   attempted > 0 ? made / attempted : null;
 
 // Turnovers are the only counting category where fewer is better.
-const directionOf = ({ key }: { key: string }): StatDirection => (key === "tov" ? "low" : "high");
+type DirectionOfProps = { key: string };
 
-export const regularSpecs = ({ mode }: { mode: PlayerStatMode }): StatSpec<PlayerPoolRow>[] => [
+const directionOf = ({ key }: DirectionOfProps): StatDirection => (key === "tov" ? "low" : "high");
+
+type RegularSpecsProps = { mode: PlayerStatMode };
+
+export const regularSpecs = ({ mode }: RegularSpecsProps): StatSpec<PlayerPoolRow>[] => [
   ...COUNTING.map(({ key, label, fullName }): StatSpec<PlayerPoolRow> => ({
     key,
     label,
@@ -76,7 +84,9 @@ const ADVANCED_DIRECTION: Record<AdvancedMetricKey, StatDirection> = {
   usagePercentage: "neutral",
 };
 
-const advancedSpec = ({ meta }: { meta: AdvancedStatMeta }): StatSpec<AdvancedPlayerRow> => ({
+type AdvancedSpecProps = { meta: AdvancedStatMeta };
+
+const advancedSpec = ({ meta }: AdvancedSpecProps): StatSpec<AdvancedPlayerRow> => ({
   key: meta.key,
   label: meta.label,
   fullName: meta.fullName,

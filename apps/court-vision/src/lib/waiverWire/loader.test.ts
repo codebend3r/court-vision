@@ -12,19 +12,21 @@ vi.mock("@/lib/prisma", () => ({
 
 import { getWaiverLeagueData } from "@/lib/waiverWire/loader";
 
+type SlotProps = {
+  teamId: string;
+  playerId: number;
+  slotType: string;
+  injuryStatus?: string | null;
+  fullName?: string;
+};
+
 const slot = ({
   teamId,
   playerId,
   slotType,
   injuryStatus = null,
   fullName = "Player",
-}: {
-  teamId: string;
-  playerId: number;
-  slotType: string;
-  injuryStatus?: string | null;
-  fullName?: string;
-}) => ({
+}: SlotProps) => ({
   teamId,
   playerId,
   slotType,
@@ -34,13 +36,12 @@ const slot = ({
 });
 
 // A slot whose Yahoo player never matched: no player id, only Yahoo's name.
-const unmatchedSlot = ({
-  teamId,
-  externalPlayerName,
-}: {
+type UnmatchedSlotProps = {
   teamId: string;
   externalPlayerName: string | null;
-}) => ({
+};
+
+const unmatchedSlot = ({ teamId, externalPlayerName }: UnmatchedSlotProps) => ({
   teamId,
   playerId: null,
   slotType: "BE",

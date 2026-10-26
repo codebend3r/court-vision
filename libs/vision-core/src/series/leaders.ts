@@ -23,21 +23,21 @@ export type LeaderDef<Row> = {
   format: (value: number) => string;
 };
 
-export const perGame = ({
-  total,
-  gamesPlayed,
-}: {
+type PerGameProps = {
   total: number;
   gamesPlayed: number;
-}): number | null => (gamesPlayed > 0 ? total / gamesPlayed : null);
+};
 
-export const percentage = ({
-  made,
-  attempted,
-}: {
+export const perGame = ({ total, gamesPlayed }: PerGameProps): number | null =>
+  gamesPlayed > 0 ? total / gamesPlayed : null;
+
+type PercentageProps = {
   made: number;
   attempted: number;
-}): number | null => (attempted > 0 ? (made / attempted) * 100 : null);
+};
+
+export const percentage = ({ made, attempted }: PercentageProps): number | null =>
+  attempted > 0 ? (made / attempted) * 100 : null;
 
 const isPresent = (stat: LeaderStat | null): stat is LeaderStat => stat !== null;
 
@@ -48,17 +48,19 @@ const isPresent = (stat: LeaderStat | null): stat is LeaderStat => stat !== null
 // every player with a computable value is in the pool. A stat nobody qualifies
 // for has no leaderboard to stand on, so its rank is null (a plain value): "1st
 // of 0" is not a rank. Null when the player has no row.
+type BuildLeaderLineProps<Row extends { playerId: number }> = {
+  defs: readonly LeaderDef<Row>[];
+  rows: readonly Row[];
+  playerId: number;
+  applyMinimums?: boolean;
+};
+
 export const buildLeaderLine = <Row extends { playerId: number }>({
   defs,
   rows,
   playerId,
   applyMinimums = true,
-}: {
-  defs: readonly LeaderDef<Row>[];
-  rows: readonly Row[];
-  playerId: number;
-  applyMinimums?: boolean;
-}): LeaderStat[] | null => {
+}: BuildLeaderLineProps<Row>): LeaderStat[] | null => {
   const playerRow = rows.find((row) => row.playerId === playerId);
   if (!playerRow) {
     return null;
@@ -91,13 +93,12 @@ export const buildLeaderLine = <Row extends { playerId: number }>({
 
 // The same stats for one row with no leaderboard (a career line, which would
 // need every other career aggregated to rank): values only, rank null.
-export const buildUnrankedLine = <Row>({
-  defs,
-  row,
-}: {
+type BuildUnrankedLineProps<Row> = {
   defs: readonly LeaderDef<Row>[];
   row: Row;
-}): LeaderStat[] =>
+};
+
+export const buildUnrankedLine = <Row>({ defs, row }: BuildUnrankedLineProps<Row>): LeaderStat[] =>
   defs
     .map((def): LeaderStat | null => {
       const value = def.valueOf(row);

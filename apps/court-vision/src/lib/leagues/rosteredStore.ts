@@ -13,6 +13,12 @@ export type LeagueOwner = {
 // player reads the same here as on Yahoo.
 export type LeaguePosition = { playerId: number; position: string };
 
+type HydrateProps = {
+  playerIds: number[];
+  owners?: readonly LeagueOwner[] | null;
+  positions?: readonly LeaguePosition[];
+};
+
 type RosteredState = {
   playerIds: ReadonlySet<number>;
   // Every rostered player's holder, or null when the league's rosters are not
@@ -20,11 +26,7 @@ type RosteredState = {
   owners: ReadonlyMap<number, LeagueOwner> | null;
   // The host's position label per player the league's last sync saw, rostered or free.
   positions: ReadonlyMap<number, string>;
-  hydrate: (args: {
-    playerIds: number[];
-    owners?: readonly LeagueOwner[] | null;
-    positions?: readonly LeaguePosition[];
-  }) => void;
+  hydrate: (args: HydrateProps) => void;
 };
 
 // The players on your teams in the active league. Not persisted, like the
@@ -44,15 +46,17 @@ export const useRosteredStore = create<RosteredState>()((set) => ({
 }));
 
 /** The league host's position label for a player, else `fallback` (the NBA data's). */
-export const usePlayerPosition = ({
-  playerId,
-  fallback,
-}: {
+type UsePlayerPositionProps = {
   playerId: number;
   fallback: string | null;
-}): string | null => useRosteredStore((state) => state.positions.get(playerId)) ?? fallback;
+};
 
-export const useIsRostered = ({ playerId }: { playerId: number }): boolean =>
+export const usePlayerPosition = ({ playerId, fallback }: UsePlayerPositionProps): string | null =>
+  useRosteredStore((state) => state.positions.get(playerId)) ?? fallback;
+
+type UseIsRosteredProps = { playerId: number };
+
+export const useIsRostered = ({ playerId }: UseIsRosteredProps): boolean =>
   useRosteredStore((state) => state.playerIds.has(playerId));
 
 // "mine" and "other" name the holder; "free" is a player on no roster; null
@@ -65,7 +69,9 @@ export type Ownership =
 // Two primitive-stable selections (the stored owner object, and whether owners
 // are known at all) rather than one derived object, which would be a new
 // snapshot on every read.
-export const useOwnership = ({ playerId }: { playerId: number }): Ownership | null => {
+type UseOwnershipProps = { playerId: number };
+
+export const useOwnership = ({ playerId }: UseOwnershipProps): Ownership | null => {
   const owner = useRosteredStore((state) => state.owners?.get(playerId));
   const isKnown = useRosteredStore((state) => state.owners !== null);
   if (!isKnown) return null;

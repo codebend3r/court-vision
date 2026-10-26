@@ -8,9 +8,11 @@ import { type FantasyPlayerValues } from "@vision/core/valuation/types";
 
 // The view's side of the worker, narrowed to what the client needs so tests
 // can stand in a fake.
+type ListenProps = { onMessage: (data: unknown) => void; onError: () => void };
+
 export type ValuationPort = {
   post: (request: ValuationRequest) => void;
-  listen: (handlers: { onMessage: (data: unknown) => void; onError: () => void }) => () => void;
+  listen: (handlers: ListenProps) => () => void;
   terminate: () => void;
 };
 
@@ -30,15 +32,17 @@ export type ValuationClient = {
 // one replaces it, so dragging a weight queues at most one valuation behind
 // the running one instead of one per step. Any worker failure ends the
 // client: the view falls back to valuing on the main thread.
+type CreateValuationClientProps = {
+  port: ValuationPort;
+  onSettle: (settled: SettledValuation) => void;
+  onFailure: () => void;
+};
+
 export const createValuationClient = ({
   port,
   onSettle,
   onFailure,
-}: {
-  port: ValuationPort;
-  onSettle: (settled: SettledValuation) => void;
-  onFailure: () => void;
-}): ValuationClient => {
+}: CreateValuationClientProps): ValuationClient => {
   let requestId = 0;
   let inFlight: { requestId: number; job: FantasyValuationJob } | null = null;
   let queued: FantasyValuationJob | null = null;

@@ -23,9 +23,11 @@ const KEY_TARGETS: Record<string, (index: number) => number> = {
   End: () => LAST_INDEX,
 };
 
+type OnChangeProps = { view: WaiverView };
+
 export type WaiverWireTabsProps = {
   view: WaiverView;
-  onChange: ({ view }: { view: WaiverView }) => void;
+  onChange: ({ view }: OnChangeProps) => void;
   panels: Record<WaiverView, ReactNode>;
 };
 
@@ -35,8 +37,12 @@ export type WaiverWireTabsProps = {
 export function WaiverWireTabs({ view, onChange, panels }: WaiverWireTabsProps) {
   const baseId = useId();
   const tabRefs = useRef(new Map<WaiverView, HTMLButtonElement>());
-  const tabId = ({ tab }: { tab: WaiverView }) => `${baseId}-tab-${tab}`;
-  const panelId = ({ tab }: { tab: WaiverView }) => `${baseId}-panel-${tab}`;
+  type TabIdProps = { tab: WaiverView };
+
+  const tabId = ({ tab }: TabIdProps) => `${baseId}-tab-${tab}`;
+  type PanelIdProps = { tab: WaiverView };
+
+  const panelId = ({ tab }: PanelIdProps) => `${baseId}-panel-${tab}`;
   const containerRef = useRef<HTMLDivElement>(null);
   const shownView = useRef(view);
 
@@ -55,13 +61,12 @@ export function WaiverWireTabs({ view, onChange, panels }: WaiverWireTabsProps) 
     if (!isInTabs && tab) tab.focus();
   }, [view]);
 
-  const onKeyDown = ({
-    event,
-    tab,
-  }: {
+  type OnKeyDownProps = {
     event: KeyboardEvent<HTMLButtonElement>;
     tab: WaiverView;
-  }) => {
+  };
+
+  const onKeyDown = ({ event, tab }: OnKeyDownProps) => {
     const target = KEY_TARGETS[event.key];
     if (target === undefined) return;
     event.preventDefault();

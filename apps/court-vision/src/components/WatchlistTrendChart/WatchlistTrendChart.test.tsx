@@ -10,15 +10,13 @@ import { type TrendSeries } from "@vision/core/valuation/rolling";
 
 afterEach(cleanup);
 
-const series = ({
-  playerId,
-  fullName,
-  pointCount,
-}: {
+type SeriesProps = {
   playerId: number;
   fullName: string;
   pointCount: number;
-}): TrendSeries => ({
+};
+
+const series = ({ playerId, fullName, pointCount }: SeriesProps): TrendSeries => ({
   playerId,
   fullName,
   points: Array.from({ length: pointCount }, (_, index) => ({
@@ -27,13 +25,12 @@ const series = ({
   })),
 });
 
-const renderChart = ({
-  entries,
-  caption = "Zero is league-average value.",
-}: {
+type RenderChartProps = {
   entries: TrendSeries[];
   caption?: string;
-}) =>
+};
+
+const renderChart = ({ entries, caption = "Zero is league-average value." }: RenderChartProps) =>
   render(
     <ThemeProvider>
       <WatchlistTrendChart series={entries} caption={caption} />

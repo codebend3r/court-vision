@@ -13,7 +13,9 @@ import { type WaiverRow } from "@/lib/waiverWire/types";
 
 afterEach(cleanup);
 
-const makeRow = (overrides: Partial<WaiverRow> & { playerId: number }): WaiverRow => ({
+type MakeRowProps = Partial<WaiverRow> & { playerId: number };
+
+const makeRow = (overrides: MakeRowProps): WaiverRow => ({
   fullName: `Player ${overrides.playerId}`,
   teamAbbr: "DET",
   position: "C",
@@ -103,11 +105,13 @@ const rows: HeadToHeadRow[] = [
 
 const result: HeadToHead = { rows, faWins: 4, categoryCount: 6 };
 
+type RenderPanelProps = { withPair?: boolean; freePool?: WaiverRow[]; roster?: WaiverRow[] };
+
 const renderPanel = ({
   withPair = true,
   freePool = [carter, gafford],
   roster = [hartenstein, reed],
-}: { withPair?: boolean; freePool?: WaiverRow[]; roster?: WaiverRow[] } = {}) => {
+}: RenderPanelProps = {}) => {
   const onPick = vi.fn<(pick: HeadToHeadPick) => void>();
   render(
     <HeadToHeadPanel
@@ -121,33 +125,43 @@ const renderPanel = ({
   return { onPick };
 };
 
-const rowOf = ({ label }: { label: string }): HTMLElement => {
+type RowOfProps = { label: string };
+
+const rowOf = ({ label }: RowOfProps): HTMLElement => {
   const row = screen.getByRole("rowheader", { name: label }).closest("tr");
   if (row === null) throw new Error(`expected ${label} in a table row`);
   return row;
 };
 
 // A readout card, found by its label line.
-const cardOf = ({ label }: { label: string }): HTMLElement => {
+type CardOfProps = { label: string };
+
+const cardOf = ({ label }: CardOfProps): HTMLElement => {
   const card = screen.getByText(label, { selector: "p" }).closest("article");
   if (card === null) throw new Error(`expected a readout card labelled ${label}`);
   return card;
 };
 
-const cellsOf = ({ label }: { label: string }): HTMLElement[] =>
+type CellsOfProps = { label: string };
+
+const cellsOf = ({ label }: CellsOfProps): HTMLElement[] =>
   Array.from(rowOf({ label }).querySelectorAll<HTMLElement>("td, th"));
 
 // The table's columns, left to right.
 const COLUMN = { fa: 0, mine: 1, category: 2, delta: 3 } as const;
 
-const cellOf = ({ label, column }: { label: string; column: keyof typeof COLUMN }): HTMLElement => {
+type CellOfProps = { label: string; column: keyof typeof COLUMN };
+
+const cellOf = ({ label, column }: CellOfProps): HTMLElement => {
   const cell = cellsOf({ label })[COLUMN[column]];
   if (cell === undefined) throw new Error(`expected a ${column} cell in the ${label} row`);
   return cell;
 };
 
 // The widths of the decorative bar's two halves in a row's free-agent cell.
-const barHalves = ({ label }: { label: string }): string[] =>
+type BarHalvesProps = { label: string };
+
+const barHalves = ({ label }: BarHalvesProps): string[] =>
   Array.from(
     cellOf({ label, column: "fa" }).querySelectorAll<HTMLElement>("[aria-hidden='true'] [style]"),
   ).map((half) => half.style.width);
@@ -281,8 +295,9 @@ describe("HeadToHeadPanel", () => {
 describe("HeadToHeadPanel sorting", () => {
   const categories = (): string[] =>
     screen.getAllByRole("rowheader").map((cell) => cell.textContent ?? "");
-  const header = ({ name }: { name: string | RegExp }): HTMLElement =>
-    screen.getByRole("columnheader", { name });
+  type HeaderProps = { name: string | RegExp };
+
+  const header = ({ name }: HeaderProps): HTMLElement => screen.getByRole("columnheader", { name });
 
   const renderSortable = () =>
     render(

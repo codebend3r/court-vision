@@ -2,17 +2,14 @@ import { describe, expect, it } from "bun:test";
 
 import { buildCumulativeWins, type TeamGameResult } from "#core/series/teamTrend";
 
-const result = ({
-  teamAbbr,
-  gameId,
-  winLoss,
-  date,
-}: {
+type ResultProps = {
   teamAbbr: string;
   gameId: string;
   winLoss: string | null;
   date: string;
-}): TeamGameResult => ({
+};
+
+const result = ({ teamAbbr, gameId, winLoss, date }: ResultProps): TeamGameResult => ({
   teamAbbr,
   gameId,
   teamScore: null,

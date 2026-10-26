@@ -8,13 +8,15 @@ import { type FantasyTeamPlayer, type RosterSlot } from "@/lib/fantasyTeams/type
 
 const saveLeagueTeamMock = vi.fn();
 
+type SaveLeagueTeamProps = {
+  leagueId: string;
+  teamId: string | null;
+  name: string;
+  slots: readonly RosterSlot[];
+};
+
 vi.mock("@/lib/leagues/teamActions", () => ({
-  saveLeagueTeam: (args: {
-    leagueId: string;
-    teamId: string | null;
-    name: string;
-    slots: readonly RosterSlot[];
-  }) => saveLeagueTeamMock(args),
+  saveLeagueTeam: (args: SaveLeagueTeamProps) => saveLeagueTeamMock(args),
 }));
 
 const push = vi.fn();
@@ -41,9 +43,9 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-const player = (
-  overrides: Partial<FantasyTeamPlayer> & { playerId: number },
-): FantasyTeamPlayer => ({
+type PlayerProps = Partial<FantasyTeamPlayer> & { playerId: number };
+
+const player = (overrides: PlayerProps): FantasyTeamPlayer => ({
   firstName: "Test",
   lastName: `Player ${overrides.playerId}`,
   fullName: `Test Player ${overrides.playerId}`,

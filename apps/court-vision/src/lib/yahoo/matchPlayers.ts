@@ -41,7 +41,9 @@ type NameParts = {
   last: string; // every word after the first, or the only word: "butler"
 };
 
-const nameParts = ({ name }: { name: string }): NameParts => {
+type NamePartsProps = { name: string };
+
+const nameParts = ({ name }: NamePartsProps): NameParts => {
   const key = nameMatchKey({ name });
   const words = key.split(" ");
   const lastWord = words.at(-1) ?? "";
@@ -59,27 +61,30 @@ const nameParts = ({ name }: { name: string }): NameParts => {
 // "Nic" and "Nicolas", or "Alex" and "Alexandre": one first name starts the
 // other. Sharing only an initial is not enough: "Jalen" and "Jaylin" Williams
 // were Oklahoma City teammates.
-const isShortenedFirstName = ({ left, right }: { left: string; right: string }): boolean => {
+type IsShortenedFirstNameProps = { left: string; right: string };
+
+const isShortenedFirstName = ({ left, right }: IsShortenedFirstNameProps): boolean => {
   const [shorter, longer] = left.length <= right.length ? [left, right] : [right, left];
   return shorter.length >= MIN_SHORT_NAME_LENGTH && longer.startsWith(shorter);
 };
 
 // Whether two names can belong to one player, by any rule the matcher uses.
 // A stored mapping keeps only while this holds, so a trade never drops one.
-const namesAgree = ({ left, right }: { left: NameParts; right: NameParts }): boolean =>
+type NamesAgreeProps = { left: NameParts; right: NameParts };
+
+const namesAgree = ({ left, right }: NamesAgreeProps): boolean =>
   left.baseKey === right.baseKey ||
   (left.last === right.last && isShortenedFirstName({ left: left.first, right: right.first }));
 
 // The matched player among those sharing a name: the one on Yahoo's team, else
 // the only one. `null` when none share it, so the caller tries a looser rule;
 // unmatched when several do, so an ambiguous name never falls through to one.
-const pickByName = ({
-  ref,
-  sameName,
-}: {
+type PickByNameProps = {
   ref: YahooPlayerRef;
   sameName: readonly MatchCandidate[];
-}): MatchOutcome | null => {
+};
+
+const pickByName = ({ ref, sameName }: PickByNameProps): MatchOutcome | null => {
   if (!sameName.length) return null;
   const sameTeam = sameName.filter(
     (candidate) => !!ref.teamAbbr && candidate.teamAbbr === ref.teamAbbr,
@@ -104,15 +109,13 @@ const pickByName = ({
 // and exactly one teammate. An ambiguous name stays unmatched rather than
 // guessing, and an empty key (a name that is all punctuation) matches nothing,
 // since every other empty key would equal it.
-export const matchPlayer = ({
-  ref,
-  candidates,
-  existing,
-}: {
+type MatchPlayerProps = {
   ref: YahooPlayerRef;
   candidates: readonly MatchCandidate[];
   existing: MatchCandidate | null;
-}): MatchOutcome => {
+};
+
+export const matchPlayer = ({ ref, candidates, existing }: MatchPlayerProps): MatchOutcome => {
   const parts = nameParts({ name: ref.fullName });
   if (!parts.key) return UNMATCHED;
 
@@ -179,7 +182,9 @@ const loadCandidates = (): Promise<MatchCandidate[]> =>
 // Yahoo teams but not in it. Only the unmatched refs ask, and only by their
 // own name, so the huge historical pool never joins the candidates and a
 // namesake from another era is never one of them.
-const loadInactiveByName = ({ names }: { names: readonly string[] }): Promise<MatchCandidate[]> =>
+type LoadInactiveByNameProps = { names: readonly string[] };
+
+const loadInactiveByName = ({ names }: LoadInactiveByNameProps): Promise<MatchCandidate[]> =>
   names.length
     ? prisma.player.findMany({
         where: {
@@ -190,11 +195,13 @@ const loadInactiveByName = ({ names }: { names: readonly string[] }): Promise<Ma
       })
     : Promise.resolve([]);
 
+type LoadStoredMappingsProps = {
+  yahooIds: readonly string[];
+};
+
 const loadStoredMappings = async ({
   yahooIds,
-}: {
-  yahooIds: readonly string[];
-}): Promise<ReadonlyMap<string, StoredMapping>> => {
+}: LoadStoredMappingsProps): Promise<ReadonlyMap<string, StoredMapping>> => {
   const rows = await prisma.playerExternalId.findMany({
     where: { provider: YAHOO_PROVIDER, externalId: { in: [...yahooIds] } },
     include: { player: { select: PLAYER_SELECT } },
@@ -221,13 +228,15 @@ const loadStoredMappings = async ({
 
 // Players already held by a Yahoo id outside this batch. Without this a second
 // Yahoo id could be name-matched to a player that a stored row already owns.
+type LoadHeldPlayerIdsProps = {
+  playerIds: readonly number[];
+  batchIds: readonly string[];
+};
+
 const loadHeldPlayerIds = async ({
   playerIds,
   batchIds,
-}: {
-  playerIds: readonly number[];
-  batchIds: readonly string[];
-}): Promise<ReadonlySet<number>> => {
+}: LoadHeldPlayerIdsProps): Promise<ReadonlySet<number>> => {
   if (!playerIds.length) return new Set();
   const rows = await prisma.playerExternalId.findMany({
     where: {
@@ -246,13 +255,12 @@ const MAPPING_TRANSACTION_OPTIONS = { timeout: 30_000 };
 
 // PlayerExternalId is shared by every profile, so this runs only on the server
 // path, from data the server fetched from Yahoo itself. Deletes go first.
-const persistMappings = async ({
-  upserts,
-  staleIds,
-}: {
+type PersistMappingsProps = {
   upserts: readonly { ref: YahooPlayerRef; match: Match }[];
   staleIds: readonly string[];
-}): Promise<void> => {
+};
+
+const persistMappings = async ({ upserts, staleIds }: PersistMappingsProps): Promise<void> => {
   const operations = [
     ...(staleIds.length
       ? [
@@ -285,25 +293,23 @@ const persistMappings = async ({
   await prisma.$transaction(operations, MAPPING_TRANSACTION_OPTIONS);
 };
 
-const sameStrings = ({
-  left,
-  right,
-}: {
+type SameStringsProps = {
   left: readonly string[];
   right: readonly string[];
-}): boolean => left.length === right.length && left.every((value, index) => value === right[index]);
+};
+
+const sameStrings = ({ left, right }: SameStringsProps): boolean =>
+  left.length === right.length && left.every((value, index) => value === right[index]);
 
 // A stored row that already says exactly this needs no write. Most of a sync's
 // refs land here, and each skipped upsert is a statement the request saves.
-const isUnchanged = ({
-  row,
-  ref,
-  match,
-}: {
+type IsUnchangedProps = {
   row: StoredMapping | undefined;
   ref: YahooPlayerRef;
   match: Match;
-}): boolean =>
+};
+
+const isUnchanged = ({ row, ref, match }: IsUnchangedProps): boolean =>
   !!row &&
   row.player.id === match.playerId &&
   row.method === match.method &&
@@ -311,23 +317,27 @@ const isUnchanged = ({
 
 // Every rule `matchPlayer` uses needs the same last name, so each ref is only
 // compared with the active players who share its last name.
+type GroupByLastNameProps = {
+  candidates: readonly MatchCandidate[];
+};
+
 const groupByLastName = ({
   candidates,
-}: {
-  candidates: readonly MatchCandidate[];
-}): ReadonlyMap<string, readonly MatchCandidate[]> =>
+}: GroupByLastNameProps): ReadonlyMap<string, readonly MatchCandidate[]> =>
   candidates.reduce<ReadonlyMap<string, readonly MatchCandidate[]>>((groups, candidate) => {
     const { last } = nameParts({ name: candidate.fullName });
     return new Map(groups).set(last, [...(groups.get(last) ?? []), candidate]);
   }, new Map());
 
+type ResolveYahooPlayersProps = {
+  refs: readonly YahooPlayerRef[];
+  writeMappings: boolean; // true only on the server path
+};
+
 export const resolveYahooPlayers = async ({
   refs,
   writeMappings,
-}: {
-  refs: readonly YahooPlayerRef[];
-  writeMappings: boolean; // true only on the server path
-}): Promise<ResolvedPlayers> => {
+}: ResolveYahooPlayersProps): Promise<ResolvedPlayers> => {
   // A player on a roster and in the waiver pool arrives twice; resolve it once
   // so it can't be mistaken for two Yahoo players claiming one Court Vision row.
   const uniqueRefs = [...new Map(refs.map((ref) => [ref.yahooPlayerId, ref])).values()];

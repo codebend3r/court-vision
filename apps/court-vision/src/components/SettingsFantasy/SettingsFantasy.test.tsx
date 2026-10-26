@@ -6,9 +6,10 @@ import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
 
 const updatePreferencesMock = vi.fn();
 
+type UpdatePreferencesProps = { preferredFormula?: string | null; fontScale?: string };
+
 vi.mock("@/lib/settings/actions", () => ({
-  updatePreferences: (args: { preferredFormula?: string | null; fontScale?: string }) =>
-    updatePreferencesMock(args),
+  updatePreferences: (args: UpdatePreferencesProps) => updatePreferencesMock(args),
 }));
 
 beforeEach(() => {

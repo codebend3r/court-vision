@@ -34,7 +34,9 @@ const durant = {
   nbaPersonId: 201142,
 };
 
-const teamRow = ({ id, name, createdAt }: { id: string; name: string; createdAt: string }) => ({
+type TeamRowProps = { id: string; name: string; createdAt: string };
+
+const teamRow = ({ id, name, createdAt }: TeamRowProps) => ({
   id,
   name,
   slug: id,

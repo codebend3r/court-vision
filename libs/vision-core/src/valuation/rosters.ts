@@ -20,17 +20,19 @@ export type SyntheticLeague<K extends SportKeys> = {
 
 // Players ordered by the user's own configuration, so the synthetic league is
 // drafted off the same valuation the table is showing.
+type RankByValueProps<L extends ValuationLine<K>, K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  lines: readonly L[];
+  poolStats: PoolStats<K>;
+  config: ValuationConfig<K>;
+};
+
 export const rankByValue = <K extends SportKeys, L extends ValuationLine<K>>({
   sport,
   lines,
   poolStats,
   config,
-}: {
-  sport: SportDescriptor<K>;
-  lines: readonly L[];
-  poolStats: PoolStats<K>;
-  config: ValuationConfig<K>;
-}): L[] => {
+}: RankByValueProps<L, K>): L[] => {
   const totals = new Map(
     scoreZScore({ sport, lines, poolStats, config }).map((value) => [value.playerId, value.total]),
   );
@@ -40,19 +42,21 @@ export const rankByValue = <K extends SportKeys, L extends ValuationLine<K>>({
     .map((entry) => entry.line);
 };
 
+type TotalsOverProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+  poolStats: PoolStats<K>;
+  config: ValuationConfig<K>;
+  divideBy?: number;
+};
+
 const totalsOver = <K extends SportKeys>({
   sport,
   lines,
   poolStats,
   config,
   divideBy = 1,
-}: {
-  sport: SportDescriptor<K>;
-  lines: readonly ValuationLine<K>[];
-  poolStats: PoolStats<K>;
-  config: ValuationConfig<K>;
-  divideBy?: number;
-}): CategoryTotals<K> =>
+}: TotalsOverProps<K>): CategoryTotals<K> =>
   config.categories.reduce<CategoryTotals<K>>((totals, category) => {
     const sum = lines.reduce(
       (acc, line) =>
@@ -69,13 +73,12 @@ const totalsOver = <K extends SportKeys>({
     return { ...totals, [category]: sum / divideBy };
   }, {});
 
-const spreadOf = <K extends SportKeys>({
-  rosters,
-  category,
-}: {
+type SpreadOfProps<K extends SportKeys> = {
   rosters: readonly CategoryTotals<K>[];
   category: Category<K>;
-}): CategorySpread => {
+};
+
+const spreadOf = <K extends SportKeys>({ rosters, category }: SpreadOfProps<K>): CategorySpread => {
   const totals = rosters.map((roster) => roster[category] ?? 0);
   const { mu, sigma } = meanSigma({ values: totals });
   return { min: Math.min(...totals), max: Math.max(...totals), mean: mu, sd: sigma };
@@ -88,17 +91,19 @@ const spreadOf = <K extends SportKeys>({
 //
 // SGP and Sim Value each build their own: the draft ranks by the method's own
 // weight set, so two methods share a league only when their weights match.
+type BuildLeagueProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+  poolStats: PoolStats<K>;
+  config: ValuationConfig<K>;
+};
+
 export const buildLeague = <K extends SportKeys>({
   sport,
   lines,
   poolStats,
   config,
-}: {
-  sport: SportDescriptor<K>;
-  lines: readonly ValuationLine<K>[];
-  poolStats: PoolStats<K>;
-  config: ValuationConfig<K>;
-}): SyntheticLeague<K> => {
+}: BuildLeagueProps<K>): SyntheticLeague<K> => {
   const { teams, rosterSlots } = config;
   const ranked = rankByValue({ sport, lines, poolStats, config });
   const rostered = ranked.slice(0, teams * rosterSlots);

@@ -6,15 +6,17 @@ import { type CategoryWeights, type MethodWeights } from "@vision/sport-basketba
 // column's key so every other column's stored weights stay untouched. Columns
 // come out in registry order, and an empty set is dropped, so default state
 // never reaches the URL.
+type SetColumnWeightsProps = {
+  methodWeights: MethodWeights;
+  key: WeightedMethodKey;
+  weights: CategoryWeights;
+};
+
 export const setColumnWeights = ({
   methodWeights,
   key,
   weights,
-}: {
-  methodWeights: MethodWeights;
-  key: WeightedMethodKey;
-  weights: CategoryWeights;
-}): MethodWeights =>
+}: SetColumnWeightsProps): MethodWeights =>
   WEIGHTED_METHOD_KEYS.reduce<MethodWeights>((acc, method) => {
     const entry = method === key ? weights : methodWeights[method];
     return entry === undefined || Object.keys(entry).length === 0

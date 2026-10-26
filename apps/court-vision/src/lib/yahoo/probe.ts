@@ -7,10 +7,14 @@ import { resolveYahooPlayers } from "@/lib/yahoo/matchPlayers";
 import { type ImportedTeam } from "@/lib/yahoo/types";
 import { parseYahooLeagueUrl } from "@/lib/yahoo/url";
 
-const rosterCount = ({ team }: { team: ImportedTeam }): number =>
+type RosterCountProps = { team: ImportedTeam };
+
+const rosterCount = ({ team }: RosterCountProps): number =>
   team.slots.filter(({ player }) => !!player).length;
 
-const teamLine = ({ team }: { team: ImportedTeam }): string => {
+type TeamLineProps = { team: ImportedTeam };
+
+const teamLine = ({ team }: TeamLineProps): string => {
   const count = rosterCount({ team });
   return `  ${team.name} (${team.managerName ?? "manager hidden"}): ${count} ${count === 1 ? "player" : "players"}`;
 };
@@ -20,13 +24,15 @@ const teamLine = ({ team }: { team: ImportedTeam }): string => {
  * import would do, without writing anything. Player matching only reads.
  * A failure prints its status and sets `process.exitCode`.
  */
+type ProbeYahooLeagueProps = {
+  input: string;
+  logger?: Logger;
+};
+
 export const probeYahooLeague = async ({
   input,
   logger = consoleLogger,
-}: {
-  input: string;
-  logger?: Logger;
-}): Promise<void> => {
+}: ProbeYahooLeagueProps): Promise<void> => {
   const parsed = parseYahooLeagueUrl({ input });
   if (parsed.status !== "ok") {
     logger(`Cannot read a league from "${input}": ${parsed.status}`);

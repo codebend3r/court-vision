@@ -23,18 +23,20 @@ type RosterRowLike = { id: number; lastName: string; fullName: string };
  * league: the pool's players with at least half the typical games, so a
  * handful-of-games call-up doesn't drag the bar down.
  */
-export const buildRosterCharts = <Row extends RosterRowLike>({
-  rows,
-  pool,
-  specs,
-  gamesOf,
-}: {
+type BuildRosterChartsProps<Row extends RosterRowLike> = {
   rows: readonly Row[];
   pool: readonly Row[];
   specs: readonly StatSpec<Row>[];
   // The games behind a row's numbers, which is what qualifies it as baseline.
   gamesOf: (row: Row) => number;
-}): RosterChart[] => {
+};
+
+export const buildRosterCharts = <Row extends RosterRowLike>({
+  rows,
+  pool,
+  specs,
+  gamesOf,
+}: BuildRosterChartsProps<Row>): RosterChart[] => {
   const minimum = qualifyingGames({ games: pool.map(gamesOf) });
   return specs.map((spec) => ({
     key: spec.key,

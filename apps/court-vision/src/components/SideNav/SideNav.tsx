@@ -63,7 +63,9 @@ const NAV_GROUPS: NavGroup[] = [
 
 const SETTINGS_ENTRY: NavEntry = { href: "/settings", label: "Settings", icon: "settings" };
 
-function NavIcon({ name }: { name: NavIconName }) {
+type NavIconProps = { name: NavIconName };
+
+function NavIcon({ name }: NavIconProps) {
   return (
     <svg
       viewBox="0 0 48 48"
@@ -84,13 +86,19 @@ function NavIcon({ name }: { name: NavIconName }) {
 
 // A section owns its own route and every route nested under it, so
 // /players/1234 keeps Players lit. Home ("/") only ever matches itself.
-const isWithin = ({ pathname, href }: { pathname: string; href: string }): boolean =>
+type IsWithinProps = { pathname: string; href: string };
+
+const isWithin = ({ pathname, href }: IsWithinProps): boolean =>
   pathname === href || pathname.startsWith(`${href}/`);
 
-const isEntryActive = ({ entry, pathname }: { entry: NavEntry; pathname: string }): boolean =>
+type IsEntryActiveProps = { entry: NavEntry; pathname: string };
+
+const isEntryActive = ({ entry, pathname }: IsEntryActiveProps): boolean =>
   [entry.href, ...(entry.aliases ?? [])].some((href) => isWithin({ pathname, href }));
 
-function NavItem({ entry, pathname }: { entry: NavEntry; pathname: string }) {
+type NavItemProps = { entry: NavEntry; pathname: string };
+
+function NavItem({ entry, pathname }: NavItemProps) {
   const active = isEntryActive({ entry, pathname });
   return (
     <li className={styles.item}>

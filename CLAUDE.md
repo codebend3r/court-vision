@@ -54,7 +54,7 @@ Court Vision is a fantasy-basketball stats app: Next.js App Router, React 19, Pr
 
 ## TypeScript
 
-- Always use type aliases. Never use interfaces, including in `declare global` augmentations.
+- Always use type aliases. Never use interfaces, including in `declare global` augmentations. The sole exception is `libs/vision-testing/src/matchers.d.ts`: Bun's matcher augmentation requires interface declaration merging, which cannot be expressed as a type alias.
 - Never type a function's or component's parameters inline. Define a named type alias directly above it, called the function's name plus `Props` (`MatchupGate` takes `MatchupGateProps`), and annotate the parameter with it. Do: `type MatchupGateProps = { message: string; children?: ReactNode }` then `function MatchupGate({ message, children }: MatchupGateProps)`. Don't: `function MatchupGate({ message, children }: { message: string; children?: ReactNode })`. This applies to every function that takes an object parameter, not only React components; an audit should flag any inline object type in a parameter position.
 - Use type guards wherever possible, and unit test every type guard function.
 - Never use `any`. Prefer type narrowing or type guards.

@@ -56,13 +56,12 @@ export function PlayersSearchControls({ params }: PlayersSearchControlsProps) {
 
   // Builds from the optimistic selection, not the props, so a second change
   // made before the first lands keeps the first instead of undoing it.
-  const navigate = ({
-    query = q,
-    change = {},
-  }: {
+  type NavigateProps = {
     query?: string;
     change?: Partial<FilterSelection>;
-  }) => {
+  };
+
+  const navigate = ({ query = q, change = {} }: NavigateProps) => {
     search.cancel();
     const href = buildPlayersHref({
       ...params,
@@ -86,7 +85,9 @@ export function PlayersSearchControls({ params }: PlayersSearchControlsProps) {
     navigate({ change: { mode: event.target.value } });
   };
 
-  const onMinimumsChange = ({ checked }: { checked: boolean }) => {
+  type OnMinimumsChangeProps = { checked: boolean };
+
+  const onMinimumsChange = ({ checked }: OnMinimumsChangeProps) => {
     navigate({ change: { minimums: checked } });
   };
 

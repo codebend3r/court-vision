@@ -18,7 +18,9 @@ const profile: Profile = {
 
 describe("withProfile", () => {
   it("runs the body with the resolved profile and returns its result", async () => {
-    const run = vi.fn(async ({ profile: given }: { profile: Profile }) => ({
+    type RunFnProps = { profile: Profile };
+
+    const run = vi.fn(async ({ profile: given }: RunFnProps) => ({
       status: "ok",
       id: given.id,
     }));

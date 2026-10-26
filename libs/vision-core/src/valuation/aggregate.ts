@@ -15,13 +15,15 @@ export type WindowTotals<K extends SportKeys> = Omit<ValuationLine<K>, "playerId
 
 // An appearance is a game with playing time; a DNP contributes nothing but
 // also costs nothing.
-export const isAppearance = ({ playingTime }: { playingTime: number }): boolean => playingTime > 0;
+type IsAppearanceProps = { playingTime: number };
 
-const emptyTotals = <K extends SportKeys>({
-  sport,
-}: {
+export const isAppearance = ({ playingTime }: IsAppearanceProps): boolean => playingTime > 0;
+
+type EmptyTotalsProps<K extends SportKeys> = {
   sport: SportDescriptor<K>;
-}): WindowTotals<K> => ({
+};
+
+const emptyTotals = <K extends SportKeys>({ sport }: EmptyTotalsProps<K>): WindowTotals<K> => ({
   gamesPlayed: 0,
   playingTime: 0,
   stats: recordFromKeys({ keys: sport.valuedStats, value: () => 0 }),
@@ -37,13 +39,15 @@ const emptyTotals = <K extends SportKeys>({
 // Hot path: rolling trends re-aggregate a ten-game window for every plotted
 // point. Each game copies the three running records once and adds into the
 // copies, rather than spreading a fresh object per stat key.
+type AggregateWindowLogsProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  logs: readonly WindowLog<K>[];
+};
+
 export const aggregateWindowLogs = <K extends SportKeys>({
   sport,
   logs,
-}: {
-  sport: SportDescriptor<K>;
-  logs: readonly WindowLog<K>[];
-}): WindowTotals<K> => {
+}: AggregateWindowLogsProps<K>): WindowTotals<K> => {
   const ratios = ratioDefs({ sport });
   return logs.reduce<WindowTotals<K>>((totals, game) => {
     const stats = { ...totals.stats };

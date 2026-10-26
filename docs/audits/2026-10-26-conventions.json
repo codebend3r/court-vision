@@ -1,0 +1,20 @@
+{
+  "baseline": {
+    "revision": "5b46335c9bee5742ea29fbdbc28b32cc4c3a7080",
+    "filesScanned": 742,
+    "inlineObjectParameterTypes": 1063,
+    "affectedFiles": 397,
+    "nonTestLiterals": 750
+  },
+  "repaired": {
+    "filesScanned": 748,
+    "inlineObjectParameterTypes": 0,
+    "plainDivFixtures": 0,
+    "remainingViolations": []
+  },
+  "documentedExceptions": [
+    "libs/vision-testing/src/matchers.d.ts: Bun requires an interface for matcher declaration merging"
+  ],
+  "reproduce": ["bun run lint:params", "bun run test:tooling"],
+  "method": "Babel TypeScript/JSX syntax inspection of apps/*/src and libs/*/src. Counts actual parameter annotations, including callable type signatures, deduplicates nested callbacks by source offset, and excludes generic selectors and return types."
+}

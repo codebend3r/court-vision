@@ -16,13 +16,14 @@ const panels: Record<WaiverView, string> = {
 };
 
 // The tabs are controlled; this harness owns the selection like the view does.
-function Harness({
-  initial,
-  onChange,
-}: {
+type OnChangeProps = { view: WaiverView };
+
+type HarnessProps = {
   initial: WaiverView;
-  onChange: ({ view }: { view: WaiverView }) => void;
-}) {
+  onChange: ({ view }: OnChangeProps) => void;
+};
+
+function Harness({ initial, onChange }: HarnessProps) {
   const [view, setView] = useState<WaiverView>(initial);
   return (
     <WaiverWireTabs
@@ -41,8 +42,10 @@ function Harness({
   );
 }
 
-const renderTabs = ({ initial = "available" }: { initial?: WaiverView } = {}) => {
-  const onChange = vi.fn<({ view }: { view: WaiverView }) => void>();
+type RenderTabsProps = { initial?: WaiverView };
+
+const renderTabs = ({ initial = "available" }: RenderTabsProps = {}) => {
+  const onChange = vi.fn<({ view }: OnChangeProps) => void>();
   render(<Harness initial={initial} onChange={onChange} />);
   return { onChange };
 };

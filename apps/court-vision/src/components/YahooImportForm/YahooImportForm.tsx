@@ -39,7 +39,9 @@ const MY_TEAMS_PATH = "/my-teams";
 // My teams opens the team whose id it is given, so the user lands on their own
 // roster with the players showing. The league has no "my team" only if the
 // import skipped it, in which case the plain list is the best landing.
-const myTeamPath = ({ myTeamId }: { myTeamId: string | null }): string =>
+type MyTeamPathProps = { myTeamId: string | null };
+
+const myTeamPath = ({ myTeamId }: MyTeamPathProps): string =>
   myTeamId === null ? MY_TEAMS_PATH : `${MY_TEAMS_PATH}?open=${encodeURIComponent(myTeamId)}`;
 
 // Where a preview came from: the server reads public leagues itself, and the
@@ -62,36 +64,46 @@ type Failure =
   | { status: "server_not_found"; url: string }
   | { status: "bridge"; reason: BridgeErrorReason | "missing" };
 
-const failureMessage = ({ failure }: { failure: Failure }): string => {
+type FailureMessageProps = { failure: Failure };
+
+const failureMessage = ({ failure }: FailureMessageProps): string => {
   if (failure.status === "bridge") return bridgeFailureMessage({ reason: failure.reason });
   if (failure.status === "server_not_found") return yahooFailureMessage({ status: "not_found" });
   return yahooFailureMessage({ status: failure.status });
 };
 
 // An action that throws (the network dropped) reads as the generic failure.
-const previewOrError = ({ url }: { url: string }): Promise<YahooPreviewResult> =>
+type PreviewOrErrorProps = { url: string };
+
+const previewOrError = ({ url }: PreviewOrErrorProps): Promise<YahooPreviewResult> =>
   previewYahooLeague({ url }).catch((): YahooPreviewResult => ({ status: "error" }));
+
+type ImportOrErrorProps = {
+  url: string;
+  myTeamExternalKey: string;
+};
 
 const importOrError = ({
   url,
   myTeamExternalKey,
-}: {
-  url: string;
-  myTeamExternalKey: string;
-}): Promise<YahooImportResult> =>
+}: ImportOrErrorProps): Promise<YahooImportResult> =>
   importYahooLeague({ url, myTeamExternalKey }).catch((): YahooImportResult => ({
     status: "error",
   }));
 
 // The extension path parses the URL in the browser, then asks the extension to
 // read the league. Every failure here reads as one of the form's messages.
+type FetchThroughExtensionProps = {
+  extensionId: string | null;
+  url: string;
+};
+
 const fetchThroughExtension = async ({
   extensionId,
   url,
-}: {
-  extensionId: string | null;
-  url: string;
-}): Promise<{ status: "ok"; payload: BridgeLeaguePayload } | Failure> => {
+}: FetchThroughExtensionProps): Promise<
+  { status: "ok"; payload: BridgeLeaguePayload } | Failure
+> => {
   const parsed = parseYahooLeagueUrl({ input: url });
   if (parsed.status === "invalid") return { status: "invalid_url" };
   if (parsed.status !== "ok") return { status: parsed.status };
@@ -101,13 +113,15 @@ const fetchThroughExtension = async ({
   return { status: "bridge", reason: fetched.status === "failed" ? fetched.reason : "missing" };
 };
 
+type PreviewThroughExtensionProps = {
+  extensionId: string | null;
+  url: string;
+};
+
 const previewThroughExtension = async ({
   extensionId,
   url,
-}: {
-  extensionId: string | null;
-  url: string;
-}): Promise<YahooPreviewResult | Failure> => {
+}: PreviewThroughExtensionProps): Promise<YahooPreviewResult | Failure> => {
   const fetched = await fetchThroughExtension({ extensionId, url });
   if (fetched.status !== "ok") return fetched;
   return previewYahooSnapshot({ payload: fetched.payload }).catch((): YahooPreviewResult => ({
@@ -118,15 +132,17 @@ const previewThroughExtension = async ({
 // Reads the league through the extension again, so the import stores Yahoo's
 // current rosters rather than the ones the preview showed. It's for freshness,
 // not trust: both reads are client-supplied, and the server validates each.
+type ImportThroughExtensionProps = {
+  extensionId: string | null;
+  url: string;
+  myTeamExternalKey: string;
+};
+
 const importThroughExtension = async ({
   extensionId,
   url,
   myTeamExternalKey,
-}: {
-  extensionId: string | null;
-  url: string;
-  myTeamExternalKey: string;
-}): Promise<YahooImportResult | Failure> => {
+}: ImportThroughExtensionProps): Promise<YahooImportResult | Failure> => {
   const fetched = await fetchThroughExtension({ extensionId, url });
   if (fetched.status !== "ok") return fetched;
   return importYahooLeagueFromSnapshot({ payload: fetched.payload, myTeamExternalKey }).catch(
@@ -134,7 +150,9 @@ const importThroughExtension = async ({
   );
 };
 
-const teamDetails = ({ team }: { team: YahooPreviewTeam }): string =>
+type TeamDetailsProps = { team: YahooPreviewTeam };
+
+const teamDetails = ({ team }: TeamDetailsProps): string =>
   [team.managerName, team.rosterCount === 1 ? "1 player" : `${team.rosterCount} players`]
     .filter((part) => !!part)
     .join(" · ");
@@ -205,20 +223,20 @@ export function YahooImportForm() {
     });
   }, [extensionId]);
 
-  const goTo = ({ next }: { next: Step }) => {
+  type GoToProps = { next: Step };
+
+  const goTo = ({ next }: GoToProps) => {
     shouldMoveFocus.current = true;
     setStep(next);
   };
 
-  const showPreview = ({
-    leagueUrl,
-    preview,
-    mode,
-  }: {
+  type ShowPreviewProps = {
     leagueUrl: string;
     preview: YahooPreview;
     mode: PreviewMode;
-  }) => {
+  };
+
+  const showPreview = ({ leagueUrl, preview, mode }: ShowPreviewProps) => {
     setFailure(null);
     setTeamKey(preview.teams.find((team) => team.isOwnedByCurrentLogin)?.externalKey ?? null);
     goTo({ next: { kind: "team", url: leagueUrl, preview, mode } });
@@ -249,13 +267,12 @@ export function YahooImportForm() {
 
   // `retryUrl` is the missed URL when "Try with the extension" pressed it, and
   // null from the import button, so a stale retry never shows again.
-  const onFindWithExtension = ({
-    leagueUrl,
-    retryUrl: nextRetryUrl,
-  }: {
+  type OnFindWithExtensionProps = {
     leagueUrl: string;
     retryUrl: string | null;
-  }) => {
+  };
+
+  const onFindWithExtension = ({ leagueUrl, retryUrl: nextRetryUrl }: OnFindWithExtensionProps) => {
     if (isPending) return;
     setFailure(null);
     setPendingMode("extension");

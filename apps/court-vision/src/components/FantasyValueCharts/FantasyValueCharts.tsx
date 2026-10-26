@@ -28,7 +28,9 @@ export type FantasyValueChartsProps = ListSortProps & {
 // half-sigma bar are still visibly different.
 const CHART_HEIGHT = 48;
 
-const describeBreakdown = ({ row }: { row: FantasyChartRow }): string =>
+type DescribeBreakdownProps = { row: FantasyChartRow };
+
+const describeBreakdown = ({ row }: DescribeBreakdownProps): string =>
   `${row.fullName} category breakdown: ${row.breakdown
     .map(
       (entry) =>

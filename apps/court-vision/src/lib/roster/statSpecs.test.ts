@@ -14,7 +14,9 @@ const identity = {
   nbaPersonId: null,
 };
 
-const pool = ({ gamesPlayed, fga }: { gamesPlayed: number; fga: number }): PlayerPoolRow => ({
+type PoolProps = { gamesPlayed: number; fga: number };
+
+const pool = ({ gamesPlayed, fga }: PoolProps): PlayerPoolRow => ({
   ...identity,
   stats: {
     gamesPlayed,
@@ -34,7 +36,9 @@ const pool = ({ gamesPlayed, fga }: { gamesPlayed: number; fga: number }): Playe
   },
 });
 
-const spec = ({ key, mode }: { key: string; mode: "average" | "total" }) => {
+type SpecProps = { key: string; mode: "average" | "total" };
+
+const spec = ({ key, mode }: SpecProps) => {
   const found = regularSpecs({ mode }).find((entry) => entry.key === key);
   if (found === undefined) throw new Error(`no spec ${key}`);
   return found;

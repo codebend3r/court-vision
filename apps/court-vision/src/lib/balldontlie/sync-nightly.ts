@@ -35,11 +35,13 @@ const unique = <T>(values: T[]): T[] => [...new Set(values)];
 // exact. Team stats need no write of their own; the teams page sums them from
 // the game logs. Everyone who did not play keeps their rows untouched; the
 // full season sync (`sync:bdl`) remains the manual way to rebuild everything.
-export async function syncNightly(args: {
+type SyncNightlyProps = {
   dates: string[];
   deps?: BdlClientDeps;
   logger?: Logger;
-}): Promise<NightlySyncSummary> {
+};
+
+export async function syncNightly(args: SyncNightlyProps): Promise<NightlySyncSummary> {
   const { dates, deps = {} } = args;
   const logger = args.logger ?? deps.logger ?? silentLogger;
   const nightDeps: BdlClientDeps = { ...deps, logger };
@@ -85,13 +87,17 @@ export async function syncNightly(args: {
 
 const FLAGS = ["--date", "--from", "--to"];
 
-const flagValues = ({ argv, flag }: { argv: string[]; flag: string }): string[] =>
+type FlagValuesProps = { argv: string[]; flag: string };
+
+const flagValues = ({ argv, flag }: FlagValuesProps): string[] =>
   argv.flatMap((arg, index) => (arg === flag ? [argv[index + 1] ?? ""] : []));
 
 // CLI: no args syncs last night (yesterday in New York). `--date YYYY-MM-DD`
 // (repeatable) names nights directly; `--from YYYY-MM-DD [--to YYYY-MM-DD]`
 // catches up a range, and `--to` defaults to last night.
-export const datesFromArgv = ({ argv, now }: { argv: string[]; now: Date }): string[] => {
+type DatesFromArgvProps = { argv: string[]; now: Date };
+
+export const datesFromArgv = ({ argv, now }: DatesFromArgvProps): string[] => {
   const unknown = argv.filter(
     (arg, index) => !FLAGS.includes(arg) && !FLAGS.includes(argv[index - 1] ?? ""),
   );

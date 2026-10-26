@@ -6,18 +6,22 @@
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
+type HasEveryKeyProps<K extends string> = { keys: readonly K[] };
+
 export const hasEveryKey =
-  <K extends string>({ keys }: { keys: readonly K[] }) =>
+  <K extends string>({ keys }: HasEveryKeyProps<K>) =>
   <V>(record: Record<string, V>): record is Record<K, V> =>
     keys.every((key) => Object.hasOwn(record, key));
+
+type RecordFromKeysProps<V, K extends string> = {
+  keys: readonly K[];
+  value: (key: K) => V;
+};
 
 export const recordFromKeys = <K extends string, V>({
   keys,
   value,
-}: {
-  keys: readonly K[];
-  value: (key: K) => V;
-}): Record<K, V> => {
+}: RecordFromKeysProps<V, K>): Record<K, V> => {
   const record: Record<string, V> = Object.fromEntries(keys.map((key) => [key, value(key)]));
   if (!hasEveryKey({ keys })(record)) {
     throw new Error("recordFromKeys: a key went missing while building the record");
@@ -27,13 +31,15 @@ export const recordFromKeys = <K extends string, V>({
 
 // A record keyed by each item's own `key` and valued from the item itself, so
 // a list of specs keyed by a string-literal union becomes a record over it.
+type RecordFromItemsProps<V, I extends { key: string }> = {
+  items: readonly I[];
+  value: (item: I) => V;
+};
+
 export const recordFromItems = <I extends { key: string }, V>({
   items,
   value,
-}: {
-  items: readonly I[];
-  value: (item: I) => V;
-}): Record<I["key"], V> => {
+}: RecordFromItemsProps<V, I>): Record<I["key"], V> => {
   const record: Record<string, V> = Object.fromEntries(
     items.map((item) => [item.key, value(item)]),
   );
@@ -45,7 +51,9 @@ export const recordFromItems = <I extends { key: string }, V>({
 
 // Type guards need the narrowed value as their own parameter, so this one is
 // curried: `isKeyOf({ record })(key)`.
+type IsKeyOfProps<T extends object> = { record: T };
+
 export const isKeyOf =
-  <T extends object>({ record }: { record: T }) =>
+  <T extends object>({ record }: IsKeyOfProps<T>) =>
   (key: PropertyKey): key is keyof T =>
     Object.hasOwn(record, key);

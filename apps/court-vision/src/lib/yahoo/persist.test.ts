@@ -43,22 +43,52 @@ type TeamUpsert = {
   update: Partial<TeamData>;
 };
 
-const leagueFindMany = vi.fn<() => Promise<{ slug: string }[]>>();
+type LeagueFindManyFnProps = Promise<{ slug: string }[]>;
+
+const leagueFindMany = vi.fn<() => LeagueFindManyFnProps>();
 const leagueCreate = vi.fn<() => Promise<League>>();
 const leagueUpdate = vi.fn<() => Promise<League>>();
-const teamCreate = vi.fn<(args: { data: TeamData }) => Promise<{ id: string; slug: string }>>();
-const teamFindMany =
-  vi.fn<() => Promise<{ id: string; slug: string; externalKey: string | null }[]>>();
-const teamUpsert = vi.fn<(args: TeamUpsert) => Promise<{ id: string }>>();
-const teamDeleteMany = vi.fn<() => Promise<{ count: number }>>();
-const slotDeleteMany = vi.fn<() => Promise<{ count: number }>>();
-const slotCreateMany = vi.fn<(args: { data: SlotRow[] }) => Promise<{ count: number }>>();
-const waiverDeleteMany = vi.fn<() => Promise<{ count: number }>>();
-const waiverCreateMany =
-  vi.fn<(args: { data: WaiverRow[]; skipDuplicates: boolean }) => Promise<{ count: number }>>();
-const matchupDeleteMany = vi.fn<() => Promise<{ count: number }>>();
-const matchupCreateMany = vi.fn<(args: { data: MatchupRow[] }) => Promise<{ count: number }>>();
-const profileUpdate = vi.fn<() => Promise<{ id: string }>>();
+type TeamCreateProps = { data: TeamData };
+
+type TeamCreateFnProps = Promise<{ id: string; slug: string }>;
+
+const teamCreate = vi.fn<(args: TeamCreateProps) => TeamCreateFnProps>();
+type TeamFindManyFnProps = Promise<{ id: string; slug: string; externalKey: string | null }[]>;
+
+const teamFindMany = vi.fn<() => TeamFindManyFnProps>();
+type TeamUpsertFnProps = Promise<{ id: string }>;
+
+const teamUpsert = vi.fn<(args: TeamUpsert) => TeamUpsertFnProps>();
+type TeamDeleteManyFnProps = Promise<{ count: number }>;
+
+const teamDeleteMany = vi.fn<() => TeamDeleteManyFnProps>();
+type SlotDeleteManyFnProps = Promise<{ count: number }>;
+
+const slotDeleteMany = vi.fn<() => SlotDeleteManyFnProps>();
+type SlotCreateManyProps = { data: SlotRow[] };
+
+type SlotCreateManyFnProps = Promise<{ count: number }>;
+
+const slotCreateMany = vi.fn<(args: SlotCreateManyProps) => SlotCreateManyFnProps>();
+type WaiverDeleteManyFnProps = Promise<{ count: number }>;
+
+const waiverDeleteMany = vi.fn<() => WaiverDeleteManyFnProps>();
+type WaiverCreateManyProps = { data: WaiverRow[]; skipDuplicates: boolean };
+
+type WaiverCreateManyFnProps = Promise<{ count: number }>;
+
+const waiverCreateMany = vi.fn<(args: WaiverCreateManyProps) => WaiverCreateManyFnProps>();
+type MatchupDeleteManyFnProps = Promise<{ count: number }>;
+
+const matchupDeleteMany = vi.fn<() => MatchupDeleteManyFnProps>();
+type MatchupCreateManyProps = { data: MatchupRow[] };
+
+type MatchupCreateManyFnProps = Promise<{ count: number }>;
+
+const matchupCreateMany = vi.fn<(args: MatchupCreateManyProps) => MatchupCreateManyFnProps>();
+type ProfileUpdateFnProps = Promise<{ id: string }>;
+
+const profileUpdate = vi.fn<() => ProfileUpdateFnProps>();
 const leagueFindUniqueOrThrow = vi.fn<() => Promise<League>>();
 
 const tx = {
@@ -134,7 +164,9 @@ const ref = (overrides: Partial<YahooPlayerRef>): YahooPlayerRef => ({
 // Anthony Black is the one roster player Court Vision knows; everyone else is unmatched.
 const resolved: ResolvedPlayers = { byYahooId: new Map([[ANTHONY_BLACK, 501]]), unmatched: [] };
 
-const teamIdOf = ({ externalKey }: { externalKey: string }): string => `team-${externalKey}`;
+type TeamIdOfProps = { externalKey: string };
+
+const teamIdOf = ({ externalKey }: TeamIdOfProps): string => `team-${externalKey}`;
 
 const leagueRow: League = {
   id: LEAGUE_ID,
@@ -151,6 +183,8 @@ const leagueRow: League = {
   externalUrl: "https://basketball.fantasysports.yahoo.com/nba/106344",
   myTeamId: null,
   syncedAt: new Date("2026-10-16T12:00:00Z"),
+  syncStartedAt: null,
+  syncLeaseUntil: null,
   syncError: null,
   unsupportedCategories: [],
   statCategories: null,
@@ -167,20 +201,23 @@ type SyncArgs = Parameters<typeof syncImportedLeague>[0];
 // Each call runs inside the mocked `prisma.$transaction`, so `client` is typed
 // as Prisma's transaction client while it is the double above at runtime.
 // A server import unless a test names the path.
-const create = ({
-  syncVia = "server",
-  ...args
-}: Omit<CreateArgs, "tx" | "syncVia"> & { syncVia?: CreateArgs["syncVia"] }) =>
+type CreateProps = Omit<CreateArgs, "tx" | "syncVia"> & { syncVia?: CreateArgs["syncVia"] };
+
+const create = ({ syncVia = "server", ...args }: CreateProps) =>
   prisma.$transaction((client) => createImportedLeague({ ...args, syncVia, tx: client }));
 
-const sync = (args: Omit<SyncArgs, "tx">) =>
-  prisma.$transaction((client) => syncImportedLeague({ ...args, tx: client }));
+const sync = (args: Omit<SyncArgs, "tx" | "syncStartedAt">) =>
+  prisma.$transaction((client) =>
+    syncImportedLeague({ ...args, syncStartedAt: new Date("2026-10-26T00:00:00Z"), tx: client }),
+  );
 
 const slotRows = (): SlotRow[] => slotCreateMany.mock.calls[0]?.[0]?.data ?? [];
 
 const blackRows = (): SlotRow[] => slotRows().filter(({ playerId }) => playerId === 501);
 
-const upsertFor = ({ externalKey }: { externalKey: string }): TeamUpsert => {
+type UpsertForProps = { externalKey: string };
+
+const upsertFor = ({ externalKey }: UpsertForProps): TeamUpsert => {
   const upsert = teamUpsert.mock.calls
     .map(([args]) => args)
     .find(({ where }) => where.leagueId_externalKey.externalKey === externalKey);
@@ -188,13 +225,12 @@ const upsertFor = ({ externalKey }: { externalKey: string }): TeamUpsert => {
   return upsert;
 };
 
-const findTeam = ({
-  league,
-  externalKey,
-}: {
+type FindTeamProps = {
   league: ImportedLeague;
   externalKey: string;
-}): ImportedTeam => {
+};
+
+const findTeam = ({ league, externalKey }: FindTeamProps): ImportedTeam => {
   const team = league.teams.find((candidate) => candidate.externalKey === externalKey);
   if (team === undefined) throw new Error(`no team ${externalKey}`);
   return team;
@@ -539,6 +575,8 @@ describe("syncImportedLeague", () => {
         profileId: PROFILE_ID,
         provider: "yahoo",
         externalKey: "478.l.106344",
+        syncStartedAt: new Date("2026-10-26T00:00:00Z"),
+        syncLeaseUntil: { gt: expect.any(Date) },
       },
       data: {
         externalUrl: league.externalUrl,
@@ -627,7 +665,9 @@ describe("syncImportedLeague", () => {
 });
 
 describe("syncImportedLeague matchups", () => {
-  const syncWith = ({ league }: { league: ImportedLeague }) =>
+  type SyncWithProps = { league: ImportedLeague };
+
+  const syncWith = ({ league }: SyncWithProps) =>
     sync({ profileId: PROFILE_ID, leagueId: LEAGUE_ID, league, resolved, waiverRefs: [] });
 
   it("replaces the matchups when Yahoo sent a scoreboard", async () => {

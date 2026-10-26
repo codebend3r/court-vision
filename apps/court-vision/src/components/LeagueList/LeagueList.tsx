@@ -48,7 +48,9 @@ export function LeagueList({ leagues, activeLeagueId }: LeagueListProps) {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const setActive = ({ leagueId }: { leagueId: string }) => {
+  type SetActiveProps = { leagueId: string };
+
+  const setActive = ({ leagueId }: SetActiveProps) => {
     // Already active: a no-op, not another round trip.
     if (leagueId === shownActiveId) return;
     startTransition(async () => {
@@ -63,13 +65,17 @@ export function LeagueList({ leagues, activeLeagueId }: LeagueListProps) {
     });
   };
 
-  const requestDelete = ({ leagueId }: { leagueId: string }) => {
+  type RequestDeleteProps = { leagueId: string };
+
+  const requestDelete = ({ leagueId }: RequestDeleteProps) => {
     setPendingDeleteId(leagueId);
   };
 
   // The card goes only once the server confirms the delete; a failed (or
   // throwing) delete leaves it in place with an alert.
-  const confirmDelete = ({ leagueId }: { leagueId: string }) => {
+  type ConfirmDeleteProps = { leagueId: string };
+
+  const confirmDelete = ({ leagueId }: ConfirmDeleteProps) => {
     setPendingDeleteId(null);
     startTransition(async () => {
       const result = await deleteLeague({ leagueId }).catch(() => null);

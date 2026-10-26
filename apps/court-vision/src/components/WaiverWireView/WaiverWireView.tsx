@@ -121,9 +121,11 @@ export function WaiverWireView({
   // One player's category breakdown against the settled pool. A player with
   // no line in the range has none.
   const { poolStats, config: settledConfig, methodWeights: settledWeights } = valuation;
+  type BreakdownForProps = { playerId: number };
+
   const breakdownFor = useMemo(
     () =>
-      ({ playerId }: { playerId: number }): FantasyCategoryBreakdown[] => {
+      ({ playerId }: BreakdownForProps): FantasyCategoryBreakdown[] => {
         const line = linesById.get(playerId);
         return line
           ? buildCategoryBreakdown({
@@ -202,15 +204,21 @@ export function WaiverWireView({
   // Quiet while the worker values a new pool; it speaks once the values land.
   const announcement = valuation.isPending ? "" : announcements[query.view]();
 
-  const onView = ({ view }: { view: WaiverView }) => {
+  type OnViewProps = { view: WaiverView };
+
+  const onView = ({ view }: OnViewProps) => {
     void setQuery({ view }, { history: "replace" });
   };
 
-  const onPosition = ({ pos }: { pos: WaiverPosition }) => {
+  type OnPositionProps = { pos: WaiverPosition };
+
+  const onPosition = ({ pos }: OnPositionProps) => {
     void setQuery({ pos }, { history: "replace" });
   };
 
-  const onScope = ({ scope }: { scope: CutScope }) => {
+  type OnScopeProps = { scope: CutScope };
+
+  const onScope = ({ scope }: OnScopeProps) => {
     void setQuery({ scope }, { history: "replace" });
   };
 
@@ -221,7 +229,9 @@ export function WaiverWireView({
   };
 
   // Opening a free agent always measures them against my weakest again.
-  const onCompare = ({ fa }: { fa: number }) => {
+  type OnCompareProps = { fa: number };
+
+  const onCompare = ({ fa }: OnCompareProps) => {
     void setQuery({ view: "h2h", fa, mine: null }, { history: "replace" });
   };
 

@@ -55,11 +55,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
-  children,
-}: Readonly<{
+type RootLayoutProps = Readonly<{
   children: ReactNode;
-}>) {
+}>;
+
+export default async function RootLayout({ children }: RootLayoutProps) {
   // One watchlist read per navigation seeds every StarButton on the page, and
   // one rostered read tints every player on your teams. All six reads run
   // together rather than as a waterfall on every navigation: the others

@@ -8,10 +8,9 @@ import { type WaiverRosterEntry, type WaiverRow } from "@/lib/waiverWire/types";
 
 afterEach(cleanup);
 
-const makeEntry = ({
-  isUpgrade = false,
-  ...overrides
-}: Partial<WaiverRow> & { playerId: number; isUpgrade?: boolean }): CutLineEntry => ({
+type MakeEntryProps = Partial<WaiverRow> & { playerId: number; isUpgrade?: boolean };
+
+const makeEntry = ({ isUpgrade = false, ...overrides }: MakeEntryProps): CutLineEntry => ({
   kind: "row",
   isUpgrade,
   row: {
@@ -68,22 +67,30 @@ const fullLine: CutLine = {
   hiddenBelow: 0,
 };
 
+type RenderPanelProps = {
+  line?: CutLine;
+  full?: CutLine;
+  scope?: CutScope;
+  showAll?: boolean;
+  noStats?: WaiverRosterEntry[];
+};
+
 const renderPanel = ({
   line = cutLine,
   full = fullLine,
   scope = "all",
   showAll = false,
   noStats = [],
-}: {
-  line?: CutLine;
-  full?: CutLine;
-  scope?: CutScope;
-  showAll?: boolean;
-  noStats?: WaiverRosterEntry[];
-} = {}) => {
-  const onScope = vi.fn<({ scope }: { scope: CutScope }) => void>();
-  const onShowAll = vi.fn<({ showAll }: { showAll: boolean }) => void>();
-  const onCompare = vi.fn<({ fa }: { fa: number }) => void>();
+}: RenderPanelProps = {}) => {
+  type OnScopeProps = { scope: CutScope };
+
+  const onScope = vi.fn<({ scope }: OnScopeProps) => void>();
+  type OnShowAllProps = { showAll: boolean };
+
+  const onShowAll = vi.fn<({ showAll }: OnShowAllProps) => void>();
+  type OnCompareProps = { fa: number };
+
+  const onCompare = vi.fn<({ fa }: OnCompareProps) => void>();
   render(
     <CutLinePanel
       cutLine={line}
@@ -100,7 +107,9 @@ const renderPanel = ({
   return { onScope, onShowAll, onCompare };
 };
 
-const rowOf = ({ name }: { name: string }): HTMLElement => {
+type RowOfProps = { name: string };
+
+const rowOf = ({ name }: RowOfProps): HTMLElement => {
   const row = screen.getByText(name).closest("tr");
   if (row === null) throw new Error(`expected ${name} in a table row`);
   return row;
@@ -293,7 +302,9 @@ describe("CutLinePanel sorting", () => {
       .flatMap((row) => within(row).queryAllByRole("link").slice(0, 1))
       .map((link) => link.textContent ?? "");
 
-  const header = ({ name }: { name: string }): HTMLElement =>
+  type HeaderProps = { name: string };
+
+  const header = ({ name }: HeaderProps): HTMLElement =>
     screen.getByRole("columnheader", { name: new RegExp(`^${name}`) });
 
   it("opens windowed around the line, with the line drawn", () => {

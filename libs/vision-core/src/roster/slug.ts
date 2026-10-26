@@ -1,7 +1,9 @@
 // Team name → URL slug for /my-teams/<slug> edit routes: "Bench Mob" →
 // "bench-mob". Display names come from the stored team; the slug only
 // locates it.
-export const teamNameToSlug = ({ name }: { name: string }): string =>
+type TeamNameToSlugProps = { name: string };
+
+export const teamNameToSlug = ({ name }: TeamNameToSlugProps): string =>
   name
     .trim()
     .toLowerCase()

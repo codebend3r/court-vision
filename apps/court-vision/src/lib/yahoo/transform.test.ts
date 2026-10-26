@@ -16,19 +16,20 @@ import { type ImportedLeague } from "@/lib/yahoo/types";
 
 const snapshot = yahooLeagueSnapshotSchema.parse(league106344);
 
-const importedLeague = ({ from }: { from: YahooLeagueSnapshot }): ImportedLeague => {
+type ImportedLeagueProps = { from: YahooLeagueSnapshot };
+
+const importedLeague = ({ from }: ImportedLeagueProps): ImportedLeague => {
   const result = toImportedLeague({ snapshot: from });
   if (result.status !== "ok") throw new Error(`expected ok, got ${result.reason}`);
   return result.league;
 };
 
-const withRoster = ({
-  teamKey,
-  players,
-}: {
+type WithRosterProps = {
   teamKey: string;
   players: YahooPlayer[];
-}): YahooLeagueSnapshot => {
+};
+
+const withRoster = ({ teamKey, players }: WithRosterProps): YahooLeagueSnapshot => {
   const league = snapshot.fantasy_content.league;
   return {
     fantasy_content: {
@@ -42,7 +43,9 @@ const withRoster = ({
   };
 };
 
-const player = ({ id, position }: { id: string; position: string | undefined }): YahooPlayer => ({
+type PlayerProps = { id: string; position: string | undefined };
+
+const player = ({ id, position }: PlayerProps): YahooPlayer => ({
   player_id: id,
   name: { full: `Player ${id}` },
   editorial_team_abbr: undefined,

@@ -8,6 +8,7 @@ import { SEASON_LABEL, SEASON_TYPE } from "@/lib/stats/season";
 
 const queryRaw = vi.fn<(strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>>();
 
+vi.mock("@/lib/valuation/season", () => ({ latestSeason: async () => SEASON_LABEL }));
 vi.mock("@/lib/prisma", () => ({
   prisma: { $queryRaw: queryRaw },
 }));
@@ -35,7 +36,9 @@ const defaultParams: AdvancedSearchParams = {
   tab: "advanced",
 };
 
-const buildLog = (overrides: { gameDate?: Date; season?: string; pie?: number | null } = {}) => ({
+type BuildLogProps = { gameDate?: Date; season?: string; pie?: number | null };
+
+const buildLog = (overrides: BuildLogProps = {}) => ({
   gameDate: overrides.gameDate ?? new Date("2025-11-01"),
   season: overrides.season ?? "2025-26",
   pie: overrides.pie === undefined ? 15 : overrides.pie,
@@ -74,17 +77,19 @@ const nullStats: PlayerAdvancedStats = {
   gamesWithData: 0,
 };
 
+type PoolRowProps = {
+  id: number;
+  firstName?: string;
+  lastName?: string;
+  stats?: Partial<PlayerAdvancedStats>;
+};
+
 const poolRow = ({
   id,
   firstName = `Player${id}`,
   lastName = `P${id}`,
   stats = {},
-}: {
-  id: number;
-  firstName?: string;
-  lastName?: string;
-  stats?: Partial<PlayerAdvancedStats>;
-}): AdvancedPlayerRow => ({
+}: PoolRowProps): AdvancedPlayerRow => ({
   id,
   firstName,
   lastName,
@@ -96,7 +101,9 @@ const poolRow = ({
 });
 
 // A pool query result row: identity columns plus flat metric columns.
-const sqlRow = ({ id, pie = null }: { id: number; pie?: number | null }) => ({
+type SqlRowProps = { id: number; pie?: number | null };
+
+const sqlRow = ({ id, pie = null }: SqlRowProps) => ({
   id,
   firstName: "Nikola",
   lastName: "Jokic",
@@ -109,21 +116,23 @@ const sqlRow = ({ id, pie = null }: { id: number; pie?: number | null }) => ({
   pie,
 });
 
-const idsOf = (rows: readonly { id: number }[]): number[] => rows.map((row) => row.id);
+type IdsOfProps = readonly { id: number }[];
+
+const idsOf = (rows: IdsOfProps): number[] => rows.map((row) => row.id);
 
 describe("fetchAdvancedPool", () => {
   beforeEach(() => {
     queryRaw.mockReset();
   });
 
-  it("binds the lastN window and leaves the season scope off", async () => {
+  it("scopes the lastN window to the same regular season as Fantasy", async () => {
     queryRaw.mockResolvedValue([sqlRow({ id: 1, pie: 18.5 })]);
 
     const pool = await fetchAdvancedPool({ range: "last10" });
 
     expect(firstQuery().sql).toContain('"PlayerAdvancedGameLog"');
-    // The season type binds through the shared current-season join.
-    expect(firstQuery().values).toEqual([SEASON_LABEL, SEASON_TYPE, 10, false]);
+    expect(firstQuery().values).toEqual([SEASON_LABEL, SEASON_TYPE, 10, SEASON_LABEL, SEASON_TYPE]);
+    expect(firstQuery().sql.indexOf("al.season =")).toBeLessThan(firstQuery().sql.indexOf("LIMIT"));
     expect(pool).toEqual([
       {
         id: 1,
@@ -143,7 +152,13 @@ describe("fetchAdvancedPool", () => {
 
     await fetchAdvancedPool({ range: "all" });
 
-    expect(firstQuery().values).toEqual([SEASON_LABEL, SEASON_TYPE, 100, true]);
+    expect(firstQuery().values).toEqual([
+      SEASON_LABEL,
+      SEASON_TYPE,
+      100,
+      SEASON_LABEL,
+      SEASON_TYPE,
+    ]);
   });
 
   it("rejects rows whose metrics are not numbers or null", async () => {

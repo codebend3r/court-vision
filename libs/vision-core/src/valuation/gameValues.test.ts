@@ -13,15 +13,13 @@ import {
   makeDatedLog,
 } from "#core/testing/basketball";
 
-const log = ({
-  day,
-  pts = 25,
-  minutes = 34,
-}: {
+type LogProps = {
   day: number;
   pts?: number;
   minutes?: number;
-}): DatedLog =>
+};
+
+const log = ({ day, pts = 25, minutes = 34 }: LogProps): DatedLog =>
   makeDatedLog({
     gameDate: new Date(Date.UTC(2026, 0, day)),
     minutes,
@@ -67,15 +65,13 @@ const config: ValuationConfig = {
   scoring: DEFAULT_POINTS_SCORING,
 };
 
-const build = ({
-  logs,
-  categories = [...CATEGORY_KEYS],
-  methodWeights = {},
-}: {
+type BuildProps = {
   logs: DatedLog[];
   categories?: ValuationConfig["categories"];
   methodWeights?: MethodWeights;
-}) => {
+};
+
+const build = ({ logs, categories = [...CATEGORY_KEYS], methodWeights = {} }: BuildProps) => {
   const args = { line: star, logs, poolStats, config: { ...config, categories }, methodWeights };
   const season = buildFantasyTrend({ ...args, windowGames: null });
   return buildFantasyGameValues({ ...args, season });

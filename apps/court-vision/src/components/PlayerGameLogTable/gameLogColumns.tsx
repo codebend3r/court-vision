@@ -149,13 +149,12 @@ const GAME_COLUMNS: readonly GameLogColumn<GameLogRow>[] = [
 
 type BoxStatKey = Exclude<keyof GameLogRow, "id" | "gameDate" | "matchup" | "winLoss">;
 
-const boxColumn = ({
-  key,
-  label,
-}: {
+type BoxColumnProps = {
   key: BoxStatKey;
   label: string;
-}): GameLogColumn<GameLogRow> => ({
+};
+
+const boxColumn = ({ key, label }: BoxColumnProps): GameLogColumn<GameLogRow> => ({
   key,
   label,
   align: "right",
@@ -198,17 +197,19 @@ const ADVANCED_COLUMNS: readonly GameLogColumn<AdvancedGameLogRow>[] = ADVANCED_
   }),
 );
 
+type ScoreColumnProps = {
+  key: string;
+  label: string;
+  title: string;
+  pick: (fantasy: FantasyGameValue) => number | null;
+};
+
 const scoreColumn = ({
   key,
   label,
   title,
   pick,
-}: {
-  key: string;
-  label: string;
-  title: string;
-  pick: (fantasy: FantasyGameValue) => number | null;
-}): GameLogColumn<FantasyGameLogRow> => {
+}: ScoreColumnProps): GameLogColumn<FantasyGameLogRow> => {
   const value = ({ fantasy }: FantasyGameLogRow): number | null =>
     fantasy === null ? null : pick(fantasy);
   return {
@@ -222,7 +223,9 @@ const scoreColumn = ({
   };
 };
 
-const categoryScoreKey = ({ key }: { key: CategoryColumn["key"] }): string => `${key}-z`;
+type CategoryScoreKeyProps = { key: CategoryColumn["key"] };
+
+const categoryScoreKey = ({ key }: CategoryScoreKeyProps): string => `${key}-z`;
 
 const FANTASY_VALUE_COLUMNS: readonly GameLogColumn<FantasyGameLogRow>[] = [
   scoreColumn({ key: "z", label: "Z", title: "Z-Score for this game", pick: ({ z }) => z }),
@@ -254,11 +257,13 @@ export const ADVANCED_VIEW_COLUMNS: readonly GameLogColumn<AdvancedGameLogRow>[]
 // The fantasy view's three readings of each game: its own value, the rolling
 // value ending at it (the trend chart's line), and each category's Z (the
 // breakdown chart's bars, one game at a time).
+type FantasyViewColumnsProps = {
+  categories: readonly CategoryColumn[];
+};
+
 export const fantasyViewColumns = ({
   categories,
-}: {
-  categories: readonly CategoryColumn[];
-}): GameLogColumn<FantasyGameLogRow>[] => [
+}: FantasyViewColumnsProps): GameLogColumn<FantasyGameLogRow>[] => [
   ...GAME_COLUMNS,
   ...FANTASY_VALUE_COLUMNS,
   ...categories.map((category) =>

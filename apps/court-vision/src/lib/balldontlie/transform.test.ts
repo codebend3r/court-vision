@@ -457,7 +457,9 @@ describe("toPlayerInput", () => {
 });
 
 describe("toPlayerInput measurements", () => {
-  const measured = ({ height, weight }: { height: string; weight: string }) =>
+  type MeasuredProps = { height: string; weight: string };
+
+  const measured = ({ height, weight }: MeasuredProps) =>
     toPlayerInput({ player: { id: 1, first_name: "Test", last_name: "Player", height, weight } });
 
   it("normalizes feet/inches and pounds", () => {

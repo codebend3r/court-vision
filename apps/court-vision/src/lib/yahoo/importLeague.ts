@@ -11,6 +11,7 @@ import { formatLeagueMeta } from "@/lib/leagues/format";
 import { toLeagueSummary } from "@/lib/leagues/queries";
 import { type LeagueSyncVia } from "@/lib/leagues/types";
 import { prisma } from "@/lib/prisma";
+import { lockProfile } from "@/lib/leagues/locks";
 import { hasPrismaCode, PRISMA_UNIQUE_VIOLATION } from "@/lib/prismaErrors";
 import { YAHOO_PROVIDER, YAHOO_SYNC_THROTTLE_MS } from "@/lib/yahoo/constants";
 import { loadYahooLeague, type YahooLoadFailure, type YahooLoadResult } from "@/lib/yahoo/load";
@@ -57,11 +58,11 @@ export type StoredSyncResult =
 // and waivers, so it gets more room than Prisma's 5 s interactive default.
 const TRANSACTION_OPTIONS = { timeout: 30_000 };
 
-export const loadFailureToResult = ({
-  failure,
-}: {
+type LoadFailureToResultProps = {
   failure: YahooLoadFailure;
-}): LoadFailureResult => {
+};
+
+export const loadFailureToResult = ({ failure }: LoadFailureToResultProps): LoadFailureResult => {
   if (failure.status !== "unsupported") return failure;
   return failure.reason === "highscore"
     ? { status: "highscore" }
@@ -71,13 +72,15 @@ export const loadFailureToResult = ({
 // Reads the league a pasted URL names. Every action refetches from Yahoo
 // rather than trusting anything the client was shown in a preview. A preview
 // shows no waivers, so it skips paging them.
+type LoadLeagueFromUrlProps = {
+  url: string;
+  includeWaivers: boolean;
+};
+
 export const loadLeagueFromUrl = async ({
   url,
   includeWaivers,
-}: {
-  url: string;
-  includeWaivers: boolean;
-}): Promise<LoadedLeague | YahooFailure> => {
+}: LoadLeagueFromUrlProps): Promise<LoadedLeague | YahooFailure> => {
   const parsed = parseYahooLeagueUrl({ input: url });
   if (parsed.status === "invalid") return { status: "invalid_url" };
   if (parsed.status !== "ok") return { status: parsed.status };
@@ -93,18 +96,22 @@ const playerRefs = ({ league, waiverRefs }: LoadedLeague): YahooPlayerRef[] => [
 
 // `writeMappings` is true only for data the server fetched itself; matches
 // from a client-supplied snapshot must never reach every user's imports.
-const resolvePlayers = ({
-  loaded,
-  writeMappings,
-}: {
+type ResolvePlayersProps = {
   loaded: LoadedLeague;
   writeMappings: boolean;
-}): Promise<ResolvedPlayers> => resolveYahooPlayers({ refs: playerRefs(loaded), writeMappings });
+};
 
-const unmatchedNames = ({ resolved }: { resolved: ResolvedPlayers }): string[] =>
+const resolvePlayers = ({ loaded, writeMappings }: ResolvePlayersProps): Promise<ResolvedPlayers> =>
+  resolveYahooPlayers({ refs: playerRefs(loaded), writeMappings });
+
+type UnmatchedNamesProps = { resolved: ResolvedPlayers };
+
+const unmatchedNames = ({ resolved }: UnmatchedNamesProps): string[] =>
   resolved.unmatched.map(({ fullName }) => fullName);
 
-export const toYahooPreview = ({ league }: { league: ImportedLeague }): YahooPreview => ({
+type ToYahooPreviewProps = { league: ImportedLeague };
+
+export const toYahooPreview = ({ league }: ToYahooPreviewProps): YahooPreview => ({
   name: league.name,
   logoUrl: league.logoUrl,
   meta: formatLeagueMeta({
@@ -126,15 +133,13 @@ export const toYahooPreview = ({ league }: { league: ImportedLeague }): YahooPre
 });
 
 // The caller's existing import of this Yahoo league, if any.
-const findImported = ({
-  client,
-  profileId,
-  externalKey,
-}: {
+type FindImportedProps = {
   client: Prisma.TransactionClient;
   profileId: string;
   externalKey: string;
-}) =>
+};
+
+const findImported = ({ client, profileId, externalKey }: FindImportedProps) =>
   client.league.findFirst({
     where: { profileId, provider: YAHOO_PROVIDER, externalKey },
     select: { slug: true },
@@ -144,19 +149,21 @@ const findImported = ({
  * Imports a league already read from Yahoo: refuses a team key outside it, a
  * duplicate and the league cap, then matches its players and writes it.
  */
+type ImportLoadedLeagueProps = {
+  profileId: string;
+  loaded: LoadedLeague;
+  myTeamExternalKey: string;
+  writeMappings: boolean;
+  syncVia: LeagueSyncVia;
+};
+
 export const importLoadedLeague = async ({
   profileId,
   loaded,
   myTeamExternalKey,
   writeMappings,
   syncVia,
-}: {
-  profileId: string;
-  loaded: LoadedLeague;
-  myTeamExternalKey: string;
-  writeMappings: boolean;
-  syncVia: LeagueSyncVia;
-}): Promise<YahooImportResult> => {
+}: ImportLoadedLeagueProps): Promise<YahooImportResult> => {
   const { league, waiverRefs } = loaded;
   // Checked before matching, so a forged key writes nothing at all.
   if (!league.teams.some(({ externalKey }) => externalKey === myTeamExternalKey)) {
@@ -172,6 +179,7 @@ export const importLoadedLeague = async ({
   const resolved = await resolvePlayers({ loaded, writeMappings });
   try {
     return await prisma.$transaction(async (tx): Promise<YahooImportResult> => {
+      await lockProfile({ tx, profileId });
       const existing = await findImported({
         client: tx,
         profileId,
@@ -211,11 +219,11 @@ export const importLoadedLeague = async ({
 // When the league last tried to sync, in ms. A success stamps `syncedAt`; a
 // failure leaves `syncError` set and bumps `updatedAt` with that write, so a
 // league Yahoo keeps failing on is throttled as well.
-const lastSyncAttempt = ({
-  league,
-}: {
+type LastSyncAttemptProps = {
   league: { syncedAt: Date | null; syncError: string | null; updatedAt: Date };
-}): number =>
+};
+
+const lastSyncAttempt = ({ league }: LastSyncAttemptProps): number =>
   Math.max(
     league.syncedAt?.getTime() ?? 0,
     league.syncError === null ? 0 : league.updatedAt.getTime(),
@@ -227,13 +235,15 @@ const lastSyncAttempt = ({
  * Whether to refuse on `syncVia` or `throttled`, and in which order, is the
  * caller's to decide.
  */
+type ReadStoredSyncProps = {
+  profileId: string;
+  leagueId: string;
+};
+
 export const readStoredSync = async ({
   profileId,
   leagueId,
-}: {
-  profileId: string;
-  leagueId: string;
-}): Promise<StoredSyncResult> => {
+}: ReadStoredSyncProps): Promise<StoredSyncResult> => {
   const stored = await prisma.league.findFirst({
     where: { id: leagueId, profileId },
     select: {
@@ -265,16 +275,23 @@ export const readStoredSync = async ({
 // The league keeps its last good data on any failure; only the reason is
 // recorded, in the import page's copy, so the league page can say why it is
 // stale.
+type RecordSyncFailureProps = {
+  profileId: string;
+  leagueId: string;
+  message: string;
+  syncStartedAt: Date;
+};
+
 const recordSyncFailure = async ({
   profileId,
   leagueId,
   message,
-}: {
-  profileId: string;
-  leagueId: string;
-  message: string;
-}): Promise<void> => {
-  await prisma.league.update({ where: { id: leagueId, profileId }, data: { syncError: message } });
+  syncStartedAt,
+}: RecordSyncFailureProps): Promise<void> => {
+  await prisma.league.updateMany({
+    where: { id: leagueId, profileId, syncStartedAt },
+    data: { syncError: message },
+  });
 };
 
 /**
@@ -282,20 +299,25 @@ const recordSyncFailure = async ({
  * stored copy never offers the extension: this league is already imported, so
  * importing it again would only be refused as a duplicate.
  */
+type RecordLoadFailureProps = {
+  profileId: string;
+  leagueId: string;
+  failure: YahooLoadFailure;
+  syncStartedAt: Date;
+};
+
 export const recordLoadFailure = async ({
   profileId,
   leagueId,
   failure,
-}: {
-  profileId: string;
-  leagueId: string;
-  failure: YahooLoadFailure;
-}): Promise<LoadFailureResult> => {
+  syncStartedAt,
+}: RecordLoadFailureProps): Promise<LoadFailureResult> => {
   const result = loadFailureToResult({ failure });
   await recordSyncFailure({
     profileId,
     leagueId,
     message: yahooFailureMessage({ status: result.status, extensionAvailable: false }),
+    syncStartedAt,
   });
   return result;
 };
@@ -305,23 +327,27 @@ export const recordLoadFailure = async ({
  * failure is recorded on the league, which keeps its last good data.
  * `storedExternalKey` is the league's key as `readStoredSync` read it.
  */
+type SyncLoadedLeagueProps = {
+  profileId: string;
+  leagueId: string;
+  loaded: LoadedLeague;
+  writeMappings: boolean;
+  storedExternalKey: string;
+  syncStartedAt: Date;
+};
+
 export const syncLoadedLeague = async ({
   profileId,
   leagueId,
   loaded,
   writeMappings,
   storedExternalKey,
-}: {
-  profileId: string;
-  leagueId: string;
-  loaded: LoadedLeague;
-  writeMappings: boolean;
-  storedExternalKey: string;
-}): Promise<YahooSyncResult> => {
+  syncStartedAt,
+}: SyncLoadedLeagueProps): Promise<YahooSyncResult> => {
   // Yahoo answers a reused league id with another season's league, whose
   // key the guarded update below would refuse; say why up front instead.
   if (loaded.league.externalKey !== storedExternalKey) {
-    await recordSyncFailure({ profileId, leagueId, message: KEY_CHANGED_MESSAGE });
+    await recordSyncFailure({ profileId, leagueId, message: KEY_CHANGED_MESSAGE, syncStartedAt });
     return { status: "error" };
   }
 
@@ -336,6 +362,7 @@ export const syncLoadedLeague = async ({
           resolved,
           waiverRefs: loaded.waiverRefs,
           leagueId,
+          syncStartedAt,
         }),
       TRANSACTION_OPTIONS,
     );
@@ -347,7 +374,12 @@ export const syncLoadedLeague = async ({
   } catch {
     // A write that failed after a good load (a timeout, or the guarded
     // update's P2025) rolls back, so the league still holds its old data.
-    await recordSyncFailure({ profileId, leagueId, message: GENERIC_SYNC_ERROR_MESSAGE });
+    await recordSyncFailure({
+      profileId,
+      leagueId,
+      message: GENERIC_SYNC_ERROR_MESSAGE,
+      syncStartedAt,
+    });
     return { status: "error" };
   }
 };

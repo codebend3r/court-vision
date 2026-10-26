@@ -128,5 +128,7 @@ const cachedRoster = unstable_cache(
   PLAYERS_CACHE_OPTIONS,
 );
 
-export const getTeamRoster = ({ abbr }: { abbr: string }): Promise<TeamRosterPlayer[]> =>
+type GetTeamRosterProps = { abbr: string };
+
+export const getTeamRoster = ({ abbr }: GetTeamRosterProps): Promise<TeamRosterPlayer[]> =>
   cachedRoster(abbr);

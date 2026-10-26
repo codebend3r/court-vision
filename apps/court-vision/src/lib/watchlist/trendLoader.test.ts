@@ -20,7 +20,9 @@ vi.mock("@/lib/valuation/loader", () => ({ getFantasyPool }));
 // evaluates, so a static import would capture the real `unstable_cache`.
 const { getTrendSeries } = await import("@/lib/watchlist/trendLoader");
 
-const log = ({ day, pts }: { day: number; pts: number }) => ({
+type LogProps = { day: number; pts: number };
+
+const log = ({ day, pts }: LogProps) => ({
   gameDate: new Date(Date.UTC(2026, 0, day)),
   minutes: 30,
   pts,

@@ -61,7 +61,9 @@ const COUNT_BOUNDS: Record<CountField, CountBounds> = {
   rosterSlots: LEAGUE_BOUNDS.slots,
 };
 
-const buildInitialState = ({ league }: { league: LeagueSummary | null }): LeagueFormState => {
+type BuildInitialStateProps = { league: LeagueSummary | null };
+
+const buildInitialState = ({ league }: BuildInitialStateProps): LeagueFormState => {
   const scoringType = league?.scoringType ?? "h2h_categories";
   const config: LeagueScoringConfig =
     league === null
@@ -81,11 +83,11 @@ const buildInitialState = ({ league }: { league: LeagueSummary | null }): League
   };
 };
 
-const errorMessageFor = ({
-  status,
-}: {
+type ErrorMessageForProps = {
   status: "limit" | "invalid" | "unauthenticated" | "error";
-}): string => {
+};
+
+const errorMessageFor = ({ status }: ErrorMessageForProps): string => {
   if (status === "limit") return `You already have ${MAX_LEAGUES} leagues.`;
   if (status === "invalid") return "Check the league name and settings.";
   return "Something went wrong — try again.";
@@ -98,27 +100,32 @@ const errorMessageFor = ({
 // exists purely so this lookup works, and only covers the fields that are
 // committed on blur; the name/scoringType/category-checkbox fields are
 // already controlled, so `state` for those is never stale.
-const readCount = ({ formData, field }: { formData: FormData; field: CountField }): number =>
+type ReadCountProps = { formData: FormData; field: CountField };
+
+const readCount = ({ formData, field }: ReadCountProps): number =>
   normalizeCount({
     raw: formData.get(field),
     bounds: COUNT_BOUNDS[field],
   });
 
-const readWeight = ({ formData, category }: { formData: FormData; category: Category }): number =>
+type ReadWeightProps = { formData: FormData; category: Category };
+
+const readWeight = ({ formData, category }: ReadWeightProps): number =>
   normalizeWeight({ raw: formData.get(`weight:${category}`) });
 
-const readScore = ({ formData, stat }: { formData: FormData; stat: ScoringStatKey }): number =>
+type ReadScoreProps = { formData: FormData; stat: ScoringStatKey };
+
+const readScore = ({ formData, stat }: ReadScoreProps): number =>
   normalizeScore({ raw: formData.get(`scoring:${stat}`), stat });
 
 // Builds the type-specific config from the live form, dropping weight entries
 // equal to 1 (the default) so the stored config stays minimal.
-const buildScoringConfig = ({
-  state,
-  formData,
-}: {
+type BuildScoringConfigProps = {
   state: LeagueFormState;
   formData: FormData;
-}): LeagueScoringConfig => {
+};
+
+const buildScoringConfig = ({ state, formData }: BuildScoringConfigProps): LeagueScoringConfig => {
   if (state.scoringType === "h2h_points") {
     const scoring = SCORED_KEYS.reduce<ScoringSettings>(
       (acc, stat) => ({ ...acc, [stat]: readScore({ formData, stat }) }),
@@ -154,8 +161,10 @@ export function LeagueForm({ league }: LeagueFormProps) {
     setState((prev) => ({ ...prev, scoringType: value }));
   };
 
+  type OnCountBlurProps = { field: CountField };
+
   const onCountBlur =
-    ({ field }: { field: CountField }) =>
+    ({ field }: OnCountBlurProps) =>
     (event: FocusEvent<HTMLInputElement>) => {
       const value = normalizeCount({
         raw: event.target.value,
@@ -164,7 +173,9 @@ export function LeagueForm({ league }: LeagueFormProps) {
       setState((prev) => ({ ...prev, [field]: value }));
     };
 
-  const toggleCategory = ({ category }: { category: Category }) => {
+  type ToggleCategoryProps = { category: Category };
+
+  const toggleCategory = ({ category }: ToggleCategoryProps) => {
     const included = state.categories.some((key) => key === category);
     if (included && state.categories.length <= 1) return;
     setState((prev) => ({
@@ -175,8 +186,10 @@ export function LeagueForm({ league }: LeagueFormProps) {
     }));
   };
 
+  type OnWeightBlurProps = { category: Category };
+
   const onWeightBlur =
-    ({ category }: { category: Category }) =>
+    ({ category }: OnWeightBlurProps) =>
     (event: FocusEvent<HTMLInputElement>) => {
       const snapped = normalizeWeight({ raw: event.target.value });
       setState((prev) => ({
@@ -188,8 +201,10 @@ export function LeagueForm({ league }: LeagueFormProps) {
       }));
     };
 
+  type OnScoringBlurProps = { stat: ScoringStatKey };
+
   const onScoringBlur =
-    ({ stat }: { stat: ScoringStatKey }) =>
+    ({ stat }: OnScoringBlurProps) =>
     (event: FocusEvent<HTMLInputElement>) => {
       const score = normalizeScore({ raw: event.target.value, stat });
       setState((prev) => ({ ...prev, scoring: { ...prev.scoring, [stat]: score } }));

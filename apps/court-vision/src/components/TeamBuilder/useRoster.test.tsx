@@ -20,7 +20,9 @@ const guard: FantasyTeamPlayer = {
 
 const center: FantasyTeamPlayer = { ...guard, playerId: 2, fullName: "Mitchell Robinson" };
 
-function Harness({ team }: { team: FantasyTeam | null }) {
+type HarnessProps = { team: FantasyTeam | null };
+
+function Harness({ team }: HarnessProps) {
   const roster = useRoster({ team });
   const pg = roster.slots.find((slot) => slot.id === "PG-1");
   const c = roster.slots.find((slot) => slot.id === "C-1");

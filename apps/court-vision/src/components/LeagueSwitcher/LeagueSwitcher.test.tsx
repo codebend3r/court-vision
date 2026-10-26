@@ -6,18 +6,24 @@ import { LeagueSwitcher } from "@/components/LeagueSwitcher/LeagueSwitcher";
 import { useLeaguesStore } from "@/lib/leagues/store";
 import { type LeagueSummary } from "@/lib/leagues/types";
 
-const setActiveLeagueMock = vi.fn(async (_args: { leagueId: string }) => ({ status: "ok" }));
+type SetActiveLeagueMockFnProps = { leagueId: string };
+
+const setActiveLeagueMock = vi.fn(async (_args: SetActiveLeagueMockFnProps) => ({ status: "ok" }));
 const refreshMock = vi.fn();
 
+type SetActiveLeagueProps = { leagueId: string };
+
 vi.mock("@/lib/leagues/actions", () => ({
-  setActiveLeague: (args: { leagueId: string }) => setActiveLeagueMock(args),
+  setActiveLeague: (args: SetActiveLeagueProps) => setActiveLeagueMock(args),
 }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: refreshMock }),
 }));
 
-const league = ({ id, name }: { id: string; name: string }): LeagueSummary => ({
+type LeagueProps = { id: string; name: string };
+
+const league = ({ id, name }: LeagueProps): LeagueSummary => ({
   id,
   name,
   slug: name.toLowerCase(),
@@ -148,7 +154,7 @@ describe("LeagueSwitcher", () => {
   it("closes without restoring focus when Tab moves focus out of the switcher", async () => {
     const user = userEvent.setup();
     render(
-      <div>
+      <div className="switcher-test">
         <LeagueSwitcher />
         <button type="button">After</button>
       </div>,

@@ -23,17 +23,18 @@ const PAGE_PLAYERS_PATH: readonly string[] = ["fantasy_content", "league", "play
 const ROSTER_PLAYERS_PATH: readonly string[] = ["team", "roster", "players"];
 
 // The value at `path`, or `undefined` once a step isn't an object.
-const valueAt = ({ value, path }: { value: unknown; path: readonly string[] }): unknown =>
+type ValueAtProps = { value: unknown; path: readonly string[] };
+
+const valueAt = ({ value, path }: ValueAtProps): unknown =>
   path.reduce<unknown>((current, key) => (isRecord(current) ? current[key] : undefined), value);
 
 // The array at `path`; anything else counts as empty, and zod judges it later.
-const arrayAt = ({
-  value,
-  path,
-}: {
+type ArrayAtProps = {
   value: unknown;
   path: readonly string[];
-}): readonly unknown[] => {
+};
+
+const arrayAt = ({ value, path }: ArrayAtProps): readonly unknown[] => {
   const found = valueAt({ value, path });
   return Array.isArray(found) ? found : [];
 };
@@ -43,11 +44,11 @@ const arrayAt = ({
  * team's roster, reading only array lengths from the raw payload. Runs before
  * any zod parse, so a forged snapshot is refused before it costs real work.
  */
-export const checkSnapshotShape = ({
-  payload,
-}: {
+type CheckSnapshotShapeProps = {
   payload: BridgeLeaguePayload;
-}): SnapshotShape => {
+};
+
+export const checkSnapshotShape = ({ payload }: CheckSnapshotShapeProps): SnapshotShape => {
   const { snapshot, waiverPages } = payload;
   const teams = arrayAt({ value: snapshot, path: TEAMS_PATH });
   const isOver =

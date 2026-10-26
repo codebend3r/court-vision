@@ -9,7 +9,9 @@ const DEFAULT_PATH = "/";
 // origin comparison the URL parser answers for us.
 const BASE_ORIGIN = "https://placeholder.invalid";
 
-export function safeNextPath({ next }: { next: string | null | undefined }): string {
+type SafeNextPathProps = { next: string | null | undefined };
+
+export function safeNextPath({ next }: SafeNextPathProps): string {
   if (typeof next !== "string" || next.length === 0) {
     return DEFAULT_PATH;
   }

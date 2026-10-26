@@ -1,4 +1,6 @@
-export const parseMinutes = ({ value }: { value: number | string }): number => {
+type ParseMinutesProps = { value: number | string };
+
+export const parseMinutes = ({ value }: ParseMinutesProps): number => {
   if (typeof value === "number") {
     return value;
   }
@@ -15,7 +17,9 @@ export const parseMinutes = ({ value }: { value: number | string }): number => {
   return Number.isNaN(parsed) ? 0 : parsed;
 };
 
-export const parseGameDate = ({ value }: { value: string }): Date => {
+type ParseGameDateProps = { value: string };
+
+export const parseGameDate = ({ value }: ParseGameDateProps): Date => {
   if (!value.includes("T")) {
     return new Date(`${value}T00:00:00Z`);
   }
@@ -25,7 +29,9 @@ export const parseGameDate = ({ value }: { value: string }): Date => {
 };
 
 // Provider strings use "" (or whitespace) for "no value"; store null instead.
-export const blankToNull = ({ value }: { value: string | null | undefined }): string | null => {
+type BlankToNullProps = { value: string | null | undefined };
+
+export const blankToNull = ({ value }: BlankToNullProps): string | null => {
   const trimmed = (value ?? "").trim();
   return trimmed === "" ? null : trimmed;
 };

@@ -27,17 +27,19 @@ export type HeadToHead = { rows: HeadToHeadRow[]; faWins: number; categoryCount:
 // since been rostered falls back to the swap board's top pick, then the best
 // free agent; a player of mine who is gone falls back to my weakest. Null when
 // either side has nobody to show.
+type ResolvePairProps = {
+  model: WaiverModel;
+  swapTop: WaiverRow | null;
+  fa: number | null;
+  mine: number | null;
+};
+
 export const resolvePair = ({
   model,
   swapTop,
   fa,
   mine,
-}: {
-  model: WaiverModel;
-  swapTop: WaiverRow | null;
-  fa: number | null;
-  mine: number | null;
-}): HeadToHeadPair | null => {
+}: ResolvePairProps): HeadToHeadPair | null => {
   const freeAgent =
     model.freePool.find((candidate) => candidate.playerId === fa) ??
     swapTop ??
@@ -48,28 +50,29 @@ export const resolvePair = ({
   return freeAgent && mineRow ? { fa: freeAgent, mine: mineRow } : null;
 };
 
-const perGameFor = ({
-  line,
-  category,
-}: {
+type PerGameForProps = {
   line: FantasyStatLine | undefined;
   category: Category;
-}): number => (line ? categoryPerGame({ line, category }) : 0);
+};
 
-const winnerOf = ({ fa, mine }: { fa: number; mine: number }): HeadToHeadRow["winner"] => {
+const perGameFor = ({ line, category }: PerGameForProps): number =>
+  line ? categoryPerGame({ line, category }) : 0;
+
+type WinnerOfProps = { fa: number; mine: number };
+
+const winnerOf = ({ fa, mine }: WinnerOfProps): HeadToHeadRow["winner"] => {
   if (fa === mine) return "tie";
   return fa > mine ? "fa" : "mine";
 };
 
 // Whether a change in my team's total helps: up for higher-is-better
 // categories, down for lower-is-better ones, and neither when nothing moves.
-const improves = ({
-  delta,
-  direction,
-}: {
+type ImprovesProps = {
   delta: number;
   direction: Direction;
-}): boolean | null => {
+};
+
+const improves = ({ delta, direction }: ImprovesProps): boolean | null => {
   if (delta === 0) return null;
   return direction === "higher" ? delta > 0 : delta < 0;
 };
@@ -77,19 +80,23 @@ const improves = ({
 // One row per league category, in the breakdown's order: each player's
 // per-game number, who wins it on the method's score, and what the swap does
 // to my team's per-game total.
+type BreakdownForProps = { playerId: number };
+
+type BuildHeadToHeadProps = {
+  pair: HeadToHeadPair;
+  linesById: ReadonlyMap<number, FantasyStatLine>;
+  rosterIds: readonly number[];
+  breakdownFor: ({ playerId }: BreakdownForProps) => FantasyCategoryBreakdown[];
+  scoreKey: ScoreKey;
+};
+
 export const buildHeadToHead = ({
   pair,
   linesById,
   rosterIds,
   breakdownFor,
   scoreKey,
-}: {
-  pair: HeadToHeadPair;
-  linesById: ReadonlyMap<number, FantasyStatLine>;
-  rosterIds: readonly number[];
-  breakdownFor: ({ playerId }: { playerId: number }) => FantasyCategoryBreakdown[];
-  scoreKey: ScoreKey;
-}): HeadToHead => {
+}: BuildHeadToHeadProps): HeadToHead => {
   const faLine = linesById.get(pair.fa.playerId);
   const mineLine = linesById.get(pair.mine.playerId);
   // Each roster player once, never the free agent, in the order given.
@@ -137,10 +144,10 @@ export const buildHeadToHead = ({
 };
 
 // "Wendell Carter Jr. wins 5 of 9".
-export const headToHeadSummary = ({
-  pair,
-  result,
-}: {
+type HeadToHeadSummaryProps = {
   pair: HeadToHeadPair;
   result: HeadToHead;
-}): string => `${pair.fa.fullName} wins ${result.faWins} of ${result.categoryCount}`;
+};
+
+export const headToHeadSummary = ({ pair, result }: HeadToHeadSummaryProps): string =>
+  `${pair.fa.fullName} wins ${result.faWins} of ${result.categoryCount}`;

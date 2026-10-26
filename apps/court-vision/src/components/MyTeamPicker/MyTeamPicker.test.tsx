@@ -7,15 +7,19 @@ import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 const setMyTeam = vi.fn();
 const refreshMock = vi.fn();
 
+type SetMyTeamProps = { leagueId: string; teamId: string };
+
 vi.mock("@/lib/yahoo/actions", () => ({
-  setMyTeam: (args: { leagueId: string; teamId: string }) => setMyTeam(args),
+  setMyTeam: (args: SetMyTeamProps) => setMyTeam(args),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: refreshMock }) }));
 
 import { MyTeamPicker } from "@/components/MyTeamPicker/MyTeamPicker";
 import { MAIN_CONTENT_ID } from "@vision/ui/components/SkipLink/SkipLink";
 
-const team = ({ id, name }: { id: string; name: string }): FantasyTeam => ({
+type TeamProps = { id: string; name: string };
+
+const team = ({ id, name }: TeamProps): FantasyTeam => ({
   id,
   name,
   slug: name.toLowerCase(),

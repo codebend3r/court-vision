@@ -4,7 +4,9 @@ import { loadFantasyTrendLogs } from "@/lib/valuation/actions";
 import { type FantasyTrendLogsResult } from "@/lib/valuation/trendLogs";
 import { type FantasyStatLine } from "@/lib/valuation/types";
 
-type LoadTrendLogs = (args: { playerIds: number[] }) => Promise<FantasyTrendLogsResult>;
+type LoadTrendLogsProps = { playerIds: number[] };
+
+type LoadTrendLogs = (args: LoadTrendLogsProps) => Promise<FantasyTrendLogsResult>;
 
 type TrendLogsRequest = {
   idsKey: string;
@@ -20,17 +22,19 @@ type TrendLogsRequest = {
 // set, not the freshly scored row objects, so sorting and weight changes
 // reuse it; a newly valued pool (`lines`) invalidates it so a refreshed
 // season or range never reads logs from the previous payload.
+type UseTrendLogsProps = {
+  enabled: boolean;
+  pageRows: readonly { playerId: number }[];
+  lines: readonly FantasyStatLine[];
+  load?: LoadTrendLogs;
+};
+
 export const useTrendLogs = ({
   enabled,
   pageRows,
   lines,
   load = loadFantasyTrendLogs,
-}: {
-  enabled: boolean;
-  pageRows: readonly { playerId: number }[];
-  lines: readonly FantasyStatLine[];
-  load?: LoadTrendLogs;
-}): Promise<FantasyTrendLogsResult> | null => {
+}: UseTrendLogsProps): Promise<FantasyTrendLogsResult> | null => {
   const idsKey = pageRows
     .map((row) => row.playerId)
     .toSorted((a, b) => a - b)

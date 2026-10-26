@@ -11,15 +11,13 @@ export type ListTooltipEntry = {
 // The hover card the many-line trend charts share (standings, watchlist): a
 // muted title over a swatch · name · value list, with an optional "+N more"
 // line when the chart trims the list.
-export function ListTooltip({
-  title,
-  entries,
-  more = 0,
-}: {
+type ListTooltipProps = {
   title: string;
   entries: readonly ListTooltipEntry[];
   more?: number;
-}) {
+};
+
+export function ListTooltip({ title, entries, more = 0 }: ListTooltipProps) {
   return (
     <div className={styles.tooltip}>
       <p className={styles.tooltipDate}>{title}</p>

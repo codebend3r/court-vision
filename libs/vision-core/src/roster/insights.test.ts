@@ -9,7 +9,9 @@ import {
   type StatKey,
 } from "#core/testing/basketball";
 
-const buildPlayerInsights = ({ lines }: { lines: readonly FantasyStatLine[] }) =>
+type BuildPlayerInsightsProps = { lines: readonly FantasyStatLine[] };
+
+const buildPlayerInsights = ({ lines }: BuildPlayerInsightsProps) =>
   buildWithConfig({ lines, config: DEFAULT_VALUATION_CONFIG });
 
 const ZERO_SQ: Record<StatKey, number> = {

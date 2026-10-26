@@ -17,7 +17,9 @@ const serialize = createSerializer(statFilterParsers);
 // The player page's view switcher. Each href is the live URL with only `view`
 // changed, so the season, timeframe, chart chips, and game-log sort all
 // survive a switch; the default view clears the param rather than naming it.
-export function PlayerViewTabs({ active }: { active: PlayerView }) {
+type PlayerViewTabsProps = { active: PlayerView };
+
+export function PlayerViewTabs({ active }: PlayerViewTabsProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const current = new URLSearchParams(searchParams?.toString() ?? "");

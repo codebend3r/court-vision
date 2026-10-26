@@ -41,33 +41,33 @@ export type HeadToHeadPanelProps = {
 };
 
 // "Wendell Carter Jr. · ORL · C".
-const describePlayer = ({
-  player,
-  position,
-}: {
+type DescribePlayerProps = {
   player: WaiverRow;
   position: string | null;
-}): string =>
+};
+
+const describePlayer = ({ player, position }: DescribePlayerProps): string =>
   [player.fullName, player.teamAbbr, position].flatMap((part) => (part ? [part] : [])).join(" · ");
 
 // The free agent's share of the two per-game numbers, as a percentage. Two
 // zeros split the bar evenly.
-const faShare = ({ row }: { row: HeadToHeadRow }): number => {
+type FaShareProps = { row: HeadToHeadRow };
+
+const faShare = ({ row }: FaShareProps): number => {
   const total = row.faPerGame + row.minePerGame;
   return total > 0 ? (row.faPerGame / total) * 100 : 50;
 };
 
-function PlayerSelect({
-  label,
-  players,
-  selectedId,
-  onSelect,
-}: {
+type OnSelectProps = { playerId: number };
+
+type PlayerSelectProps = {
   label: string;
   players: WaiverRow[];
   selectedId: number | null;
-  onSelect: ({ playerId }: { playerId: number }) => void;
-}) {
+  onSelect: ({ playerId }: OnSelectProps) => void;
+};
+
+function PlayerSelect({ label, players, selectedId, onSelect }: PlayerSelectProps) {
   const id = useId();
 
   const onChange = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -96,7 +96,9 @@ function PlayerSelect({
 
 // The free agent's cell carries the decorative bar after their number, so
 // the table exposes the same four columns in its header and every row.
-function CategoryRow({ row }: { row: HeadToHeadRow }) {
+type CategoryRowProps = { row: HeadToHeadRow };
+
+function CategoryRow({ row }: CategoryRowProps) {
   const share = faShare({ row });
   const faWins = row.winner === "fa";
   const mineWins = row.winner === "mine";
@@ -154,7 +156,9 @@ function CategoryRow({ row }: { row: HeadToHeadRow }) {
 export function HeadToHeadPanel({ pair, result, freePool, roster, onPick }: HeadToHeadPanelProps) {
   const { sort, onSort, sorted } = useColumnSort({ columns: CATEGORY_COLUMNS });
   const positions = useRosteredStore((state) => state.positions);
-  const positionOf = ({ player }: { player: WaiverRow }): string | null =>
+  type PositionOfProps = { player: WaiverRow };
+
+  const positionOf = ({ player }: PositionOfProps): string | null =>
     positions.get(player.playerId) ?? player.position;
   return (
     <div className={styles.panel}>

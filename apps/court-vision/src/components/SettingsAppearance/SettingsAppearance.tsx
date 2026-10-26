@@ -29,7 +29,9 @@ export function SettingsAppearance({ fontScale }: SettingsAppearanceProps) {
   const [selected, setSelected] = useState<FontScale>(fontScale);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const select = ({ value }: { value: FontScale }) => {
+  type SelectProps = { value: FontScale };
+
+  const select = ({ value }: SelectProps) => {
     if (value === selected) return;
     const previous = selected;
     setSelected(value);

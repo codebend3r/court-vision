@@ -7,6 +7,8 @@ import { SHELL } from "@/shell";
 
 export const metadata: Metadata = { title: SHELL.name, description: SHELL.description };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+type RootLayoutProps = { children: ReactNode };
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return <ShellLayout lead="Field">{children}</ShellLayout>;
 }

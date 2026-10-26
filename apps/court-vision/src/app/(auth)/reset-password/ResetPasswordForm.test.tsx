@@ -14,7 +14,9 @@ import { ResetPasswordForm } from "@/app/(auth)/reset-password/ResetPasswordForm
 
 afterEach(cleanup);
 
-async function fill({ password, confirm }: { password: string; confirm: string }): Promise<void> {
+type FillProps = { password: string; confirm: string };
+
+async function fill({ password, confirm }: FillProps): Promise<void> {
   await userEvent.type(screen.getByLabelText(/^new password/i), password);
   await userEvent.type(screen.getByLabelText(/confirm new password/i), confirm);
   await userEvent.click(screen.getByRole("button", { name: /update password/i }));

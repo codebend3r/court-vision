@@ -40,7 +40,9 @@ export function LeagueSwitcher() {
 
   if (leagues.length === 0) return null;
 
-  const pick = ({ leagueId }: { leagueId: string }) => {
+  type PickProps = { leagueId: string };
+
+  const pick = ({ leagueId }: PickProps) => {
     setOpen(false);
     triggerRef.current?.focus();
     void useLeaguesStore
@@ -58,7 +60,9 @@ export function LeagueSwitcher() {
 
   const itemCount = leagues.length + 1;
 
-  const focusItem = ({ index }: { index: number }) => {
+  type FocusItemProps = { index: number };
+
+  const focusItem = ({ index }: FocusItemProps) => {
     const wrapped = ((index % itemCount) + itemCount) % itemCount;
     itemRefs.current[wrapped]?.focus();
   };

@@ -30,20 +30,20 @@ type StoredMatchup = {
 };
 
 /** Reads a stored side's totals; anything that isn't `{ statId: string }` is no totals. */
-const totalsOf = ({ stats }: { stats: unknown }): Record<string, string> => {
+type TotalsOfProps = { stats: unknown };
+
+const totalsOf = ({ stats }: TotalsOfProps): Record<string, string> => {
   const parsed = statTotalsSchema.safeParse(stats);
   return parsed.success ? parsed.data : {};
 };
 
-const toWeekTeam = ({
-  team,
-  display,
-  myTeamId,
-}: {
+type ToWeekTeamProps = {
   team: StoredTeam;
   display: Record<string, string>;
   myTeamId: string | null;
-}): WeekTeam => ({
+};
+
+const toWeekTeam = ({ team, display, myTeamId }: ToWeekTeamProps): WeekTeam => ({
   teamId: team.id,
   name: team.name,
   slug: team.slug,
@@ -61,17 +61,19 @@ const toWeekTeam = ({
  * no matchup yet (never synced since matchups arrived, or Yahoo sent none).
  * A matchup naming a team that is gone is skipped.
  */
+type ToLeagueWeekProps = {
+  statCategories: unknown;
+  matchups: readonly StoredMatchup[];
+  teams: readonly StoredTeam[];
+  myTeamId: string | null;
+};
+
 export const toLeagueWeek = ({
   statCategories,
   matchups,
   teams,
   myTeamId,
-}: {
-  statCategories: unknown;
-  matchups: readonly StoredMatchup[];
-  teams: readonly StoredTeam[];
-  myTeamId: string | null;
-}): LeagueWeek | null => {
+}: ToLeagueWeekProps): LeagueWeek | null => {
   const categories = statCategoriesSchema.safeParse(statCategories);
   const [first] = matchups;
   if (!categories.success || !categories.data.length || first === undefined) return null;
@@ -111,11 +113,11 @@ export const toLeagueWeek = ({
 };
 
 /** The active league's current week, read from its last sync. */
-export const getLeagueWeek = async ({
-  league,
-}: {
+type GetLeagueWeekProps = {
   league: Pick<League, "id" | "myTeamId" | "statCategories">;
-}): Promise<LeagueWeek | null> => {
+};
+
+export const getLeagueWeek = async ({ league }: GetLeagueWeekProps): Promise<LeagueWeek | null> => {
   const [matchups, teams] = await Promise.all([
     prisma.leagueMatchup.findMany({
       where: { leagueId: league.id },

@@ -22,17 +22,14 @@ const SIM_SEED = 0x5eed;
 // Weeks a team finishing on `total` wins: the opponents strictly below it, by
 // binary search over the ascending draws. A NaN total beats nobody, and a NaN
 // draw (sorted last by the typed array) loses to nobody, as `>` has it.
-const weeksWon = ({
-  sorted,
-  total,
-  low = 0,
-  high = sorted.length,
-}: {
+type WeeksWonProps = {
   sorted: Float64Array;
   total: number;
   low?: number;
   high?: number;
-}): number => {
+};
+
+const weeksWon = ({ sorted, total, low = 0, high = sorted.length }: WeeksWonProps): number => {
   if (low >= high) return low;
   const middle = (low + high) >>> 1;
   return sorted[middle] < total
@@ -51,19 +48,21 @@ const weeksWon = ({
 // The baseline roster is the league-average team rather than the signed-in
 // user's, so the column stays comparable across every row; valuing against
 // your own roster is the natural next step.
+type ScoreSimValueProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+  poolStats: PoolStats<K>;
+  config: ValuationConfig<K>;
+  iterations?: number;
+};
+
 export const scoreSimValue = <K extends SportKeys>({
   sport,
   lines,
   poolStats,
   config,
   iterations = SIM_ITERATIONS,
-}: {
-  sport: SportDescriptor<K>;
-  lines: readonly ValuationLine<K>[];
-  poolStats: PoolStats<K>;
-  config: ValuationConfig<K>;
-  iterations?: number;
-}): PlayerValue<K>[] => {
+}: ScoreSimValueProps<K>): PlayerValue<K>[] => {
   const { replacement, spread } = buildLeague({ sport, lines, poolStats, config });
 
   // One simulated season, drawn once and faced by every player. Re-rolling

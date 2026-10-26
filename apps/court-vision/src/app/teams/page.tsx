@@ -41,11 +41,11 @@ const byStanding = (a: TeamRow, b: TeamRow): number =>
   (b.stats?.wins ?? 0) - (a.stats?.wins ?? 0) ||
   a.name.localeCompare(b.name);
 
-export default async function TeamsPage({
-  searchParams,
-}: {
+type TeamsPageProps = {
   searchParams: Promise<RawSearchParams>;
-}) {
+};
+
+export default async function TeamsPage({ searchParams }: TeamsPageProps) {
   const { view } = await loadTeamsSearchParams(searchParams);
   const { season, stats, results } = await getTeamStats();
   const statsByAbbr = new Map(stats.map((team) => [team.abbr, team]));

@@ -5,7 +5,9 @@ import { scorePerCategory } from "#core/valuation/methods/perCategory";
 
 const line = makeStatLine({ playerId: 7, gamesPlayed: 10, pts: 200, reb: 50 });
 
-const score = ({ weights }: { weights: { pts?: number; reb?: number } }) =>
+type ScoreProps = { weights: { pts?: number; reb?: number } };
+
+const score = ({ weights }: ScoreProps) =>
   scorePerCategory({
     sport: basketballFixture,
     lines: [line],

@@ -12,6 +12,10 @@ const getProfile = vi.fn();
 const $transaction = vi.fn();
 
 const leagueDelegate = { findMany, create, update: leagueUpdate, deleteMany, findFirst };
+const lockProfile = vi.fn();
+const lockLeague = vi.fn(async () => {});
+vi.mock("@/lib/leagues/locks", () => ({ lockProfile, lockLeague }));
+
 const tx = {
   league: leagueDelegate,
   profile: { updateMany: vi.fn(), update },
@@ -28,8 +32,10 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 vi.mock("@/lib/auth/session", () => ({ getProfile }));
+type ToLeagueSummaryProps = { league: unknown };
+
 vi.mock("@/lib/leagues/queries", () => ({
-  toLeagueSummary: ({ league }: { league: unknown }) => league,
+  toLeagueSummary: ({ league }: ToLeagueSummaryProps) => league,
 }));
 
 import { createLeague, deleteLeague, setActiveLeague, updateLeague } from "@/lib/leagues/actions";
@@ -59,6 +65,10 @@ beforeEach(() => {
   tx.profile.updateMany.mockReset();
 
   getProfile.mockResolvedValue(profile);
+  lockProfile.mockReset();
+  lockProfile.mockImplementation(async () => ({
+    activeLeagueId: (await getProfile()).activeLeagueId,
+  }));
   findMany.mockResolvedValue([]);
   create.mockResolvedValue(league);
   leagueUpdate.mockResolvedValue(league);

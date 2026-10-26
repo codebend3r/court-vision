@@ -8,17 +8,14 @@ import { type BarDatum, type StatDirection, type Tier } from "@/lib/roster/compa
 
 afterEach(cleanup);
 
-const bar = ({
-  id,
-  name,
-  label,
-  tier,
-}: {
+type BarProps = {
   id: number;
   name: string;
   label: string;
   tier: Tier;
-}): BarDatum => ({
+};
+
+const bar = ({ id, name, label, tier }: BarProps): BarDatum => ({
   id,
   name,
   fullName: `A ${name}`,
@@ -28,15 +25,19 @@ const bar = ({
   tier,
 });
 
-const chart = ({
-  key,
-  bars,
-  direction = "high",
-}: {
+type ChartProps = {
   key: string;
   bars: BarDatum[];
   direction?: StatDirection;
-}): RosterChart => ({ key, label: key.toUpperCase(), fullName: `${key} full`, direction, bars });
+};
+
+const chart = ({ key, bars, direction = "high" }: ChartProps): RosterChart => ({
+  key,
+  label: key.toUpperCase(),
+  fullName: `${key} full`,
+  direction,
+  bars,
+});
 
 const points = chart({
   key: "pts",

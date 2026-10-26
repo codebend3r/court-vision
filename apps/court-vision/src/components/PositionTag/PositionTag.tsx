@@ -49,12 +49,11 @@ export function PositionTag({ position, playerId, className }: PositionTagProps)
 }
 
 /** A player's position as plain text, the league host's label where it has one. */
-export function PlayerPositionText({
-  playerId,
-  position,
-}: {
+type PlayerPositionTextProps = {
   playerId: number;
   position: string | null;
-}) {
+};
+
+export function PlayerPositionText({ playerId, position }: PlayerPositionTextProps) {
   return <>{usePlayerPosition({ playerId, fallback: position }) ?? "-"}</>;
 }

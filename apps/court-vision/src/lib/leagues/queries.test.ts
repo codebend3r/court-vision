@@ -6,10 +6,18 @@ const leagueCreate = vi.fn();
 const profileUpdate = vi.fn();
 const getProfile = vi.fn();
 
+const tx = {
+  league: { findMany: leagueFindMany, findFirst: leagueFindFirst, create: leagueCreate },
+  profile: { update: profileUpdate },
+};
+type TestTransaction<T> = (client: typeof tx) => Promise<T>;
+const lockProfile = vi.fn();
+vi.mock("@/lib/leagues/locks", () => ({ lockProfile }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     league: { findMany: leagueFindMany, findFirst: leagueFindFirst, create: leagueCreate },
     profile: { update: profileUpdate },
+    $transaction: <T>(run: TestTransaction<T>) => run(tx),
   },
 }));
 vi.mock("@/lib/auth/session", () => ({ getProfile }));
@@ -38,7 +46,9 @@ const profile = {
   updatedAt: new Date("2026-07-01"),
 };
 
-const dbLeague = ({ id, slug, updatedAt }: { id: string; slug: string; updatedAt: Date }) => ({
+type DbLeagueProps = { id: string; slug: string; updatedAt: Date };
+
+const dbLeague = ({ id, slug, updatedAt }: DbLeagueProps) => ({
   id,
   profileId: profile.id,
   name: "My League",
@@ -53,6 +63,8 @@ const dbLeague = ({ id, slug, updatedAt }: { id: string; slug: string; updatedAt
   syncVia: "server",
   myTeamId: null,
   syncedAt: null,
+  syncStartedAt: null,
+  syncLeaseUntil: null,
   syncError: null,
   unsupportedCategories: [],
   statCategories: null,
@@ -68,6 +80,10 @@ beforeEach(() => {
   getProfile.mockReset();
 
   getProfile.mockResolvedValue(profile);
+  lockProfile.mockReset();
+  lockProfile.mockImplementation(async () => ({
+    activeLeagueId: (await getProfile()).activeLeagueId,
+  }));
   profileUpdate.mockResolvedValue({});
 });
 
@@ -215,6 +231,7 @@ describe("ensureDefaultLeague", () => {
 
   it("points the pointer at a found league that wasn't active", async () => {
     const other = { ...profile, activeLeagueId: null };
+    lockProfile.mockResolvedValue({ activeLeagueId: null });
     leagueFindFirst.mockResolvedValue(
       dbLeague({ id: "league-2", slug: "b", updatedAt: new Date() }),
     );
@@ -239,29 +256,6 @@ describe("ensureDefaultLeague", () => {
     });
   });
 
-  // Two concurrent calls for the same profile both see "no league yet" and
-  // both attempt the create; only one wins the profileId+slug unique
-  // constraint. The loser must converge on the winner, not throw. Uses a
-  // null activeLeagueId so each resolveActiveLeague call is a single
-  // findFirst (no pointer branch), keeping the mock call sequence exact.
-  it("converges on the winner when the create loses a P2002 race", async () => {
-    const noPointer = { ...profile, activeLeagueId: null };
-    leagueFindFirst
-      .mockResolvedValueOnce(null) // first resolveActiveLeague: nothing yet
-      .mockResolvedValueOnce(
-        dbLeague({ id: "winner-league", slug: "my-league", updatedAt: new Date() }),
-      ); // re-resolve after the race loss finds the winner
-    leagueCreate.mockRejectedValue({ code: "P2002" });
-
-    const league = await ensureDefaultLeague({ profile: noPointer });
-
-    expect(league?.id ?? null).toBe("winner-league");
-    expect(profileUpdate).toHaveBeenCalledWith({
-      where: { id: noPointer.id },
-      data: { activeLeagueId: "winner-league" },
-    });
-  });
-
   it("rethrows a non-unique-violation create error", async () => {
     leagueFindFirst.mockResolvedValue(null);
     leagueCreate.mockRejectedValue(new Error("connection reset"));
@@ -282,7 +276,9 @@ describe("ensureDefaultLeague", () => {
 });
 
 describe("fallbackActiveLeagueId", () => {
-  const summary = ({ id, updatedAt }: { id: string; updatedAt: string }): LeagueSummary => ({
+  type SummaryProps = { id: string; updatedAt: string };
+
+  const summary = ({ id, updatedAt }: SummaryProps): LeagueSummary => ({
     id,
     name: id,
     slug: id,

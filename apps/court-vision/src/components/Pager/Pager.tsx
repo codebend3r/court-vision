@@ -6,6 +6,10 @@ import { PAGE_SIZES } from "@/lib/players/searchParams";
 
 import styles from "@/components/Pager/Pager.module.scss";
 
+type OnPageChangeProps = { page: number };
+
+type OnSizeChangeProps = { size: number };
+
 export type PagerProps = {
   page: number;
   size: number;
@@ -15,8 +19,8 @@ export type PagerProps = {
   isTotalKnown?: boolean;
   // Dims the bar while the requested page loads.
   isPending?: boolean;
-  onPageChange: (args: { page: number }) => void;
-  onSizeChange: (args: { size: number }) => void;
+  onPageChange: (args: OnPageChangeProps) => void;
+  onSizeChange: (args: OnSizeChangeProps) => void;
 };
 
 // The players lists' pagination bar: page size, the page count in mono, then

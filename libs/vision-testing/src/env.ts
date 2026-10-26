@@ -3,7 +3,9 @@
 // file a fresh module registry, so this record never leaks between suites.
 const originals = new Map<string, string | undefined>();
 
-export const stubEnv = ({ key, value }: { key: string; value: string }): void => {
+type StubEnvProps = { key: string; value: string };
+
+export const stubEnv = ({ key, value }: StubEnvProps): void => {
   if (!originals.has(key)) {
     originals.set(key, process.env[key]);
   }

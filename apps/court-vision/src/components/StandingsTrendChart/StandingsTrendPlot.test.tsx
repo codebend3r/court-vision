@@ -31,7 +31,9 @@ describe("lineColorFor", () => {
   });
 
   it("swaps only BKN on a dark theme and no team on the light one", () => {
-    const swapped = ({ theme }: { theme: Theme }) =>
+    type SwappedProps = { theme: Theme };
+
+    const swapped = ({ theme }: SwappedProps) =>
       NBA_TEAMS.filter(
         (team) => lineColorFor({ abbr: team.abbreviation, theme }) !== team.primary,
       ).map((team) => team.abbreviation);

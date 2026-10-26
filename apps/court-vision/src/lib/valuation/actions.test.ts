@@ -19,7 +19,9 @@ vi.mock("next/cache", () => ({ unstable_cache: unstableCache }));
 // evaluates, so a static import would capture the real `unstable_cache`.
 const { loadFantasyTrendLogs } = await import("@/lib/valuation/actions");
 
-const row = ({ playerId, day }: { playerId: number; day: number }) => ({
+type RowProps = { playerId: number; day: number };
+
+const row = ({ playerId, day }: RowProps) => ({
   playerId,
   gameDate: new Date(Date.UTC(2026, 0, day)),
   minutes: 30,

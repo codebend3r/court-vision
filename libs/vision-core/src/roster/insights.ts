@@ -35,15 +35,17 @@ export type PlayerInsight<K extends SportKeys> = {
 // hover panel, under one neutral `config` (the builder shows a single read of
 // each player, not a configurable one). Pure and server-safe: runs once per
 // page load off the cached pool.
+type BuildPlayerInsightsProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+  config: ValuationConfig<K>;
+};
+
 export const buildPlayerInsights = <K extends SportKeys>({
   sport,
   lines,
   config,
-}: {
-  sport: SportDescriptor<K>;
-  lines: readonly ValuationLine<K>[];
-  config: ValuationConfig<K>;
-}): PlayerInsight<K>[] => {
+}: BuildPlayerInsightsProps<K>): PlayerInsight<K>[] => {
   const poolStats = poolStatsFor({ sport, lines, config, windowGames: null });
   const zValues = scoreZScore({ sport, lines, poolStats, config });
   const zById = new Map(zValues.map((value) => [value.playerId, value]));

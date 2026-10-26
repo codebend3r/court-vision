@@ -16,10 +16,14 @@ const UNSAFE_CHARS: Readonly<Record<string, string>> = {
   "\u2029": "\\u2029",
 };
 
-const escapeUnsafeChars = ({ text }: { text: string }): string =>
+type EscapeUnsafeCharsProps = { text: string };
+
+const escapeUnsafeChars = ({ text }: EscapeUnsafeCharsProps): string =>
   text.replace(/[<>\b\f\n\r\t\0\u2028\u2029]/g, (char) => UNSAFE_CHARS[char] ?? char);
 
 // A value as a JavaScript literal that is safe to drop into inline script
 // source: JSON, with every character that could break out of it escaped.
-export const inlineScriptLiteral = ({ value }: { value: unknown }): string =>
+type InlineScriptLiteralProps = { value: unknown };
+
+export const inlineScriptLiteral = ({ value }: InlineScriptLiteralProps): string =>
   escapeUnsafeChars({ text: JSON.stringify(value) });

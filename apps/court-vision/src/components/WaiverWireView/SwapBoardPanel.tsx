@@ -37,22 +37,23 @@ const FREE_AGENT_COLUMNS: readonly SortColumn<SwapRow>[] = [
 export const NO_UPGRADE = "No free agent beats your weakest player in this range.";
 export const NO_ROSTER = "No one on your roster has stats in this range. Try a longer range.";
 
+type OnCompareProps = { fa: number };
+
 export type SwapBoardPanelProps = {
   board: SwapBoard;
   model: WaiverModel;
-  onCompare: ({ fa }: { fa: number }) => void;
+  onCompare: ({ fa }: OnCompareProps) => void;
   compareHintId: string;
 };
 
 // My rostered players with no line in the range: listed, never valued, so
 // they are not silently missing from "your weakest" or the cut line.
-export function NoStatsDisclosure({
-  entries,
-  compareHintId,
-}: {
+type NoStatsDisclosureProps = {
   entries: WaiverRosterEntry[];
   compareHintId: string;
-}) {
+};
+
+export function NoStatsDisclosure({ entries, compareHintId }: NoStatsDisclosureProps) {
   return (
     <Disclosure
       className={styles.noStats}

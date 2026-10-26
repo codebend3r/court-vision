@@ -46,8 +46,9 @@ describe("leagueRates", () => {
 });
 
 describe("computePoolStats", () => {
-  const scorer = ({ playerId, pts }: { playerId: number; pts: number }): FantasyStatLine =>
-    line({ playerId, pts });
+  type ScorerProps = { playerId: number; pts: number };
+
+  const scorer = ({ playerId, pts }: ScorerProps): FantasyStatLine => line({ playerId, pts });
 
   it("drops players below the games or minutes thresholds from the pool", () => {
     const lines = [

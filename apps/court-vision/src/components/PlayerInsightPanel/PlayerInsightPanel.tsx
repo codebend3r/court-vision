@@ -15,7 +15,9 @@ export type PlayerInsightPanelProps = {
 };
 
 // A signed, fixed-precision z: "+2.14" / "-0.40". Zero reads as "+0.00".
-const formatZ = ({ value, digits }: { value: number; digits: number }): string =>
+type FormatZProps = { value: number; digits: number };
+
+const formatZ = ({ value, digits }: FormatZProps): string =>
   formatSigned({ value, digits, signZero: true });
 
 // Per-game display: rate categories (FG%/FT%) as a leading-dot rate (".488"),
@@ -28,7 +30,9 @@ const zToneClass = (z: number): string =>
 
 // Avatar, name, position and team: the panel's header whether or not the
 // player has stats. `games` fills the trailing meta slot when they do.
-function PanelHead({ player, games }: { player: FantasyTeamPlayer; games: ReactNode }) {
+type PanelHeadProps = { player: FantasyTeamPlayer; games: ReactNode };
+
+function PanelHead({ player, games }: PanelHeadProps) {
   return (
     <header className={styles.head}>
       <PlayerAvatar

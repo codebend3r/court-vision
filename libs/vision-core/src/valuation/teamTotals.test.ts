@@ -4,15 +4,13 @@ import { basketballFixture, type BasketballKeys } from "#core/testing/basketball
 import { makeLine } from "#core/testing/lines";
 import { teamCategoryTotals } from "#core/valuation/teamTotals";
 
-const line = ({
-  playerId,
-  gamesPlayed,
-  stats,
-}: {
+type LineProps = {
   playerId: number;
   gamesPlayed: number;
   stats: Partial<Record<BasketballKeys["valued"], number>>;
-}) =>
+};
+
+const line = ({ playerId, gamesPlayed, stats }: LineProps) =>
   makeLine({
     sport: basketballFixture,
     playerId,
@@ -22,13 +20,12 @@ const line = ({
     stats,
   });
 
-const valueOf = ({
-  totals,
-  key,
-}: {
+type ValueOfProps = {
   totals: ReturnType<typeof teamCategoryTotals<BasketballKeys>>;
   key: string;
-}) => totals.find((total) => total.key === key)?.value;
+};
+
+const valueOf = ({ totals, key }: ValueOfProps) => totals.find((total) => total.key === key)?.value;
 
 describe("teamCategoryTotals", () => {
   it("sums per-game counting stats across the roster", () => {
