@@ -43,15 +43,13 @@ const sortParsers = {
 
 // Missing values sink to the bottom in both directions: a game with no
 // advanced row is not the lowest net rating, it has none.
-const sortRows = <Row,>({
-  rows,
-  column,
-  direction,
-}: {
+type SortRowsProps<Row> = {
   rows: readonly Row[];
   column: GameLogColumn<Row>;
   direction: SortDirection;
-}): Row[] =>
+};
+
+const sortRows = <Row,>({ rows, column, direction }: SortRowsProps<Row>): Row[] =>
   [...rows].sort((left, right) => {
     const leftValue = column.value(left);
     const rightValue = column.value(right);
@@ -65,13 +63,12 @@ const sortRows = <Row,>({
     return direction === "asc" ? result : -result;
   });
 
-function GameLogTable<Row extends GameLogRow>({
-  rows,
-  columns,
-}: {
+type GameLogTableProps<Row extends GameLogRow> = {
   rows: readonly Row[];
   columns: readonly GameLogColumn<Row>[];
-}) {
+};
+
+function GameLogTable<Row extends GameLogRow>({ rows, columns }: GameLogTableProps<Row>) {
   const [{ sort, dir }, setSorting] = useQueryStates(sortParsers);
   // A sort picked on another view may name a column this one lacks; the log
   // then reads newest-first rather than in no particular order.
@@ -83,7 +80,9 @@ function GameLogTable<Row extends GameLogRow>({
     [rows, sortColumn, sortDirection],
   );
 
-  const sortBy = ({ key }: { key: string }) => {
+  type SortByProps = { key: string };
+
+  const sortBy = ({ key }: SortByProps) => {
     if (key === sortColumn.key) {
       void setSorting({ sort: key, dir: sortDirection === "asc" ? "desc" : "asc" });
       return;
@@ -170,13 +169,12 @@ function GameLogTable<Row extends GameLogRow>({
   );
 }
 
-function FantasyGameLogTable({
-  rows,
-  categories,
-}: {
+type FantasyGameLogTableProps = {
   rows: readonly FantasyGameLogRow[];
   categories: readonly CategoryColumn[];
-}) {
+};
+
+function FantasyGameLogTable({ rows, categories }: FantasyGameLogTableProps) {
   const columns = useMemo(() => fantasyViewColumns({ categories }), [categories]);
   return <GameLogTable rows={rows} columns={columns} />;
 }

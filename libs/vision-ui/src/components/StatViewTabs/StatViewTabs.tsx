@@ -18,7 +18,9 @@ export type StatViewTabEntry = {
 // LinkPending covers the server round-trip that otherwise reads as a frozen
 // page: a spinner (and any dim a page hangs off `:has([data-pending])`) from
 // the click until the new stats render, announced to screen readers.
-export function StatViewTabs({ label, entries }: { label: string; entries: StatViewTabEntry[] }) {
+type StatViewTabsProps = { label: string; entries: StatViewTabEntry[] };
+
+export function StatViewTabs({ label, entries }: StatViewTabsProps) {
   return (
     <nav className={styles.tabs} aria-label={label}>
       <ul className={styles.list}>

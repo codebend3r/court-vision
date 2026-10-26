@@ -4,7 +4,9 @@ import styles from "@/components/TeamMatchup/TeamMatchup.module.scss";
 
 const SEPARATORS: readonly string[] = ["vs.", "@"];
 
-export function TeamMatchup({ matchup, size = "md" }: { matchup: string; size?: TeamChipSize }) {
+type TeamMatchupProps = { matchup: string; size?: TeamChipSize };
+
+export function TeamMatchup({ matchup, size = "md" }: TeamMatchupProps) {
   const separator = SEPARATORS.find((candidate) => matchup.includes(` ${candidate} `));
   const [team = "", opponent = ""] = separator ? matchup.split(` ${separator} `) : [];
 

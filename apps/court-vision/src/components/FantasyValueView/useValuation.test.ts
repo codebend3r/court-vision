@@ -26,15 +26,23 @@ const puntFt: ValuationConfig = {
 };
 const methodWeights = {};
 
-const zOf = ({ values, playerId }: { values: FantasyPlayerValues[]; playerId: number }) =>
+type ZOfProps = { values: FantasyPlayerValues[]; playerId: number };
+
+const zOf = ({ values, playerId }: ZOfProps) =>
   values.find((value) => value.playerId === playerId)?.z ?? Number.NaN;
 
-const valuesFor = ({ config }: { config: ValuationConfig }) =>
+type ValuesForProps = { config: ValuationConfig };
+
+const valuesFor = ({ config }: ValuesForProps) =>
   valuePlayers({ lines, config, methodWeights, windowGames: null }).values;
 
-const renderValuation = ({ createPort }: { createPort: () => ValuationPort | null }) =>
+type RenderValuationProps = { createPort: () => ValuationPort | null };
+
+type RenderValuationRenderHookProps = { config: ValuationConfig };
+
+const renderValuation = ({ createPort }: RenderValuationProps) =>
   renderHook(
-    ({ config }: { config: ValuationConfig }) =>
+    ({ config }: RenderValuationRenderHookProps) =>
       useValuation({ lines, config, methodWeights, windowGames: null, createPort }),
     { initialProps: { config: allCategories } },
   );

@@ -5,27 +5,39 @@ import { type BridgeLeaguePayload } from "@vision/yahoo-bridge/protocol";
 import { type ExtensionLeagueResult } from "@/lib/yahoo/extensionClient";
 import { type YahooSyncResult } from "@/lib/yahoo/types";
 
-const syncYahooLeagueMock = vi.fn<(args: { leagueId: string }) => Promise<YahooSyncResult>>();
+type SyncYahooLeagueMockProps = { leagueId: string };
+
+const syncYahooLeagueMock = vi.fn<(args: SyncYahooLeagueMockProps) => Promise<YahooSyncResult>>();
+
+type SyncYahooLeagueProps = { leagueId: string };
 
 vi.mock("@/lib/yahoo/actions", () => ({
-  syncYahooLeague: (args: { leagueId: string }) => syncYahooLeagueMock(args),
+  syncYahooLeague: (args: SyncYahooLeagueProps) => syncYahooLeagueMock(args),
 }));
 
+type SyncYahooLeagueFromSnapshotMockProps = { leagueId: string; payload: unknown };
+
 const syncYahooLeagueFromSnapshotMock =
-  vi.fn<(args: { leagueId: string; payload: unknown }) => Promise<YahooSyncResult>>();
+  vi.fn<(args: SyncYahooLeagueFromSnapshotMockProps) => Promise<YahooSyncResult>>();
+
+type SyncYahooLeagueFromSnapshotProps = { leagueId: string; payload: unknown };
 
 vi.mock("@/lib/yahoo/snapshotActions", () => ({
-  syncYahooLeagueFromSnapshot: (args: { leagueId: string; payload: unknown }) =>
+  syncYahooLeagueFromSnapshot: (args: SyncYahooLeagueFromSnapshotProps) =>
     syncYahooLeagueFromSnapshotMock(args),
 }));
 
 const getExtensionIdMock = vi.fn<() => string | null>();
+type FetchLeagueViaExtensionMockProps = { extensionId: string; leagueId: string };
+
 const fetchLeagueViaExtensionMock =
-  vi.fn<(args: { extensionId: string; leagueId: string }) => Promise<ExtensionLeagueResult>>();
+  vi.fn<(args: FetchLeagueViaExtensionMockProps) => Promise<ExtensionLeagueResult>>();
+
+type FetchLeagueViaExtensionProps = { extensionId: string; leagueId: string };
 
 vi.mock("@/lib/yahoo/extensionClient", () => ({
   getExtensionId: () => getExtensionIdMock(),
-  fetchLeagueViaExtension: (args: { extensionId: string; leagueId: string }) =>
+  fetchLeagueViaExtension: (args: FetchLeagueViaExtensionProps) =>
     fetchLeagueViaExtensionMock(args),
 }));
 

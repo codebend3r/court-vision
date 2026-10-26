@@ -8,7 +8,9 @@ import { type WaiverModel, type WaiverRow } from "@/lib/waiverWire/types";
 
 afterEach(cleanup);
 
-const makeRow = (overrides: Partial<WaiverRow> & { playerId: number }): WaiverRow => ({
+type MakeRowProps = Partial<WaiverRow> & { playerId: number };
+
+const makeRow = (overrides: MakeRowProps): WaiverRow => ({
   fullName: `Player ${overrides.playerId}`,
   teamAbbr: "DET",
   position: "C",
@@ -48,11 +50,12 @@ const model: WaiverModel = {
 
 const board: SwapBoard = { target: reed, rows: [carter] };
 
-const renderPanel = ({
-  boardOverride = board,
-  modelOverride = model,
-}: { boardOverride?: SwapBoard; modelOverride?: WaiverModel } = {}) => {
-  const onCompare = vi.fn<({ fa }: { fa: number }) => void>();
+type RenderPanelProps = { boardOverride?: SwapBoard; modelOverride?: WaiverModel };
+
+const renderPanel = ({ boardOverride = board, modelOverride = model }: RenderPanelProps = {}) => {
+  type OnCompareProps = { fa: number };
+
+  const onCompare = vi.fn<({ fa }: OnCompareProps) => void>();
   render(
     <SwapBoardPanel
       board={boardOverride}
@@ -68,7 +71,9 @@ const weakestPanel = () => screen.getByRole("region", { name: "Your weakest" });
 const freePanel = () => screen.getByRole("region", { name: "Free agents that beat them" });
 
 // Body rows only: the header row holds column headers, not cells.
-const bodyRows = ({ panel }: { panel: HTMLElement }) =>
+type BodyRowsProps = { panel: HTMLElement };
+
+const bodyRows = ({ panel }: BodyRowsProps) =>
   within(panel)
     .getAllByRole("row")
     .filter((row) => within(row).queryAllByRole("cell").length > 0);
@@ -234,7 +239,9 @@ describe("SwapBoardPanel sorting", () => {
     bodyRows({ panel: weakestPanel() }).map(
       (row) => within(row).getAllByRole("link")[0]?.textContent ?? "",
     );
-  const sortBy = async ({ panel, name }: { panel: HTMLElement; name: string }) =>
+  type SortByProps = { panel: HTMLElement; name: string };
+
+  const sortBy = async ({ panel, name }: SortByProps) =>
     userEvent.click(
       within(within(panel).getByRole("columnheader", { name: new RegExp(`^${name}`) })).getByRole(
         "button",

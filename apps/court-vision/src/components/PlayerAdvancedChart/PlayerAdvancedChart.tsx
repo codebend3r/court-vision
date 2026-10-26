@@ -32,13 +32,12 @@ const formatPercentTick = (value: number): string => `${Math.round(value * 100)}
 // chips and the tooltip carry identity for the denser panels.
 const MAX_LABELLED_LINES = 3;
 
-export function PlayerAdvancedChart({
-  series,
-  mode,
-}: {
+type PlayerAdvancedChartProps = {
   series: AdvancedPoint[];
   mode: AdvancedSeriesMode;
-}) {
+};
+
+export function PlayerAdvancedChart({ series, mode }: PlayerAdvancedChartProps) {
   const { theme } = useTheme();
   const palette = getSeriesPalette({ theme });
   const selection = useSeriesSelection({

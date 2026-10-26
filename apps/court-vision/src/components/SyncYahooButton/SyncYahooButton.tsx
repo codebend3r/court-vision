@@ -43,7 +43,9 @@ type SyncOutcome =
 // A throw and "not_imported" (a league that is no longer Yahoo's) read as the
 // generic failure; a clicked "throttled" reads "Synced less than a minute ago.".
 // An extension that is missing reads as the server's needs_extension refusal.
-const failureMessageFor = ({ result }: { result: FailedSync | null }): string => {
+type FailureMessageForProps = { result: FailedSync | null };
+
+const failureMessageFor = ({ result }: FailureMessageForProps): string => {
   if (result === null || result.status === "not_imported") {
     return yahooFailureMessage({ status: "error" });
   }
@@ -56,19 +58,21 @@ const failureMessageFor = ({ result }: { result: FailedSync | null }): string =>
 
 const SYNCING_TEXT = "Syncing…";
 
+type StatusTextForProps = {
+  isPending: boolean;
+  outcome: SyncOutcome | null;
+  syncedAt: string | null;
+  syncError: string | null;
+  now: Date;
+};
+
 const statusTextFor = ({
   isPending,
   outcome,
   syncedAt,
   syncError,
   now,
-}: {
-  isPending: boolean;
-  outcome: SyncOutcome | null;
-  syncedAt: string | null;
-  syncError: string | null;
-  now: Date;
-}): string => {
+}: StatusTextForProps): string => {
   // The status line changes as a sync starts, so its outcome is always news,
   // even one that repeats the stored error the line showed before.
   if (isPending) return SYNCING_TEXT;
@@ -100,7 +104,9 @@ export function SyncYahooButton({
 
   const label = isPending ? SYNCING_TEXT : "Sync with Yahoo";
 
-  const sync = ({ isAuto }: { isAuto: boolean }) => {
+  type SyncProps = { isAuto: boolean };
+
+  const sync = ({ isAuto }: SyncProps) => {
     // aria-disabled, not disabled, while pending: a disabled button drops the
     // focus of the keyboard user who just pressed it.
     if (isPending) return;

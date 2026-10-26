@@ -2,7 +2,9 @@ import { describe, expect, it } from "bun:test";
 
 import { createPrng, gaussian, standardNormal } from "#core/util/prng";
 
-const draw = ({ seed, count }: { seed: number; count: number }): number[] => {
+type DrawProps = { seed: number; count: number };
+
+const draw = ({ seed, count }: DrawProps): number[] => {
   const rng = createPrng({ seed });
   return Array.from({ length: count }, () => rng());
 };

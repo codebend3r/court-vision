@@ -2,6 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { restoreEnv, stubEnv } from "@vision/testing/env";
 
+const allowUsernameAttempt = vi.fn(async () => true);
+vi.mock("@/lib/auth/usernameRateLimit", () => ({
+  allowUsernameAttempt,
+  USERNAME_RATE_LIMIT_MESSAGE: "Too many username checks. Try again in a minute.",
+}));
 const signUpFn = vi.fn();
 const resendFn = vi.fn();
 const findFirst = vi.fn();
@@ -40,6 +45,16 @@ describe("signUp", () => {
   it("rejects an invalid username before hitting Supabase", async () => {
     const result = await signUp({ email: "a@b.com", username: "no", password: "password123" });
     expect(result).toEqual({ ok: false, error: expect.stringContaining("at least 3") });
+    expect(signUpFn).not.toHaveBeenCalled();
+  });
+
+  it("shares the availability budget before checking or creating a username", async () => {
+    allowUsernameAttempt.mockResolvedValueOnce(false);
+    expect(await signUp({ email: "a@b.com", username: "steve", password: "password123" })).toEqual({
+      ok: false,
+      error: "Too many username checks. Try again in a minute.",
+    });
+    expect(findFirst).not.toHaveBeenCalled();
     expect(signUpFn).not.toHaveBeenCalled();
   });
 

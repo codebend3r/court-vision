@@ -176,7 +176,9 @@ export function FantasyValueView({
     );
   };
 
-  const onSort = ({ sort }: { sort: FantasySortKey }) => {
+  type OnSortProps = { sort: FantasySortKey };
+
+  const onSort = ({ sort }: OnSortProps) => {
     setParams(
       params.sort === sort
         ? { dir: params.dir === "desc" ? "asc" : "desc", page: 1 }

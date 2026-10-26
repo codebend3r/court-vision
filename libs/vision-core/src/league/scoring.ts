@@ -25,11 +25,13 @@ export const isLeagueScoringType = (value: string): value is LeagueScoringType =
 
 // Stored configs come back as untyped JSON, so each shape is checked against
 // the sport's own categories and scoring keys before it is trusted.
+type ScoringConfigGuardsProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+};
+
 export const scoringConfigGuards = <K extends SportKeys>({
   sport,
-}: {
-  sport: SportDescriptor<K>;
-}) => {
+}: ScoringConfigGuardsProps<K>) => {
   const isCategory = categoryGuard({ sport });
 
   const isCategoryList = (value: unknown): value is Category<K>[] =>
@@ -64,28 +66,32 @@ export const scoringConfigGuards = <K extends SportKeys>({
   return { isH2hCategoriesConfig, isH2hPointsConfig, isRotoConfig };
 };
 
+type DefaultScoringConfigProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  scoringType: LeagueScoringType;
+};
+
 export const defaultScoringConfig = <K extends SportKeys>({
   sport,
   scoringType,
-}: {
-  sport: SportDescriptor<K>;
-  scoringType: LeagueScoringType;
-}): LeagueScoringConfig<K> => {
+}: DefaultScoringConfigProps<K>): LeagueScoringConfig<K> => {
   if (scoringType === "h2h_points") return { scoring: { ...sport.points.defaults } };
   return { categories: [...sport.categoryOrder] };
 };
 
 // Stored JSON → typed config; anything stale or malformed falls back to the
 // scoring type's default instead of crashing a page.
+type ParseScoringConfigProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  scoringType: LeagueScoringType;
+  value: unknown;
+};
+
 export const parseScoringConfig = <K extends SportKeys>({
   sport,
   scoringType,
   value,
-}: {
-  sport: SportDescriptor<K>;
-  scoringType: LeagueScoringType;
-  value: unknown;
-}): LeagueScoringConfig<K> => {
+}: ParseScoringConfigProps<K>): LeagueScoringConfig<K> => {
   const { isH2hCategoriesConfig, isH2hPointsConfig, isRotoConfig } = scoringConfigGuards({
     sport,
   });

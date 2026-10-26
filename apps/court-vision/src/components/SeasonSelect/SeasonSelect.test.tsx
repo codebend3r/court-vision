@@ -7,15 +7,17 @@ import { SeasonSelect } from "@/components/SeasonSelect/SeasonSelect";
 
 afterEach(cleanup);
 
+type RenderSelectProps = {
+  seasons?: string[];
+  value?: string;
+  searchParams?: string;
+};
+
 const renderSelect = ({
   seasons = ["2025-26", "2023-24"],
   value = "2025-26",
   searchParams = "",
-}: {
-  seasons?: string[];
-  value?: string;
-  searchParams?: string;
-} = {}) => {
+}: RenderSelectProps = {}) => {
   const onUrlUpdate = vi.fn<(event: UrlUpdateEvent) => void>();
   render(<SeasonSelect seasons={seasons} value={value} />, {
     wrapper: withNuqsTestingAdapter({ searchParams, onUrlUpdate }),

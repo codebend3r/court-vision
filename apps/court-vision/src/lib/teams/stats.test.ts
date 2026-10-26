@@ -4,7 +4,9 @@ import { type TeamGameResult } from "@vision/core/series/teamTrend";
 
 import { buildTeamStats, rankTeams, type TeamBoxTotals } from "@/lib/teams/stats";
 
-const box = (overrides: Partial<TeamBoxTotals> & { teamAbbr: string }): TeamBoxTotals => ({
+type BoxProps = Partial<TeamBoxTotals> & { teamAbbr: string };
+
+const box = (overrides: BoxProps): TeamBoxTotals => ({
   pts: 200,
   reb: 80,
   ast: 50,
@@ -19,9 +21,9 @@ const box = (overrides: Partial<TeamBoxTotals> & { teamAbbr: string }): TeamBoxT
   ...overrides,
 });
 
-const game = (
-  overrides: Partial<TeamGameResult> & { teamAbbr: string; gameId: string },
-): TeamGameResult => ({
+type GameProps = Partial<TeamGameResult> & { teamAbbr: string; gameId: string };
+
+const game = (overrides: GameProps): TeamGameResult => ({
   teamScore: 110,
   opponentScore: 100,
   winLoss: "W",

@@ -22,15 +22,13 @@ const isUpgradeEntry = (entry: CutLineEntry): boolean => entry.kind === "row" &&
 
 // One ranked list of my roster and the free pool, with a line drawn under my
 // lowest-valued player, windowed around the line unless `showAll`.
-export const buildCutLine = ({
-  model,
-  scope,
-  showAll,
-}: {
+type BuildCutLineProps = {
   model: WaiverModel;
   scope: CutScope;
   showAll: boolean;
-}): CutLine => {
+};
+
+export const buildCutLine = ({ model, scope, showAll }: BuildCutLineProps): CutLine => {
   const merged = [...model.roster, ...model.freePool].toSorted(byValue);
   const worst = merged.findLast((candidate) => candidate.owner === "mine");
 

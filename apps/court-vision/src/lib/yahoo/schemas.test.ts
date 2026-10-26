@@ -199,7 +199,9 @@ describe("yahooLeagueSnapshotSchema", () => {
   it("treats a league or team logo off Yahoo's hosts as absent", () => {
     const base = league106344.fantasy_content.league;
     const [firstTeam, ...otherTeams] = base.teams;
-    const offHost = ({ logoUrl, teamLogoUrl }: { logoUrl: string; teamLogoUrl: string }) => ({
+    type OffHostProps = { logoUrl: string; teamLogoUrl: string };
+
+    const offHost = ({ logoUrl, teamLogoUrl }: OffHostProps) => ({
       fantasy_content: {
         league: {
           ...base,

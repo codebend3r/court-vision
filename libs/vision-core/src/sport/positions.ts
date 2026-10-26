@@ -1,14 +1,13 @@
 // Position strings arrive in each provider's own format ("F-C", "C/LW",
 // "SS,2B"). Split on the sport's separators, normalize, keep the groups the
 // sport recognizes, and drop repeats while keeping first-seen order.
+type ParsePositionGroupsProps<G extends string> = {
+  separators: RegExp;
+  isGroup: (value: string) => value is G;
+};
+
 export const parsePositionGroups =
-  <G extends string>({
-    separators,
-    isGroup,
-  }: {
-    separators: RegExp;
-    isGroup: (value: string) => value is G;
-  }) =>
+  <G extends string>({ separators, isGroup }: ParsePositionGroupsProps<G>) =>
   (position: string | null): G[] =>
     (position ?? "")
       .split(separators)
@@ -17,7 +16,9 @@ export const parsePositionGroups =
       .filter((group, index, groups) => groups.indexOf(group) === index);
 
 // A guard for membership in a sport's own group (or slot, or key) list.
+type MemberOfProps<T extends string> = { values: readonly T[] };
+
 export const memberOf =
-  <T extends string>({ values }: { values: readonly T[] }) =>
+  <T extends string>({ values }: MemberOfProps<T>) =>
   (value: string): value is T =>
     values.some((entry) => entry === value);

@@ -88,13 +88,12 @@ export const TEAM_STAT_META: readonly TeamStatMeta[] = [
   { key: "ftPct", label: "FT%", description: "Free-throw percentage.", format: pctFormat },
 ];
 
-export const buildTeamStats = ({
-  results,
-  totals,
-}: {
+type BuildTeamStatsProps = {
   results: readonly TeamGameResult[];
   totals: readonly TeamBoxTotals[];
-}): TeamSeasonStats[] =>
+};
+
+export const buildTeamStats = ({ results, totals }: BuildTeamStatsProps): TeamSeasonStats[] =>
   totals.map((box) => {
     const teamResults = results.filter((result) => result.teamAbbr === box.teamAbbr);
     const games = teamResults.length;
@@ -146,11 +145,11 @@ const TEAM_RANK_KEYS: readonly TeamStatKey[] = [
 
 // Standard competition ranking (ties share the better rank) per stat across
 // the supplied teams; oppPpg and topg rank ascending.
-export const rankTeams = ({
-  stats,
-}: {
+type RankTeamsProps = {
   stats: readonly TeamSeasonStats[];
-}): Map<string, Record<TeamStatKey, number>> =>
+};
+
+export const rankTeams = ({ stats }: RankTeamsProps): Map<string, Record<TeamStatKey, number>> =>
   rankByKeys({
     items: stats,
     keys: TEAM_RANK_KEYS,

@@ -68,7 +68,9 @@ const ZERO_POINTS_SCORING: ScoringSettings = {
 };
 
 /** Unknown or missing Yahoo positions (`NA`, `null`) sit on the bench. */
-export const toSlotType = ({ position }: { position: string | null }): RosterSlotType =>
+type ToSlotTypeProps = { position: string | null };
+
+export const toSlotType = ({ position }: ToSlotTypeProps): RosterSlotType =>
   (position !== null && Object.hasOwn(YAHOO_SLOT_BY_POSITION, position)
     ? YAHOO_SLOT_BY_POSITION[position]
     : undefined) ?? "BENCH";
@@ -89,21 +91,20 @@ export type MappedSettings =
     }
   | { status: "unsupported"; reason: "highscore" | "scoring_type" };
 
-const lookup = <Value>({
-  table,
-  statId,
-}: {
+type LookupProps<Value> = {
   table: Readonly<Record<number, Value>>;
   statId: number;
-}): Value | undefined => (Object.hasOwn(table, statId) ? table[statId] : undefined);
+};
 
-const mapScoring = ({
-  league,
-  scoringType,
-}: {
+const lookup = <Value>({ table, statId }: LookupProps<Value>): Value | undefined =>
+  Object.hasOwn(table, statId) ? table[statId] : undefined;
+
+type MapScoringProps = {
   league: YahooLeague;
   scoringType: LeagueScoringType;
-}): MappedScoring => {
+};
+
+const mapScoring = ({ league, scoringType }: MapScoringProps): MappedScoring => {
   const stats = league.settings.stat_categories.stats;
 
   if (scoringType === "h2h_points") {
@@ -138,7 +139,9 @@ const mapScoring = ({
 };
 
 /** Maps a parsed Yahoo league onto the basketball descriptor's scoring and roster shape. */
-export const mapLeagueSettings = ({ league }: { league: YahooLeague }): MappedSettings => {
+type MapLeagueSettingsProps = { league: YahooLeague };
+
+export const mapLeagueSettings = ({ league }: MapLeagueSettingsProps): MappedSettings => {
   if (league.is_highscore || league.settings.is_highscore) {
     return { status: "unsupported", reason: "highscore" };
   }

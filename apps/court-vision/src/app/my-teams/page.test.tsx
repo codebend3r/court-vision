@@ -11,8 +11,10 @@ const listProps = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({ getProfile: () => getProfile() }));
 vi.mock("@/lib/leagues/queries", () => ({ getActiveLeague: () => getActiveLeague() }));
+type GetLeagueTeamsProps = { leagueId: string };
+
 vi.mock("@/lib/leagues/teamQueries", () => ({
-  getLeagueTeams: (args: { leagueId: string }) => getLeagueTeams(args),
+  getLeagueTeams: (args: GetLeagueTeamsProps) => getLeagueTeams(args),
 }));
 vi.mock("@/components/MyTeamsList/MyTeamsList", () => ({
   MyTeamsList: (props: MyTeamsListProps) => {
@@ -36,7 +38,9 @@ const redirectTarget = (error: unknown): string =>
 
 const noParams = Promise.resolve({});
 
-const league = ({ id, name }: { id: string; name: string }): LeagueSummary => ({
+type LeagueProps = { id: string; name: string };
+
+const league = ({ id, name }: LeagueProps): LeagueSummary => ({
   id,
   name,
   slug: name.toLowerCase(),

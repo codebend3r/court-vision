@@ -35,13 +35,15 @@ export type Valuation = FantasyValuationJob & {
 // The job is memoized on its inputs' identities: the URL state hands back
 // the same objects until a param actually changes. `createPort` is read once,
 // on mount.
+type UseValuationProps = FantasyValuationJob & { createPort?: () => ValuationPort | null };
+
 export const useValuation = ({
   lines,
   config,
   methodWeights,
   windowGames,
   createPort = createValuationPort,
-}: FantasyValuationJob & { createPort?: () => ValuationPort | null }): Valuation => {
+}: UseValuationProps): Valuation => {
   const job = useMemo(
     (): FantasyValuationJob => ({ lines, config, methodWeights, windowGames }),
     [lines, config, methodWeights, windowGames],

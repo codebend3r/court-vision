@@ -6,13 +6,15 @@ import { type WaiverLeagueData, type WaiverRosterEntry } from "@/lib/waiverWire/
 // rostered anywhere in the league, and the waiver list, each with its injury
 // status, plus the slots whose player never matched by name. Uncached for the same reason as `getRosteredPlayerIds`: per user,
 // a few hundred rows, and it must reflect a sync at once.
+type GetWaiverLeagueDataProps = {
+  leagueId: string;
+  myTeamId: string;
+};
+
 export const getWaiverLeagueData = async ({
   leagueId,
   myTeamId,
-}: {
-  leagueId: string;
-  myTeamId: string;
-}): Promise<WaiverLeagueData> => {
+}: GetWaiverLeagueDataProps): Promise<WaiverLeagueData> => {
   const [slots, waivers] = await Promise.all([
     prisma.leagueTeamSlot.findMany({
       where: { team: { leagueId } },

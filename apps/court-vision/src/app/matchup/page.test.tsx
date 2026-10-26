@@ -14,13 +14,17 @@ const pickerProps = vi.fn();
 const syncProps = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({ getProfile: () => getProfile() }));
+type ToLeagueSummaryProps = { league: LeagueSummary };
+
 vi.mock("@/lib/leagues/queries", () => ({
   getActiveLeagueRecord: () => getActiveLeagueRecord(),
   // The page only reads the summary's own fields back off the record.
-  toLeagueSummary: ({ league }: { league: LeagueSummary }) => league,
+  toLeagueSummary: ({ league }: ToLeagueSummaryProps) => league,
 }));
+type GetLeagueTeamsProps = { leagueId: string };
+
 vi.mock("@/lib/leagues/teamQueries", () => ({
-  getLeagueTeams: (args: { leagueId: string }) => getLeagueTeams(args),
+  getLeagueTeams: (args: GetLeagueTeamsProps) => getLeagueTeams(args),
 }));
 vi.mock("@/lib/matchups/loader", () => ({
   getLeagueWeek: (args: unknown) => getLeagueWeek(args),
@@ -69,7 +73,9 @@ const importedLeague = (overrides: Partial<LeagueSummary> = {}): LeagueSummary =
   ...overrides,
 });
 
-const renderPage = async ({ raw = {} }: { raw?: Record<string, string> } = {}) =>
+type RenderPageProps = { raw?: Record<string, string> };
+
+const renderPage = async ({ raw = {} }: RenderPageProps = {}) =>
   render(await MatchupPage({ searchParams: Promise.resolve(raw) }));
 
 beforeEach(() => {

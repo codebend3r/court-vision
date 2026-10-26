@@ -17,21 +17,27 @@ import styles from "@/components/MyTeamsList/MyTeamsList.module.scss";
 
 // A slot with no Court Vision player: a vacancy, or an imported player Yahoo
 // named that could not be matched (shown by name, never guessed).
-function EmptySlot({ unmatchedName }: { unmatchedName: string | null }) {
+type EmptySlotProps = { unmatchedName: string | null };
+
+function EmptySlot({ unmatchedName }: EmptySlotProps) {
   if (unmatchedName === null) return <span className={styles.empty}>Empty</span>;
   return <span className={styles.unmatched}>Unmatched: {unmatchedName}</span>;
 }
 
 // The user's own team leads; the rest keep the server's order.
-const mineFirst = ({ teams }: { teams: FantasyTeam[] }): FantasyTeam[] => [
+type MineFirstProps = { teams: FantasyTeam[] };
+
+const mineFirst = ({ teams }: MineFirstProps): FantasyTeam[] => [
   ...teams.filter((team) => team.isMine),
   ...teams.filter((team) => !team.isMine),
 ];
 
+type OnDeleteProps = { teamId: string };
+
 type TeamAccordionProps = {
   team: FantasyTeam;
   isOpen: boolean;
-  onDelete: ({ teamId }: { teamId: string }) => void;
+  onDelete: ({ teamId }: OnDeleteProps) => void;
 };
 
 function TeamAccordion({ team, isOpen, onDelete }: TeamAccordionProps) {
@@ -145,7 +151,7 @@ export function MyTeamsList({
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const onDelete = ({ teamId }: { teamId: string }) => {
+  const onDelete = ({ teamId }: OnDeleteProps) => {
     startTransition(async () => {
       const result = await deleteLeagueTeam({ teamId }).catch(() => null);
       if (result === null || result.status !== "ok") {

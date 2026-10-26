@@ -10,13 +10,15 @@ import { mapLeagueSettings, toSlotType } from "@/lib/yahoo/settings";
 const gameOfCourts = (): YahooLeague =>
   yahooLeagueSnapshotSchema.parse(league106344).fantasy_content.league;
 
-const withSettings = ({
-  league,
-  settings,
-}: {
+type WithSettingsProps = {
   league: YahooLeague;
   settings: Partial<YahooLeague["settings"]>;
-}): YahooLeague => ({ ...league, settings: { ...league.settings, ...settings } });
+};
+
+const withSettings = ({ league, settings }: WithSettingsProps): YahooLeague => ({
+  ...league,
+  settings: { ...league.settings, ...settings },
+});
 
 const NINE_CATEGORIES: Category[] = ["fg", "ft", "tpm", "pts", "reb", "ast", "stl", "blk", "tov"];
 

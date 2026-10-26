@@ -14,15 +14,14 @@ const rookie: FantasyTeamPlayer = {
   nbaPersonId: 1643407,
 };
 
-const line = ({
-  playerId,
-  firstName,
-  lastName,
-}: {
+type LineProps = {
   playerId: number;
   firstName: string;
   lastName: string;
-}) => makeStatLine({ playerId, firstName, lastName, fullName: `${firstName} ${lastName}` });
+};
+
+const line = ({ playerId, firstName, lastName }: LineProps) =>
+  makeStatLine({ playerId, firstName, lastName, fullName: `${firstName} ${lastName}` });
 
 describe("fantasyPlayersFromPool", () => {
   it("maps stat lines to builder players, alphabetized by last then first name", () => {

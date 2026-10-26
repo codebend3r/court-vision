@@ -6,15 +6,13 @@ import { makeStatLine } from "@/lib/valuation/fixtures";
 import { buildWaiverModel, scoreKeysFor } from "@/lib/waiverWire/model";
 import { type WaiverLeagueData, type WaiverRosterEntry } from "@/lib/waiverWire/types";
 
-const valued = ({
-  playerId,
-  z,
-  g = 0,
-}: {
+type ValuedProps = {
   playerId: number;
   z: number;
   g?: number;
-}): FantasyPlayerValues => ({
+};
+
+const valued = ({ playerId, z, g = 0 }: ValuedProps): FantasyPlayerValues => ({
   playerId,
   z,
   g,
@@ -25,11 +23,13 @@ const valued = ({
   sim: 0,
 });
 
+type MineProps = Partial<WaiverRosterEntry> & { playerId: number };
+
 const mine = ({
   playerId,
   slotType = "BENCH",
   injuryStatus = null,
-}: Partial<WaiverRosterEntry> & { playerId: number }): WaiverRosterEntry => ({
+}: MineProps): WaiverRosterEntry => ({
   playerId,
   fullName: `Test Player ${playerId}`,
   slotType,
@@ -44,7 +44,9 @@ const league = (overrides: Partial<WaiverLeagueData>): WaiverLeagueData => ({
   ...overrides,
 });
 
-const ids = (rows: readonly { playerId: number }[]): number[] => rows.map((row) => row.playerId);
+type IdsProps = readonly { playerId: number }[];
+
+const ids = (rows: IdsProps): number[] => rows.map((row) => row.playerId);
 
 describe("buildWaiverModel", () => {
   it("splits the valued pool into my roster and the free pool", () => {

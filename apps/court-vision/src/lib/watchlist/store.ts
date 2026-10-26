@@ -2,15 +2,25 @@ import { create } from "zustand";
 
 import { type WatchlistError } from "@/lib/watchlist/types";
 
+type HydrateProps = { playerIds: number[] };
+
+type AddProps = { playerId: number };
+
+type RemoveProps = { playerId: number };
+
+type SetCountProps = { count: number };
+
+type SetErrorProps = { error: WatchlistError };
+
 type WatchlistState = {
   playerIds: ReadonlySet<number>;
   count: number;
   lastError: WatchlistError | null;
-  hydrate: (args: { playerIds: number[] }) => void;
-  add: (args: { playerId: number }) => void;
-  remove: (args: { playerId: number }) => void;
-  setCount: (args: { count: number }) => void;
-  setError: (args: { error: WatchlistError }) => void;
+  hydrate: (args: HydrateProps) => void;
+  add: (args: AddProps) => void;
+  remove: (args: RemoveProps) => void;
+  setCount: (args: SetCountProps) => void;
+  setError: (args: SetErrorProps) => void;
   clearError: () => void;
 };
 
@@ -39,5 +49,7 @@ export const useWatchlistStore = create<WatchlistState>()((set) => ({
   clearError: () => set({ lastError: null }),
 }));
 
-export const useIsStarred = ({ playerId }: { playerId: number }): boolean =>
+type UseIsStarredProps = { playerId: number };
+
+export const useIsStarred = ({ playerId }: UseIsStarredProps): boolean =>
   useWatchlistStore((state) => state.playerIds.has(playerId));

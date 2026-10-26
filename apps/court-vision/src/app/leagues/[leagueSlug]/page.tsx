@@ -9,11 +9,11 @@ import styles from "@/app/leagues/leagues.module.scss";
 
 export const dynamic = "force-dynamic";
 
-export default async function EditLeaguePage({
-  params,
-}: {
+type EditLeaguePageProps = {
   params: Promise<{ leagueSlug: string }>;
-}) {
+};
+
+export default async function EditLeaguePage({ params }: EditLeaguePageProps) {
   const { leagueSlug } = await params;
   const profile = await getProfile();
   if (profile === null) redirect("/login?next=/leagues");

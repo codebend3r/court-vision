@@ -27,13 +27,12 @@ function Harness() {
   );
 }
 
-const renderHarness = ({
-  searchParams = {},
-  onUrlUpdate,
-}: {
+type RenderHarnessProps = {
   searchParams?: Record<string, string>;
   onUrlUpdate?: (event: UrlUpdateEvent) => void;
-} = {}) =>
+};
+
+const renderHarness = ({ searchParams = {}, onUrlUpdate }: RenderHarnessProps = {}) =>
   render(<Harness />, {
     wrapper: withNuqsTestingAdapter({ hasMemory: true, searchParams, onUrlUpdate }),
   });

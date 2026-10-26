@@ -1,10 +1,11 @@
 import { describe, expect, it } from "bun:test";
 
-import { HAS_GAME_LOGS, CURRENT_SEASON_JOIN, PLAYER_IDENTITY_COLUMNS } from "@/lib/players/sql";
+import { hasSeasonLogs, seasonStatsJoin, PLAYER_IDENTITY_COLUMNS } from "@/lib/players/sql";
 import { SEASON_LABEL, SEASON_TYPE } from "@/lib/stats/season";
 
 describe("player SQL fragments", () => {
   it("binds the season and season type as parameters in the current-season join", () => {
+    const CURRENT_SEASON_JOIN = seasonStatsJoin({ season: SEASON_LABEL });
     expect(CURRENT_SEASON_JOIN.sql).toContain('"PlayerSeasonStats"');
     expect(CURRENT_SEASON_JOIN.sql).not.toContain(SEASON_TYPE);
     expect(CURRENT_SEASON_JOIN.sql).not.toContain(SEASON_LABEL);
@@ -20,8 +21,9 @@ describe("player SQL fragments", () => {
     expect(PLAYER_IDENTITY_COLUMNS.sql).toContain('p."nbaPersonId"');
   });
 
-  it("checks for game logs without binding anything", () => {
-    expect(HAS_GAME_LOGS.sql).toContain('"PlayerGameLog"');
-    expect(HAS_GAME_LOGS.values).toEqual([]);
+  it("checks for logs only in the selected regular season", () => {
+    const logs = hasSeasonLogs({ season: SEASON_LABEL });
+    expect(logs.sql).toContain('"PlayerGameLog"');
+    expect(logs.values).toEqual([SEASON_LABEL, SEASON_TYPE]);
   });
 });

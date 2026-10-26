@@ -4,10 +4,9 @@ import type { FetchImpl } from "@vision/core/util/fetchImpl";
 
 import { bdlFetch } from "@/lib/balldontlie/client";
 
-const jsonResponse = (
-  body: unknown,
-  init: { status?: number; headers?: Record<string, string> } = {},
-): Response =>
+type JsonResponseProps = { status?: number; headers?: Record<string, string> };
+
+const jsonResponse = (body: unknown, init: JsonResponseProps = {}): Response =>
   new Response(JSON.stringify(body), {
     status: init.status ?? 200,
     headers: init.headers ?? { "content-type": "application/json" },

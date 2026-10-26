@@ -5,7 +5,9 @@ import styles from "#ui/components/PageHeader/PageHeader.module.scss";
 
 // Keycap-styled link for the actions slot, so every page action shares one
 // look without each page redeclaring it.
-export function PageAction({ href, children }: { href: string; children: ReactNode }) {
+type PageActionProps = { href: string; children: ReactNode };
+
+export function PageAction({ href, children }: PageActionProps) {
   return (
     <Link href={href} className={styles.action}>
       {children}

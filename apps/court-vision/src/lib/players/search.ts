@@ -12,7 +12,9 @@ import {
   type PlayerSortKey,
   type RegularSearchParams,
 } from "@/lib/players/searchParams";
-import { HAS_GAME_LOGS, CURRENT_SEASON_JOIN, PLAYER_IDENTITY_COLUMNS } from "@/lib/players/sql";
+import { hasSeasonLogs, seasonStatsJoin, PLAYER_IDENTITY_COLUMNS } from "@/lib/players/sql";
+import { SEASON_TYPE } from "@/lib/stats/season";
+import { latestSeason } from "@/lib/valuation/season";
 
 const PLAYER_STAT_KEYS = [
   "gamesPlayed",
@@ -65,8 +67,11 @@ const poolRowSchema = playerRowSchema.extend(
 
 // The season range reads each player's current-season Regular Season aggregate; a
 // player with logs but no aggregate row still lists, with zeroed stats.
-const fetchSeasonPool = (): Promise<unknown> =>
-  prisma.$queryRaw`
+type FetchSeasonPoolProps = { season: string };
+const fetchSeasonPool = ({ season }: FetchSeasonPoolProps): Promise<unknown> => {
+  const join = seasonStatsJoin({ season });
+  const logs = hasSeasonLogs({ season });
+  return prisma.$queryRaw`
     SELECT ${PLAYER_IDENTITY_COLUMNS},
            COALESCE(s."gamesPlayed", 0) AS "gamesPlayed",
            COALESCE(s.minutes, 0)::float8 AS min,
@@ -77,16 +82,18 @@ const fetchSeasonPool = (): Promise<unknown> =>
            COALESCE(s.stl, 0) AS stl, COALESCE(s.blk, 0) AS blk,
            COALESCE(s.tov, 0) AS tov, COALESCE(s.pts, 0) AS pts
     FROM "Player" p
-    ${CURRENT_SEASON_JOIN}
-    WHERE ${HAS_GAME_LOGS}
+    ${join}
+    WHERE ${logs}
   `;
+};
 
 // A lastN range sums each player's N most recent logs. The LIMIT sits inside a
 // per-player lateral so Postgres reads N rows off the (playerId, gameDate)
 // index per player; Prisma's nested `take` cannot express this and fetched
 // every log in the table to trim in memory. Games played counts appearances
 // only: a DNP (0 minutes) is in the window but is not a game played.
-const fetchWindowPool = ({ gameLimit }: { gameLimit: number }): Promise<unknown> =>
+type FetchWindowPoolProps = { gameLimit: number; season: string };
+const fetchWindowPool = ({ gameLimit, season }: FetchWindowPoolProps): Promise<unknown> =>
   prisma.$queryRaw`
     SELECT ${PLAYER_IDENTITY_COLUMNS},
            w."gamesPlayed", w.min, w.fgm, w.fga, w.fg3m, w.fg3a, w.ftm, w.fta,
@@ -107,6 +114,7 @@ const fetchWindowPool = ({ gameLimit }: { gameLimit: number }): Promise<unknown>
                gl.reb, gl.ast, gl.stl, gl.blk, gl.tov, gl.pts
         FROM "PlayerGameLog" gl
         WHERE gl."playerId" = p.id
+          AND gl.season = ${season} AND gl."seasonType" = ${SEASON_TYPE}
         ORDER BY gl."gameDate" DESC
         LIMIT ${gameLimit}
       ) g
@@ -114,13 +122,20 @@ const fetchWindowPool = ({ gameLimit }: { gameLimit: number }): Promise<unknown>
     WHERE w.games > 0
   `;
 
+type FetchRegularPoolProps = {
+  range: PlayerGameRange;
+};
+
 export const fetchRegularPool = async ({
   range,
-}: {
-  range: PlayerGameRange;
-}): Promise<PlayerPoolRow[]> => {
+}: FetchRegularPoolProps): Promise<PlayerPoolRow[]> => {
+  const season = await latestSeason();
+  if (season === null) return [];
   const gameLimit = gamesForRange({ range });
-  const rows = gameLimit === null ? await fetchSeasonPool() : await fetchWindowPool({ gameLimit });
+  const rows =
+    gameLimit === null
+      ? await fetchSeasonPool({ season })
+      : await fetchWindowPool({ gameLimit, season });
   return z.array(poolRowSchema).parse(rows).map(splitPlayerRow);
 };
 
@@ -133,22 +148,22 @@ const SCHEDULE_GAMES = 82;
 const isCountingSortKey = (key: PlayerSortKey): key is CountingSortKey =>
   COUNTING_SORT_KEYS.some((statKey) => statKey === key);
 
-const minQualifyingGames = ({ range }: { range: PlayerGameRange }): number =>
+type MinQualifyingGamesProps = { range: PlayerGameRange };
+
+const minQualifyingGames = ({ range }: MinQualifyingGamesProps): number =>
   Math.ceil((gamesForRange({ range }) ?? SCHEDULE_GAMES) * QUALIFYING_GAMES_SHARE);
 
 type StatSortKey = Exclude<PlayerSortKey, NameSortKey>;
 
 type RankArgs = RegularSearchParams & { playerIds?: readonly number[] };
 
-const meetsMinimum = ({
-  stats,
-  sort,
-  args,
-}: {
+type MeetsMinimumProps = {
   stats: PlayerStats;
   sort: StatSortKey;
   args: RankArgs;
-}): boolean => {
+};
+
+const meetsMinimum = ({ stats, sort, args }: MeetsMinimumProps): boolean => {
   if (!args.minimums) return true;
   if (sort === "fgPct") return stats.fgm >= MIN_FGM;
   if (sort === "fg3Pct") return stats.fg3m >= MIN_FG3M;
@@ -161,18 +176,18 @@ const meetsMinimum = ({
 };
 
 // A shooting percentage, with no attempts ranking below every real one.
-const shootingRate = ({ made, attempted }: { made: number; attempted: number }): number =>
+type ShootingRateProps = { made: number; attempted: number };
+
+const shootingRate = ({ made, attempted }: ShootingRateProps): number =>
   attempted > 0 ? made / attempted : -1;
 
-const statSortValue = ({
-  row,
-  sort,
-  args,
-}: {
+type StatSortValueProps = {
   row: PlayerPoolRow;
   sort: StatSortKey;
   args: RankArgs;
-}): number => {
+};
+
+const statSortValue = ({ row, sort, args }: StatSortValueProps): number => {
   const { stats } = row;
   // Star order lives in the watchlist's id list, newest first, so the first id
   // scores highest and the default descending sort leads with the latest
@@ -194,13 +209,12 @@ const statSortValue = ({
 // Filters, orders and pages a pool, optionally restricted to a watchlist's
 // ids. A star-order sort ranks by the ids' order before the page is cut, so
 // every page of a long watchlist follows it.
-export const rankPlayers = ({
-  pool,
-  args,
-}: {
+type RankPlayersProps = {
   pool: readonly PlayerPoolRow[];
   args: RankArgs;
-}): PlayersSearchResult => {
+};
+
+export const rankPlayers = ({ pool, args }: RankPlayersProps): PlayersSearchResult => {
   const { q, page, size, dir, sort, playerIds } = args;
   return rankRows({
     rows: playerIds === undefined ? pool : pool.filter((row) => playerIds.includes(row.id)),

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { MAX_SNAPSHOT_ROSTER_PLAYERS } from "@/lib/yahoo/snapshotShape";
+
 // Yahoo's `json_f` format mixes numbers and strings for ids and flags, wraps
 // every collection element in a single-key object (`teams: [{ team }]`) and
 // sends `null` for absent values. These schemas absorb all of that: collections
@@ -29,7 +31,9 @@ const YAHOO_ASSET_HOSTS: readonly string[] = [
   "yahoofantasysports-res.cloudinary.com",
 ];
 
-const isYahooHostedUrl = ({ value }: { value: string }): boolean => {
+type IsYahooHostedUrlProps = { value: string };
+
+const isYahooHostedUrl = ({ value }: IsYahooHostedUrlProps): boolean => {
   const url = URL.parse(value);
   if (url === null || url.protocol !== "https:") return false;
   return url.hostname.endsWith(".yahoo.com") || YAHOO_ASSET_HOSTS.includes(url.hostname);
@@ -44,13 +48,15 @@ const toYahooLogoUrl = (value: string | undefined): string | undefined =>
   value !== undefined && isYahooHostedUrl({ value }) ? value : undefined;
 
 // `[{ team }, { team }]` -> `[team, team]`: validates each wrapper, keeps what `pick` returns.
+type UnwrappedProps<Inner, Wrapper extends z.ZodType> = {
+  wrapper: Wrapper;
+  pick: (item: z.output<Wrapper>) => Inner;
+};
+
 const unwrapped = <Wrapper extends z.ZodType, Inner>({
   wrapper,
   pick,
-}: {
-  wrapper: Wrapper;
-  pick: (item: z.output<Wrapper>) => Inner;
-}) => z.array(wrapper).transform((items) => items.map(pick));
+}: UnwrappedProps<Inner, Wrapper>) => z.array(wrapper).transform((items) => items.map(pick));
 
 const playerSchema = z.object({
   player_id: idSchema,
@@ -107,7 +113,7 @@ const statCategorySchema = z.object({
 
 const rosterPositionSchema = z.object({
   position: z.string(),
-  count: numberSchema,
+  count: numberSchema.pipe(z.number().int().min(0).max(MAX_SNAPSHOT_ROSTER_PLAYERS)),
   is_starting_position: yahooFlagSchema,
 });
 
@@ -141,7 +147,12 @@ const leagueSchema = z.object({
     roster_positions: unwrapped({
       wrapper: z.object({ roster_position: rosterPositionSchema }),
       pick: ({ roster_position }) => roster_position,
-    }),
+    }).refine(
+      (positions) =>
+        positions.length <= MAX_SNAPSHOT_ROSTER_PLAYERS &&
+        positions.reduce((total, { count }) => total + count, 0) <= MAX_SNAPSHOT_ROSTER_PLAYERS,
+      { message: "Roster layout exceeds the slot limit" },
+    ),
     stat_categories: z.object({
       stats: unwrapped({
         wrapper: z.object({ stat: statCategorySchema }),

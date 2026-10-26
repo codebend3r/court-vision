@@ -9,15 +9,13 @@ import {
   type AdvancedSourceLog,
 } from "@/lib/stats/advancedSeries";
 
-const boxLog = ({
-  gameId,
-  day,
-  minutes = 34,
-}: {
+type BoxLogProps = {
   gameId: string;
   day: number;
   minutes?: number;
-}): AdvancedSourceLog => ({
+};
+
+const boxLog = ({ gameId, day, minutes = 34 }: BoxLogProps): AdvancedSourceLog => ({
   gameId,
   gameDate: new Date(Date.UTC(2025, 9, day)),
   matchup: `LAL vs. OPP${day}`,
@@ -25,15 +23,13 @@ const boxLog = ({
   minutes,
 });
 
-const advancedLog = ({
-  gameId,
-  pie,
-  netRating = 5,
-}: {
+type AdvancedLogProps = {
   gameId: string;
   pie: number | null;
   netRating?: number | null;
-}): AdvancedSeriesLog => ({
+};
+
+const advancedLog = ({ gameId, pie, netRating = 5 }: AdvancedLogProps): AdvancedSeriesLog => ({
   gameId,
   pie,
   pace: 100,

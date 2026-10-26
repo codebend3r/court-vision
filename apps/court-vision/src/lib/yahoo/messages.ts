@@ -42,13 +42,15 @@ const YAHOO_FAILURE_MESSAGES: Readonly<Record<YahooMessageStatus, string>> = {
 const NOT_FOUND_WITH_EXTENSION_MESSAGE =
   "Couldn't read this league. If it's private, the commissioner can make it publicly viewable in Yahoo's league settings, or you can import it with the Court Vision extension.";
 
+type YahooFailureMessageProps = {
+  status: YahooMessageStatus;
+  extensionAvailable?: boolean;
+};
+
 export const yahooFailureMessage = ({
   status,
   extensionAvailable = getExtensionId() !== null,
-}: {
-  status: YahooMessageStatus;
-  extensionAvailable?: boolean;
-}): string =>
+}: YahooFailureMessageProps): string =>
   status === "not_found" && extensionAvailable
     ? NOT_FOUND_WITH_EXTENSION_MESSAGE
     : YAHOO_FAILURE_MESSAGES[status];
@@ -67,18 +69,21 @@ const BRIDGE_FAILURE_MESSAGES: Readonly<Record<BridgeErrorReason | "missing", st
     "The Court Vision extension isn't responding. Check that it's installed and enabled, then try again.",
 };
 
-export const bridgeFailureMessage = ({
-  reason,
-}: {
+type BridgeFailureMessageProps = {
   reason: BridgeErrorReason | "missing";
-}): string => BRIDGE_FAILURE_MESSAGES[reason];
+};
+
+export const bridgeFailureMessage = ({ reason }: BridgeFailureMessageProps): string =>
+  BRIDGE_FAILURE_MESSAGES[reason];
 
 // Describes the import page's URL field.
 export const YAHOO_URL_HINT =
   "Paste the link from your league's page on basketball.fantasysports.yahoo.com, or just the league ID.";
 
 // Names the categories a league scores that the valuation engine can't value.
-export const notValuedMessage = ({ categories }: { categories: string[] }): string =>
+type NotValuedMessageProps = { categories: string[] };
+
+export const notValuedMessage = ({ categories }: NotValuedMessageProps): string =>
   `Not valued: ${categories.join(", ")}`;
 
 // Recorded on a league whose sync Yahoo answered with another season's league.
@@ -88,11 +93,15 @@ export const KEY_CHANGED_MESSAGE = "This league's Yahoo key changed; import it a
 export const GENERIC_SYNC_ERROR_MESSAGE = GENERIC_MESSAGE;
 
 // Announced after a sync that left some of Yahoo's players unmatched.
-export const unmatchedSyncMessage = ({ names }: { names: string[] }): string => {
+type UnmatchedSyncMessageProps = { names: string[] };
+
+export const unmatchedSyncMessage = ({ names }: UnmatchedSyncMessageProps): string => {
   const count = names.length === 1 ? "1 player" : `${names.length} players`;
   return `${count} couldn't be matched: ${names.join(", ")}. They won't count as rostered, so they may show up as free agents.`;
 };
 
 // Announced after an import that left some of Yahoo's players unmatched.
-export const unmatchedPlayersMessage = ({ names }: { names: string[] }): string =>
+type UnmatchedPlayersMessageProps = { names: string[] };
+
+export const unmatchedPlayersMessage = ({ names }: UnmatchedPlayersMessageProps): string =>
   `Imported. ${unmatchedSyncMessage({ names })}`;

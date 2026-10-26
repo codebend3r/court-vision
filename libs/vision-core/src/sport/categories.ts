@@ -4,6 +4,13 @@ import { type CountingCategoryDef, type SportKeys } from "#core/sport/types";
 // more is better, and its formula is the standard z-score line. Curried so a
 // sport names its keys once and every call infers its own category key:
 // `const counting = countingCategory<HockeyKeys>()`.
+type CountingCategoryProps<K extends SportKeys, C extends K["counting"] & K["valued"]> = {
+  key: C;
+  label: string;
+  fullName: string;
+  description: string;
+};
+
 export const countingCategory =
   <K extends SportKeys>() =>
   <C extends K["counting"] & K["valued"]>({
@@ -11,12 +18,7 @@ export const countingCategory =
     label,
     fullName,
     description,
-  }: {
-    key: C;
-    label: string;
-    fullName: string;
-    description: string;
-  }): CountingCategoryDef<K> & { key: C } => ({
+  }: CountingCategoryProps<K, C>): CountingCategoryDef<K> & { key: C } => ({
     kind: "counting",
     key,
     stat: key,

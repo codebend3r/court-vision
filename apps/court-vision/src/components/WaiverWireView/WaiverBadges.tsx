@@ -21,7 +21,9 @@ type Badge = { kind: "injury" | "waivers"; code: string; name: string; tone: Bad
 
 const WAIVERS_BADGE: Badge = { kind: "waivers", code: "W", name: "On waivers", tone: "waivers" };
 
-const injuryBadges = ({ injuryStatus }: { injuryStatus: string | null }): Badge[] =>
+type InjuryBadgesProps = { injuryStatus: string | null };
+
+const injuryBadges = ({ injuryStatus }: InjuryBadgesProps): Badge[] =>
   injuryStatus
     ? [
         {

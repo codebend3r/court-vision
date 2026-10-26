@@ -36,17 +36,14 @@ import {
 
 // Raw per-game values and totals are whole-number counts; averages and per-36
 // rates keep one decimal.
-const formatValue = ({
-  key,
-  value,
-  panel,
-  mode,
-}: {
+type FormatValueProps = {
   key: StatKey;
   value: number;
   panel: StatPanel;
   mode: StatMode;
-}): string => {
+};
+
+const formatValue = ({ key, value, panel, mode }: FormatValueProps): string => {
   if (panel === "shooting") {
     return `${value.toFixed(1)}%`;
   }
@@ -75,7 +72,9 @@ const STAT_ICONS: Record<StatKey, LucideIcon> = {
   ftPct: Crosshair,
 };
 
-export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; mode: StatMode }) {
+type PlayerStatChartProps = { series: CumulativePoint[]; mode: StatMode };
+
+export function PlayerStatChart({ series, mode }: PlayerStatChartProps) {
   const { theme } = useTheme();
   const statMeta = getStatMeta({ theme });
   const selection = useSeriesSelection({
@@ -98,9 +97,11 @@ export function PlayerStatChart({ series, mode }: { series: CumulativePoint[]; m
     (meta) => meta.panel === "shooting" && selection.isActive({ key: meta.key }),
   );
 
+  type FormatPanelValueProps = { key: StatKey; value: number };
+
   const formatPanelValue =
     (panel: StatPanel) =>
-    ({ key, value }: { key: StatKey; value: number }) =>
+    ({ key, value }: FormatPanelValueProps) =>
       formatValue({ key, value, panel, mode });
 
   return (

@@ -3,7 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import { useDebouncedQuery } from "@/lib/players/useDebouncedQuery";
 
-const onCommit = vi.fn<(args: { q: string }) => void>();
+type OnCommitProps = { q: string };
+
+const onCommit = vi.fn<(args: OnCommitProps) => void>();
 
 // The part of an input's change event the hook reads.
 const typed = (value: string) => ({ target: { value } });

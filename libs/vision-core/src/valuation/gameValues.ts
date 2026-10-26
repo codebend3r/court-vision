@@ -29,6 +29,16 @@ export type FantasyGameValue<K extends SportKeys> = {
 // game's Z reads on the same scale as the player's season Z. `season` is the
 // player's unwindowed trend over the same logs (buildFantasyTrend with no
 // window), computed once by the caller and read here for the rolling values.
+type BuildFantasyGameValuesProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  line: ValuationLine<K>;
+  logs: readonly DatedLog<K>[];
+  season: readonly FantasyTrendValue[];
+  poolStats: PoolStats<K>;
+  config: ValuationConfig<K>;
+  methodWeights: MethodWeights<K>;
+};
+
 export const buildFantasyGameValues = <K extends SportKeys>({
   sport,
   line,
@@ -37,15 +47,7 @@ export const buildFantasyGameValues = <K extends SportKeys>({
   poolStats,
   config,
   methodWeights,
-}: {
-  sport: SportDescriptor<K>;
-  line: ValuationLine<K>;
-  logs: readonly DatedLog<K>[];
-  season: readonly FantasyTrendValue[];
-  poolStats: PoolStats<K>;
-  config: ValuationConfig<K>;
-  methodWeights: MethodWeights<K>;
-}): FantasyGameValue<K>[] => {
+}: BuildFantasyGameValuesProps<K>): FantasyGameValue<K>[] => {
   const zConfig = weightedConfig({ config, methodWeights, method: "z" });
   const gConfig = weightedConfig({ config, methodWeights, method: "g" });
   return logs.map((log, index): FantasyGameValue<K> => {

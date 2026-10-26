@@ -18,17 +18,19 @@ export const verdictLines = (verdict: RouteVerdict): string[] => {
   ];
 };
 
+type SummaryLineProps = {
+  summary: BudgetSummary;
+  skippedCount: number;
+  percentile: number;
+  runs: number;
+};
+
 export const summaryLine = ({
   summary,
   skippedCount,
   percentile,
   runs,
-}: {
-  summary: BudgetSummary;
-  skippedCount: number;
-  percentile: number;
-  runs: number;
-}): string => {
+}: SummaryLineProps): string => {
   // Measuring nothing is not passing. Without this, a fully skipped run prints
   // "All 0 measured routes are inside budget" and reads as green coverage.
   if (summary.measured === 0) {

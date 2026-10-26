@@ -19,17 +19,19 @@ import {
 // between adjacent teams in each category, (max − min) ÷ (teams − 1). That is
 // the same quantity a history table would hold, measured on the player pool the
 // league would actually draft from rather than on last year's results.
+type StandingsGainDenominatorsProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+  poolStats: PoolStats<K>;
+  config: ValuationConfig<K>;
+};
+
 export const standingsGainDenominators = <K extends SportKeys>({
   sport,
   lines,
   poolStats,
   config,
-}: {
-  sport: SportDescriptor<K>;
-  lines: readonly ValuationLine<K>[];
-  poolStats: PoolStats<K>;
-  config: ValuationConfig<K>;
-}): Partial<Record<Category<K>, number>> => {
+}: StandingsGainDenominatorsProps<K>): Partial<Record<Category<K>, number>> => {
   if (config.teams < 2) return {};
   const { spread } = buildLeague({ sport, lines, poolStats, config });
   return config.categories.reduce<Partial<Record<Category<K>, number>>>((acc, category) => {
@@ -38,17 +40,19 @@ export const standingsGainDenominators = <K extends SportKeys>({
   }, {});
 };
 
+type ScoreSGPProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+  poolStats: PoolStats<K>;
+  config: ValuationConfig<K>;
+};
+
 export const scoreSGP = <K extends SportKeys>({
   sport,
   lines,
   poolStats,
   config,
-}: {
-  sport: SportDescriptor<K>;
-  lines: readonly ValuationLine<K>[];
-  poolStats: PoolStats<K>;
-  config: ValuationConfig<K>;
-}): PlayerValue<K>[] => {
+}: ScoreSGPProps<K>): PlayerValue<K>[] => {
   const denominators = standingsGainDenominators({ sport, lines, poolStats, config });
   return scorePerCategory({
     sport,

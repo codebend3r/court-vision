@@ -11,7 +11,9 @@ import {
 
 type Row = { id: number; lastName: string; fullName: string; value: number | null };
 
-const row = ({ id, name, value }: { id: number; name: string; value: number | null }): Row => ({
+type RowProps = { id: number; name: string; value: number | null };
+
+const row = ({ id, name, value }: RowProps): Row => ({
   id,
   lastName: name,
   fullName: `A ${name}`,

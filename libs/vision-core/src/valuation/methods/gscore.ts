@@ -9,17 +9,19 @@ import { type PlayerValue, type PoolStats, type ValuationLine } from "#core/valu
 // reliably into weekly category wins. The games-per-week scaling and exact
 // ratio-category treatment from the Rosenof paper remain to be verified
 // (PRD implementation gate); this is the documented sketch.
+type ScoreGScoreProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+  poolStats: PoolStats<K>;
+  config: CategoryScoringConfig<K>;
+};
+
 export const scoreGScore = <K extends SportKeys>({
   sport,
   lines,
   poolStats,
   config,
-}: {
-  sport: SportDescriptor<K>;
-  lines: readonly ValuationLine<K>[];
-  poolStats: PoolStats<K>;
-  config: CategoryScoringConfig<K>;
-}): PlayerValue<K>[] =>
+}: ScoreGScoreProps<K>): PlayerValue<K>[] =>
   scorePerCategory({
     sport,
     lines,

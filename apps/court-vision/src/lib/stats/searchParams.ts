@@ -35,7 +35,9 @@ export const statFilterParsers = {
 
 // Requested season (already literal-validated) wins; otherwise every player
 // opens on the current league season, including players who have not played yet.
-export const resolveSeasonSelection = ({ requested }: { requested: string | null }): string =>
+type ResolveSeasonSelectionProps = { requested: string | null };
+
+export const resolveSeasonSelection = ({ requested }: ResolveSeasonSelectionProps): string =>
   requested ?? SEASON_LABEL;
 
 export const loadStatFilters = createLoader(statFilterParsers);
@@ -49,20 +51,21 @@ const GAMES_BY_SPAN: Record<StatSpan, number | null> = {
   season: null,
 };
 
-export const gamesForSpan = ({ span }: { span: StatSpan }): number | null => GAMES_BY_SPAN[span];
+type GamesForSpanProps = { span: StatSpan };
+
+export const gamesForSpan = ({ span }: GamesForSpanProps): number | null => GAMES_BY_SPAN[span];
 
 // Not every view can plot every mode: rate metrics have no "totals" or
 // "per 36" reading, and fantasy value has no per-game mode at all. The URL keeps
 // whatever the regular view chose; each view coerces it to a mode it offers, so
 // switching tabs never lands on an unpressed filter. Server and client share
 // this so the pressed key and the plotted series cannot disagree.
-export const coerceStatMode = ({
-  mode,
-  modes,
-}: {
+type CoerceStatModeProps = {
   mode: StatMode;
   modes: readonly StatMode[];
-}): StatMode => {
+};
+
+export const coerceStatMode = ({ mode, modes }: CoerceStatModeProps): StatMode => {
   if (modes.some((offered) => offered === mode)) return mode;
   if (modes.some((offered) => offered === "avg")) return "avg";
   return modes[0] ?? DEFAULT_MODE;
@@ -80,8 +83,12 @@ const RANGE_BY_SPAN: Record<StatSpan, PlayerGameRange> = {
 // The player page's timeframe and the players list's game range describe the
 // same window; the fantasy view valuates against the list's cached pool, which
 // is keyed by range.
-export const rangeForSpan = ({ span }: { span: StatSpan }): PlayerGameRange => RANGE_BY_SPAN[span];
+type RangeForSpanProps = { span: StatSpan };
+
+export const rangeForSpan = ({ span }: RangeForSpanProps): PlayerGameRange => RANGE_BY_SPAN[span];
 
 // The window in words, matching the Fantasy tab's Games select.
-export const spanLabel = ({ span }: { span: StatSpan }): string =>
+type SpanLabelProps = { span: StatSpan };
+
+export const spanLabel = ({ span }: SpanLabelProps): string =>
   span === "season" ? "All games" : `Last ${span} games`;

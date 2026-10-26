@@ -21,14 +21,20 @@ const syncProps = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({ getProfile: () => getProfile() }));
 vi.mock("@/lib/leagues/queries", () => ({ getActiveLeague: () => getActiveLeague() }));
+type GetLeagueTeamsProps = { leagueId: string };
+
 vi.mock("@/lib/leagues/teamQueries", () => ({
-  getLeagueTeams: (args: { leagueId: string }) => getLeagueTeams(args),
+  getLeagueTeams: (args: GetLeagueTeamsProps) => getLeagueTeams(args),
 }));
+type GetFantasyPoolProps = { range: string };
+
 vi.mock("@/lib/valuation/loader", () => ({
-  getFantasyPool: (args: { range: string }) => getFantasyPool(args),
+  getFantasyPool: (args: GetFantasyPoolProps) => getFantasyPool(args),
 }));
+type GetWaiverLeagueDataProps = { leagueId: string; myTeamId: string };
+
 vi.mock("@/lib/waiverWire/loader", () => ({
-  getWaiverLeagueData: (args: { leagueId: string; myTeamId: string }) => getWaiverLeagueData(args),
+  getWaiverLeagueData: (args: GetWaiverLeagueDataProps) => getWaiverLeagueData(args),
 }));
 vi.mock("@/lib/fantasyTeams/loader", () => ({
   getActiveRosterPlayers: () => getActiveRosterPlayers(),
@@ -95,7 +101,9 @@ const leagueData: WaiverLeagueData = {
 
 const lines = [makeStatLine({ playerId: 1, pts: 900, minutes: 300 })];
 
-const renderPage = async ({ raw = {} }: { raw?: Record<string, string> } = {}) =>
+type RenderPageProps = { raw?: Record<string, string> };
+
+const renderPage = async ({ raw = {} }: RenderPageProps = {}) =>
   render(await WaiverWirePage({ searchParams: Promise.resolve(raw) }));
 
 const lastViewProps = (): unknown => viewProps.mock.calls.at(-1)?.[0] ?? null;

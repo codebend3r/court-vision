@@ -4,10 +4,14 @@ import { nextSort, sortRows, type SortColumn, type SortState } from "@/lib/table
 
 // One table's sort: the state, the click handler for its headers, and the
 // rows put in that order. `columns` should be stable (module level or memoized).
-export const useColumnSort = <Row>({ columns }: { columns: readonly SortColumn<Row>[] }) => {
+type UseColumnSortProps<Row> = { columns: readonly SortColumn<Row>[] };
+
+export const useColumnSort = <Row>({ columns }: UseColumnSortProps<Row>) => {
   const [sort, setSort] = useState<SortState>(null);
 
-  const onSort = ({ key }: { key: string }) => {
+  type OnSortProps = { key: string };
+
+  const onSort = ({ key }: OnSortProps) => {
     const column = columns.find((entry) => entry.key === key);
     if (column === undefined) return;
     setSort((current) => nextSort({ current, key, firstDir: column.firstDir }));

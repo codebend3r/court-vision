@@ -20,11 +20,13 @@ const ROWS_SHOWN = 25;
 
 export const NO_AVAILABLE = "No available players match this range and position.";
 
+type OnCompareProps = { fa: number };
+
 export type AvailablePlayersPanelProps = {
   // Everyone nobody in the league has, best value first, already filtered by position.
   freePool: readonly WaiverRow[];
   linesById: ReadonlyMap<number, FantasyStatLine>;
-  onCompare: ({ fa }: { fa: number }) => void;
+  onCompare: ({ fa }: OnCompareProps) => void;
   compareHintId: string;
 };
 

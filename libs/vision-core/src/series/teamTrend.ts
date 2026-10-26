@@ -14,13 +14,12 @@ export type WinsRow = { game: number } & Partial<Record<string, number>>;
 // Rows for a standings block's cumulative-wins chart: row N holds each
 // team's win total after its Nth game (teams that haven't played N games
 // are absent from row N, so their line simply stops).
-export const buildCumulativeWins = ({
-  results,
-  abbrs,
-}: {
+type BuildCumulativeWinsProps = {
   results: readonly TeamGameResult[];
   abbrs: readonly string[];
-}): WinsRow[] => {
+};
+
+export const buildCumulativeWins = ({ results, abbrs }: BuildCumulativeWinsProps): WinsRow[] => {
   const included = new Set(abbrs);
   const byTeam = results.reduce<Map<string, number[]>>((acc, entry) => {
     if (!included.has(entry.teamAbbr)) return acc;

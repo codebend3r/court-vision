@@ -21,13 +21,15 @@ export type CategoryMeta<K extends SportKeys> = {
 
 // A sport's category definition, whichever kind it is. Unknown keys throw:
 // every caller holds a key the descriptor's own types produced.
+type CategoryDefProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  category: Category<K>;
+};
+
 export const categoryDef = <K extends SportKeys>({
   sport,
   category,
-}: {
-  sport: SportDescriptor<K>;
-  category: Category<K>;
-}): CategoryDef<K> => {
+}: CategoryDefProps<K>): CategoryDef<K> => {
   if (isKeyOf({ record: sport.counting })(category)) return sport.counting[category];
   if (isKeyOf({ record: sport.ratio })(category)) return sport.ratio[category];
   throw new Error(`${sport.id} has no category "${category}"`);
@@ -35,22 +37,26 @@ export const categoryDef = <K extends SportKeys>({
 
 // The sport's ratio categories in category order: the ones that carry a
 // league rate and a cross moment.
+type RatioDefsProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+};
+
 export const ratioDefs = <K extends SportKeys>({
   sport,
-}: {
-  sport: SportDescriptor<K>;
-}): RatioCategoryDef<K>[] =>
+}: RatioDefsProps<K>): RatioCategoryDef<K>[] =>
   sport.categoryOrder.flatMap((category) => {
     const def = categoryDef({ sport, category });
     return def.kind === "ratio" ? [def] : [];
   });
 
 // Table metadata in the sport's category order.
+type CategoryMetaProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+};
+
 export const categoryMeta = <K extends SportKeys>({
   sport,
-}: {
-  sport: SportDescriptor<K>;
-}): CategoryMeta<K>[] =>
+}: CategoryMetaProps<K>): CategoryMeta<K>[] =>
   sport.categoryOrder.map((category) => {
     const def = categoryDef({ sport, category });
     return {
@@ -63,22 +69,22 @@ export const categoryMeta = <K extends SportKeys>({
     };
   });
 
+type CategoryGuardProps<K extends SportKeys> = { sport: SportDescriptor<K> };
+
 export const categoryGuard =
-  <K extends SportKeys>({ sport }: { sport: SportDescriptor<K> }) =>
+  <K extends SportKeys>({ sport }: CategoryGuardProps<K>) =>
   (value: string): value is Category<K> =>
     sport.categoryOrder.some((key) => key === value);
 
 // A season total read on the chosen basis: as is, or per game played. A
 // player with no games reads 0, never a divide by zero.
-export const perBasis = ({
-  total,
-  gamesPlayed,
-  basis,
-}: {
+type PerBasisProps = {
   total: number;
   gamesPlayed: number;
   basis: Basis;
-}): number => {
+};
+
+export const perBasis = ({ total, gamesPlayed, basis }: PerBasisProps): number => {
   if (basis === "total") return total;
   return gamesPlayed > 0 ? total / gamesPlayed : 0;
 };
@@ -86,19 +92,21 @@ export const perBasis = ({
 // The single per-category primitive: counting totals and volume-weighted ratio
 // impacts (PRD §5.3), both sign-corrected so every downstream number reads
 // higher-is-better. Zero volume is neutral, never a divide by zero.
+type CategoryValueProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  line: ValuationLine<K>;
+  category: Category<K>;
+  basis: Basis;
+  leagueRate: Record<K["ratio"], number>;
+};
+
 export const categoryValue = <K extends SportKeys>({
   sport,
   line,
   category,
   basis,
   leagueRate,
-}: {
-  sport: SportDescriptor<K>;
-  line: ValuationLine<K>;
-  category: Category<K>;
-  basis: Basis;
-  leagueRate: Record<K["ratio"], number>;
-}): number => {
+}: CategoryValueProps<K>): number => {
   const def = categoryDef({ sport, category });
   if (def.kind === "counting") {
     const total = line.stats[def.stat];
@@ -116,15 +124,17 @@ export const categoryValue = <K extends SportKeys>({
 // Human-readable per-game value for display beside a category's score.
 // Counting stats stay positive (a lower-is-better sign lives in its z), ratio
 // stats become the underlying scaled rate.
+type CategoryPerGameProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  line: ValuationLine<K>;
+  category: Category<K>;
+};
+
 export const categoryPerGame = <K extends SportKeys>({
   sport,
   line,
   category,
-}: {
-  sport: SportDescriptor<K>;
-  line: ValuationLine<K>;
-  category: Category<K>;
-}): number => {
+}: CategoryPerGameProps<K>): number => {
   const def = categoryDef({ sport, category });
   if (def.kind === "ratio") {
     const volume = line.stats[def.denominator];

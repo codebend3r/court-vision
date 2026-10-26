@@ -8,8 +8,10 @@ import { prisma } from "@/lib/prisma";
 // qualified pool, not just their own row — so every player page view read the
 // full season table. The pool only changes when the sync job runs, so it is
 // cached per season instead of re-read for each visitor.
+type GetSeasonStatsPoolUnstable_cacheProps = { season: string; seasonType: string };
+
 export const getSeasonStatsPool = unstable_cache(
-  (args: { season: string; seasonType: string }): Promise<PlayerSeasonStats[]> =>
+  (args: GetSeasonStatsPoolUnstable_cacheProps): Promise<PlayerSeasonStats[]> =>
     prisma.playerSeasonStats.findMany({ where: args }),
   ["players:season-pool"],
   PLAYERS_CACHE_OPTIONS,

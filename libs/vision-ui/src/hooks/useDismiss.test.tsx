@@ -7,12 +7,14 @@ import { useDismiss } from "#ui/hooks/useDismiss";
 
 afterEach(cleanup);
 
-function Popover({ open, onDismiss }: { open: boolean; onDismiss: () => void }) {
+type PopoverProps = { open: boolean; onDismiss: () => void };
+
+function Popover({ open, onDismiss }: PopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
   useDismiss({ open, ref, onDismiss });
   return (
     <>
-      <div ref={ref}>
+      <div ref={ref} className="dismiss-test">
         <button type="button">Inside</button>
       </div>
       <button type="button">Outside</button>

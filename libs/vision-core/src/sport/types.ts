@@ -72,12 +72,14 @@ export type SlotDef<K extends SportKeys> = {
   accepts: readonly K["group"][] | "any";
 };
 
+type LabelProps = { startYear: number };
+
 export type SportDescriptor<K extends SportKeys> = {
   id: string;
   name: string;
   league: string;
   scheduleGames: number;
-  season: { label: (args: { startYear: number }) => string };
+  season: { label: (args: LabelProps) => string };
   // What a "game played" is measured in (minutes, time on ice, outs, snaps).
   // A game counts as an appearance when it is above zero. `perUnit` is the
   // pace rate charts normalize to (per 36 minutes), or null when none applies.

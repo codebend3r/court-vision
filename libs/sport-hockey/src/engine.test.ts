@@ -6,15 +6,13 @@ import { hockey, type HockeyKeys } from "#hockey/descriptor";
 import { hockeyEngine } from "#hockey/engine";
 
 // Sixty games, with time on ice as the playing time.
-const line = ({
-  playerId,
-  position,
-  stats,
-}: {
+type LineProps = {
   playerId: number;
   position: string;
   stats: Partial<Record<HockeyKeys["valued"], number>>;
-}) =>
+};
+
+const line = ({ playerId, position, stats }: LineProps) =>
   makeLine({
     sport: hockey,
     playerId,

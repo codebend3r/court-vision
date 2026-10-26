@@ -55,13 +55,12 @@ export const parsePerfBudgetConfig = (raw: unknown): PerfBudgetConfig =>
 // loud version is the useful one. The index is clamped because `percentile`
 // is a bare number here; the config schema's 1..100 bound does not follow it
 // into direct calls.
-const percentileOf = ({
-  values,
-  percentile,
-}: {
+type PercentileOfProps = {
   values: readonly number[];
   percentile: number;
-}): number => {
+};
+
+const percentileOf = ({ values, percentile }: PercentileOfProps): number => {
   if (values.length === 0) {
     throw new Error("percentileOf requires at least one sample; a percentile of nothing is not 0");
   }
@@ -70,15 +69,13 @@ const percentileOf = ({
   return sorted[Math.min(sorted.length - 1, Math.max(0, rank - 1))];
 };
 
-export const evaluateRoute = ({
-  route,
-  samples,
-  percentile,
-}: {
+type EvaluateRouteProps = {
   route: RouteBudget;
   samples: readonly RouteSample[];
   percentile: number;
-}): RouteVerdict => {
+};
+
+export const evaluateRoute = ({ route, samples, percentile }: EvaluateRouteProps): RouteVerdict => {
   const ttfbMs = percentileOf({ values: samples.map((sample) => sample.ttfbMs), percentile });
   const totalMs = percentileOf({ values: samples.map((sample) => sample.totalMs), percentile });
   const breaches = [
@@ -104,21 +101,23 @@ export const evaluateRoute = ({
 
 // Whether a database-backed route can be measured at all. Both reasons for
 // skipping one collapse into `skipDbRoutes` before this is called.
-const isSkipped = ({
-  route,
-  skipDbRoutes,
-}: {
+type IsSkippedProps = {
   route: RouteBudget;
   skipDbRoutes: boolean;
-}): boolean => skipDbRoutes && route.requiresDb;
+};
+
+const isSkipped = ({ route, skipDbRoutes }: IsSkippedProps): boolean =>
+  skipDbRoutes && route.requiresDb;
+
+type PartitionRoutesProps = {
+  routes: readonly RouteBudget[];
+  skipDbRoutes: boolean;
+};
 
 export const partitionRoutes = ({
   routes,
   skipDbRoutes,
-}: {
-  routes: readonly RouteBudget[];
-  skipDbRoutes: boolean;
-}): { measured: RouteBudget[]; skipped: RouteBudget[] } => ({
+}: PartitionRoutesProps): { measured: RouteBudget[]; skipped: RouteBudget[] } => ({
   measured: routes.filter((route) => !isSkipped({ route, skipDbRoutes })),
   skipped: routes.filter((route) => isSkipped({ route, skipDbRoutes })),
 });

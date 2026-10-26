@@ -44,15 +44,14 @@ export type FantasyProfileLog<K extends SportKeys> = DatedLog<K> & {
   winLoss: string | null;
 };
 
-const rankAmong = ({
-  values,
-  value,
-  valueKey,
-}: {
+type RankAmongProps = {
   values: readonly FantasyPlayerValues[];
   value: number;
   valueKey: MethodValueKey;
-}): number => values.filter((entry) => entry[valueKey] > value).length + 1;
+};
+
+const rankAmong = ({ values, value, valueKey }: RankAmongProps): number =>
+  values.filter((entry) => entry[valueKey] > value).length + 1;
 
 // Everything the fantasy view shows for one player, scored the way the Fantasy
 // Value tab scores the whole pool (valuePlayers) so the two agree to the
@@ -60,6 +59,17 @@ const rankAmong = ({
 // the season); `logs` is the player's full season in date order, and the trend
 // windows to the last `windowGames` after scoring so every plotted game still
 // looks back over the ten before it.
+type BuildPlayerFantasyProfileProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+  playerId: number;
+  config: ValuationConfig<K>;
+  methodWeights: MethodWeights<K>;
+  poolWindowGames: number | null;
+  logs: readonly FantasyProfileLog<K>[];
+  windowGames: number | null;
+};
+
 export const buildPlayerFantasyProfile = <K extends SportKeys>({
   sport,
   lines,
@@ -69,16 +79,7 @@ export const buildPlayerFantasyProfile = <K extends SportKeys>({
   poolWindowGames,
   logs,
   windowGames,
-}: {
-  sport: SportDescriptor<K>;
-  lines: readonly ValuationLine<K>[];
-  playerId: number;
-  config: ValuationConfig<K>;
-  methodWeights: MethodWeights<K>;
-  poolWindowGames: number | null;
-  logs: readonly FantasyProfileLog<K>[];
-  windowGames: number | null;
-}): PlayerFantasyProfile<K> | null => {
+}: BuildPlayerFantasyProfileProps<K>): PlayerFantasyProfile<K> | null => {
   const line = lines.find((entry) => entry.playerId === playerId);
   if (line === undefined) return null;
 

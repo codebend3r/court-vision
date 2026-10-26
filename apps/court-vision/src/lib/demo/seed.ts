@@ -18,9 +18,9 @@ import { normalizeName } from "@vision/core/util/names";
 import { sequentially } from "@vision/core/util/sequentially";
 import { isMainModule } from "@vision/core/util/runtime";
 
-export async function seedDemo(
-  args: { deps?: BdlClientDeps; logger?: Logger } = {},
-): Promise<SyncSummary> {
+type SeedDemoProps = { deps?: BdlClientDeps; logger?: Logger };
+
+export async function seedDemo(args: SeedDemoProps = {}): Promise<SyncSummary> {
   const { deps = {}, logger = silentLogger } = args;
 
   const teamAbbrById = await fetchTeamAbbrById({ deps });

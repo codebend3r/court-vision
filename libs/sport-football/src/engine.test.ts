@@ -6,15 +6,14 @@ import { football, type FootballKeys } from "#football/descriptor";
 import { footballEngine } from "#football/engine";
 
 // A full seventeen-game season.
-const line = ({
-  playerId,
-  position,
-  stats,
-}: {
+type LineProps = {
   playerId: number;
   position: string;
   stats: Partial<Record<FootballKeys["valued"], number>>;
-}) => makeLine({ sport: football, playerId, position, gamesPlayed: 17, playingTime: 17, stats });
+};
+
+const line = ({ playerId, position, stats }: LineProps) =>
+  makeLine({ sport: football, playerId, position, gamesPlayed: 17, playingTime: 17, stats });
 
 // Season totals worth these PPR points: QBs 400/380, RBs 300/200/100, WR 250.
 const LINES = [

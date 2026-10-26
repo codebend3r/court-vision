@@ -29,7 +29,9 @@ type Ranked = { id: number; lastName: string; fullName: string };
 const STRONG_FROM = 67;
 const WEAK_UPTO = 33;
 
-const median = ({ values }: { values: readonly number[] }): number => {
+type MedianProps = { values: readonly number[] };
+
+const median = ({ values }: MedianProps): number => {
   const sorted = [...values].sort((a, b) => a - b);
   const middle = Math.floor(sorted.length / 2);
   return sorted.length % 2 === 0
@@ -42,33 +44,33 @@ const median = ({ values }: { values: readonly number[] }): number => {
  * median games played, so a call-up with one game doesn't set the bar. At
  * least one, so an empty-handed player never qualifies.
  */
-export const qualifyingGames = ({ games }: { games: readonly number[] }): number =>
+type QualifyingGamesProps = { games: readonly number[] };
+
+export const qualifyingGames = ({ games }: QualifyingGamesProps): number =>
   Math.max(1, Math.floor(median({ values: games }) / 2));
 
 /**
  * Where a value sits in a baseline, 0 to 100: the share of the baseline below
  * it, counting ties as half. An empty baseline has no opinion, so it reads 50.
  */
-export const percentileOf = ({
-  value,
-  baseline,
-}: {
+type PercentileOfProps = {
   value: number;
   baseline: readonly number[];
-}): number => {
+};
+
+export const percentileOf = ({ value, baseline }: PercentileOfProps): number => {
   if (baseline.length === 0) return 50;
   const below = baseline.filter((other) => other < value).length;
   const equal = baseline.filter((other) => other === value).length;
   return ((below + equal / 2) / baseline.length) * 100;
 };
 
-export const tierOf = ({
-  percentile,
-  direction,
-}: {
+type TierOfProps = {
   percentile: number;
   direction: StatDirection;
-}): Tier => {
+};
+
+export const tierOf = ({ percentile, direction }: TierOfProps): Tier => {
   if (direction === "neutral") return "neutral";
   const standing = direction === "low" ? 100 - percentile : percentile;
   if (standing >= STRONG_FROM) return "strong";
@@ -80,15 +82,17 @@ export const tierOf = ({
  * One chart's bars: every rostered player with a value, best first (lowest
  * first for a lower-is-better stat), each placed against the league baseline.
  */
+type BuildBarsProps<Row extends Ranked> = {
+  rows: readonly Row[];
+  spec: StatSpec<Row>;
+  baseline: readonly number[];
+};
+
 export const buildBars = <Row extends Ranked>({
   rows,
   spec,
   baseline,
-}: {
-  rows: readonly Row[];
-  spec: StatSpec<Row>;
-  baseline: readonly number[];
-}): BarDatum[] =>
+}: BuildBarsProps<Row>): BarDatum[] =>
   rows
     .flatMap((row) => {
       const value = spec.valueOf(row);
@@ -113,15 +117,13 @@ export const buildBars = <Row extends Ranked>({
     });
 
 /** The league's values for one stat, from the players who qualify. */
-export const baselineFor = <Row>({
-  pool,
-  spec,
-  qualifies,
-}: {
+type BaselineForProps<Row> = {
   pool: readonly Row[];
   spec: StatSpec<Row>;
   qualifies: (row: Row) => boolean;
-}): number[] =>
+};
+
+export const baselineFor = <Row>({ pool, spec, qualifies }: BaselineForProps<Row>): number[] =>
   pool
     .filter(qualifies)
     .map((row) => spec.valueOf(row))

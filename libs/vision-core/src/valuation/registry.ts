@@ -136,11 +136,13 @@ const METHOD_LIST: readonly FantasyMethodMeta[] = Object.values(DEFAULT_METHODS)
 
 // The sport's methods in registry order, with its own wording laid over the
 // defaults.
+type FantasyMethodsProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+};
+
 export const fantasyMethods = <K extends SportKeys>({
   sport,
-}: {
-  sport: SportDescriptor<K>;
-}): FantasyMethodMeta[] =>
+}: FantasyMethodsProps<K>): FantasyMethodMeta[] =>
   METHOD_LIST.filter((method) => sport.methods.includes(method.key)).map((method) => ({
     ...method,
     ...sport.methodCopy[method.key],
@@ -148,7 +150,9 @@ export const fantasyMethods = <K extends SportKeys>({
 
 // Whether a method scores categories at all, so a sport without any cannot
 // list it.
-export const methodNeedsCategories = ({ key }: { key: FantasyMethodKey }): boolean =>
+type MethodNeedsCategoriesProps = { key: FantasyMethodKey };
+
+export const methodNeedsCategories = ({ key }: MethodNeedsCategoriesProps): boolean =>
   DEFAULT_METHODS[key].needsCategories;
 
 // Registry key → the sort key its column answers to (`positional` → `pos`):

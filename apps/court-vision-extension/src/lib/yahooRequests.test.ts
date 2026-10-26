@@ -9,7 +9,9 @@ const GAME_URL = `${YAHOO_API_BASE_URL}/game/nba?format=json_f`;
 const LEAGUE_URL = `${YAHOO_API_BASE_URL}/league/nba.l.106344;out=settings/teams/roster?format=json_f`;
 const LOGIN_PROBE_URL = `${YAHOO_API_BASE_URL}/users;use_login=1/games;game_keys=nba?format=json_f`;
 const SCOREBOARD_URL = `${YAHOO_API_BASE_URL}/league/nba.l.106344/scoreboard?format=json_f`;
-const waiverUrl = ({ start }: { start: number }): string =>
+type WaiverUrlProps = { start: number };
+
+const waiverUrl = ({ start }: WaiverUrlProps): string =>
   `${YAHOO_API_BASE_URL}/league/nba.l.106344/players;status=W;start=${start};count=25?format=json_f`;
 
 const gameBody = { fantasy_content: { game: { game_key: "478", season: 2026 } } };
@@ -19,7 +21,9 @@ const scoreboardBody = {
   fantasy_content: { league: { scoreboard: { matchups: [] } } },
 };
 
-const waiverPage = ({ size }: { size: number }) => ({
+type WaiverPageProps = { size: number };
+
+const waiverPage = ({ size }: WaiverPageProps) => ({
   fantasy_content: {
     league: {
       players: Array.from({ length: size }, (_, index) => ({ player_id: index + 1 })),
@@ -45,20 +49,26 @@ type Route = Response | (() => Promise<Response>);
 
 // Serves each URL from a route table; an unknown URL is a 404. Every test asks
 // for a URL at most once, so a stored response is never read twice.
-const fetchByUrl = ({ routes }: { routes: Record<string, Route> }) =>
+type FetchByUrlProps = { routes: Record<string, Route> };
+
+const fetchByUrl = ({ routes }: FetchByUrlProps) =>
   vi.fn<FetchImpl>(async (input) => {
     const route = routes[String(input)];
     if (route === undefined) return statusResponse(404);
     return typeof route === "function" ? route() : route;
   });
 
-const requestedUrls = ({ fetchImpl }: { fetchImpl: ReturnType<typeof fetchByUrl> }): string[] =>
+type RequestedUrlsProps = { fetchImpl: ReturnType<typeof fetchByUrl> };
+
+const requestedUrls = ({ fetchImpl }: RequestedUrlsProps): string[] =>
   fetchImpl.mock.calls.map(([input]) => String(input));
 
 // Answers every request after `delayMs` (on the fake clock): the game, the
 // league, and a full waiver page for any other URL, so paging never stops on
 // its own. An aborted request rejects at once, as `fetch` does.
-const slowYahoo = ({ delayMs }: { delayMs: number }) => {
+type SlowYahooProps = { delayMs: number };
+
+const slowYahoo = ({ delayMs }: SlowYahooProps) => {
   const signals: AbortSignal[] = [];
   const fetchImpl = vi.fn<FetchImpl>(
     (input, init) =>
@@ -81,7 +91,9 @@ const slowYahoo = ({ delayMs }: { delayMs: number }) => {
 
 // Moves the fake clock a second at a time, letting each request's promise
 // chain run between ticks the way the real event loop would.
-const advanceBy = async ({ ms }: { ms: number }) => {
+type AdvanceByProps = { ms: number };
+
+const advanceBy = async ({ ms }: AdvanceByProps) => {
   const flush = async (rounds: number): Promise<void> => {
     if (rounds === 0) return;
     await Promise.resolve();

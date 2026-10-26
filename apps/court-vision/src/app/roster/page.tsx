@@ -44,7 +44,9 @@ export const dynamic = "force-dynamic";
 
 const IMPORT_PATH = "/leagues/import";
 
-function RosterScreen({ children, params }: { children: ReactNode; params?: RosterParams }) {
+type RosterScreenProps = { children: ReactNode; params?: RosterParams };
+
+function RosterScreen({ children, params }: RosterScreenProps) {
   const isOtherTeam = !!params?.team;
   return (
     <main className={styles.page}>
@@ -72,7 +74,9 @@ function RosterScreen({ children, params }: { children: ReactNode; params?: Rost
 
 // Every state short of a roster: the page's own header, then why there is none
 // yet and what to do about it.
-function RosterGate({ message, children }: { message: string; children?: ReactNode }) {
+type RosterGateProps = { message: string; children?: ReactNode };
+
+function RosterGate({ message, children }: RosterGateProps) {
   return (
     <RosterScreen>
       <section className={styles.gate} aria-label="Roster status">
@@ -83,7 +87,9 @@ function RosterGate({ message, children }: { message: string; children?: ReactNo
   );
 }
 
-const playerNames = ({ team }: { team: FantasyTeam }): Map<number, string> =>
+type PlayerNamesProps = { team: FantasyTeam };
+
+const playerNames = ({ team }: PlayerNamesProps): Map<number, string> =>
   new Map(
     team.slots.flatMap((slot) =>
       slot.player === null ? [] : [[slot.player.playerId, slot.player.fullName]],
@@ -92,15 +98,13 @@ const playerNames = ({ team }: { team: FantasyTeam }): Map<number, string> =>
 
 // What the stats can't show: rostered players with no games in this window, and
 // Yahoo names that matched no Court Vision player.
-function RosterNotes({
-  team,
-  missing,
-  rangeLabel,
-}: {
+type RosterNotesProps = {
   team: FantasyTeam;
   missing: readonly number[];
   rangeLabel: string;
-}) {
+};
+
+function RosterNotes({ team, missing, rangeLabel }: RosterNotesProps) {
   const names = playerNames({ team });
   const noGames = missing.flatMap((id) => names.get(id) ?? []);
   const unmatched = unmatchedNames({ team });
@@ -122,6 +126,17 @@ function RosterNotes({
 // The regular and advanced tabs differ only in their pool, columns, stat specs
 // and legend; the table over the roster, the charts under it, and the notes
 // are the same.
+type RosterStatsProps<Row extends PlayerIdentity> = {
+  label: string;
+  team: FantasyTeam;
+  params: RosterParams;
+  pool: readonly Row[];
+  columns: readonly StatColumn<Row>[];
+  specs: readonly StatSpec<Row>[];
+  gamesOf: (row: Row) => number;
+  children?: ReactNode;
+};
+
 function RosterStats<Row extends PlayerIdentity>({
   label,
   team,
@@ -131,16 +146,7 @@ function RosterStats<Row extends PlayerIdentity>({
   specs,
   gamesOf,
   children,
-}: {
-  label: string;
-  team: FantasyTeam;
-  params: RosterParams;
-  pool: readonly Row[];
-  columns: readonly StatColumn<Row>[];
-  specs: readonly StatSpec<Row>[];
-  gamesOf: (row: Row) => number;
-  children?: ReactNode;
-}) {
+}: RosterStatsProps<Row>) {
   const { matched, missing } = matchRosterRows({ members: rosterMembers({ team }), pool });
   const charts = buildRosterCharts({ rows: matched.map(({ row }) => row), pool, specs, gamesOf });
   return (
@@ -160,11 +166,11 @@ function RosterStats<Row extends PlayerIdentity>({
   );
 }
 
-export default async function RosterPage({
-  searchParams,
-}: {
+type RosterPageProps = {
   searchParams: Promise<RawSearchParams>;
-}) {
+};
+
+export default async function RosterPage({ searchParams }: RosterPageProps) {
   const [raw, profile, league] = await Promise.all([searchParams, getProfile(), getActiveLeague()]);
   if (profile === null) redirect("/login?next=/roster");
 

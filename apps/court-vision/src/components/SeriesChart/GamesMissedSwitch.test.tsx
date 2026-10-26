@@ -12,13 +12,12 @@ function DnpReadout() {
   return <output aria-label="dnp">{String(showDnp)}</output>;
 }
 
-const renderSwitch = ({
-  searchParams = {},
-  onUrlUpdate,
-}: {
+type RenderSwitchProps = {
   searchParams?: Record<string, string>;
   onUrlUpdate?: (event: UrlUpdateEvent) => void;
-} = {}) =>
+};
+
+const renderSwitch = ({ searchParams = {}, onUrlUpdate }: RenderSwitchProps = {}) =>
   render(
     <>
       <GamesMissedSwitch />

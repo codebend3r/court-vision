@@ -5,8 +5,10 @@ import { type ReactNode, use, useEffect, useState } from "react";
 
 const deleteLeagueTeamMock = vi.fn();
 
+type DeleteLeagueTeamProps = { teamId: string };
+
 vi.mock("@/lib/leagues/teamActions", () => ({
-  deleteLeagueTeam: (args: { teamId: string }) => deleteLeagueTeamMock(args),
+  deleteLeagueTeam: (args: DeleteLeagueTeamProps) => deleteLeagueTeamMock(args),
 }));
 
 const push = vi.fn();
@@ -38,7 +40,9 @@ function AwaitRefresh() {
   return null;
 }
 
-function PendingRefresh({ children }: { children: ReactNode }) {
+type PendingRefreshProps = { children: ReactNode };
+
+function PendingRefresh({ children }: PendingRefreshProps) {
   const [hasRefreshed, setHasRefreshed] = useState(false);
   useEffect(() => {
     refresh.mockImplementation(() => setHasRefreshed(true));
@@ -51,12 +55,9 @@ function PendingRefresh({ children }: { children: ReactNode }) {
   );
 }
 
-const team = ({
-  id,
-  name,
-  slug,
-  ...overrides
-}: { id: string; name: string; slug?: string } & Partial<FantasyTeam>): FantasyTeam => ({
+type TeamProps = { id: string; name: string; slug?: string } & Partial<FantasyTeam>;
+
+const team = ({ id, name, slug, ...overrides }: TeamProps): FantasyTeam => ({
   id,
   name,
   slug: slug ?? teamNameToSlug({ name }),

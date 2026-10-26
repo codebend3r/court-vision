@@ -86,7 +86,9 @@ const curry: PlayerPoolRow = {
   },
 };
 
-const renderRegular = ({ pendingHref = null }: { pendingHref?: string | null } = {}) =>
+type RenderRegularProps = { pendingHref?: string | null };
+
+const renderRegular = ({ pendingHref = null }: RenderRegularProps = {}) =>
   render(
     <PendingHref value={pendingHref}>
       <PlayersTable

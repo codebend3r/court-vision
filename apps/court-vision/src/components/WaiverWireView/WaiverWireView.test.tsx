@@ -109,16 +109,17 @@ const props: WaiverWireViewProps = {
 
 // The view opens on Available players; most tests are about the swap board, so
 // they open there unless they name a view of their own.
-const pinView = ({ searchParams }: { searchParams: string }): string => {
+type PinViewProps = { searchParams: string };
+
+const pinView = ({ searchParams }: PinViewProps): string => {
   const query = new URLSearchParams(searchParams);
   if (!query.has("view")) query.set("view", "swap");
   return `?${query.toString()}`;
 };
 
-const renderView = ({
-  searchParams = "?",
-  overrides = {},
-}: { searchParams?: string; overrides?: Partial<WaiverWireViewProps> } = {}) => {
+type RenderViewProps = { searchParams?: string; overrides?: Partial<WaiverWireViewProps> };
+
+const renderView = ({ searchParams = "?", overrides = {} }: RenderViewProps = {}) => {
   const onUrlUpdate = vi.fn<(event: UrlUpdateEvent) => void>();
   render(<WaiverWireView {...props} {...overrides} />, {
     wrapper: withNuqsTestingAdapter({
@@ -130,15 +131,18 @@ const renderView = ({
   return { onUrlUpdate };
 };
 
-const lastUpdate = ({
-  onUrlUpdate,
-}: {
+type LastUpdateProps = {
   onUrlUpdate: ReturnType<typeof vi.fn<(event: UrlUpdateEvent) => void>>;
-}): UrlUpdateEvent | null => onUrlUpdate.mock.calls.at(-1)?.[0] ?? null;
+};
+
+const lastUpdate = ({ onUrlUpdate }: LastUpdateProps): UrlUpdateEvent | null =>
+  onUrlUpdate.mock.calls.at(-1)?.[0] ?? null;
 
 // The free agents a panel lists, by their Compare buttons: one each, and mine
 // never have one.
-const comparedNames = ({ panel }: { panel: HTMLElement }): string[] =>
+type ComparedNamesProps = { panel: HTMLElement };
+
+const comparedNames = ({ panel }: ComparedNamesProps): string[] =>
   within(panel)
     .queryAllByRole("button", { name: /^Compare .* head-to-head$/ })
     .map((button) =>
@@ -535,7 +539,9 @@ describe("WaiverWireView", () => {
     };
     // The back and forward buttons, as the adapter's search params changing
     // underneath the view.
-    const atUrl = ({ searchParams }: { searchParams: string }) => (
+    type AtUrlProps = { searchParams: string };
+
+    const atUrl = ({ searchParams }: AtUrlProps) => (
       <NuqsTestingAdapter searchParams={searchParams} hasMemory>
         <WaiverWireView {...viewProps} />
       </NuqsTestingAdapter>

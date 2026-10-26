@@ -30,9 +30,13 @@ export type WatchlistTrendChartProps = {
   caption: string;
 };
 
-const seriesKey = ({ playerId }: { playerId: number }): string => `p${playerId}`;
+type SeriesKeyProps = { playerId: number };
 
-const lastNameOf = ({ fullName }: { fullName: string }): string =>
+const seriesKey = ({ playerId }: SeriesKeyProps): string => `p${playerId}`;
+
+type LastNameOfProps = { fullName: string };
+
+const lastNameOf = ({ fullName }: LastNameOfProps): string =>
   fullName.split(" ").slice(1).join(" ") || fullName;
 
 export type ChartRow = Record<string, number | undefined>;
@@ -41,7 +45,9 @@ export type ChartRow = Record<string, number | undefined>;
 // scale: dates then sit at even intervals however many days apart they are. A
 // time scale spaces them by real duration instead, which stretches the all-star
 // break into dead space and squeezes busy weeks together.
-export const buildRows = ({ series }: { series: readonly TrendSeries[] }): ChartRow[] => {
+type BuildRowsProps = { series: readonly TrendSeries[] };
+
+export const buildRows = ({ series }: BuildRowsProps): ChartRow[] => {
   const dates = [
     ...new Set(series.flatMap((entry) => entry.points.map((point) => point.date))),
   ].sort((a, b) => a - b);

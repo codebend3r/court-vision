@@ -89,7 +89,9 @@ const ZERO_STATS: Record<StatKey, number> = {
   fta: 0,
 };
 
-const referenceAggregateWindowLogs = ({ logs }: { logs: readonly WindowLog[] }): WindowTotals =>
+type ReferenceAggregateWindowLogsProps = { logs: readonly WindowLog[] };
+
+const referenceAggregateWindowLogs = ({ logs }: ReferenceAggregateWindowLogsProps): WindowTotals =>
   logs.reduce<WindowTotals>(
     (totals, game) => ({
       ...STAT_KEYS.reduce<Pick<WindowTotals, "stats" | "sq">>(
@@ -116,7 +118,9 @@ const referenceAggregateWindowLogs = ({ logs }: { logs: readonly WindowLog[] }):
   );
 
 // Deterministic PRNG (mulberry32) for the seeded logs below.
-const seeded = ({ seed }: { seed: number }) => {
+type SeededProps = { seed: number };
+
+const seeded = ({ seed }: SeededProps) => {
   let state = seed >>> 0;
   return (): number => {
     state = (state + 0x6d2b79f5) >>> 0;

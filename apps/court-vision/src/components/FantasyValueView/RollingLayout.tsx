@@ -25,18 +25,22 @@ export type RollingLayoutProps = ListSortProps & {
 
 // A page's rows before (or without) their game logs: each chart row draws its
 // placeholder.
-const untrendedRows = ({ rows }: { rows: readonly FantasyTableRow[] }): FantasyTrendRow[] =>
+type UntrendedRowsProps = { rows: readonly FantasyTableRow[] };
+
+const untrendedRows = ({ rows }: UntrendedRowsProps): FantasyTrendRow[] =>
   rows.map((row) => ({ ...row, trend: [] }));
 
 // Suspends on the page's game logs, then scores each row's rolling value
 // against the pool the view already holds.
+type RollingRowsProps = RollingLayoutProps & { logsPromise: Promise<FantasyTrendLogsResult> };
+
 function RollingRows({
   logsPromise,
   rows,
   valuation: { poolStats, config, methodWeights },
   windowGames,
   ...listProps
-}: RollingLayoutProps & { logsPromise: Promise<FantasyTrendLogsResult> }) {
+}: RollingRowsProps) {
   const result: unknown = use(logsPromise);
   // Scoring a page of rolling trends is this layout's heaviest work, so a
   // re-render that changes none of its inputs reuses the last result. Null

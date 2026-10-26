@@ -19,7 +19,9 @@ export function SettingsFantasy({ preferredFormula }: SettingsFantasyProps) {
   const [selected, setSelected] = useState<FantasyMethodKey | null>(preferredFormula);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const select = ({ key }: { key: FantasyMethodKey | null }) => {
+  type SelectProps = { key: FantasyMethodKey | null };
+
+  const select = ({ key }: SelectProps) => {
     if (key === selected) return;
     const previous = selected;
     setSelected(key);

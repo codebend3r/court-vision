@@ -35,7 +35,7 @@
       {
         "patterns": [
           {
-            "group": ["../*", "../**"],
+            "group": ["../*", "../**", "./*", "./**"],
             "message": "Use an import alias (an app's @/, @public/, @generated/; a lib's #<name>/; or a workspace package's @vision/<name>/ entry) instead of parent-relative paths."
           }
         ]
@@ -379,7 +379,7 @@
                 "message": "Sport descriptors are pure data: no React, Next, nuqs, zustand, or UI libraries."
               },
               {
-                "group": ["@vision/ui", "@vision/ui/*", "@vision/ui/**", "@vision/sport-*"],
+                "group": ["@vision/*", "@vision/**", "!@vision/core/**"],
                 "message": "A sport lib depends only on @vision/core."
               }
             ]

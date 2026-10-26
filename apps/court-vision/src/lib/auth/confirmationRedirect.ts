@@ -12,7 +12,11 @@ import { resolveSiteOrigin } from "@/lib/siteUrl";
 //
 // `next` is where /auth/confirm sends the user once the link verifies; the
 // password-reset email uses it to land on the new-password form.
-export async function confirmationRedirectTo({ next }: { next?: string } = {}): Promise<string> {
+type ConfirmationRedirectToProps = { next?: string };
+
+export async function confirmationRedirectTo({
+  next,
+}: ConfirmationRedirectToProps = {}): Promise<string> {
   const requestOrigin = (await headers()).get("origin");
   const confirmUrl = `${resolveSiteOrigin({ requestOrigin })}/auth/confirm`;
   return !!next ? `${confirmUrl}?next=${encodeURIComponent(next)}` : confirmUrl;

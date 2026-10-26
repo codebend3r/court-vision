@@ -6,17 +6,19 @@ import { type Basis, type ScoringSettings, type ValuationLine } from "#core/valu
 // league's scoring settings. No pool, no standardization. The sport's default
 // table applies until the league's own Scoring controls override it, because a
 // points league's whole identity is its scoring table.
+type ScorePointsProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+  basis: Basis;
+  scoring?: Readonly<ScoringSettings<K>>;
+};
+
 export const scorePoints = <K extends SportKeys>({
   sport,
   lines,
   basis,
   scoring = sport.points.defaults,
-}: {
-  sport: SportDescriptor<K>;
-  lines: readonly ValuationLine<K>[];
-  basis: Basis;
-  scoring?: Readonly<ScoringSettings<K>>;
-}): Array<{ playerId: number; total: number }> =>
+}: ScorePointsProps<K>): Array<{ playerId: number; total: number }> =>
   lines.map((line) => {
     const raw = sport.points.keys.reduce((sum, key) => sum + line.stats[key] * scoring[key], 0);
     return {

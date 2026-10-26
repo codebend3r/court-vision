@@ -29,7 +29,9 @@ import {
 import { type CategoryScoringConfig } from "#core/valuation/methods/perCategory";
 import { type ValuationLine } from "#core/valuation/types";
 
-const log = ({ day, pts }: { day: number; pts: number }): DatedLog =>
+type LogProps = { day: number; pts: number };
+
+const log = ({ day, pts }: LogProps): DatedLog =>
   makeDatedLog({
     gameDate: new Date(Date.UTC(2026, 0, day)),
     minutes: 32,
@@ -73,7 +75,9 @@ const poolStats = computePoolStats({
   windowGames: null,
 });
 
-const series = ({ logs }: { logs: readonly DatedLog[] }) =>
+type SeriesProps = { logs: readonly DatedLog[] };
+
+const series = ({ logs }: SeriesProps) =>
   buildRollingSeries({
     method: "z",
     playerId: 7,
@@ -203,14 +207,22 @@ describe("buildRollingSeries on G-Score", () => {
 // replaced, kept verbatim so the new series are held to exactly its output.
 // It aggregates through the current aggregateWindowLogs, which its own test
 // holds to the previous aggregator's exact output.
-type TrendScorer = (args: {
+type TrendScorerProps = {
   lines: readonly ValuationLine<BasketballKeys>[];
   poolStats: PoolStats;
   config: CategoryScoringConfig<BasketballKeys>;
-}) => PlayerValue[];
+};
+
+type TrendScorer = (args: TrendScorerProps) => PlayerValue[];
 
 // The rolling line carries only what the scorers read: who, and no position.
-const identity = ({ playerId }: { playerId: number }) => ({ playerId, position: null });
+type IdentityProps = { playerId: number };
+
+const identity = ({ playerId }: IdentityProps) => ({ playerId, position: null });
+
+type ReferenceRollingSeriesProps = Omit<RollingSeriesArgs<BasketballKeys>, "sport"> & {
+  scorer: TrendScorer;
+};
 
 const referenceRollingSeries = ({
   playerId,
@@ -220,7 +232,7 @@ const referenceRollingSeries = ({
   config,
   scorer,
   windowSize = ROLLING_WINDOW_GAMES,
-}: Omit<RollingSeriesArgs<BasketballKeys>, "sport"> & { scorer: TrendScorer }): TrendSeries => {
+}: ReferenceRollingSeriesProps): TrendSeries => {
   if (logs.length < windowSize) {
     return { playerId, fullName, points: [] };
   }
@@ -238,7 +250,9 @@ const referenceRollingSeries = ({
 };
 
 // Deterministic PRNG (mulberry32) for the seeded seasons below.
-const seeded = ({ seed }: { seed: number }) => {
+type SeededProps = { seed: number };
+
+const seeded = ({ seed }: SeededProps) => {
   let state = seed >>> 0;
   return (): number => {
     state = (state + 0x6d2b79f5) >>> 0;
@@ -251,7 +265,9 @@ const seeded = ({ seed }: { seed: number }) => {
 
 // A season of box scores with a DNP every so often and the odd game without
 // a free throw, from one seed.
-const seededSeason = ({ seed, length }: { seed: number; length: number }): DatedLog[] => {
+type SeededSeasonProps = { seed: number; length: number };
+
+const seededSeason = ({ seed, length }: SeededSeasonProps): DatedLog[] => {
   const random = seeded({ seed });
   const between = (low: number, high: number): number =>
     Math.floor(low + random() * (high - low + 1));

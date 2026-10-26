@@ -19,7 +19,9 @@ type RankTier = "first" | "elite" | "strong" | "regular";
 
 // Tint only ranks that read as achievements; neutral-toned stats (turnovers)
 // keep the plain pill however high they sit on the leaderboard.
-const rankTier = ({ position, tone }: { position: number; tone: RankTone }): RankTier =>
+type RankTierProps = { position: number; tone: RankTone };
+
+const rankTier = ({ position, tone }: RankTierProps): RankTier =>
   tone === "neutral"
     ? "regular"
     : position === 1
@@ -34,17 +36,19 @@ const rankTier = ({ position, tone }: { position: number; tone: RankTone }): Ran
 // averages, advanced averages, or fantasy value, all in one shape. The rank
 // pill names its place in the NBA and the tooltip the pool it counts. Callers
 // render it only when they have stats to show.
+type SeasonStatCardProps = {
+  season: string;
+  stats: readonly SeasonStat[];
+  title?: string;
+  poolNoun?: string;
+};
+
 export function SeasonStatCard({
   season,
   stats,
   title = "Season averages",
   poolNoun = "qualified players",
-}: {
-  season: string;
-  stats: readonly SeasonStat[];
-  title?: string;
-  poolNoun?: string;
-}) {
+}: SeasonStatCardProps) {
   const titleId = useId();
 
   return (

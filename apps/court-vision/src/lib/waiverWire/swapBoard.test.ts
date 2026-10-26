@@ -5,15 +5,13 @@ import { type Category, type FantasyCategoryBreakdown } from "@vision/sport-bask
 import { buildSwapBoard } from "@/lib/waiverWire/swapBoard";
 import { type WaiverModel, type WaiverRow } from "@/lib/waiverWire/types";
 
-const row = ({
-  playerId,
-  value,
-  owner = "free_agent",
-}: {
+type RowProps = {
   playerId: number;
   value: number;
   owner?: WaiverRow["owner"];
-}): WaiverRow => ({
+};
+
+const row = ({ playerId, value, owner = "free_agent" }: RowProps): WaiverRow => ({
   playerId,
   fullName: `Test Player ${playerId}`,
   teamAbbr: "BOS",
@@ -25,13 +23,17 @@ const row = ({
   injuryStatus: null,
 });
 
-const model = ({
-  weakest,
-  freePool,
-}: {
+type ModelProps = {
   weakest: WaiverRow[];
   freePool: WaiverRow[];
-}): WaiverModel => ({ roster: weakest, noStats: [], weakest, freePool });
+};
+
+const model = ({ weakest, freePool }: ModelProps): WaiverModel => ({
+  roster: weakest,
+  noStats: [],
+  weakest,
+  freePool,
+});
 
 const LABELS: Partial<Record<Category, string>> = {
   reb: "REB",
@@ -40,15 +42,13 @@ const LABELS: Partial<Record<Category, string>> = {
   ast: "AST",
 };
 
-const entry = ({
-  key,
-  z,
-  g = z,
-}: {
+type EntryProps = {
   key: Category;
   z: number;
   g?: number;
-}): FantasyCategoryBreakdown => ({
+};
+
+const entry = ({ key, z, g = z }: EntryProps): FantasyCategoryBreakdown => ({
   key,
   label: LABELS[key] ?? key,
   fullName: key,
@@ -60,7 +60,9 @@ const entry = ({
 
 const none = (): FantasyCategoryBreakdown[] => [];
 
-const texts = (chips: { text: string }[]): string[] => chips.map((chip) => chip.text);
+type TextsProps = { text: string }[];
+
+const texts = (chips: TextsProps): string[] => chips.map((chip) => chip.text);
 
 describe("buildSwapBoard", () => {
   it("lists only free agents who beat your weakest player, by gain", () => {

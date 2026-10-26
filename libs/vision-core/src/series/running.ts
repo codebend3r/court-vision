@@ -33,6 +33,15 @@ export type RunningPoint<C extends string, R extends string> = {
   ratios: Record<R, number | null>;
 };
 
+type CountingValueProps = {
+  current: number;
+  total: number;
+  gameIndex: number;
+  timeTotal: number;
+  mode: RunningMode;
+  perUnit: number;
+};
+
 const countingValue = ({
   current,
   total,
@@ -40,14 +49,7 @@ const countingValue = ({
   timeTotal,
   mode,
   perUnit,
-}: {
-  current: number;
-  total: number;
-  gameIndex: number;
-  timeTotal: number;
-  mode: RunningMode;
-  perUnit: number;
-}): number | null => {
+}: CountingValueProps): number | null => {
   if (mode === "game") return current;
   if (mode === "avg") return total / gameIndex;
   if (mode === "totals") return total;
@@ -57,17 +59,14 @@ const countingValue = ({
 // Playing time itself: the game's own, the running mean, or (totals and pace,
 // where a pace-normalized playing time would be the constant `perUnit`) the
 // running total.
-const playingTimeValue = ({
-  current,
-  total,
-  gameIndex,
-  mode,
-}: {
+type PlayingTimeValueProps = {
   current: number;
   total: number;
   gameIndex: number;
   mode: RunningMode;
-}): number => {
+};
+
+const playingTimeValue = ({ current, total, gameIndex, mode }: PlayingTimeValueProps): number => {
   if (mode === "game") return current;
   if (mode === "avg") return total / gameIndex;
   return total;
@@ -78,6 +77,15 @@ type RatioTotals = { made: number; attempted: number };
 // One point per game in `logs` (date order), accumulating every spec as it
 // goes. A game with no playing time is a DNP: it still advances the index and
 // counts toward running means.
+type BuildRunningSeriesProps<R extends string, C extends string, L extends RunningLog> = {
+  logs: readonly L[];
+  mode: RunningMode;
+  playingTime: (log: L) => number;
+  perUnit: number;
+  counting: readonly CountingSpec<L, C>[];
+  ratios: readonly RatioSpec<L, R>[];
+};
+
 export const buildRunningSeries = <L extends RunningLog, C extends string, R extends string>({
   logs,
   mode,
@@ -85,14 +93,7 @@ export const buildRunningSeries = <L extends RunningLog, C extends string, R ext
   perUnit,
   counting,
   ratios,
-}: {
-  logs: readonly L[];
-  mode: RunningMode;
-  playingTime: (log: L) => number;
-  perUnit: number;
-  counting: readonly CountingSpec<L, C>[];
-  ratios: readonly RatioSpec<L, R>[];
-}): RunningPoint<C, R>[] => {
+}: BuildRunningSeriesProps<R, C, L>): RunningPoint<C, R>[] => {
   type Accumulator = {
     points: RunningPoint<C, R>[];
     time: number;

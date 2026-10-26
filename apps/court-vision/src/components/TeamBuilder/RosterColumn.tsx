@@ -11,15 +11,23 @@ import { type FantasyTeamPlayer, type RosterSlot } from "@/lib/fantasyTeams/type
 
 import styles from "@/components/TeamBuilder/TeamBuilder.module.scss";
 
+type CanDropProps = { slot: RosterSlot; player: FantasyTeamPlayer };
+
+type OnDropProps = { slot: RosterSlot; playerId: number };
+
+type OnHoverProps = { player: FantasyTeamPlayer };
+
+type OnRemoveProps = { slot: RosterSlot; player: FantasyTeamPlayer };
+
 export type RosterColumnProps = {
   slots: RosterSlot[];
   // The search card being dragged, if any: every slot then declares whether
   // it would take that player.
   dragging: FantasyTeamPlayer | null;
-  canDrop: (args: { slot: RosterSlot; player: FantasyTeamPlayer }) => boolean;
-  onDrop: (args: { slot: RosterSlot; playerId: number }) => void;
-  onHover: (args: { player: FantasyTeamPlayer }) => void;
-  onRemove: (args: { slot: RosterSlot; player: FantasyTeamPlayer }) => void;
+  canDrop: (args: CanDropProps) => boolean;
+  onDrop: (args: OnDropProps) => void;
+  onHover: (args: OnHoverProps) => void;
+  onRemove: (args: OnRemoveProps) => void;
 };
 
 // The roster, one section per slot kind, each slot a drop target.
@@ -31,13 +39,17 @@ export function RosterColumn({
   onHover,
   onRemove,
 }: RosterColumnProps) {
-  const dropStateFor = ({ slot }: { slot: RosterSlot }): "ok" | "no" | undefined => {
+  type DropStateForProps = { slot: RosterSlot };
+
+  const dropStateFor = ({ slot }: DropStateForProps): "ok" | "no" | undefined => {
     if (dragging === null) return undefined;
     return canDrop({ slot, player: dragging }) ? "ok" : "no";
   };
 
+  type HandleDropProps = { slot: RosterSlot };
+
   const handleDrop =
-    ({ slot }: { slot: RosterSlot }) =>
+    ({ slot }: HandleDropProps) =>
     (event: DragEvent<HTMLLIElement>) => {
       event.preventDefault();
       onDrop({ slot, playerId: Number.parseInt(event.dataTransfer.getData("text/plain"), 10) });

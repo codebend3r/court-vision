@@ -11,15 +11,21 @@ import { type LeagueSummary } from "@/lib/leagues/types";
 const deleteLeagueMock = vi.fn();
 const setActiveLeagueMock = vi.fn();
 
+type DeleteLeagueProps = { leagueId: string };
+
+type SetActiveLeagueProps = { leagueId: string };
+
 vi.mock("@/lib/leagues/actions", () => ({
-  deleteLeague: (args: { leagueId: string }) => deleteLeagueMock(args),
-  setActiveLeague: (args: { leagueId: string }) => setActiveLeagueMock(args),
+  deleteLeague: (args: DeleteLeagueProps) => deleteLeagueMock(args),
+  setActiveLeague: (args: SetActiveLeagueProps) => setActiveLeagueMock(args),
 }));
 
 const syncYahooLeagueMock = vi.fn();
 
+type SyncYahooLeagueProps = { leagueId: string };
+
 vi.mock("@/lib/yahoo/actions", () => ({
-  syncYahooLeague: (args: { leagueId: string }) => syncYahooLeagueMock(args),
+  syncYahooLeague: (args: SyncYahooLeagueProps) => syncYahooLeagueMock(args),
 }));
 
 const refreshMock = vi.fn();
@@ -29,16 +35,18 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: refreshMock, push: pushMock }),
 }));
 
+type LeagueProps = {
+  id: string;
+  name: string;
+  scoringType?: LeagueSummary["scoringType"];
+} & Partial<LeagueSummary>;
+
 const league = ({
   id,
   name,
   scoringType = "h2h_categories",
   ...overrides
-}: {
-  id: string;
-  name: string;
-  scoringType?: LeagueSummary["scoringType"];
-} & Partial<LeagueSummary>): LeagueSummary => ({
+}: LeagueProps): LeagueSummary => ({
   id,
   name,
   slug: name.toLowerCase(),
@@ -98,7 +106,9 @@ function AwaitRefresh() {
   return null;
 }
 
-function PendingRefresh({ children }: { children: ReactNode }) {
+type PendingRefreshProps = { children: ReactNode };
+
+function PendingRefresh({ children }: PendingRefreshProps) {
   const [hasRefreshed, setHasRefreshed] = useState(false);
   useEffect(() => {
     refreshMock.mockImplementation(() => setHasRefreshed(true));
@@ -116,7 +126,9 @@ const twoLeagues = () => [league({ id: "a", name: "Alpha" }), league({ id: "b", 
 // Long enough for a transition that was going to settle to have settled.
 const aBeatLater = () => act(() => new Promise((resolve) => setTimeout(resolve, 50)));
 
-const cardOf = ({ name }: { name: string }): HTMLElement => {
+type CardOfProps = { name: string };
+
+const cardOf = ({ name }: CardOfProps): HTMLElement => {
   const card = screen.getByRole("link", { name }).closest("li");
   if (card === null) throw new Error(`no card for ${name}`);
   return card;

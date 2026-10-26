@@ -14,8 +14,10 @@ vi.mock("@/lib/watchlist/queries", () => ({ getWatchlistPlayers, getWatchlistCou
 vi.mock("@/lib/watchlist/trendLoader", () => ({ getTrendSeries }));
 vi.mock("@/lib/standings/loader", () => ({ getConferenceStandings }));
 vi.mock("@/lib/leagues/queries", () => ({ getActiveLeague: () => getActiveLeague() }));
+type GetLeagueTeamsProps = { leagueId: string };
+
 vi.mock("@/lib/leagues/teamQueries", () => ({
-  getLeagueTeams: (args: { leagueId: string }) => getLeagueTeams(args),
+  getLeagueTeams: (args: GetLeagueTeamsProps) => getLeagueTeams(args),
 }));
 
 import Home from "@/app/page";
@@ -41,7 +43,9 @@ beforeEach(() => {
   getLeagueTeams.mockReset().mockResolvedValue([]);
 });
 
-const summary = ({ playerId, fullName }: { playerId: number; fullName: string }) => ({
+type SummaryProps = { playerId: number; fullName: string };
+
+const summary = ({ playerId, fullName }: SummaryProps) => ({
   playerId,
   fullName,
   teamAbbr: "NYK",

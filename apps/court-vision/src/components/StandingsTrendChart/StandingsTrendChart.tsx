@@ -42,7 +42,9 @@ export function StandingsTrendChart({ title, teams, rows }: StandingsTrendChartP
   )[0];
   const leaderWins = leader === undefined ? 0 : (lastRow?.[leader.abbr] ?? 0);
 
-  const togglePin = ({ abbr }: { abbr: TeamAbbreviation }) =>
+  type TogglePinProps = { abbr: TeamAbbreviation };
+
+  const togglePin = ({ abbr }: TogglePinProps) =>
     setPinned((current) => (current === abbr ? null : abbr));
 
   return (

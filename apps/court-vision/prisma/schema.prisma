@@ -46,6 +46,15 @@ model Player {
   updatedAt        DateTime                @updatedAt
 }
 
+// Distributed anonymous request limits; server-only, never exposed through PostgREST.
+model RequestRateLimit {
+  key       String   @id
+  attempts  Int
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
+
 model Profile {
   id               String   @id @db.Uuid
   email            String
@@ -101,6 +110,8 @@ model League {
   myTeamId              String?                 @unique
   myTeam                LeagueTeam?             @relation("MyTeam", fields: [myTeamId], references: [id], onDelete: SetNull)
   syncedAt              DateTime?
+  syncStartedAt         DateTime?
+  syncLeaseUntil        DateTime?
   syncError             String?
   unsupportedCategories String[]                @default([])
   // The scored categories of an imported head-to-head league, in the host's

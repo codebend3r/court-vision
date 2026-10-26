@@ -1,5 +1,7 @@
 // Collision-proof slugs within one owner scope: "my-league" → "my-league-2".
-export const uniqueSlug = ({ base, taken }: { base: string; taken: readonly string[] }): string => {
+type UniqueSlugProps = { base: string; taken: readonly string[] };
+
+export const uniqueSlug = ({ base, taken }: UniqueSlugProps): string => {
   if (!taken.includes(base)) return base;
   const candidate = Array.from(
     { length: taken.length + 1 },

@@ -2,7 +2,7 @@
 
 Find fantasy basketball players trending in the categories you care about.
 
-Court Vision pulls NBA player stats (2020–2025 seasons via the Balldontlie
+Court Vision pulls NBA player stats (2016–2026 starting years via the Balldontlie
 API, stored in Postgres through Prisma) and turns them into sortable,
 filterable views for fantasy decisions.
 
@@ -95,7 +95,7 @@ You'll need [Bun](https://bun.sh/) installed.
 ```bash
 bun install                                                # install every workspace
 cp apps/court-vision/.env.example apps/court-vision/.env   # fill in the values you need
-bun dev                                                    # http://localhost:46644
+bun run dev:court                                          # http://localhost:46644
 ```
 
 Then open [http://localhost:46644](http://localhost:46644) in your browser.
@@ -114,6 +114,38 @@ secrets. To target one project, use `bunx nx run <project>:<target>`
 `bunx playwright install chromium` before running the accessibility suite locally.
 Conventions live in `CLAUDE.md`; design specs and plans under `docs/superpowers/`.
 
+## Database changes and concurrency checks
+
+Deploy the committed migrations **before deploying application code** that uses them:
+
+```bash
+bun run --cwd apps/court-vision db:deploy
+```
+
+This uses the configured `DIRECT_URL` (or `DATABASE_URL`); verify the target before running it.
+The sync lease and username request-limit migration is
+`20261026000100_sync_leases_and_request_limits`. It adds two nullable league columns
+and a server-only counter table; it does not rewrite existing league data.
+
+Real concurrency tests run in CI against an isolated Postgres service. To run them
+locally, create a separate database on `127.0.0.1` with a name ending in `_test`,
+push the Prisma schema **only to that test database**, and run:
+
+```bash
+TEST_DATABASE_URL=postgresql://user:password@127.0.0.1:5432/court_vision_test \\
+  bun run --cwd apps/court-vision test:db
+```
+
+The test runner rejects non-loopback URLs and database names without the `_test`
+suffix. These tests are skipped in the ordinary unit suite unless that variable
+is set. Never point them at an application database.
+
+Username availability and signup share a Postgres-backed budget: 30 attempts per
+client per minute and 1,000 globally. Deployed Netlify requests use its client-IP
+header, hashed before storage. Other environments share a conservative fallback
+bucket; arbitrary forwarding headers do not create new identities. Counter
+storage failures fail closed. Expired buckets are removed as requests arrive.
+
 ## Git hooks
 
 `bun install` installs Lefthook's Git hooks and clears the old Husky
@@ -121,7 +153,7 @@ Conventions live in `CLAUDE.md`; design specs and plans under `docs/superpowers/
 
 - **Pre-commit:** `lint-staged` fixes staged SCSS with Gale, then formats staged
   files with Oxfmt. Partially staged files keep their unstaged changes.
-- **Pre-push:** `bun run system-check` checks formatting, types, lint, tests, and
+- **Pre-push:** `bun run system-check` checks formatting, types, lint (including named parameter types), tests, and
   the production build. Any failure blocks the push; it does not fetch or prune
   remote branches.
 

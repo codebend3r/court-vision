@@ -3,7 +3,9 @@ import { describe, expect, it } from "bun:test";
 import { filterByOwner } from "@/lib/players/ownerFilter";
 
 const rows = [{ id: 1 }, { id: 2 }, { id: 3 }];
-const idOf = (row: { id: number }) => row.id;
+type IdOfProps = { id: number };
+
+const idOf = (row: IdOfProps) => row.id;
 const takenIds = new Set([1, 3]);
 
 describe("filterByOwner", () => {

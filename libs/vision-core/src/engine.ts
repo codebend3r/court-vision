@@ -53,11 +53,11 @@ type WithoutSport<T> = Omit<T, "sport">;
 // every function without threading its descriptor through each call. Each
 // function's own module stays the source of truth (and takes `sport`
 // explicitly), so a binding here is never more than a forward.
-export const createSportEngine = <K extends SportKeys>({
-  sport,
-}: {
+type CreateSportEngineProps<K extends SportKeys> = {
   sport: SportDescriptor<K>;
-}) => {
+};
+
+export const createSportEngine = <K extends SportKeys>({ sport }: CreateSportEngineProps<K>) => {
   return {
     sport,
     categoryMeta: categoryMeta({ sport }),

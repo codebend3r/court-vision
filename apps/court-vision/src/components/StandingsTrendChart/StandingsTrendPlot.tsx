@@ -20,12 +20,14 @@ import { contrastRatio } from "@/lib/teams/color";
 import { teamColorsFor, type TeamAbbreviation } from "@/lib/teams/meta";
 import { type WinsRow } from "@vision/core/series/teamTrend";
 
+type OnHoverProps = { abbr: TeamAbbreviation | null };
+
 export type StandingsTrendPlotProps = {
   teams: ReadonlyArray<{ abbr: TeamAbbreviation; name: string }>;
   rows: readonly WinsRow[];
   // The team the legend has pinned or a pointer is over; every other line dims.
   active: TeamAbbreviation | null;
-  onHover: (args: { abbr: TeamAbbreviation | null }) => void;
+  onHover: (args: OnHoverProps) => void;
 };
 
 // The extreme each background tone sits near. Judging a line against it rather
@@ -39,7 +41,9 @@ const MIN_LINE_CONTRAST = 1.2;
 
 // Team primary color, swapping to secondary when the primary would vanish
 // against the theme's background tone (BKN's black line on any dark theme).
-export const lineColorFor = ({ abbr, theme }: { abbr: TeamAbbreviation; theme: Theme }): string => {
+type LineColorForProps = { abbr: TeamAbbreviation; theme: Theme };
+
+export const lineColorFor = ({ abbr, theme }: LineColorForProps): string => {
   const team = teamColorsFor({ team: abbr });
   if (team === null) return "#888888";
   const tone = THEME_META.find((meta) => meta.id === theme)?.tone ?? "dark";

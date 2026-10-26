@@ -29,7 +29,9 @@ teams = [
 ]
 `;
 
-const textResponse = (body: string, init: { status?: number } = {}): Response =>
+type TextResponseProps = { status?: number };
+
+const textResponse = (body: string, init: TextResponseProps = {}): Response =>
   new Response(body, { status: init.status ?? 200 });
 
 describe("fetchNbaPlayerIndex", () => {

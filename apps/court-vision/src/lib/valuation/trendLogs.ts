@@ -19,7 +19,9 @@ export const GAME_LOG_SELECT = {
 };
 
 // The engine's view of a stored game: minutes are basketball's playing time.
-export const toWindowLog = ({ row }: { row: BasketballLogRow }): WindowLog => ({
+type ToWindowLogProps = { row: BasketballLogRow };
+
+export const toWindowLog = ({ row }: ToWindowLogProps): WindowLog => ({
   playingTime: row.minutes,
   stats: recordFromKeys({ keys: BASKETBALL_VALUED_STATS, value: (key) => row[key] }),
 });
@@ -59,5 +61,7 @@ export const isFantasyTrendLogsResult = (value: unknown): value is FantasyTrendL
   );
 };
 
-export const toDatedLogs = ({ logs }: { logs: readonly FantasyTrendLog[] }): DatedLog[] =>
+type ToDatedLogsProps = { logs: readonly FantasyTrendLog[] };
+
+export const toDatedLogs = ({ logs }: ToDatedLogsProps): DatedLog[] =>
   logs.map(({ gameDate, ...row }) => ({ ...toWindowLog({ row }), gameDate: new Date(gameDate) }));

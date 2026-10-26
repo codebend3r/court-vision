@@ -7,7 +7,9 @@ import { useLeaguesStore } from "@/lib/leagues/store";
 import { type LeagueSummary } from "@/lib/leagues/types";
 import { useWatchlistStore } from "@/lib/watchlist/store";
 
-const league = ({ id, name }: { id: string; name: string }): LeagueSummary => ({
+type LeagueProps = { id: string; name: string };
+
+const league = ({ id, name }: LeagueProps): LeagueSummary => ({
   id,
   name,
   slug: name.toLowerCase(),

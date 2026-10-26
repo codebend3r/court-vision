@@ -10,7 +10,9 @@ const route: RouteBudget = {
   budgetMs: { ttfb: 1200, total: 2500 },
 };
 
-const verdictFor = (sample: { ttfbMs: number; totalMs: number }) =>
+type VerdictForProps = { ttfbMs: number; totalMs: number };
+
+const verdictFor = (sample: VerdictForProps) =>
   evaluateRoute({ route, samples: [sample], percentile: 95 });
 
 describe("skipLine", () => {

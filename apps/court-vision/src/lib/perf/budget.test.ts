@@ -50,7 +50,9 @@ describe("parsePerfBudgetConfig", () => {
 describe("evaluateRoute percentile", () => {
   // The TTFB reading `evaluateRoute` reports for these samples at this
   // percentile; total is read the same way.
-  const ttfbAt = ({ values, percentile }: { values: number[]; percentile: number }): number =>
+  type TtfbAtProps = { values: number[]; percentile: number };
+
+  const ttfbAt = ({ values, percentile }: TtfbAtProps): number =>
     evaluateRoute({
       route,
       samples: values.map((ttfbMs) => ({ ttfbMs, totalMs: ttfbMs })),

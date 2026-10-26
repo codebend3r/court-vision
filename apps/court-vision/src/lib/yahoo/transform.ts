@@ -23,7 +23,9 @@ export type TransformResult =
 
 const HIDDEN_MANAGER = "--hidden--";
 
-const toPlayerRef = ({ player }: { player: YahooPlayer }): YahooPlayerRef => ({
+type ToPlayerRefProps = { player: YahooPlayer };
+
+const toPlayerRef = ({ player }: ToPlayerRefProps): YahooPlayerRef => ({
   yahooPlayerId: player.player_id,
   fullName: player.name.full,
   teamAbbr: player.editorial_team_abbr ?? null,
@@ -34,13 +36,12 @@ const toPlayerRef = ({ player }: { player: YahooPlayer }): YahooPlayerRef => ({
 
 // Fills the first empty layout slot of the player's type, else appends a slot of
 // that type, so no one on a Yahoo roster is dropped.
-const seat = ({
-  slots,
-  player,
-}: {
+type SeatProps = {
   slots: readonly ImportedSlot[];
   player: YahooPlayer;
-}): ImportedSlot[] => {
+};
+
+const seat = ({ slots, player }: SeatProps): ImportedSlot[] => {
   const slotType = toSlotType({ position: player.selected_position?.position ?? null });
   const ref = toPlayerRef({ player });
   const index = slots.findIndex((slot) => slot.slotType === slotType && slot.player === null);
@@ -49,18 +50,19 @@ const seat = ({
     : slots.map((slot, at) => (at === index ? { slotType, player: ref } : slot));
 };
 
-const toManagerName = ({ team }: { team: YahooTeam }): string | null =>
+type ToManagerNameProps = { team: YahooTeam };
+
+const toManagerName = ({ team }: ToManagerNameProps): string | null =>
   team.managers
     .map(({ nickname }) => nickname)
     .find((nickname) => !!nickname && nickname !== HIDDEN_MANAGER) ?? null;
 
-const toImportedTeam = ({
-  team,
-  slotLayout,
-}: {
+type ToImportedTeamProps = {
   team: YahooTeam;
   slotLayout: readonly RosterSlotType[];
-}): ImportedTeam => ({
+};
+
+const toImportedTeam = ({ team, slotLayout }: ToImportedTeamProps): ImportedTeam => ({
   externalKey: team.team_key,
   name: team.name,
   logoUrl: team.team_logos[0]?.url ?? null,
@@ -76,11 +78,11 @@ const toImportedTeam = ({
 // that one known case.
 const TURNOVERS_STAT_ID = 19;
 
-const toStatCategories = ({
-  league,
-}: {
+type ToStatCategoriesProps = {
   league: YahooLeagueSnapshot["fantasy_content"]["league"];
-}): ImportedStatCategory[] =>
+};
+
+const toStatCategories = ({ league }: ToStatCategoriesProps): ImportedStatCategory[] =>
   league.settings.stat_categories.stats
     .filter((stat) => !stat.is_only_display_stat)
     .map((stat) => ({
@@ -90,7 +92,9 @@ const toStatCategories = ({
     }));
 
 // Keep a bye team's totals even though it has no opponent.
-const toImportedMatchup = ({ matchup }: { matchup: YahooMatchup }): ImportedMatchup[] => {
+type ToImportedMatchupProps = { matchup: YahooMatchup };
+
+const toImportedMatchup = ({ matchup }: ToImportedMatchupProps): ImportedMatchup[] => {
   const [first, second, ...rest] = matchup.teams;
   if (!first || rest.length) return [];
   const side = (team: typeof first) => ({
@@ -111,13 +115,15 @@ const toImportedMatchup = ({ matchup }: { matchup: YahooMatchup }): ImportedMatc
 };
 
 /** Turns a parsed Yahoo league snapshot into a provider-neutral league, or reports why it can't be imported. */
+type ToImportedLeagueProps = {
+  snapshot: YahooLeagueSnapshot;
+  scoreboard?: YahooScoreboard;
+};
+
 export const toImportedLeague = ({
   snapshot,
   scoreboard,
-}: {
-  snapshot: YahooLeagueSnapshot;
-  scoreboard?: YahooScoreboard;
-}): TransformResult => {
+}: ToImportedLeagueProps): TransformResult => {
   const league = snapshot.fantasy_content.league;
   const settings = mapLeagueSettings({ league });
   if (settings.status === "unsupported") return settings;
@@ -148,7 +154,9 @@ export const toImportedLeague = ({
 };
 
 /** Flattens players pages into refs, keeping the first occurrence of each Yahoo player id. */
-export const toPlayerRefs = ({ pages }: { pages: readonly YahooPlayersPage[] }): YahooPlayerRef[] =>
+type ToPlayerRefsProps = { pages: readonly YahooPlayersPage[] };
+
+export const toPlayerRefs = ({ pages }: ToPlayerRefsProps): YahooPlayerRef[] =>
   pages
     .flatMap((page) => page.fantasy_content.league.players)
     .map((player) => toPlayerRef({ player }))

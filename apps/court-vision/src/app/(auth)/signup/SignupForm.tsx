@@ -10,7 +10,7 @@ import { isAvailabilityResponse } from "@/lib/auth/usernameAvailability";
 import authStyles from "@/app/(auth)/auth.module.scss";
 import styles from "@/app/(auth)/signup/signup.module.scss";
 
-type Availability = "idle" | "checking" | "available" | "taken";
+type Availability = "idle" | "checking" | "available" | "taken" | "unavailable";
 
 export function SignupForm() {
   const [email, setEmail] = useState("");
@@ -47,6 +47,10 @@ export function SignupForm() {
           `/api/username-available?u=${encodeURIComponent(normalized)}`,
           { signal: controller.signal },
         );
+        if (!response.ok) {
+          setAvailability("unavailable");
+          return;
+        }
         const data: unknown = await response.json();
         setAvailability(isAvailabilityResponse(data) && data.available ? "available" : "taken");
       } catch {
@@ -120,6 +124,9 @@ export function SignupForm() {
       >
         {!!usernameTaken && "That username is taken."}
         {usernameValid && availability === "available" && "Username is available."}
+        {usernameValid &&
+          availability === "unavailable" &&
+          "Username checks are unavailable. Try again in a minute."}
       </p>
       <p className={styles.hint}>3–20 characters: lowercase letters, numbers, underscores.</p>
       <label className={authStyles.field}>

@@ -42,18 +42,24 @@ const POSITIONS = ["G", "F", "C", "G-F", "F-C"] as const;
 const MILLIS_PER_DAY = 86_400_000;
 const FIRST_GAME_DATE = Date.UTC(2026, 9, 22);
 
-const pick = <Item>({ items, index }: { items: readonly Item[]; index: number }): Item | null =>
+type PickProps<Item> = { items: readonly Item[]; index: number };
+
+const pick = <Item>({ items, index }: PickProps<Item>): Item | null =>
   items[index % items.length] ?? null;
 
 // A season line for player `index`: production falls off down the list so the
 // default points sort has a real order to render.
-const buildPlayer = ({ index }: { index: number }): PlayerPoolRow => {
+type BuildPlayerProps = { index: number };
+
+const buildPlayer = ({ index }: BuildPlayerProps): PlayerPoolRow => {
   const id = index + 1;
   const first = pick({ items: FIRST_NAMES, index }) ?? "";
   const last = pick({ items: LAST_NAMES, index: Math.floor(index / FIRST_NAMES.length) }) ?? "";
   const gamesPlayed = 40 + ((index * 7) % 40);
   const pointsPerGame = 30 - index * 0.2 + ((index * 13) % 5);
-  const perGame = ({ rate }: { rate: number }): number =>
+  type PerGameProps = { rate: number };
+
+  const perGame = ({ rate }: PerGameProps): number =>
     Math.round(Math.max(0, pointsPerGame) * rate * gamesPlayed);
   return {
     id,
@@ -93,7 +99,9 @@ export const FIXTURE_PROFILE_PLAYER: PlayerPoolRow = buildPlayer({ index: 0 });
 
 type FixtureGame = Omit<GameLogRow, "gameDate"> & { gameDate: Date };
 
-const buildGame = ({ index }: { index: number }): FixtureGame => {
+type BuildGameProps = { index: number };
+
+const buildGame = ({ index }: BuildGameProps): FixtureGame => {
   const fga = 14 + ((index * 3) % 8);
   const fgm = fga - 7 - (index % 3);
   const fg3m = 1 + (index % 3);

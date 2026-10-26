@@ -5,6 +5,15 @@ import { SeasonStatCard, type SeasonStat } from "@/components/SeasonStatCard/Sea
 
 afterEach(cleanup);
 
+type BuildStatProps = {
+  key: string;
+  label?: string;
+  value?: string;
+  rank?: number;
+  tone?: "leader" | "neutral";
+  eligibleCount?: number;
+};
+
 const buildStat = ({
   key,
   label = key.toUpperCase(),
@@ -12,14 +21,12 @@ const buildStat = ({
   rank = 10,
   tone = "leader",
   eligibleCount = 400,
-}: {
-  key: string;
-  label?: string;
-  value?: string;
-  rank?: number;
-  tone?: "leader" | "neutral";
-  eligibleCount?: number;
-}): SeasonStat => ({ key, label, value, rank: { position: rank, tone, eligibleCount } });
+}: BuildStatProps): SeasonStat => ({
+  key,
+  label,
+  value,
+  rank: { position: rank, tone, eligibleCount },
+});
 
 describe("SeasonStatCard", () => {
   it("renders the season, each stat value, and its NBA rank", () => {

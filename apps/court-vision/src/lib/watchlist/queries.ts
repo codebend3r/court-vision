@@ -17,11 +17,13 @@ export const getWatchlistPlayerIds = async (): Promise<number[]> => {
   return rows.map((row) => row.playerId);
 };
 
+type GetWatchlistPlayersProps = {
+  limit: number;
+};
+
 export const getWatchlistPlayers = async ({
   limit,
-}: {
-  limit: number;
-}): Promise<WatchlistPlayerSummary[]> => {
+}: GetWatchlistPlayersProps): Promise<WatchlistPlayerSummary[]> => {
   const league = await getActiveLeagueRecord();
   if (league === null) return [];
   const rows = await prisma.leagueWatchlistPlayer.findMany({

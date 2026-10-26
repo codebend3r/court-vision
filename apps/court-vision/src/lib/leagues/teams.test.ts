@@ -134,7 +134,9 @@ describe("slot row mapping", () => {
 });
 
 describe("parseLegacyTeamsPayload", () => {
-  const legacyTeam = ({ id, name }: { id: string; name: string }) => ({
+  type LegacyTeamProps = { id: string; name: string };
+
+  const legacyTeam = ({ id, name }: LegacyTeamProps) => ({
     id,
     name,
     createdAt: "2026-07-23T00:00:00.000Z",

@@ -50,7 +50,9 @@ export function TeamBuilder({ leagueId, players, team, insights }: TeamBuilderPr
     [insights],
   );
 
-  const onDrop = ({ slot, playerId }: { slot: RosterSlot; playerId: number }) => {
+  type OnDropProps = { slot: RosterSlot; playerId: number };
+
+  const onDrop = ({ slot, playerId }: OnDropProps) => {
     const player = players.find((entry) => entry.playerId === playerId) ?? dragging;
     if (player !== null && roster.canDrop({ slot, player })) {
       roster.assign({ slotId: slot.id, player });

@@ -27,15 +27,13 @@ export function FantasyValueTable({ rows, sort, dir, isSignedIn, onSort }: Fanta
   const isStatSort = !isNameSort(sort);
 
   // A method column's header also carries the method's explanation tip.
-  const header = ({
-    label,
-    sortKey,
-    method,
-  }: {
+  type HeaderProps = {
     label: string;
     sortKey: FantasySortKey;
     method?: FantasyMethodMeta;
-  }) => {
+  };
+
+  const header = ({ label, sortKey, method }: HeaderProps) => {
     const isActive = sort === sortKey;
     const tipId = method && `fantasy-tip-${sortKey}`;
     return (

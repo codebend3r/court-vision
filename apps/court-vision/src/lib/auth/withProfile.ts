@@ -10,13 +10,17 @@ export type SessionFailure = { status: "unauthenticated" } | { status: "error" }
 // session lookup included) into "error". The action hands in the session's
 // own `getProfile`, so the lookup stays visible at each call site and a test
 // that mocks `@/lib/auth/session` needs nothing more.
+type RunProps = { profile: Profile };
+
+type WithProfileProps<R> = {
+  getProfile: () => Promise<Profile | null>;
+  run: (args: RunProps) => Promise<R>;
+};
+
 export const withProfile = async <R>({
   getProfile,
   run,
-}: {
-  getProfile: () => Promise<Profile | null>;
-  run: (args: { profile: Profile }) => Promise<R>;
-}): Promise<R | SessionFailure> => {
+}: WithProfileProps<R>): Promise<R | SessionFailure> => {
   try {
     const profile = await getProfile();
     if (profile === null) return { status: "unauthenticated" };

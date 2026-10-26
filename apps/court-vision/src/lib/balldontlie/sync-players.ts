@@ -16,9 +16,9 @@ export type PlayerSyncSummary = {
 // and everyone who dropped off the list is unflagged. A historical `sync:bdl`
 // rewrites each player's team to their last synced season, so run this after
 // it. Retired players keep the last team their game logs gave them.
-export async function syncPlayers(
-  args: { deps?: BdlClientDeps; logger?: Logger } = {},
-): Promise<PlayerSyncSummary> {
+type SyncPlayersProps = { deps?: BdlClientDeps; logger?: Logger };
+
+export async function syncPlayers(args: SyncPlayersProps = {}): Promise<PlayerSyncSummary> {
   const { deps = {} } = args;
   const logger = args.logger ?? deps.logger ?? silentLogger;
 

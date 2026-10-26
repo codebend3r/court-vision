@@ -25,7 +25,9 @@ const LEGEND: ReadonlyArray<{ tier: Tier; label: string }> = [
   { tier: "neutral", label: "Role, not quality" },
 ];
 
-const describeChart = ({ chart }: { chart: RosterChart }): string =>
+type DescribeChartProps = { chart: RosterChart };
+
+const describeChart = ({ chart }: DescribeChartProps): string =>
   `${chart.fullName}, best first: ${chart.bars
     .map((bar) => `${bar.fullName} ${bar.label}`)
     .join(", ")}`;

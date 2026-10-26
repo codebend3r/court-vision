@@ -16,18 +16,21 @@ export type TeamCategoryTotal<K extends SportKeys> = {
   value: number;
 };
 
-const perGame = ({ total, gamesPlayed }: { total: number; gamesPlayed: number }): number =>
-  total / gamesPlayed;
+type PerGameProps = { total: number; gamesPlayed: number };
+
+const perGame = ({ total, gamesPlayed }: PerGameProps): number => total / gamesPlayed;
 
 // A roster's weekly-style category line: what the team posts in a typical game
 // when everyone on `lines` plays. Players with no games add nothing.
+type TeamCategoryTotalsProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  lines: readonly ValuationLine<K>[];
+};
+
 export const teamCategoryTotals = <K extends SportKeys>({
   sport,
   lines,
-}: {
-  sport: SportDescriptor<K>;
-  lines: readonly ValuationLine<K>[];
-}): TeamCategoryTotal<K>[] => {
+}: TeamCategoryTotalsProps<K>): TeamCategoryTotal<K>[] => {
   const played = lines.filter((line) => line.gamesPlayed > 0);
   const sumPerGame = (stat: K["valued"]): number =>
     played.reduce(

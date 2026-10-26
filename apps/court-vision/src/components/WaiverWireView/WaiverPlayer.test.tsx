@@ -28,10 +28,12 @@ const player: WaiverPlayerProps["player"] = {
   injuryStatus: "Q",
 };
 
-const renderPlayer = ({
-  overrides = {},
-}: { overrides?: Partial<WaiverPlayerProps["player"]> } = {}) => {
-  const onCompare = vi.fn<({ fa }: { fa: number }) => void>();
+type RenderPlayerProps = { overrides?: Partial<WaiverPlayerProps["player"]> };
+
+const renderPlayer = ({ overrides = {} }: RenderPlayerProps = {}) => {
+  type OnCompareProps = { fa: number };
+
+  const onCompare = vi.fn<({ fa }: OnCompareProps) => void>();
   render(
     <>
       <span id="compare-hint">Compare head-to-head against your weakest player</span>

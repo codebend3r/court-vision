@@ -13,17 +13,14 @@ import { type WeekCategory, type WeekTeam } from "@/lib/matchups/types";
 const STEALS: WeekCategory = { statId: 17, label: "ST", higherIsBetter: true };
 const TURNOVERS: WeekCategory = { statId: 19, label: "TO", higherIsBetter: false };
 
-const team = ({
-  teamId,
-  steals,
-  turnovers,
-  isMine = false,
-}: {
+type TeamProps = {
   teamId: string;
   steals: string;
   turnovers: string;
   isMine?: boolean;
-}): WeekTeam => ({
+};
+
+const team = ({ teamId, steals, turnovers, isMine = false }: TeamProps): WeekTeam => ({
   teamId,
   name: `Team ${teamId}`,
   slug: teamId,

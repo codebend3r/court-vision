@@ -14,13 +14,12 @@ export type HomeStandingsPanelProps = {
   className?: string;
 };
 
-function ConferenceLadder({
-  label,
-  teams,
-}: {
+type ConferenceLadderProps = {
   label: string;
   teams: readonly ConferenceTeamStanding[];
-}) {
+};
+
+function ConferenceLadder({ label, teams }: ConferenceLadderProps) {
   return (
     <section className={styles.conference} aria-label={`${label}ern Conference`}>
       <h3 className={styles.conferenceTitle}>{label}</h3>

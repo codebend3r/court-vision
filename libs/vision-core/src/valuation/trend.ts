@@ -27,6 +27,16 @@ export type FantasyTrendValue = {
 // last `windowGames`, and every kept game still looks back over the ten
 // before it, cut or not. The player page's trend panel and the Fantasy
 // tab's rolling rows both read from here.
+type BuildFantasyTrendProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  line: { playerId: number };
+  logs: readonly DatedLog<K>[];
+  poolStats: PoolStats<K>;
+  config: ValuationConfig<K>;
+  methodWeights: MethodWeights<K>;
+  windowGames: number | null;
+};
+
 export const buildFantasyTrend = <K extends SportKeys>({
   sport,
   line,
@@ -35,15 +45,7 @@ export const buildFantasyTrend = <K extends SportKeys>({
   config,
   methodWeights,
   windowGames,
-}: {
-  sport: SportDescriptor<K>;
-  line: { playerId: number };
-  logs: readonly DatedLog<K>[];
-  poolStats: PoolStats<K>;
-  config: ValuationConfig<K>;
-  methodWeights: MethodWeights<K>;
-  windowGames: number | null;
-}): FantasyTrendValue[] => {
+}: BuildFantasyTrendProps<K>): FantasyTrendValue[] => {
   const zConfig = weightedConfig({ config, methodWeights, method: "z" });
   const gConfig = weightedConfig({ config, methodWeights, method: "g" });
   const lineEndingAt = rollingWindowLines({ sport, playerId: line.playerId, logs });

@@ -14,15 +14,13 @@ export type SeriesTooltipRow = {
 // share: a muted header naming the hovered point, one "Label: value" line per
 // series behind a colour dot, and an optional status footnote (a missed game,
 // say).
-export function SeriesTooltip({
-  header,
-  rows,
-  status,
-}: {
+type SeriesTooltipProps = {
   header: ReactNode;
   rows: readonly SeriesTooltipRow[];
   status?: string;
-}) {
+};
+
+export function SeriesTooltip({ header, rows, status }: SeriesTooltipProps) {
   return (
     <div className={styles.tooltip}>
       <p className={styles.tooltipHeader}>{header}</p>

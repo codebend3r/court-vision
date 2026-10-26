@@ -55,20 +55,20 @@ type TeamLeague = { provider: string; myTeamId: string | null };
 
 // Tests the raw column so a provider this build doesn't know fails closed,
 // matching the `provider: "manual"` filters on the team write paths.
-const isImportedLeague = ({ league }: { league: TeamLeague }): boolean =>
+type IsImportedLeagueProps = { league: TeamLeague };
+
+const isImportedLeague = ({ league }: IsImportedLeagueProps): boolean =>
   league.provider !== "manual";
 
 // DB row → RSC-boundary-safe FantasyTeam. Player.id (the NBA player id) maps
 // onto FantasyTeamPlayer.playerId here.
-export const toFantasyTeam = ({
-  team,
-  isMine,
-  isImported,
-}: {
+type ToFantasyTeamProps = {
   team: TeamWithSlots;
   isMine: boolean;
   isImported: boolean;
-}): FantasyTeam => {
+};
+
+export const toFantasyTeam = ({ team, isMine, isImported }: ToFantasyTeamProps): FantasyTeam => {
   const { slots, unmatchedBySlotId } = rowsToTeamSlots({
     rows: team.slots.map((slot) => ({
       slotType: slot.slotType,
@@ -103,11 +103,11 @@ export const toFantasyTeam = ({
 
 // The user's own team first, then the rest in creation order. Only an
 // imported league has a "my team"; a hand-built league's order is unchanged.
-export const getLeagueTeams = async ({
-  leagueId,
-}: {
+type GetLeagueTeamsProps = {
   leagueId: string;
-}): Promise<FantasyTeam[]> => {
+};
+
+export const getLeagueTeams = async ({ leagueId }: GetLeagueTeamsProps): Promise<FantasyTeam[]> => {
   const league = await prisma.league.findUnique({
     where: { id: leagueId },
     select: {
@@ -124,13 +124,15 @@ export const getLeagueTeams = async ({
   return [...teams.filter((team) => team.isMine), ...teams.filter((team) => !team.isMine)];
 };
 
+type GetLeagueTeamBySlugProps = {
+  leagueId: string;
+  slug: string;
+};
+
 export const getLeagueTeamBySlug = async ({
   leagueId,
   slug,
-}: {
-  leagueId: string;
-  slug: string;
-}): Promise<FantasyTeam | null> => {
+}: GetLeagueTeamBySlugProps): Promise<FantasyTeam | null> => {
   const team = await prisma.leagueTeam.findFirst({
     where: { leagueId, slug },
     include: { ...TEAM_INCLUDE, league: { select: { provider: true, myTeamId: true } } },
@@ -150,7 +152,9 @@ export const getLeagueTeamBySlug = async ({
 // in another league.
 type RosterScope = { team: { leagueId: string } } | { teamId: string; team: { leagueId: string } };
 
-const rosterScope = ({ league }: { league: TeamLeague & { id: string } }): RosterScope | null => {
+type RosterScopeProps = { league: TeamLeague & { id: string } };
+
+const rosterScope = ({ league }: RosterScopeProps): RosterScope | null => {
   if (!isImportedLeague({ league })) return { team: { leagueId: league.id } };
   return league.myTeamId === null
     ? null

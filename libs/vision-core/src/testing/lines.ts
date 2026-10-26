@@ -7,6 +7,17 @@ import { type ValuationLine } from "#core/valuation/types";
 // Unless a test supplies `sq`/`cross`, the moments describe a player who posts
 // an identical line every game, so within-player variance is exactly 0 and
 // G-Score degenerates to Z-Score — the neutral baseline most tests want.
+type MakeLineProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+  playerId: number;
+  position: string | null;
+  gamesPlayed: number;
+  playingTime: number;
+  stats: Partial<Record<K["valued"], number>>;
+  sq?: Record<K["valued"], number>;
+  cross?: Record<K["ratio"], number>;
+};
+
 export const makeLine = <K extends SportKeys>({
   sport,
   playerId,
@@ -16,16 +27,7 @@ export const makeLine = <K extends SportKeys>({
   stats,
   sq,
   cross,
-}: {
-  sport: SportDescriptor<K>;
-  playerId: number;
-  position: string | null;
-  gamesPlayed: number;
-  playingTime: number;
-  stats: Partial<Record<K["valued"], number>>;
-  sq?: Record<K["valued"], number>;
-  cross?: Record<K["ratio"], number>;
-}): ValuationLine<K> => {
+}: MakeLineProps<K>): ValuationLine<K> => {
   const totals = recordFromKeys({ keys: sport.valuedStats, value: (key) => stats[key] ?? 0 });
   const constant = (product: number): number => (gamesPlayed > 0 ? product / gamesPlayed : 0);
   return {

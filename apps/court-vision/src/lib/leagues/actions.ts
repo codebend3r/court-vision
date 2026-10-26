@@ -19,7 +19,16 @@ import {
 } from "@/lib/leagues/types";
 import { type LeagueScoringConfig } from "@vision/sport-basketball/types";
 import { prisma } from "@/lib/prisma";
+import { lockProfile } from "@/lib/leagues/locks";
 import { hasPrismaCode, PRISMA_RECORD_NOT_FOUND } from "@/lib/prismaErrors";
+
+type CreateLeagueProps = {
+  name: string;
+  scoringType: string;
+  teamCount: number;
+  rosterSlots: number;
+  scoringConfig: LeagueScoringConfig;
+};
 
 export const createLeague = async ({
   name,
@@ -27,13 +36,7 @@ export const createLeague = async ({
   teamCount,
   rosterSlots,
   scoringConfig,
-}: {
-  name: string;
-  scoringType: string;
-  teamCount: number;
-  rosterSlots: number;
-  scoringConfig: LeagueScoringConfig;
-}): Promise<LeagueMutationResult> => {
+}: CreateLeagueProps): Promise<LeagueMutationResult> => {
   if (!isActionText(name)) return { status: "invalid" };
   return withProfile<LeagueMutationResult>({
     getProfile,
@@ -42,6 +45,7 @@ export const createLeague = async ({
       if (trimmed === "" || !isLeagueScoringType(scoringType)) return { status: "invalid" };
       const config = parseScoringConfig({ scoringType, value: scoringConfig });
       return prisma.$transaction(async (tx) => {
+        await lockProfile({ tx, profileId: profile.id });
         const existing = await tx.league.findMany({
           where: { profileId: profile.id },
           select: { slug: true },
@@ -74,13 +78,12 @@ export const createLeague = async ({
 
 // Ownership in the where: a forged leagueId matches no row, and Prisma
 // reports that as P2025 rather than updating someone else's league.
-const writeLeague = async ({
-  where,
-  data,
-}: {
+type WriteLeagueProps = {
   where: Prisma.LeagueWhereUniqueInput;
   data: Prisma.LeagueUpdateInput;
-}): Promise<LeagueMutationResult> => {
+};
+
+const writeLeague = async ({ where, data }: WriteLeagueProps): Promise<LeagueMutationResult> => {
   try {
     const league = await prisma.league.update({ where, data });
     return { status: "ok", league: toLeagueSummary({ league }) };
@@ -90,6 +93,15 @@ const writeLeague = async ({
   }
 };
 
+type UpdateLeagueProps = {
+  leagueId: string;
+  name: string;
+  scoringType: string;
+  teamCount: number;
+  rosterSlots: number;
+  scoringConfig: LeagueScoringConfig;
+};
+
 export const updateLeague = async ({
   leagueId,
   name,
@@ -97,14 +109,7 @@ export const updateLeague = async ({
   teamCount,
   rosterSlots,
   scoringConfig,
-}: {
-  leagueId: string;
-  name: string;
-  scoringType: string;
-  teamCount: number;
-  rosterSlots: number;
-  scoringConfig: LeagueScoringConfig;
-}): Promise<LeagueMutationResult> => {
+}: UpdateLeagueProps): Promise<LeagueMutationResult> => {
   // An object here would reach the `where` below as a Prisma filter, matching
   // every league the caller owns instead of one.
   if (!isActionId(leagueId) || !isActionText(name)) return { status: "invalid" };
@@ -145,11 +150,13 @@ export const updateLeague = async ({
   });
 };
 
+type DeleteLeagueProps = {
+  leagueId: string;
+};
+
 export const deleteLeague = async ({
   leagueId,
-}: {
-  leagueId: string;
-}): Promise<LeagueDeleteResult> => {
+}: DeleteLeagueProps): Promise<LeagueDeleteResult> => {
   // Without this, `{ not: "" }` deletes every league the caller owns and
   // cascades to their teams, slots, and watchlists, then reports success.
   if (!isActionId(leagueId)) return { status: "error" };
@@ -159,13 +166,14 @@ export const deleteLeague = async ({
     // league just deleted, or at a fallback another request removed meanwhile.
     run: ({ profile }) =>
       prisma.$transaction(async (tx) => {
+        const current = await lockProfile({ tx, profileId: profile.id });
         const deleted = await tx.league.deleteMany({
           where: { id: leagueId, profileId: profile.id },
         });
         if (deleted.count === 0) return { status: "error" };
         // Deleting a non-active league must not touch the active pointer.
-        if (profile.activeLeagueId !== leagueId) {
-          return { status: "ok", activeLeagueId: profile.activeLeagueId };
+        if (current.activeLeagueId !== leagueId) {
+          return { status: "ok", activeLeagueId: current.activeLeagueId };
         }
         const fallback = await tx.league.findFirst({
           where: { profileId: profile.id },
@@ -181,25 +189,29 @@ export const deleteLeague = async ({
   });
 };
 
+type SetActiveLeagueProps = {
+  leagueId: string;
+};
+
 export const setActiveLeague = async ({
   leagueId,
-}: {
-  leagueId: string;
-}): Promise<SetActiveLeagueResult> => {
+}: SetActiveLeagueProps): Promise<SetActiveLeagueResult> => {
   if (!isActionId(leagueId)) return { status: "error" };
   return withProfile<SetActiveLeagueResult>({
     getProfile,
-    run: async ({ profile }) => {
-      const owned = await prisma.league.findFirst({
-        where: { id: leagueId, profileId: profile.id },
-        select: { id: true },
-      });
-      if (owned === null) return { status: "error" };
-      await prisma.profile.update({
-        where: { id: profile.id },
-        data: { activeLeagueId: leagueId },
-      });
-      return { status: "ok" };
-    },
+    run: ({ profile }) =>
+      prisma.$transaction(async (tx) => {
+        await lockProfile({ tx, profileId: profile.id });
+        const owned = await tx.league.findFirst({
+          where: { id: leagueId, profileId: profile.id },
+          select: { id: true },
+        });
+        if (owned === null) return { status: "error" };
+        await tx.profile.update({
+          where: { id: profile.id },
+          data: { activeLeagueId: leagueId },
+        });
+        return { status: "ok" };
+      }),
   });
 };

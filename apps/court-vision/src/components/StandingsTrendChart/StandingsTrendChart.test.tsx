@@ -17,15 +17,17 @@ const rows = [
 
 afterEach(cleanup);
 
+type RenderChartProps = {
+  title: string;
+  rows: typeof rows;
+  teams?: ReadonlyArray<{ abbr: TeamAbbreviation; name: string }>;
+};
+
 const renderChart = ({
   title,
   rows: chartRows,
   teams: chartTeams = [...teams],
-}: {
-  title: string;
-  rows: typeof rows;
-  teams?: ReadonlyArray<{ abbr: TeamAbbreviation; name: string }>;
-}) =>
+}: RenderChartProps) =>
   render(
     <ThemeProvider>
       <StandingsTrendChart title={title} teams={chartTeams} rows={chartRows} />

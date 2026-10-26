@@ -4,9 +4,13 @@ import { COURT_VISION_DEV_ORIGIN, COURT_VISION_ORIGIN } from "@vision/yahoo-brid
  * The page origins whose messages the extension answers. A sender is compared
  * by exact string equality, so no prefix, suffix or subdomain gets through.
  */
-export const allowedOrigins = ({ isDev }: { isDev: boolean }): readonly string[] =>
+type AllowedOriginsProps = { isDev: boolean };
+
+export const allowedOrigins = ({ isDev }: AllowedOriginsProps): readonly string[] =>
   isDev ? [COURT_VISION_ORIGIN, COURT_VISION_DEV_ORIGIN] : [COURT_VISION_ORIGIN];
 
 /** The Court Vision page the toolbar icon opens. */
-export const importPageUrl = ({ isDev }: { isDev: boolean }): string =>
+type ImportPageUrlProps = { isDev: boolean };
+
+export const importPageUrl = ({ isDev }: ImportPageUrlProps): string =>
   `${isDev ? COURT_VISION_DEV_ORIGIN : COURT_VISION_ORIGIN}/leagues/import`;

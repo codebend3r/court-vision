@@ -18,6 +18,7 @@ import { parseYahooPayload } from "@/lib/yahoo/load";
 import { yahooGameSchema } from "@/lib/yahoo/schemas";
 import { checkSnapshotShape } from "@/lib/yahoo/snapshotShape";
 import { measureSnapshotBytes } from "@/lib/yahoo/snapshotSize";
+import { claimSync, releaseSync } from "@/lib/yahoo/syncLease";
 import {
   type YahooFailure,
   type YahooImportResult,
@@ -36,7 +37,9 @@ const INVALID_PAYLOAD: YahooFailure = { status: "invalid_payload" };
 // The size and count checks run before any zod parse, and the current season
 // comes from the game body the extension fetched, so this path never reads
 // Yahoo from the server.
-const loadSnapshot = ({ payload }: { payload: unknown }): LoadedLeague | YahooFailure => {
+type LoadSnapshotProps = { payload: unknown };
+
+const loadSnapshot = ({ payload }: LoadSnapshotProps): LoadedLeague | YahooFailure => {
   if (!isBridgeLeaguePayload(payload)) return INVALID_PAYLOAD;
   if (measureSnapshotBytes({ payload, limit: MAX_SNAPSHOT_BYTES }).status === "over") {
     return INVALID_PAYLOAD;
@@ -53,11 +56,13 @@ const loadSnapshot = ({ payload }: { payload: unknown }): LoadedLeague | YahooFa
   return loaded.status === "ok" ? loaded : loadFailureToResult({ failure: loaded });
 };
 
+type PreviewYahooSnapshotProps = {
+  payload: unknown;
+};
+
 export const previewYahooSnapshot = async ({
   payload,
-}: {
-  payload: unknown;
-}): Promise<YahooPreviewResult> =>
+}: PreviewYahooSnapshotProps): Promise<YahooPreviewResult> =>
   withProfile<YahooPreviewResult>({
     getProfile,
     run: async () => {
@@ -67,13 +72,15 @@ export const previewYahooSnapshot = async ({
     },
   });
 
+type ImportYahooLeagueFromSnapshotProps = {
+  payload: unknown;
+  myTeamExternalKey: string;
+};
+
 export const importYahooLeagueFromSnapshot = async ({
   payload,
   myTeamExternalKey,
-}: {
-  payload: unknown;
-  myTeamExternalKey: string;
-}): Promise<YahooImportResult> => {
+}: ImportYahooLeagueFromSnapshotProps): Promise<YahooImportResult> => {
   if (!isActionId(myTeamExternalKey)) return { status: "invalid_team" };
   return withProfile<YahooImportResult>({
     getProfile,
@@ -91,13 +98,15 @@ export const importYahooLeagueFromSnapshot = async ({
   });
 };
 
+type SyncYahooLeagueFromSnapshotProps = {
+  leagueId: string;
+  payload: unknown;
+};
+
 export const syncYahooLeagueFromSnapshot = async ({
   leagueId,
   payload,
-}: {
-  leagueId: string;
-  payload: unknown;
-}): Promise<YahooSyncResult> => {
+}: SyncYahooLeagueFromSnapshotProps): Promise<YahooSyncResult> => {
   if (!isActionId(leagueId)) return { status: "error" };
   return withProfile<YahooSyncResult>({
     getProfile,
@@ -110,13 +119,20 @@ export const syncYahooLeagueFromSnapshot = async ({
 
       const loaded = loadSnapshot({ payload });
       if (loaded.status !== "ok") return loaded;
-      return syncLoadedLeague({
-        profileId: profile.id,
-        leagueId,
-        loaded,
-        writeMappings: false,
-        storedExternalKey: stored.league.externalKey,
-      });
+      const syncStartedAt = await claimSync({ profileId: profile.id, leagueId });
+      if (syncStartedAt === null) return { status: "throttled" };
+      try {
+        return await syncLoadedLeague({
+          profileId: profile.id,
+          leagueId,
+          loaded,
+          writeMappings: false,
+          storedExternalKey: stored.league.externalKey,
+          syncStartedAt,
+        });
+      } finally {
+        await releaseSync({ profileId: profile.id, leagueId, syncStartedAt });
+      }
     },
   });
 };

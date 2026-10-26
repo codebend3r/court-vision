@@ -16,7 +16,9 @@ const sourceFiles = readdirSync(SRC, { recursive: true })
 
 type SelectUse = { file: string; className: string; stylesheet: string };
 
-const selectsIn = ({ file }: { file: string }): SelectUse[] => {
+type SelectsInProps = { file: string };
+
+const selectsIn = ({ file }: SelectsInProps): SelectUse[] => {
   const source = readFileSync(join(SRC, file), "utf8");
   const stylesheet = /import styles from "@\/([^"]+\.module\.scss)"/.exec(source)?.[1] ?? "";
   return [...source.matchAll(/<select\b/g)].map(({ index }) => ({
@@ -31,7 +33,9 @@ const selectsIn = ({ file }: { file: string }): SelectUse[] => {
 };
 
 // The text of `.name { ... }`, braces balanced.
-const ruleFor = ({ scss, className }: { scss: string; className: string }): string => {
+type RuleForProps = { scss: string; className: string };
+
+const ruleFor = ({ scss, className }: RuleForProps): string => {
   const start = new RegExp(`\\.${className}\\b[^{]*\\{`).exec(scss);
   if (start === null) return "";
   const open = start.index + start[0].length;

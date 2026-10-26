@@ -16,20 +16,24 @@ const OVER_LIMIT = new Error("snapshot over the size limit");
 
 const encoder = new TextEncoder();
 
-const utf8Length = ({ text }: { text: string }): number => encoder.encode(text).length;
+type Utf8LengthProps = { text: string };
+
+const utf8Length = ({ text }: Utf8LengthProps): number => encoder.encode(text).length;
 
 /**
  * Walks the payload as `JSON.stringify` would, adding up the UTF-8 bytes of
  * every key and string value it visits. Anything JSON can't encode (a BigInt,
  * a cycle) is `over` as well.
  */
+type MeasureSnapshotBytesProps = {
+  payload: unknown;
+  limit: number;
+};
+
 export const measureSnapshotBytes = ({
   payload,
   limit,
-}: {
-  payload: unknown;
-  limit: number;
-}): SnapshotSize => {
+}: MeasureSnapshotBytesProps): SnapshotSize => {
   let total = 0;
   const replacer = (key: string, value: unknown): unknown => {
     total +=

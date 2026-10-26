@@ -8,19 +8,15 @@ import { type FantasyTeam, type FantasyTeamPlayer } from "@/lib/fantasyTeams/typ
 
 afterEach(cleanup);
 
-const team = ({
-  id,
-  name,
-  createdAt,
-  slug,
-  isImported = false,
-}: {
+type TeamProps = {
   id: string;
   name: string;
   createdAt: string;
   slug?: string;
   isImported?: boolean;
-}): FantasyTeam => ({
+};
+
+const team = ({ id, name, createdAt, slug, isImported = false }: TeamProps): FantasyTeam => ({
   id,
   name,
   slug: slug ?? teamNameToSlug({ name }),

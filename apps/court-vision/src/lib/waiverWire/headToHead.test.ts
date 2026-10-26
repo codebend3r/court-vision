@@ -12,17 +12,19 @@ import {
 } from "@/lib/waiverWire/headToHead";
 import { type WaiverModel, type WaiverRow } from "@/lib/waiverWire/types";
 
+type RowProps = {
+  playerId: number;
+  value?: number;
+  owner?: WaiverRow["owner"];
+  fullName?: string;
+};
+
 const row = ({
   playerId,
   value = 0,
   owner = "free_agent",
   fullName = `Test Player ${playerId}`,
-}: {
-  playerId: number;
-  value?: number;
-  owner?: WaiverRow["owner"];
-  fullName?: string;
-}): WaiverRow => ({
+}: RowProps): WaiverRow => ({
   playerId,
   fullName,
   teamAbbr: "BOS",
@@ -34,15 +36,17 @@ const row = ({
   injuryStatus: null,
 });
 
+type ModelProps = {
+  roster: WaiverRow[];
+  weakest?: WaiverRow[];
+  freePool: WaiverRow[];
+};
+
 const model = ({
   roster,
   weakest = roster.toSorted((a, b) => a.value - b.value).slice(0, 3),
   freePool,
-}: {
-  roster: WaiverRow[];
-  weakest?: WaiverRow[];
-  freePool: WaiverRow[];
-}): WaiverModel => ({ roster, noStats: [], weakest, freePool });
+}: ModelProps): WaiverModel => ({ roster, noStats: [], weakest, freePool });
 
 // A 50-game line with no shooting volume unless the overrides add some, so
 // each test states only the stats it reads.
@@ -79,15 +83,13 @@ const LABELS: Record<Category, string> = {
 
 const KEYS: Category[] = ["pts", "reb", "ast", "stl", "blk", "tpm", "tov", "fg", "ft"];
 
-const entry = ({
-  key,
-  z = 0,
-  g = z,
-}: {
+type EntryProps = {
   key: Category;
   z?: number;
   g?: number;
-}): FantasyCategoryBreakdown => ({
+};
+
+const entry = ({ key, z = 0, g = z }: EntryProps): FantasyCategoryBreakdown => ({
   key,
   label: LABELS[key],
   fullName: key,
@@ -146,7 +148,9 @@ describe("buildHeadToHead", () => {
   const lines = byId([line({ playerId: 10 }), line({ playerId: 1 })]);
 
   it("picks each category's winner by score, with ties for neither", () => {
-    const breakdownFor = ({ playerId }: { playerId: number }): FantasyCategoryBreakdown[] =>
+    type BreakdownForProps = { playerId: number };
+
+    const breakdownFor = ({ playerId }: BreakdownForProps): FantasyCategoryBreakdown[] =>
       playerId === 10
         ? [
             entry({ key: "pts", z: 1, g: -1 }),

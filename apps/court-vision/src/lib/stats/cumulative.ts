@@ -68,7 +68,9 @@ const RATIOS: readonly RatioSpec<CumulativeSourceLog, RatioKey>[] = [
 // Basketball paces per 36 minutes. The descriptor types `perUnit` as nullable
 // for sports with no pace reading; reaching null here is a descriptor bug, not
 // a state to render around.
-const perUnitOf = ({ perUnit }: { perUnit: number | null }): number => {
+type PerUnitOfProps = { perUnit: number | null };
+
+const perUnitOf = ({ perUnit }: PerUnitOfProps): number => {
   if (perUnit === null) {
     throw new Error("The basketball descriptor has no per-unit playing time.");
   }
@@ -87,10 +89,12 @@ const RUNNING_MODE: Record<StatMode, RunningMode> = {
 // The shared running series over basketball's box score. per36 is the pace
 // mode at the descriptor's per-unit minutes; min carries the running minutes
 // total in both totals and per36 modes (per-36 minutes would be the constant 36).
-export const buildStatSeries = (args: {
+type BuildStatSeriesProps = {
   logs: CumulativeSourceLog[];
   mode: StatMode;
-}): CumulativePoint[] =>
+};
+
+export const buildStatSeries = (args: BuildStatSeriesProps): CumulativePoint[] =>
   buildRunningSeries({
     logs: args.logs,
     mode: RUNNING_MODE[args.mode],

@@ -15,17 +15,25 @@ const MAX_RESULTS = 20;
 // A search needs two characters before it lists anyone.
 export const MIN_QUERY_LENGTH = 2;
 
+type OpenSlotForProps = { player: FantasyTeamPlayer };
+
+type OnAddProps = { player: FantasyTeamPlayer };
+
+type OnDragStartProps = { player: FantasyTeamPlayer };
+
 export type SearchResultsProps = {
   query: string;
   players: FantasyTeamPlayer[];
   rostered: ReadonlySet<number>;
-  openSlotFor: (args: { player: FantasyTeamPlayer }) => string | null;
-  onAdd: (args: { player: FantasyTeamPlayer }) => void;
-  onDragStart: (args: { player: FantasyTeamPlayer }) => void;
+  openSlotFor: (args: OpenSlotForProps) => string | null;
+  onAdd: (args: OnAddProps) => void;
+  onDragStart: (args: OnDragStartProps) => void;
   onDragEnd: () => void;
 };
 
-const addTitle = ({ onRoster, target }: { onRoster: boolean; target: string | null }): string => {
+type AddTitleProps = { onRoster: boolean; target: string | null };
+
+const addTitle = ({ onRoster, target }: AddTitleProps): string => {
   if (onRoster) return "Already on the roster";
   return target === null ? "No eligible open slot" : `Add to ${target}`;
 };

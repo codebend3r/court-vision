@@ -21,7 +21,9 @@ vi.mock("@/lib/leagues/queries", () => ({ getActiveLeague: () => getActiveLeague
 
 import WatchlistPage from "@/app/watchlist/page";
 
-const league = ({ id, name }: { id: string; name: string }): LeagueSummary => ({
+type LeagueProps = { id: string; name: string };
+
+const league = ({ id, name }: LeagueProps): LeagueSummary => ({
   id,
   name,
   slug: name.toLowerCase(),

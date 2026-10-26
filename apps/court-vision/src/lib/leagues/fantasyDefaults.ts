@@ -17,15 +17,17 @@ export type FantasySeed = Partial<
 // Defaults for fantasy URL params the current URL doesn't set. Explicit params
 // always win — a key in presentKeys is never seeded — so shared links keep
 // meaning exactly what they said.
+type BuildLeagueSeedProps = {
+  league: LeagueSummary | null;
+  preferredFormula: FantasyMethodKey | null;
+  presentKeys: ReadonlySet<string>;
+};
+
 export const buildLeagueSeed = ({
   league,
   preferredFormula,
   presentKeys,
-}: {
-  league: LeagueSummary | null;
-  preferredFormula: FantasyMethodKey | null;
-  presentKeys: ReadonlySet<string>;
-}): FantasySeed => {
+}: BuildLeagueSeedProps): FantasySeed => {
   const sortSeed: FantasySeed =
     presentKeys.has("sort") === false
       ? preferredFormula !== null
@@ -69,11 +71,13 @@ export const buildLeagueSeed = ({
 
 // The Fantasy tab's URL defaults, applied straight from the league seed: same
 // numbers as the tab shows on first load, without the tab's controls.
+type ConfigFromSeedProps = {
+  seed: FantasySeed;
+};
+
 export const configFromSeed = ({
   seed,
-}: {
-  seed: FantasySeed;
-}): { config: ValuationConfig; methodWeights: MethodWeights } => {
+}: ConfigFromSeedProps): { config: ValuationConfig; methodWeights: MethodWeights } => {
   const excluded = seed.x ?? [];
   return {
     config: {

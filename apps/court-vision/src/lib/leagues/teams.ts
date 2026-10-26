@@ -97,11 +97,17 @@ export const parseLegacyTeamsPayload = (value: unknown): FantasyTeam[] | null =>
   return validTeams.length === parsedTeams.length ? validTeams : null;
 };
 
+type SlotsToRowsProps = {
+  slots: readonly RosterSlot[];
+};
+
 export const slotsToRows = ({
   slots,
-}: {
-  slots: readonly RosterSlot[];
-}): Array<{ slotType: RosterSlotType; position: number; playerId: number | null }> =>
+}: SlotsToRowsProps): Array<{
+  slotType: RosterSlotType;
+  position: number;
+  playerId: number | null;
+}> =>
   slots.map((slot, index) => ({
     slotType: slot.type,
     position: index,
@@ -114,7 +120,9 @@ type TeamSlots = { slots: RosterSlot[]; unmatchedBySlotId: Record<string, string
 // "<TYPE>-<n>" per type, matching lib/fantasyTeams/slots.ts buildSlots. An
 // imported slot whose host player matched no Court Vision player keeps the
 // host's name under its slot id, so the roster can still show who's there.
-export const rowsToTeamSlots = ({ rows }: { rows: readonly LeagueTeamSlotRow[] }): TeamSlots => {
+type RowsToTeamSlotsProps = { rows: readonly LeagueTeamSlotRow[] };
+
+export const rowsToTeamSlots = ({ rows }: RowsToTeamSlotsProps): TeamSlots => {
   const { slots, unmatchedBySlotId } = rows.reduce<
     TeamSlots & { counts: Partial<Record<RosterSlotType, number>> }
   >(
@@ -137,5 +145,7 @@ export const rowsToTeamSlots = ({ rows }: { rows: readonly LeagueTeamSlotRow[] }
   return { slots, unmatchedBySlotId };
 };
 
-export const rowsToSlots = ({ rows }: { rows: readonly LeagueTeamSlotRow[] }): RosterSlot[] =>
+type RowsToSlotsProps = { rows: readonly LeagueTeamSlotRow[] };
+
+export const rowsToSlots = ({ rows }: RowsToSlotsProps): RosterSlot[] =>
   rowsToTeamSlots({ rows }).slots;

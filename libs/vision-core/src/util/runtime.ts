@@ -5,7 +5,9 @@ import { pathToFileURL } from "node:url";
 // rely on, and augmenting ImportMeta needs declaration merging via an interface,
 // which this repo forbids. Comparing the module URL against the entry script
 // path answers the same question with standard Node typings.
-export const isMainModule = (args: { moduleUrl: string; argv?: readonly string[] }): boolean => {
+type IsMainModuleProps = { moduleUrl: string; argv?: readonly string[] };
+
+export const isMainModule = (args: IsMainModuleProps): boolean => {
   const { moduleUrl, argv = process.argv } = args;
   const entry = argv[1] ?? "";
   return !!entry && moduleUrl === pathToFileURL(entry).href;

@@ -50,17 +50,21 @@ const beta = line({
 const fillers = [3, 4, 5, 6].map((playerId) => line({ playerId }));
 const lines = [alpha, beta, ...fillers];
 
+type OnUrlUpdateProps = { queryString: string };
+
+type RenderViewProps = {
+  searchParams?: string;
+  onUrlUpdate?: (event: OnUrlUpdateProps) => void;
+  lines?: FantasyStatLine[];
+  rosterPlayerIds?: readonly number[];
+};
+
 const renderView = ({
   searchParams = "?",
   onUrlUpdate,
   lines: statLines = lines,
   rosterPlayerIds,
-}: {
-  searchParams?: string;
-  onUrlUpdate?: (event: { queryString: string }) => void;
-  lines?: FantasyStatLine[];
-  rosterPlayerIds?: readonly number[];
-} = {}) =>
+}: RenderViewProps = {}) =>
   render(
     <ThemeProvider>
       <FantasyValueView isSignedIn={false} lines={statLines} rosterPlayerIds={rosterPlayerIds} />
@@ -325,7 +329,9 @@ describe("FantasyValueView layouts", () => {
 
 // Thirty games for the two named players (enough to fill the rolling window
 // across a 20-game chart), three for everyone else.
-const serializedLog = ({ day }: { day: number }) => ({
+type SerializedLogProps = { day: number };
+
+const serializedLog = ({ day }: SerializedLogProps) => ({
   gameDate: new Date(Date.UTC(2026, 0, day)).toISOString(),
   minutes: 34,
   pts: 28,
@@ -341,7 +347,9 @@ const serializedLog = ({ day }: { day: number }) => ({
   fta: 6,
 });
 
-const trendLogsFor = ({ playerIds }: { playerIds: readonly number[] }) => ({
+type TrendLogsForProps = { playerIds: readonly number[] };
+
+const trendLogsFor = ({ playerIds }: TrendLogsForProps) => ({
   status: "ok" as const,
   players: playerIds.map((playerId) => ({
     playerId,
@@ -354,7 +362,9 @@ const trendLogsFor = ({ playerIds }: { playerIds: readonly number[] }) => ({
 describe("FantasyValueView rolling layout", () => {
   beforeEach(() => {
     loadFantasyTrendLogs.mockReset();
-    loadFantasyTrendLogs.mockImplementation(({ playerIds }: { playerIds: number[] }) =>
+    type CallbackMockImplementationProps = { playerIds: number[] };
+
+    loadFantasyTrendLogs.mockImplementation(({ playerIds }: CallbackMockImplementationProps) =>
       Promise.resolve(trendLogsFor({ playerIds })),
     );
   });

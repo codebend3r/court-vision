@@ -35,10 +35,9 @@ const buildSeries = (): AdvancedPoint[] =>
     usagePercentage: 0.3,
   }));
 
-const renderChart = ({
-  mode = "game",
-  searchParams = {},
-}: { mode?: "game" | "avg"; searchParams?: Record<string, string> } = {}) =>
+type RenderChartProps = { mode?: "game" | "avg"; searchParams?: Record<string, string> };
+
+const renderChart = ({ mode = "game", searchParams = {} }: RenderChartProps = {}) =>
   render(
     <ThemeProvider>
       <PlayerAdvancedChart series={buildSeries()} mode={mode} />

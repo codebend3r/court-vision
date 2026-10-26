@@ -5,7 +5,9 @@ import { useRef, useState } from "react";
 
 import { useFocusTrap } from "#ui/a11y/focusTrap";
 
-const Harness = ({ onEscape = () => {} }: { onEscape?: () => void }) => {
+type HarnessProps = { onEscape?: () => void };
+
+const Harness = ({ onEscape = () => {} }: HarnessProps) => {
   const [open, setOpen] = useState(false);
   const dialogRef = useRef<HTMLElement>(null);
 

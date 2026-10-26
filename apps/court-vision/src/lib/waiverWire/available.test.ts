@@ -4,7 +4,9 @@ import { makeStatLine } from "@/lib/valuation/fixtures";
 import { AVAILABLE_COLUMNS, filterAvailable } from "@/lib/waiverWire/available";
 import { type WaiverRow } from "@/lib/waiverWire/types";
 
-const cells = ({ line }: { line: ReturnType<typeof makeStatLine> }): Record<string, string> =>
+type CellsProps = { line: ReturnType<typeof makeStatLine> };
+
+const cells = ({ line }: CellsProps): Record<string, string> =>
   Object.fromEntries(AVAILABLE_COLUMNS.map((column) => [column.label, column.cell(line)]));
 
 describe("AVAILABLE_COLUMNS", () => {
@@ -36,7 +38,9 @@ describe("AVAILABLE_COLUMNS", () => {
   });
 });
 
-const row = ({ playerId, fullName }: { playerId: number; fullName: string }): WaiverRow => ({
+type RowProps = { playerId: number; fullName: string };
+
+const row = ({ playerId, fullName }: RowProps): WaiverRow => ({
   playerId,
   fullName,
   teamAbbr: null,

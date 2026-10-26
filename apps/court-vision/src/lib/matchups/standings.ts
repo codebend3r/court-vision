@@ -3,7 +3,9 @@ import { type WeekCategory, type WeekTeam } from "@/lib/matchups/types";
 const NUMBER = /^-?(\d+\.?\d*|\.\d+)$/;
 
 /** A host's stat string as a number: ".481" is 0.481; "-", "" and "42/87" are null. */
-export const parseStatValue = ({ raw }: { raw: string }): number | null => {
+type ParseStatValueProps = { raw: string };
+
+export const parseStatValue = ({ raw }: ParseStatValueProps): number | null => {
   const text = raw.trim();
   return NUMBER.test(text) ? Number(text) : null;
 };
@@ -11,15 +13,17 @@ export const parseStatValue = ({ raw }: { raw: string }): number | null => {
 export type CategoryResult = "win" | "loss" | "tie";
 
 /** How `mine` fares against `theirs` in one category. A missing number loses to a real one. */
+type CompareTotalsProps = {
+  mine: number | null;
+  theirs: number | null;
+  higherIsBetter: boolean;
+};
+
 export const compareTotals = ({
   mine,
   theirs,
   higherIsBetter,
-}: {
-  mine: number | null;
-  theirs: number | null;
-  higherIsBetter: boolean;
-}): CategoryResult => {
+}: CompareTotalsProps): CategoryResult => {
   if (mine === theirs) return "tie";
   if (mine === null) return "loss";
   if (theirs === null) return "win";
@@ -43,15 +47,13 @@ export type MatchupScore = {
 const NO_TOTAL = "-";
 
 /** Category by category, my team against one opponent, with the tally. */
-export const scoreMatchup = ({
-  categories,
-  mine,
-  theirs,
-}: {
+type ScoreMatchupProps = {
   categories: readonly WeekCategory[];
   mine: WeekTeam;
   theirs: WeekTeam;
-}): MatchupScore => {
+};
+
+export const scoreMatchup = ({ categories, mine, theirs }: ScoreMatchupProps): MatchupScore => {
   const rows = categories.map((category): MatchupRow => {
     const key = String(category.statId);
     return {
@@ -74,13 +76,15 @@ export const scoreMatchup = ({
  * Each team's place in one category, 1 being best. Teams on the same total share
  * a place, and the next place skips ("1, 2, 2, 4"), as a league table does.
  */
+type RankCategoryProps = {
+  category: WeekCategory;
+  teams: readonly WeekTeam[];
+};
+
 export const rankCategory = ({
   category,
   teams,
-}: {
-  category: WeekCategory;
-  teams: readonly WeekTeam[];
-}): ReadonlyMap<string, number> => {
+}: RankCategoryProps): ReadonlyMap<string, number> => {
   const key = String(category.statId);
   const totals = teams.map((team) => ({ teamId: team.teamId, value: team.values[key] ?? null }));
   return new Map(

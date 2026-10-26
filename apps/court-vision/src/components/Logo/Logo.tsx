@@ -11,13 +11,17 @@ type MarkTier = {
   showCircle: boolean;
 };
 
-const tierFor = ({ size }: { size: number }): MarkTier => {
+type TierForProps = { size: number };
+
+const tierFor = ({ size }: TierForProps): MarkTier => {
   if (size >= 32) return { stroke: 3, showArcs: true, showCircle: true };
   if (size >= 20) return { stroke: 4, showArcs: false, showCircle: true };
   return { stroke: 6, showArcs: false, showCircle: false };
 };
 
-export function LogoMark({ size }: { size: number }) {
+type LogoMarkProps = { size: number };
+
+export function LogoMark({ size }: LogoMarkProps) {
   const { stroke, showArcs, showCircle } = tierFor({ size });
   return (
     <svg
@@ -66,11 +70,11 @@ export function LogoWordmark() {
 
 // Header lockup: 34px plate beside a 14px two-line wordmark. Sign-in card:
 // 72px plate above a centred 20px wordmark with wider tracking.
-export function LogoLockup({
-  orientation = "horizontal",
-}: {
+type LogoLockupProps = {
   orientation?: "horizontal" | "vertical";
-}) {
+};
+
+export function LogoLockup({ orientation = "horizontal" }: LogoLockupProps) {
   const vertical = orientation === "vertical";
   return (
     <span className={vertical ? styles.lockupVertical : styles.lockup}>

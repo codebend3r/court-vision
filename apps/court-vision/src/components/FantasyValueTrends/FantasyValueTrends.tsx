@@ -48,7 +48,9 @@ const isScored = (point: FantasyTrendValue): boolean => point.z !== null || poin
 // The games before a player's ten-game window fills have no value. Charting
 // them would reserve their width and draw nothing, so each row starts at its
 // first game with a value and spans the chart from there.
-const plottedPoints = ({ trend }: { trend: readonly FantasyTrendValue[] }): FantasyTrendValue[] => {
+type PlottedPointsProps = { trend: readonly FantasyTrendValue[] };
+
+const plottedPoints = ({ trend }: PlottedPointsProps): FantasyTrendValue[] => {
   const first = trend.findIndex(isScored);
   return first === -1 ? [] : trend.slice(first);
 };
@@ -109,7 +111,9 @@ export function TrendTooltip({
   );
 }
 
-const describeTrend = ({ row }: { row: FantasyTrendRow }): string => {
+type DescribeTrendProps = { row: FantasyTrendRow };
+
+const describeTrend = ({ row }: DescribeTrendProps): string => {
   const plotted = plottedPoints({ trend: row.trend });
   const first = plotted[0];
   const last = plotted.at(-1);
@@ -136,7 +140,9 @@ export function FantasyValueTrends({
 }: FantasyValueTrendsProps) {
   const domain = symmetricDomain({ points: rows.flatMap((row) => row.trend) });
 
-  const placeholder = ({ plotted }: { plotted: readonly FantasyTrendValue[] }): string => {
+  type PlaceholderProps = { plotted: readonly FantasyTrendValue[] };
+
+  const placeholder = ({ plotted }: PlaceholderProps): string => {
     if (status === "loading") return "Loading rolling value…";
     if (status === "error") return "Unavailable";
     return plotted.length === 0 ? `Needs ${ROLLING_WINDOW_GAMES} games this season` : "";

@@ -32,15 +32,17 @@ const parseFlags = (argv: readonly string[]): Flags =>
     { baseUrl: null, skipDb: false },
   );
 
+type ParseCheckOptionsProps = {
+  argv: readonly string[];
+  perfBaseUrl?: string;
+  databaseUrl?: string;
+};
+
 export const parseCheckOptions = ({
   argv,
   perfBaseUrl,
   databaseUrl,
-}: {
-  argv: readonly string[];
-  perfBaseUrl?: string;
-  databaseUrl?: string;
-}): CheckOptions => {
+}: ParseCheckOptionsProps): CheckOptions => {
   const flags = parseFlags(argv);
   return {
     baseUrl: flags.baseUrl ?? perfBaseUrl ?? DEFAULT_BASE_URL,

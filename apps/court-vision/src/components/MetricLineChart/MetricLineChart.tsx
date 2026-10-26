@@ -30,10 +30,12 @@ export type MetricMeta<K extends string> = {
 
 export type MetricSeriesPoint<K extends string> = MetricPoint & Record<K, number | null>;
 
+type FormatValueProps<K extends string> = { key: K; value: number };
+
 export type MetricLineChartProps<K extends string> = {
   metas: readonly MetricMeta<K>[];
   series: readonly MetricSeriesPoint<K>[];
-  formatValue: (args: { key: K; value: number }) => string;
+  formatValue: (args: FormatValueProps<K>) => string;
   formatTick?: (value: number) => string;
   domain?: [number, number];
   showDnp?: boolean;
@@ -53,11 +55,11 @@ export type MetricLineChartProps<K extends string> = {
 const formatDate = (isoDate: string): string =>
   new Date(isoDate).toLocaleDateString(undefined, { timeZone: "UTC" });
 
-function DnpMarker({
-  viewBox,
-}: {
+type DnpMarkerProps = {
   viewBox?: { x?: number; y?: number; height?: number };
-}): ReactElement | null {
+};
+
+function DnpMarker({ viewBox }: DnpMarkerProps): ReactElement | null {
   const { x, y, height } = viewBox ?? {};
   if (typeof x !== "number" || typeof y !== "number" || typeof height !== "number") {
     return null;
@@ -83,7 +85,7 @@ type MetricTooltipProps<K extends string> = {
   payload?: TooltipPayload;
   metas: readonly MetricMeta<K>[];
   series: readonly MetricSeriesPoint<K>[];
-  formatValue: (args: { key: K; value: number }) => string;
+  formatValue: (args: FormatValueProps<K>) => string;
 };
 
 function MetricTooltip<K extends string>({

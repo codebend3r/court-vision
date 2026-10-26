@@ -1,17 +1,14 @@
 import { parseStatValue } from "@/lib/matchups/standings";
 import { type LeagueWeek, type WeekTeam } from "@/lib/matchups/types";
 
-const week = ({
-  teamId,
-  isMine = false,
-  steals,
-  turnovers,
-}: {
+type WeekProps = {
   teamId: string;
   isMine?: boolean;
   steals: string;
   turnovers: string;
-}): WeekTeam => ({
+};
+
+const week = ({ teamId, isMine = false, steals, turnovers }: WeekProps): WeekTeam => ({
   teamId,
   name: `Team ${teamId}`,
   slug: teamId,

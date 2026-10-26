@@ -7,19 +7,15 @@ import { type RosterTableColumn, type RosterTableRow } from "@/lib/roster/table"
 
 afterEach(cleanup);
 
-const row = ({
-  id,
-  name,
-  slot,
-  pts,
-  reb,
-}: {
+type RowProps = {
   id: number;
   name: string;
   slot: string;
   pts: number | null;
   reb: number;
-}): RosterTableRow => ({
+};
+
+const row = ({ id, name, slot, pts, reb }: RowProps): RosterTableRow => ({
   id,
   slotLabel: slot,
   fullName: `A ${name}`,

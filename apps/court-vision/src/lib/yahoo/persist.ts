@@ -20,7 +20,9 @@ type SluggedTeam = { team: ImportedTeam; slug: string };
 type WrittenTeam = { teamId: string; team: ImportedTeam };
 
 // Settings a sync refreshes. The name and slug are the user's once imported.
-const toLeagueSettings = ({ league }: { league: ImportedLeague }) => ({
+type ToLeagueSettingsProps = { league: ImportedLeague };
+
+const toLeagueSettings = ({ league }: ToLeagueSettingsProps) => ({
   externalUrl: league.externalUrl,
   scoringType: league.scoring.scoringType,
   scoringConfig: { ...league.scoring.scoringConfig },
@@ -32,13 +34,12 @@ const toLeagueSettings = ({ league }: { league: ImportedLeague }) => ({
 
 // A slug per team: a kept team keeps its own (`kept` maps Yahoo key to slug),
 // and any other gets one unique against the kept slugs and against each other.
-const withSlugs = ({
-  teams,
-  kept,
-}: {
+type WithSlugsProps = {
   teams: readonly ImportedTeam[];
   kept: ReadonlyMap<string, string>;
-}): SluggedTeam[] =>
+};
+
+const withSlugs = ({ teams, kept }: WithSlugsProps): SluggedTeam[] =>
   teams.reduce<SluggedTeam[]>(
     (slugged, team) => [
       ...slugged,
@@ -58,12 +59,9 @@ const withSlugs = ({
 // A matched player is stored by `playerId`; an unmatched one keeps its Yahoo
 // id and name so the slot still shows who is in it. Both carry Yahoo's injury
 // status. `position` is the slot's index in the team, as in the Team Builder.
-const toSlotRows = ({
-  teamId,
-  team,
-  profileId,
-  resolved,
-}: WrittenTeam & { profileId: string; resolved: ResolvedPlayers }) =>
+type ToSlotRowsProps = WrittenTeam & { profileId: string; resolved: ResolvedPlayers };
+
+const toSlotRows = ({ teamId, team, profileId, resolved }: ToSlotRowsProps) =>
   team.slots.map(({ slotType, player }, position) => {
     const playerId = player ? (resolved.byYahooId.get(player.yahooPlayerId) ?? null) : null;
     const unmatched = player && playerId === null ? player : null;
@@ -80,14 +78,11 @@ const toSlotRows = ({
     };
   });
 
-const writeSlots = async ({
-  tx,
-  profileId,
-  resolved,
-  teams,
-}: Pick<PersistArgs, "tx" | "profileId" | "resolved"> & {
+type WriteSlotsProps = Pick<PersistArgs, "tx" | "profileId" | "resolved"> & {
   teams: readonly WrittenTeam[];
-}): Promise<void> => {
+};
+
+const writeSlots = async ({ tx, profileId, resolved, teams }: WriteSlotsProps): Promise<void> => {
   const data = teams.flatMap(({ teamId, team }) =>
     toSlotRows({ teamId, team, profileId, resolved }),
   );
@@ -96,15 +91,17 @@ const writeSlots = async ({
 };
 
 // Only waiver players Court Vision knows are stored: the table keys on `playerId`.
+type WriteWaiversProps = Pick<PersistArgs, "tx" | "profileId" | "resolved" | "waiverRefs"> & {
+  leagueId: string;
+};
+
 const writeWaivers = async ({
   tx,
   profileId,
   resolved,
   waiverRefs,
   leagueId,
-}: Pick<PersistArgs, "tx" | "profileId" | "resolved" | "waiverRefs"> & {
-  leagueId: string;
-}): Promise<void> => {
+}: WriteWaiversProps): Promise<void> => {
   const data = waiverRefs.flatMap((ref) => {
     const playerId = resolved.byYahooId.get(ref.yahooPlayerId);
     return playerId === undefined
@@ -125,19 +122,21 @@ const writeWaivers = async ({
 
 // The current week's matchups, each side pointed at the team row its Yahoo key
 // names. A matchup naming a team the league doesn't have is skipped.
+type WriteMatchupsProps = {
+  tx: Prisma.TransactionClient;
+  profileId: string;
+  leagueId: string;
+  league: ImportedLeague;
+  teams: readonly WrittenTeam[];
+};
+
 const writeMatchups = async ({
   tx,
   profileId,
   leagueId,
   league,
   teams,
-}: {
-  tx: Prisma.TransactionClient;
-  profileId: string;
-  leagueId: string;
-  league: ImportedLeague;
-  teams: readonly WrittenTeam[];
-}): Promise<void> => {
+}: WriteMatchupsProps): Promise<void> => {
   const idByKey = new Map(teams.map(({ teamId, team }) => [team.externalKey, teamId]));
   const syncedAt = new Date();
   const data = (league.matchups ?? []).flatMap(({ week, weekStart, weekEnd, status, sides }) => {
@@ -172,6 +171,11 @@ const writeMatchups = async ({
  * which path keeps it in sync from here on. Run it inside the caller's
  * transaction; the league cap is the caller's to check.
  */
+type CreateImportedLeagueProps = PersistArgs & {
+  myTeamExternalKey: string;
+  syncVia: LeagueSyncVia;
+};
+
 export const createImportedLeague = async ({
   tx,
   profileId,
@@ -180,7 +184,7 @@ export const createImportedLeague = async ({
   waiverRefs,
   myTeamExternalKey,
   syncVia,
-}: PersistArgs & { myTeamExternalKey: string; syncVia: LeagueSyncVia }): Promise<League> => {
+}: CreateImportedLeagueProps): Promise<League> => {
   // The database can't check that `myTeamId` names one of this league's own
   // teams, so this does, before anything is written.
   if (!league.teams.some(({ externalKey }) => externalKey === myTeamExternalKey)) {
@@ -242,6 +246,8 @@ export const createImportedLeague = async ({
  * deletes teams Yahoo no longer has, and rewrites every roster, the waiver
  * list and the current week's matchups. The league's name and slug are left alone.
  */
+type SyncImportedLeagueProps = PersistArgs & { leagueId: string; syncStartedAt: Date };
+
 export const syncImportedLeague = async ({
   tx,
   profileId,
@@ -249,12 +255,20 @@ export const syncImportedLeague = async ({
   resolved,
   waiverRefs,
   leagueId,
-}: PersistArgs & { leagueId: string }): Promise<League> => {
+  syncStartedAt,
+}: SyncImportedLeagueProps): Promise<League> => {
   // First, so a league that isn't this owner's import of this Yahoo league
   // fails (P2025) before anything else is touched.
   const { statCategories, ...settings } = toLeagueSettings({ league });
   await tx.league.update({
-    where: { id: leagueId, profileId, provider: YAHOO_PROVIDER, externalKey: league.externalKey },
+    where: {
+      id: leagueId,
+      profileId,
+      provider: YAHOO_PROVIDER,
+      externalKey: league.externalKey,
+      syncStartedAt,
+      syncLeaseUntil: { gt: new Date() },
+    },
     data: {
       ...settings,
       // Retained totals must keep the category definitions they were read with.

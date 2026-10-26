@@ -23,11 +23,13 @@ const WEAKEST_COUNT = 3;
 // The method's value field ranks the pool; the category chips and the
 // head-to-head winners compare G-Score's per-category g for G-Score and z for
 // every other method.
+type ScoreKeysForProps = {
+  method: FantasyMethodKey;
+};
+
 export const scoreKeysFor = ({
   method,
-}: {
-  method: FantasyMethodKey;
-}): { valueKey: MethodValueKey; scoreKey: ScoreKey } => ({
+}: ScoreKeysForProps): { valueKey: MethodValueKey; scoreKey: ScoreKey } => ({
   valueKey: VALUE_KEY_BY_SORT[SORT_KEY_BY_METHOD[method]],
   scoreKey: method === "gscore" ? "g" : "z",
 });
@@ -36,29 +38,25 @@ type RankedValue = { playerId: number; value: number; rank: number };
 
 // Every valued player, highest first, ranked 1..n across the whole pool.
 // Ties fall back to playerId so the order is stable.
-const rankPool = ({
-  values,
-  valueKey,
-}: {
+type RankPoolProps = {
   values: readonly FantasyPlayerValues[];
   valueKey: MethodValueKey;
-}): RankedValue[] =>
+};
+
+const rankPool = ({ values, valueKey }: RankPoolProps): RankedValue[] =>
   values
     .map((entry) => ({ playerId: entry.playerId, value: entry[valueKey] }))
     .toSorted((a, b) => b.value - a.value || a.playerId - b.playerId)
     .map((entry, index) => ({ ...entry, rank: index + 1 }));
 
-const toRow = ({
-  ranked,
-  line,
-  owner,
-  injuryStatus,
-}: {
+type ToRowProps = {
   ranked: RankedValue;
   line: FantasyStatLine;
   owner: WaiverOwner;
   injuryStatus: string | null;
-}): WaiverRow => ({
+};
+
+const toRow = ({ ranked, line, owner, injuryStatus }: ToRowProps): WaiverRow => ({
   playerId: ranked.playerId,
   fullName: line.fullName,
   teamAbbr: line.teamAbbr,
@@ -70,13 +68,24 @@ const toRow = ({
   injuryStatus,
 });
 
-const matchesPosition = ({ pos, position }: { pos: WaiverPosition; position: string | null }) =>
+type MatchesPositionProps = { pos: WaiverPosition; position: string | null };
+
+const matchesPosition = ({ pos, position }: MatchesPositionProps) =>
   pos === "all" || parseEligibleGroups(position).includes(pos);
 
 // Slices the valued pool into the Waiver Wire's views: my healthy roster, its
 // three weakest players, my players with no line in the range, and the free
 // pool. IL and IL+ players are never part of my roster, and a player without
 // a line is never treated as low value.
+type BuildWaiverModelProps = {
+  lines: readonly FantasyStatLine[];
+  values: readonly FantasyPlayerValues[];
+  valueKey: MethodValueKey;
+  league: WaiverLeagueData;
+  activePlayerIds: ReadonlySet<number>;
+  pos: WaiverPosition;
+};
+
 export const buildWaiverModel = ({
   lines,
   values,
@@ -84,14 +93,7 @@ export const buildWaiverModel = ({
   league,
   activePlayerIds,
   pos,
-}: {
-  lines: readonly FantasyStatLine[];
-  values: readonly FantasyPlayerValues[];
-  valueKey: MethodValueKey;
-  league: WaiverLeagueData;
-  activePlayerIds: ReadonlySet<number>;
-  pos: WaiverPosition;
-}): WaiverModel => {
+}: BuildWaiverModelProps): WaiverModel => {
   const lineById = new Map(lines.map((line) => [line.playerId, line]));
   const ranked = rankPool({ values, valueKey });
   const rankedById = new Map(ranked.map((entry) => [entry.playerId, entry]));

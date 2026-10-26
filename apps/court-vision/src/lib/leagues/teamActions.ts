@@ -23,22 +23,23 @@ import {
   type LegacyTeamsImportResult,
 } from "@/lib/leagues/types";
 import { prisma } from "@/lib/prisma";
+import { lockLeague } from "@/lib/leagues/locks";
 
-const isValidSlots = ({ slots }: { slots: readonly unknown[] }): boolean =>
+type IsValidSlotsProps = { slots: readonly unknown[] };
+
+const isValidSlots = ({ slots }: IsValidSlotsProps): boolean =>
   slots.length >= 1 && slots.length <= 60 && slots.every(isRosterSlot);
 
 // Writes every given team's slots as LeagueTeamSlot rows, in roster order, in
 // one statement. Each row carries the owner as well as the team, so RLS is a
 // direct check.
-const writeSlots = async ({
-  tx,
-  profileId,
-  teams,
-}: {
+type WriteSlotsProps = {
   tx: Prisma.TransactionClient;
   profileId: string;
   teams: readonly { teamId: string; slots: readonly RosterSlot[] }[];
-}): Promise<void> => {
+};
+
+const writeSlots = async ({ tx, profileId, teams }: WriteSlotsProps): Promise<void> => {
   const data = teams.flatMap(({ teamId, slots }) =>
     slotsToRows({ slots }).map((row) => ({ teamId, profileId, ...row })),
   );
@@ -49,19 +50,21 @@ const writeSlots = async ({
 // Resolves the LeagueTeam row to write slots against: creates a fresh row
 // with a collision-proof slug when teamId is null, otherwise renames the
 // existing row scoped by ownership so a forged teamId updates 0 rows.
+type EnsureTeamRowProps = {
+  tx: Prisma.TransactionClient;
+  leagueId: string;
+  teamId: string | null;
+  profileId: string;
+  name: string;
+};
+
 const ensureTeamRow = async ({
   tx,
   leagueId,
   teamId,
   profileId,
   name,
-}: {
-  tx: Prisma.TransactionClient;
-  leagueId: string;
-  teamId: string | null;
-  profileId: string;
-  name: string;
-}): Promise<{ status: "ok"; teamId: string } | { status: "invalid" }> => {
+}: EnsureTeamRowProps): Promise<{ status: "ok"; teamId: string } | { status: "invalid" }> => {
   if (teamId === null) {
     const existing = await tx.leagueTeam.findMany({
       where: { leagueId },
@@ -87,17 +90,19 @@ const ensureTeamRow = async ({
   return updated.count === 0 ? { status: "invalid" } : { status: "ok", teamId };
 };
 
+type SaveLeagueTeamProps = {
+  leagueId: string;
+  teamId: string | null;
+  name: string;
+  slots: readonly RosterSlot[];
+};
+
 export const saveLeagueTeam = async ({
   leagueId,
   teamId,
   name,
   slots,
-}: {
-  leagueId: string;
-  teamId: string | null;
-  name: string;
-  slots: readonly RosterSlot[];
-}): Promise<LeagueTeamSaveResult> => {
+}: SaveLeagueTeamProps): Promise<LeagueTeamSaveResult> => {
   // Runtime-check every argument that reaches a `where` clause before Prisma
   // sees it: the annotations above are erased, and an object here becomes a
   // Prisma filter rather than a value. `name.trim()` below also throws on a
@@ -127,6 +132,7 @@ export const saveLeagueTeam = async ({
       if (league === null) return { status: "invalid" };
 
       return prisma.$transaction(async (tx) => {
+        await lockLeague({ tx, leagueId, profileId: profile.id });
         const teamRow = await ensureTeamRow({
           tx,
           leagueId,
@@ -168,7 +174,9 @@ const MAX_LEGACY_IMPORT_TEAMS = 50;
 
 // The fields the import writes, checked on the untrusted payload. The slot
 // check is the one parseLegacyTeamsPayload narrows the stored payload with.
-const isValidLegacyTeam = ({ team }: { team: unknown }): boolean =>
+type IsValidLegacyTeamProps = { team: unknown };
+
+const isValidLegacyTeam = ({ team }: IsValidLegacyTeamProps): boolean =>
   isRecord(team) &&
   typeof team.name === "string" &&
   team.name.trim() !== "" &&
@@ -179,7 +187,9 @@ type LegacyTeamRow = { name: string; slug: string; slots: readonly RosterSlot[] 
 
 // Each team's trimmed name, and a slug no earlier team in the batch holds. The
 // import only writes into an empty league, so the batch is the whole namespace.
-const toLegacyTeamRows = ({ teams }: { teams: readonly FantasyTeam[] }): LegacyTeamRow[] =>
+type ToLegacyTeamRowsProps = { teams: readonly FantasyTeam[] };
+
+const toLegacyTeamRows = ({ teams }: ToLegacyTeamRowsProps): LegacyTeamRow[] =>
   teams.reduce<LegacyTeamRow[]>((rows, team) => {
     const name = team.name.trim();
     const slug = uniqueSlug({
@@ -192,11 +202,13 @@ const toLegacyTeamRows = ({ teams }: { teams: readonly FantasyTeam[] }): LegacyT
 // One-time import of the pre-league localStorage teams into the caller's
 // default league. Only runs against an empty league — if teams already exist
 // server-side, the legacy payload is stale and is skipped rather than merged.
+type ImportLegacyTeamsProps = {
+  teams: readonly FantasyTeam[];
+};
+
 export const importLegacyTeams = async ({
   teams,
-}: {
-  teams: readonly FantasyTeam[];
-}): Promise<LegacyTeamsImportResult> => {
+}: ImportLegacyTeamsProps): Promise<LegacyTeamsImportResult> => {
   // Checked before `.length`/`.every` below: a non-array argument would
   // otherwise escape as a 500 rather than a result union.
   if (!isActionArray(teams)) return { status: "error" };
@@ -216,10 +228,8 @@ export const importLegacyTeams = async ({
       if (league.isImported) return { status: "skipped" };
 
       return prisma.$transaction(async (tx) => {
-        // Re-checked inside the transaction (not just before it) so two
-        // concurrent imports — a double-invoke or two tabs — can't both read
-        // "empty" and both write; the slug unique constraint is the second
-        // line of defense if this still races across transactions.
+        // The same parent lock as manual team saves makes the empty check exclusive.
+        await lockLeague({ tx, leagueId: league.id, profileId: profile.id });
         const existingCount = await tx.leagueTeam.count({ where: { leagueId: league.id } });
         if (existingCount > 0) return { status: "skipped" };
         if (rows.length === 0) return { status: "ok" };
@@ -236,7 +246,9 @@ export const importLegacyTeams = async ({
         // Matched back by slug, which is unique within the league, rather than
         // trusting the order RETURNING happens to hand the rows back in.
         const teamIdBySlug = new Map(created.map((team) => [team.slug, team.id]));
-        const teamIdOf = ({ slug }: { slug: string }): string => {
+        type TeamIdOfProps = { slug: string };
+
+        const teamIdOf = ({ slug }: TeamIdOfProps): string => {
           const teamId = teamIdBySlug.get(slug);
           if (teamId === undefined) throw new Error(`importLegacyTeams: no row for "${slug}"`);
           return teamId;
@@ -252,11 +264,13 @@ export const importLegacyTeams = async ({
   });
 };
 
+type DeleteLeagueTeamProps = {
+  teamId: string;
+};
+
 export const deleteLeagueTeam = async ({
   teamId,
-}: {
-  teamId: string;
-}): Promise<LeagueTeamDeleteResult> => {
+}: DeleteLeagueTeamProps): Promise<LeagueTeamDeleteResult> => {
   // Without this the annotation above is the only thing standing between a
   // caller and `where: { id: { not: "" } }`, which turns this single-row
   // delete into "every team I own", cascading their slots with it.

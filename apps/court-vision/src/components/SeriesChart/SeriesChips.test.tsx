@@ -9,7 +9,9 @@ afterEach(cleanup);
 
 type Key = "pts" | "min";
 
-const selectionOf = ({ active }: { active: readonly Key[] }) => {
+type SelectionOfProps = { active: readonly Key[] };
+
+const selectionOf = ({ active }: SelectionOfProps) => {
   const toggle = vi.fn<SeriesSelection<Key>["toggle"]>();
   const toggleAll = vi.fn<SeriesSelection<Key>["toggleAll"]>();
   const selection: SeriesSelection<Key> = {

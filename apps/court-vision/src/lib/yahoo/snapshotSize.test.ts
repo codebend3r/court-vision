@@ -10,8 +10,9 @@ type Chain = { a: unknown; b: unknown };
 
 // What React's reply decoder can hand an action from a few hundred bytes: one
 // object reused at every level, so each level doubles what JSON would write.
-const sharedChain = ({ depth }: { depth: number }): unknown =>
-  Array.from({ length: depth }).reduce<unknown>((inner): Chain => ({ a: inner, b: inner }), "leaf");
+type SharedChainProps = { depth: number; leaf: unknown };
+const sharedChain = ({ depth, leaf }: SharedChainProps): unknown =>
+  Array.from({ length: depth }).reduce<unknown>((inner): Chain => ({ a: inner, b: inner }), leaf);
 
 describe("measureSnapshotBytes", () => {
   it("measures a normal payload as within the limit", () => {
@@ -43,12 +44,19 @@ describe("measureSnapshotBytes", () => {
   });
 
   it("stops a shared-reference chain early instead of expanding it", () => {
-    const started = performance.now();
-
-    const result = measureSnapshotBytes({ payload: sharedChain({ depth: 30 }), limit: LIMIT });
+    let visits = 0;
+    const leaf = {
+      toJSON() {
+        visits += 1;
+        if (visits > 1024) throw new Error("Unbounded expansion");
+        return "leaf";
+      },
+    };
+    const result = measureSnapshotBytes({ payload: sharedChain({ depth: 30, leaf }), limit: 1024 });
 
     expect(result).toEqual({ status: "over" });
-    expect(performance.now() - started).toBeLessThan(500);
+    expect(visits).toBeGreaterThan(0);
+    expect(visits).toBeLessThan(1024);
   });
 
   it("measures a value JSON can't encode as over the limit", () => {

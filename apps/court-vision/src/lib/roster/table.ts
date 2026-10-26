@@ -30,13 +30,15 @@ export type RosterTableRow = {
 
 export type RosterTable = { columns: RosterTableColumn[]; rows: RosterTableRow[] };
 
+type BuildRosterTableProps<Row extends PlayerIdentity> = {
+  rows: readonly RosterRow<Row>[];
+  columns: readonly StatColumn<Row>[];
+};
+
 export const buildRosterTable = <Row extends PlayerIdentity>({
   rows,
   columns,
-}: {
-  rows: readonly RosterRow<Row>[];
-  columns: readonly StatColumn<Row>[];
-}): RosterTable => ({
+}: BuildRosterTableProps<Row>): RosterTable => ({
   columns: columns.map((column) => ({
     key: column.sortKey,
     label: column.label,

@@ -2,9 +2,11 @@ import { create } from "zustand";
 
 import { DEFAULT_MODE, type StatMode } from "@/lib/stats/searchParams";
 
+type SetModeProps = { mode: StatMode };
+
 type StatModeState = {
   mode: StatMode;
-  setMode: (args: { mode: StatMode }) => void;
+  setMode: (args: SetModeProps) => void;
 };
 
 // Remembers the last stat mode the user picked so the choice follows them from

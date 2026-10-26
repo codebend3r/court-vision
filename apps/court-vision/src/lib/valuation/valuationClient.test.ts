@@ -8,7 +8,9 @@ import { type FantasyValuationJob } from "@/lib/valuation/workerProtocol";
 
 const lines = [1, 2, 3].map((playerId) => makeStatLine({ playerId, pts: 400 + playerId * 120 }));
 
-const jobWith = ({ teams }: { teams: number }): FantasyValuationJob => ({
+type JobWithProps = { teams: number };
+
+const jobWith = ({ teams }: JobWithProps): FantasyValuationJob => ({
   lines,
   config: { ...DEFAULT_VALUATION_CONFIG, teams },
   methodWeights: {},

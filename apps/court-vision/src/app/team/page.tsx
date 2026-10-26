@@ -17,11 +17,11 @@ export const dynamic = "force-dynamic";
 
 type RawSearchParams = Record<string, string | string[] | undefined>;
 
-export default async function TeamPage({
-  searchParams,
-}: {
+type TeamPageProps = {
   searchParams: Promise<RawSearchParams>;
-}) {
+};
+
+export default async function TeamPage({ searchParams }: TeamPageProps) {
   const { is } = await loadTeamSearchParams(searchParams);
   const team = teamBySlug({ slug: is });
 

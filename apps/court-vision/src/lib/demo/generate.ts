@@ -6,21 +6,27 @@ import { SEASON_LABEL, SEASON_TYPE } from "@/lib/stats/season";
 import { createPrng, gaussian } from "@vision/core/util/prng";
 import { DemoProfile, MeanSpread } from "@/lib/demo/profiles";
 
-const nonNegInt = (args: { rng: () => number; meanSpread: MeanSpread }): number => {
+type NonNegIntProps = { rng: () => number; meanSpread: MeanSpread };
+
+const nonNegInt = (args: NonNegIntProps): number => {
   const { rng, meanSpread } = args;
   return Math.max(0, Math.round(gaussian({ rng, ...meanSpread })));
 };
 
-const boundedPct = (args: { rng: () => number; pct: number }): number => {
+type BoundedPctProps = { rng: () => number; pct: number };
+
+const boundedPct = (args: BoundedPctProps): number => {
   const { rng, pct } = args;
   return Math.min(0.95, Math.max(0.1, gaussian({ rng, mean: pct, spread: 0.09 })));
 };
 
-const selectSkippedIndices = (args: {
+type SelectSkippedIndicesProps = {
   rng: () => number;
   playedCount: number;
   gamesPlayed: number;
-}): Set<number> => {
+};
+
+const selectSkippedIndices = (args: SelectSkippedIndicesProps): Set<number> => {
   const { rng, playedCount, gamesPlayed } = args;
   const skipCount = Math.max(0, playedCount - gamesPlayed);
   const indices = Array.from({ length: playedCount }, (_, i) => i);
@@ -32,14 +38,16 @@ const selectSkippedIndices = (args: {
   return new Set(skipped);
 };
 
-export const generateGameLogs = (args: {
+type GenerateGameLogsProps = {
   playerId: number;
   teamId: number;
   teamAbbr: string;
   games: BdlGame[];
   profile: DemoProfile;
   teamAbbrById: Map<number, string>;
-}): GameLogInput[] => {
+};
+
+export const generateGameLogs = (args: GenerateGameLogsProps): GameLogInput[] => {
   const { playerId, teamId, teamAbbr, games, profile, teamAbbrById } = args;
   const rng = createPrng({ seed: playerId });
 

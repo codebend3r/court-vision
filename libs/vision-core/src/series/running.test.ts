@@ -12,13 +12,9 @@ type Log = {
   shots: number;
 };
 
-const log = ({
-  day,
-  toi,
-  goals,
-  saves,
-  shots,
-}: Omit<Log, "gameDate" | "matchup" | "winLoss"> & { day: number }): Log => ({
+type LogProps = Omit<Log, "gameDate" | "matchup" | "winLoss"> & { day: number };
+
+const log = ({ day, toi, goals, saves, shots }: LogProps): Log => ({
   gameDate: new Date(Date.UTC(2026, 0, day)),
   matchup: `G${day}`,
   winLoss: "W",

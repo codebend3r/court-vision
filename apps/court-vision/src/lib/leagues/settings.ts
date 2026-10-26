@@ -30,43 +30,59 @@ export const WEIGHT_BOUNDS: Readonly<{ min: number; max: number; step: number }>
   step: 0.25,
 };
 
-export const clampInt = ({ value, min, max, fallback }: { value: number } & CountBounds): number =>
+type ClampIntProps = { value: number } & CountBounds;
+
+export const clampInt = ({ value, min, max, fallback }: ClampIntProps): number =>
   Number.isSafeInteger(value) ? Math.min(max, Math.max(min, value)) : fallback;
 
 // NaN reads as "untouched", i.e. the default weight of 1.
-export const snapWeight = ({ value }: { value: number }): number => {
+type SnapWeightProps = { value: number };
+
+export const snapWeight = ({ value }: SnapWeightProps): number => {
   if (Number.isNaN(value)) return 1;
   const clamped = Math.min(WEIGHT_BOUNDS.max, Math.max(WEIGHT_BOUNDS.min, value));
   return Math.round(clamped / WEIGHT_BOUNDS.step) * WEIGHT_BOUNDS.step;
 };
 
-export const clampScore = ({ value }: { value: number }): number =>
+type ClampScoreProps = { value: number };
+
+export const clampScore = ({ value }: ClampScoreProps): number =>
   Math.round(Math.min(SCORE_BOUNDS.max, Math.max(SCORE_BOUNDS.min, value)) * 100) / 100;
 
 // The normalizers take whatever a box or a form field held (a string, a File,
 // or nothing at all) and return the value the setting stores.
-const parseFloatOrNaN = ({ raw }: { raw: unknown }): number =>
+type ParseFloatOrNaNProps = { raw: unknown };
+
+const parseFloatOrNaN = ({ raw }: ParseFloatOrNaNProps): number =>
   typeof raw === "string" ? Number.parseFloat(raw) : Number.NaN;
 
-export const normalizeCount = ({ raw, bounds }: { raw: unknown; bounds: CountBounds }): number =>
+type NormalizeCountProps = { raw: unknown; bounds: CountBounds };
+
+export const normalizeCount = ({ raw, bounds }: NormalizeCountProps): number =>
   clampInt({ value: typeof raw === "string" ? Number.parseInt(raw, 10) : Number.NaN, ...bounds });
 
-export const normalizeWeight = ({ raw }: { raw: unknown }): number =>
+type NormalizeWeightProps = { raw: unknown };
+
+export const normalizeWeight = ({ raw }: NormalizeWeightProps): number =>
   snapWeight({ value: parseFloatOrNaN({ raw }) });
 
 // An emptied scoring box restores that stat's default rather than scoring 0.
-export const normalizeScore = ({ raw, stat }: { raw: unknown; stat: ScoringStatKey }): number => {
+type NormalizeScoreProps = { raw: unknown; stat: ScoringStatKey };
+
+export const normalizeScore = ({ raw, stat }: NormalizeScoreProps): number => {
   const parsed = parseFloatOrNaN({ raw });
   return Number.isFinite(parsed) ? clampScore({ value: parsed }) : DEFAULT_POINTS_SCORING[stat];
+};
+
+type WithoutWeightProps = {
+  weights: Partial<Record<Category, number>>;
+  category: Category;
 };
 
 export const withoutWeight = ({
   weights,
   category,
-}: {
-  weights: Partial<Record<Category, number>>;
-  category: Category;
-}): Partial<Record<Category, number>> =>
+}: WithoutWeightProps): Partial<Record<Category, number>> =>
   CATEGORY_KEYS.reduce<Partial<Record<Category, number>>>((acc, key) => {
     const weight = weights[key];
     return key === category || weight === undefined ? acc : { ...acc, [key]: weight };

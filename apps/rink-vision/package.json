@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start --port 46645",
     "typecheck": "next typegen && tsgo --noEmit",
-    "test": "bun test --parallel --dots",
+    "test": "bun test --parallel=2 --dots",
     "test:watch": "bun test --isolate --watch"
   },
   "dependencies": {

@@ -4,16 +4,24 @@ import { type FantasyStatLine } from "@/lib/valuation/types";
 import { type SortColumn } from "@/lib/tableSort";
 import { type WaiverRow } from "@/lib/waiverWire/types";
 
-const perGameValue = ({ total, line }: { total: number; line: FantasyStatLine }): number | null =>
+type PerGameValueProps = { total: number; line: FantasyStatLine };
+
+const perGameValue = ({ total, line }: PerGameValueProps): number | null =>
   line.gamesPlayed > 0 ? total / line.gamesPlayed : null;
 
-const rateValue = ({ made, attempted }: { made: number; attempted: number }): number | null =>
+type RateValueProps = { made: number; attempted: number };
+
+const rateValue = ({ made, attempted }: RateValueProps): number | null =>
   attempted > 0 ? made / attempted : null;
 
-const perGame = ({ total, line }: { total: number; line: FantasyStatLine }): string =>
+type PerGameProps = { total: number; line: FantasyStatLine };
+
+const perGame = ({ total, line }: PerGameProps): string =>
   perGameValue({ total, line })?.toFixed(1) ?? "—";
 
-const rate = ({ made, attempted }: { made: number; attempted: number }): string => {
+type RateProps = { made: number; attempted: number };
+
+const rate = ({ made, attempted }: RateProps): string => {
   const value = rateValue({ made, attempted });
   return value === null ? "—" : formatRate({ value });
 };
@@ -27,27 +35,24 @@ export type AvailableColumn = {
   sortValue: (line: FantasyStatLine) => number | null;
 };
 
-const perGameColumn = ({
-  label,
-  total,
-}: {
+type PerGameColumnProps = {
   label: string;
   total: (line: FantasyStatLine) => number;
-}): AvailableColumn => ({
+};
+
+const perGameColumn = ({ label, total }: PerGameColumnProps): AvailableColumn => ({
   label,
   cell: (line) => perGame({ total: total(line), line }),
   sortValue: (line) => perGameValue({ total: total(line), line }),
 });
 
-const rateColumn = ({
-  label,
-  made,
-  attempted,
-}: {
+type RateColumnProps = {
   label: string;
   made: (line: FantasyStatLine) => number;
   attempted: (line: FantasyStatLine) => number;
-}): AvailableColumn => ({
+};
+
+const rateColumn = ({ label, made, attempted }: RateColumnProps): AvailableColumn => ({
   label,
   cell: (line) => rate({ made: made(line), attempted: attempted(line) }),
   sortValue: (line) => rateValue({ made: made(line), attempted: attempted(line) }),
@@ -67,11 +72,13 @@ export const AVAILABLE_COLUMNS: readonly AvailableColumn[] = [
 ];
 
 /** The Available players table's sortable columns, keyed by their header. */
+type AvailableSortColumnsProps = {
+  linesById: ReadonlyMap<number, FantasyStatLine>;
+};
+
 export const availableSortColumns = ({
   linesById,
-}: {
-  linesById: ReadonlyMap<number, FantasyStatLine>;
-}): SortColumn<WaiverRow>[] => [
+}: AvailableSortColumnsProps): SortColumn<WaiverRow>[] => [
   { key: "rank", firstDir: "asc", valueOf: (row) => row.rank },
   { key: "player", firstDir: "asc", valueOf: (row) => row.fullName },
   ...AVAILABLE_COLUMNS.map((column): SortColumn<WaiverRow> => ({
@@ -86,13 +93,12 @@ export const availableSortColumns = ({
 ];
 
 /** The free pool narrowed to names containing `q`, keeping its value order. */
-export const filterAvailable = ({
-  rows,
-  q,
-}: {
+type FilterAvailableProps = {
   rows: readonly WaiverRow[];
   q: string;
-}): WaiverRow[] => {
+};
+
+export const filterAvailable = ({ rows, q }: FilterAvailableProps): WaiverRow[] => {
   const needle = q.trim().toLowerCase();
   return needle === ""
     ? [...rows]

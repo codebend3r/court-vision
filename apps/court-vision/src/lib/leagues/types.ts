@@ -16,7 +16,9 @@ export const isLeagueProvider = (value: string): value is LeagueProvider =>
 // For display only: a stored provider this build doesn't know reads as a
 // hand-built league. Never lock or scope on this; those decisions test the
 // raw column (`provider !== "manual"`) so an unknown provider fails closed.
-export const toLeagueProvider = ({ value }: { value: string }): LeagueProvider =>
+type ToLeagueProviderProps = { value: string };
+
+export const toLeagueProvider = ({ value }: ToLeagueProviderProps): LeagueProvider =>
   isLeagueProvider(value) ? value : "manual";
 
 // Which path keeps an imported league in sync: the server reads Yahoo
@@ -32,7 +34,9 @@ export const isLeagueSyncVia = (value: string): value is LeagueSyncVia =>
 // For display only: a stored sync path this build doesn't know reads as the
 // server. Never lock or scope on this; those decisions test the raw column,
 // as they do for `provider`.
-export const toLeagueSyncVia = ({ value }: { value: string }): LeagueSyncVia =>
+type ToLeagueSyncViaProps = { value: string };
+
+export const toLeagueSyncVia = ({ value }: ToLeagueSyncViaProps): LeagueSyncVia =>
   isLeagueSyncVia(value) ? value : "server";
 
 // Serializable league shape crossing the RSC boundary (dates as ISO strings).

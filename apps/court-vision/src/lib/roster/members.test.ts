@@ -3,7 +3,9 @@ import { describe, expect, it } from "bun:test";
 import { type FantasyTeam, type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
 import { matchRosterRows, rosterMembers, unmatchedNames } from "@/lib/roster/members";
 
-const player = ({ playerId }: { playerId: number }): FantasyTeamPlayer => ({
+type PlayerProps = { playerId: number };
+
+const player = ({ playerId }: PlayerProps): FantasyTeamPlayer => ({
   playerId,
   firstName: "A",
   lastName: "B",

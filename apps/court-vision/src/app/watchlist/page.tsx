@@ -7,11 +7,11 @@ import styles from "@/styles/leagueScopedPage.module.scss";
 
 export const dynamic = "force-dynamic";
 
-export default async function WatchlistPage({
-  searchParams,
-}: {
+type WatchlistPageProps = {
   searchParams: Promise<RawSearchParams>;
-}) {
+};
+
+export default async function WatchlistPage({ searchParams }: WatchlistPageProps) {
   // The tab is fixed: this route is the starred view, whatever the query says.
   const params = parseStarredSearchParams({ raw: await searchParams });
   // null for a signed-out visitor or a signed-in one with no league yet —

@@ -29,6 +29,16 @@ describe("SignupForm", () => {
     expect(await screen.findByText(/check your email/i)).toBeInTheDocument();
   });
 
+  it("does not call a rate-limited username taken", async () => {
+    spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json({ error: "Try later" }, { status: 429 }),
+    );
+    render(<SignupForm />);
+    await userEvent.type(screen.getByLabelText(/username/i), "steve");
+    expect(await screen.findByText(/Username checks are unavailable/)).toBeInTheDocument();
+    expect(screen.queryByText("That username is taken.")).not.toBeInTheDocument();
+  });
+
   it("shows an error when the username is taken", async () => {
     signUpAction.mockResolvedValue({ ok: false, error: "That username is taken." });
     render(<SignupForm />);

@@ -14,7 +14,9 @@ const PANEL_ID = "account-menu";
 // so Tab and Enter work as they do anywhere else. Opening moves focus to the
 // first item and Tab cycles within the panel; Escape, a pointer outside, or
 // following Settings closes it, and Escape returns focus to the trigger.
-export function AccountMenu({ username }: { username: string }) {
+type AccountMenuProps = { username: string };
+
+export function AccountMenu({ username }: AccountMenuProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);

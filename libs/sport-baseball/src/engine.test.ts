@@ -6,15 +6,14 @@ import { baseball, type BaseballKeys } from "#baseball/descriptor";
 import { baseballEngine } from "#baseball/engine";
 
 // Thirty appearances, each counted as one unit of playing time.
-const line = ({
-  playerId,
-  position,
-  stats,
-}: {
+type LineProps = {
   playerId: number;
   position: string;
   stats: Partial<Record<BaseballKeys["valued"], number>>;
-}) => makeLine({ sport: baseball, playerId, position, gamesPlayed: 30, playingTime: 30, stats });
+};
+
+const line = ({ playerId, position, stats }: LineProps) =>
+  makeLine({ sport: baseball, playerId, position, gamesPlayed: 30, playingTime: 30, stats });
 
 const pitchers = baseball.pools[1];
 

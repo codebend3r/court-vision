@@ -32,7 +32,9 @@ function AwaitNavigation() {
   return null;
 }
 
-function PendingNavigation({ children }: { children: ReactNode }) {
+type PendingNavigationProps = { children: ReactNode };
+
+function PendingNavigation({ children }: PendingNavigationProps) {
   const [hasNavigated, setHasNavigated] = useState(false);
   useEffect(() => {
     replace.mockImplementation(() => setHasNavigated(true));
@@ -266,7 +268,9 @@ describe("PlayersSearchControls", () => {
         </PendingNavigation>,
       );
 
-    const changeSelect = async ({ label, value }: { label: string; value: string }) => {
+    type ChangeSelectProps = { label: string; value: string };
+
+    const changeSelect = async ({ label, value }: ChangeSelectProps) => {
       await act(async () => {
         fireEvent.change(screen.getByLabelText(label), { target: { value } });
       });

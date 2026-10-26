@@ -32,7 +32,9 @@ describe("checkSnapshotShape", () => {
   });
 
   it("caps the scoreboard at 32 matchups", () => {
-    const scoreboard = ({ count }: { count: number }) => ({
+    type ScoreboardProps = { count: number };
+
+    const scoreboard = ({ count }: ScoreboardProps) => ({
       fantasy_content: {
         league: {
           scoreboard: { matchups: Array.from({ length: count }, () => ({ matchup: {} })) },
@@ -68,8 +70,9 @@ describe("checkSnapshotShape", () => {
   });
 
   it("caps the waiver list at 10 pages", () => {
-    const pages = ({ count }: { count: number }) =>
-      Array.from({ length: count }, () => waivers106344);
+    type PagesProps = { count: number };
+
+    const pages = ({ count }: PagesProps) => Array.from({ length: count }, () => waivers106344);
 
     expect(
       checkSnapshotShape({ payload: gameOfCourtsPayload({ waiverPages: pages({ count: 10 }) }) }),

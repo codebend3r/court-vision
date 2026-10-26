@@ -53,11 +53,11 @@ const QUALIFYING_GAMES_SHARE = 0.7;
 
 export type QualifyingFloors = { games: number; fgm: number; fg3m: number; ftm: number };
 
-export const qualifyingFloors = ({
-  rows,
-}: {
+type QualifyingFloorsProps = {
   rows: readonly SeasonStatTotals[];
-}): QualifyingFloors => {
+};
+
+export const qualifyingFloors = ({ rows }: QualifyingFloorsProps): QualifyingFloors => {
   const mostGames = rows.reduce((most, row) => Math.max(most, row.gamesPlayed), 0);
   const progress = Math.min(1, mostGames / SEASON_GAMES);
   const scaled = (full: number): number => Math.max(1, Math.ceil(full * progress));
@@ -76,19 +76,21 @@ const formatPercent = (value: number): string => `${value.toFixed(1)}%`;
 
 type StatDef = LeaderDef<SeasonStatTotals>;
 
+type PerGameDefProps = {
+  key: string;
+  label: string;
+  rankTone?: RankTone;
+  total: (row: SeasonStatTotals) => number;
+  minGames: number;
+};
+
 const perGameDef = ({
   key,
   label,
   rankTone = "leader",
   total,
   minGames,
-}: {
-  key: string;
-  label: string;
-  rankTone?: RankTone;
-  total: (row: SeasonStatTotals) => number;
-  minGames: number;
-}): StatDef => ({
+}: PerGameDefProps): StatDef => ({
   key,
   label,
   rankTone,
@@ -97,7 +99,9 @@ const perGameDef = ({
   format: formatAverage,
 });
 
-const statDefs = ({ floors }: { floors: QualifyingFloors }): readonly StatDef[] => [
+type StatDefsProps = { floors: QualifyingFloors };
+
+const statDefs = ({ floors }: StatDefsProps): readonly StatDef[] => [
   perGameDef({ key: "pts", label: "PTS", total: (row) => row.pts, minGames: floors.games }),
   perGameDef({ key: "reb", label: "REB", total: (row) => row.reb, minGames: floors.games }),
   perGameDef({ key: "ast", label: "AST", total: (row) => row.ast, minGames: floors.games }),
@@ -147,20 +151,28 @@ const statDefs = ({ floors }: { floors: QualifyingFloors }): readonly StatDef[] 
 
 // The NBA leaderboard line for one player (see buildLeaderLine for the
 // ranking rules).
-export const buildSeasonAverageLine = (args: {
+type BuildSeasonAverageLineProps = {
   rows: SeasonStatTotals[];
   playerId: number;
   applyMinimums?: boolean;
-}): SeasonAverageStat[] | null =>
+};
+
+export const buildSeasonAverageLine = (
+  args: BuildSeasonAverageLineProps,
+): SeasonAverageStat[] | null =>
   buildLeaderLine({ defs: statDefs({ floors: qualifyingFloors({ rows: args.rows }) }), ...args });
 
 // Sum a player's per-season totals into one career row. Percentages and
 // per-game averages are always ratios of these summed totals, so career values
 // derive correctly from the aggregate (never an average of averages).
-export const aggregateCareerTotals = (args: {
+type AggregateCareerTotalsProps = {
   rows: readonly SeasonStatTotals[];
   playerId: number;
-}): SeasonStatTotals | null => {
+};
+
+export const aggregateCareerTotals = (
+  args: AggregateCareerTotalsProps,
+): SeasonStatTotals | null => {
   const own = args.rows.filter((row) => row.playerId === args.playerId);
   if (own.length === 0) {
     return null;
@@ -178,7 +190,9 @@ export const aggregateCareerTotals = (args: {
 // every other player's career would need the whole pool aggregated, so career
 // stats show values without a leaderboard rank (rank stays null, which the card
 // renders as a plain value).
-export const buildCareerAverageLine = (args: { totals: SeasonStatTotals }): SeasonAverageStat[] =>
+type BuildCareerAverageLineProps = { totals: SeasonStatTotals };
+
+export const buildCareerAverageLine = (args: BuildCareerAverageLineProps): SeasonAverageStat[] =>
   // Unranked, so no floor is read; the lowest one stands in.
   buildUnrankedLine({
     defs: statDefs({ floors: qualifyingFloors({ rows: [] }) }),

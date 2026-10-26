@@ -14,6 +14,18 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
+type RowProps = {
+  playerId: number;
+  z: number;
+  g?: number;
+  points?: number;
+  vorp?: number;
+  positional?: number;
+  sgp?: number;
+  sim?: number;
+  rank: number;
+};
+
 const row = ({
   playerId,
   z,
@@ -24,17 +36,7 @@ const row = ({
   sgp = z,
   sim = z,
   rank,
-}: {
-  playerId: number;
-  z: number;
-  g?: number;
-  points?: number;
-  vorp?: number;
-  positional?: number;
-  sgp?: number;
-  sim?: number;
-  rank: number;
-}): FantasyTableRow => ({
+}: RowProps): FantasyTableRow => ({
   ...makeStatLine({ playerId }),
   rank,
   values: { playerId, z, g, points, vorp, positional, sgp, sim },

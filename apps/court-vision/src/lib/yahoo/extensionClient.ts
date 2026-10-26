@@ -10,10 +10,12 @@ import {
 // id Netlify carries, asks it to ping or to read a league through the user's
 // Yahoo login, and turns every answer into one of a few outcomes.
 
-export type ExtensionSend = (args: {
+type ExtensionSendProps = {
   extensionId: string;
   message: BridgeRequest;
-}) => Promise<unknown>;
+};
+
+export type ExtensionSend = (args: ExtensionSendProps) => Promise<unknown>;
 
 export type ExtensionLeagueResult =
   | { status: "ok"; payload: BridgeLeaguePayload }
@@ -31,7 +33,9 @@ export const getExtensionId = (): string | null => {
   return extensionId === "" ? null : extensionId;
 };
 
-export const extensionStoreUrl = ({ extensionId }: { extensionId: string }): string =>
+type ExtensionStoreUrlProps = { extensionId: string };
+
+export const extensionStoreUrl = ({ extensionId }: ExtensionStoreUrlProps): string =>
   `https://chromewebstore.google.com/detail/${extensionId}`;
 
 // Chrome exposes chrome.runtime.sendMessage to a page only when an installed
@@ -48,17 +52,19 @@ export const chromeSend: ExtensionSend = async ({ extensionId, message }) => {
 
 // Resolves with the extension's answer, or rejects when it fails or takes
 // longer than `timeoutMs`. The timer is cleared either way.
+type SendWithTimeoutProps = {
+  extensionId: string;
+  message: BridgeRequest;
+  send: ExtensionSend;
+  timeoutMs: number;
+};
+
 const sendWithTimeout = ({
   extensionId,
   message,
   send,
   timeoutMs,
-}: {
-  extensionId: string;
-  message: BridgeRequest;
-  send: ExtensionSend;
-  timeoutMs: number;
-}): Promise<unknown> =>
+}: SendWithTimeoutProps): Promise<unknown> =>
   new Promise<unknown>((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(new Error(`The extension didn't answer within ${timeoutMs}ms`));
@@ -77,15 +83,17 @@ const sendWithTimeout = ({
       );
   });
 
+type PingExtensionProps = {
+  extensionId: string;
+  send?: ExtensionSend;
+  timeoutMs?: number;
+};
+
 export const pingExtension = async ({
   extensionId,
   send = chromeSend,
   timeoutMs = PING_TIMEOUT_MS,
-}: {
-  extensionId: string;
-  send?: ExtensionSend;
-  timeoutMs?: number;
-}): Promise<boolean> => {
+}: PingExtensionProps): Promise<boolean> => {
   try {
     const answer = await sendWithTimeout({
       extensionId,
@@ -99,17 +107,19 @@ export const pingExtension = async ({
   }
 };
 
+type FetchLeagueViaExtensionProps = {
+  extensionId: string;
+  leagueId: string;
+  send?: ExtensionSend;
+  timeoutMs?: number;
+};
+
 export const fetchLeagueViaExtension = async ({
   extensionId,
   leagueId,
   send = chromeSend,
   timeoutMs = LEAGUE_TIMEOUT_MS,
-}: {
-  extensionId: string;
-  leagueId: string;
-  send?: ExtensionSend;
-  timeoutMs?: number;
-}): Promise<ExtensionLeagueResult> => {
+}: FetchLeagueViaExtensionProps): Promise<ExtensionLeagueResult> => {
   try {
     const answer = await sendWithTimeout({
       extensionId,

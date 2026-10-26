@@ -8,6 +8,7 @@ import { SEASON_LABEL, SEASON_TYPE } from "@/lib/stats/season";
 
 const queryRaw = vi.fn<(strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>>();
 
+vi.mock("@/lib/valuation/season", () => ({ latestSeason: async () => SEASON_LABEL }));
 vi.mock("@/lib/prisma", () => ({
   prisma: { $queryRaw: queryRaw },
 }));
@@ -44,17 +45,19 @@ const zeroStats: PlayerStats = {
   pts: 0,
 };
 
+type PoolRowProps = {
+  id: number;
+  firstName?: string;
+  lastName?: string;
+  stats?: Partial<PlayerStats>;
+};
+
 const poolRow = ({
   id,
   firstName = `Player${id}`,
   lastName = `P${id}`,
   stats = {},
-}: {
-  id: number;
-  firstName?: string;
-  lastName?: string;
-  stats?: Partial<PlayerStats>;
-}): PlayerPoolRow => ({
+}: PoolRowProps): PlayerPoolRow => ({
   id,
   firstName,
   lastName,
@@ -66,15 +69,13 @@ const poolRow = ({
 });
 
 // A pool query result row: identity columns plus flat stat columns.
-const sqlRow = ({
-  id,
-  pts = 0,
-  gamesPlayed = 0,
-}: {
+type SqlRowProps = {
   id: number;
   pts?: number;
   gamesPlayed?: number;
-}) => ({
+};
+
+const sqlRow = ({ id, pts = 0, gamesPlayed = 0 }: SqlRowProps) => ({
   id,
   firstName: "Stephen",
   lastName: "Curry",
@@ -94,7 +95,9 @@ const firstQuery = (): Prisma.Sql => {
   return Prisma.sql(strings ?? [], ...values);
 };
 
-const idsOf = (rows: readonly { id: number }[]): number[] => rows.map((row) => row.id);
+type IdsOfProps = readonly { id: number }[];
+
+const idsOf = (rows: IdsOfProps): number[] => rows.map((row) => row.id);
 
 describe("fetchRegularPool", () => {
   beforeEach(() => {
@@ -107,7 +110,7 @@ describe("fetchRegularPool", () => {
     const pool = await fetchRegularPool({ range: "all" });
 
     expect(firstQuery().sql).toContain('"PlayerSeasonStats"');
-    expect(firstQuery().values).toEqual([SEASON_LABEL, SEASON_TYPE]);
+    expect(firstQuery().values).toEqual([SEASON_LABEL, SEASON_TYPE, SEASON_LABEL, SEASON_TYPE]);
     expect(pool).toEqual([
       {
         id: 1,
@@ -128,7 +131,8 @@ describe("fetchRegularPool", () => {
     const pool = await fetchRegularPool({ range: "last10" });
 
     expect(firstQuery().sql).toContain('"PlayerGameLog"');
-    expect(firstQuery().values).toEqual([10]);
+    expect(firstQuery().values).toEqual([SEASON_LABEL, SEASON_TYPE, 10]);
+    expect(firstQuery().sql.indexOf("gl.season =")).toBeLessThan(firstQuery().sql.indexOf("LIMIT"));
     expect(pool[0]?.stats).toEqual({ ...zeroStats, gamesPlayed: 10, pts: 300 });
   });
 

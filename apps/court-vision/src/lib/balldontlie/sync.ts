@@ -16,17 +16,19 @@ const addSummaries = (totals: SyncSummary, summary: SyncSummary): SyncSummary =>
   advancedGameLogs: totals.advancedGameLogs + summary.advancedGameLogs,
 });
 
+type SyncSeasonProps = {
+  season: number;
+  teamAbbrById: Map<number, string>;
+  deps: BdlClientDeps;
+  logger: Logger;
+};
+
 const syncSeason = async ({
   season,
   teamAbbrById,
   deps,
   logger,
-}: {
-  season: number;
-  teamAbbrById: Map<number, string>;
-  deps: BdlClientDeps;
-  logger: Logger;
-}): Promise<SyncSummary> => {
+}: SyncSeasonProps): Promise<SyncSummary> => {
   // Every line carries the season, so a multi-season backfill log reads in order.
   const seasonLogger: Logger = (message) => logger(`[${season}] ${message}`);
   const seasonDeps: BdlClientDeps = { ...deps, logger: seasonLogger };
@@ -52,9 +54,9 @@ const syncSeason = async ({
   });
 };
 
-export async function syncBalldontlie(
-  args: { deps?: BdlClientDeps; seasons?: readonly number[]; logger?: Logger } = {},
-): Promise<SyncSummary> {
+type SyncBalldontlieProps = { deps?: BdlClientDeps; seasons?: readonly number[]; logger?: Logger };
+
+export async function syncBalldontlie(args: SyncBalldontlieProps = {}): Promise<SyncSummary> {
   const { deps = {}, seasons = [SEASON_START_YEAR] } = args;
   const logger = args.logger ?? deps.logger ?? silentLogger;
 

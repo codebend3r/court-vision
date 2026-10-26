@@ -39,11 +39,13 @@ export const CHART_CHROME: ChartChrome = {
 // Axis styling every chart shares: muted 12px tick labels, with the axis rule
 // drawn in either the grid colour (the player charts) or the muted text
 // colour (the trend charts). Spread it onto an XAxis or YAxis.
+type ChartAxisPropsProps = {
+  rule: keyof ChartChrome;
+};
+
 export const chartAxisProps = ({
   rule,
-}: {
-  rule: keyof ChartChrome;
-}): { stroke: string; tick: { fill: string; fontSize: number } } => ({
+}: ChartAxisPropsProps): { stroke: string; tick: { fill: string; fontSize: number } } => ({
   stroke: CHART_CHROME[rule],
   tick: { fill: CHART_CHROME.axis, fontSize: 12 },
 });
@@ -69,11 +71,15 @@ const TREND_SERIES_BY_THEME: Record<Theme, readonly string[]> = {
   "team-accent": DARK_TREND_SERIES,
 };
 
-export const getTrendPalette = ({ theme }: { theme: Theme }): readonly string[] =>
+type GetTrendPaletteProps = { theme: Theme };
+
+export const getTrendPalette = ({ theme }: GetTrendPaletteProps): readonly string[] =>
   TREND_SERIES_BY_THEME[theme];
 
 // The categorical series palette, in fixed slot order. Every player-page
 // chart assigns hues from it by position within its own panel, so a metric
 // keeps its colour however the neighbouring chips are toggled.
-export const getSeriesPalette = ({ theme }: { theme: Theme }): readonly string[] =>
+type GetSeriesPaletteProps = { theme: Theme };
+
+export const getSeriesPalette = ({ theme }: GetSeriesPaletteProps): readonly string[] =>
   SERIES_BY_THEME[theme];

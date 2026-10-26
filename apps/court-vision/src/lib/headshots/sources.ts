@@ -52,9 +52,11 @@ export const parseNbaPlayerIndex = (source: string): NbaPlayerIndexRow[] => {
   return rows;
 };
 
+type FetchNbaPlayerIndexProps = { fetchImpl?: FetchImpl };
+
 export const fetchNbaPlayerIndex = async ({
   fetchImpl = globalThis.fetch,
-}: { fetchImpl?: FetchImpl } = {}): Promise<NbaPlayerIndexRow[]> => {
+}: FetchNbaPlayerIndexProps = {}): Promise<NbaPlayerIndexRow[]> => {
   const response = await fetchImpl(NBA_DATA_PY_URL);
   if (!response.ok) {
     throw new Error(`Failed to fetch NBA player index (${response.status})`);

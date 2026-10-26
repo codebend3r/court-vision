@@ -6,7 +6,7 @@ import { ThemeProvider, useTheme } from "#ui/components/ThemeProvider/ThemeProvi
 function Probe() {
   const { theme, setTheme } = useTheme();
   return (
-    <div>
+    <div className="theme-test">
       <span>{theme}</span>
       <button type="button" onClick={() => setTheme({ theme: "amber-crt" })}>
         pick amber

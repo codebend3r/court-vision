@@ -26,17 +26,22 @@ type Route = { status: number; body: unknown };
 const GAME_PATH = "game/nba";
 const SNAPSHOT_PATH = "league/478.l.106344;out=settings/teams/roster";
 const SCOREBOARD_PATH = "league/478.l.106344/scoreboard";
-const waiverPath = ({ start }: { start: number }): string =>
+type WaiverPathProps = { start: number };
+
+const waiverPath = ({ start }: WaiverPathProps): string =>
   `league/478.l.106344/players;status=W;start=${start};count=${YAHOO_PAGE_SIZE}`;
 
-const yahooUrl = ({ path }: { path: string }): string =>
-  `${YAHOO_API_BASE_URL}/${path}?format=json_f`;
+type YahooUrlProps = { path: string };
+
+const yahooUrl = ({ path }: YahooUrlProps): string => `${YAHOO_API_BASE_URL}/${path}?format=json_f`;
 
 const ok = (body: unknown): Route => ({ status: 200, body });
 
 // Serves each request by its full URL with a fresh Response. An unknown URL
 // answers 404, which the client reports as unavailable without retrying.
-const stubYahoo = ({ routes }: { routes: ReadonlyMap<string, Route> }) =>
+type StubYahooProps = { routes: ReadonlyMap<string, Route> };
+
+const stubYahoo = ({ routes }: StubYahooProps) =>
   vi.fn<FetchImpl>().mockImplementation(async (input) => {
     const route = routes.get(String(input)) ?? { status: 404, body: {} };
     return new Response(JSON.stringify(route.body), {
@@ -45,17 +50,19 @@ const stubYahoo = ({ routes }: { routes: ReadonlyMap<string, Route> }) =>
     });
   });
 
+type RoutesForProps = {
+  game?: Route;
+  snapshot?: Route;
+  waiverPages?: readonly Route[];
+  scoreboard?: Route;
+};
+
 const routesFor = ({
   game = ok(gameNba),
   snapshot = ok(league106344),
   waiverPages = [ok(waivers106344)],
   scoreboard = ok(scoreboard106344),
-}: {
-  game?: Route;
-  snapshot?: Route;
-  waiverPages?: readonly Route[];
-  scoreboard?: Route;
-}): ReadonlyMap<string, Route> =>
+}: RoutesForProps): ReadonlyMap<string, Route> =>
   new Map([
     [yahooUrl({ path: GAME_PATH }), game],
     [yahooUrl({ path: SNAPSHOT_PATH }), snapshot],
@@ -66,10 +73,14 @@ const routesFor = ({
     ]),
   ]);
 
-const requestedUrls = ({ fetchImpl }: { fetchImpl: ReturnType<typeof stubYahoo> }): string[] =>
+type RequestedUrlsProps = { fetchImpl: ReturnType<typeof stubYahoo> };
+
+const requestedUrls = ({ fetchImpl }: RequestedUrlsProps): string[] =>
   fetchImpl.mock.calls.map(([input]) => String(input));
 
-const waiverPage = ({ from, count }: { from: number; count: number }): Route =>
+type WaiverPageProps = { from: number; count: number };
+
+const waiverPage = ({ from, count }: WaiverPageProps): Route =>
   ok({
     fantasy_content: {
       league: {
@@ -80,7 +91,9 @@ const waiverPage = ({ from, count }: { from: number; count: number }): Route =>
     },
   });
 
-const loaded = ({ result }: { result: LoadResult }) => {
+type LoadedProps = { result: LoadResult };
+
+const loaded = ({ result }: LoadedProps) => {
   if (result.status !== "ok") throw new Error(`expected ok, got ${result.status}`);
   return result;
 };

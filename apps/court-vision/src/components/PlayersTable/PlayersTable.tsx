@@ -26,33 +26,38 @@ import {
 
 import styles from "@/components/PlayersTable/PlayersTable.module.scss";
 
-const perGameValue = ({
-  total,
-  gamesPlayed,
-}: {
+type PerGameValueProps = {
   total: number;
   gamesPlayed: number;
-}): number | null => (gamesPlayed > 0 ? total / gamesPlayed : null);
+};
 
-const rateValue = ({ made, attempted }: { made: number; attempted: number }): number | null =>
+const perGameValue = ({ total, gamesPlayed }: PerGameValueProps): number | null =>
+  gamesPlayed > 0 ? total / gamesPlayed : null;
+
+type RateValueProps = { made: number; attempted: number };
+
+const rateValue = ({ made, attempted }: RateValueProps): number | null =>
   attempted > 0 ? made / attempted : null;
 
-const formatPerGame = ({ total, gamesPlayed }: { total: number; gamesPlayed: number }): string =>
+type FormatPerGameProps = { total: number; gamesPlayed: number };
+
+const formatPerGame = ({ total, gamesPlayed }: FormatPerGameProps): string =>
   perGameValue({ total, gamesPlayed })?.toFixed(1) ?? "—";
 
-const formatPercentage = ({ made, attempted }: { made: number; attempted: number }): string => {
+type FormatPercentageProps = { made: number; attempted: number };
+
+const formatPercentage = ({ made, attempted }: FormatPercentageProps): string => {
   const value = rateValue({ made, attempted });
   return value === null ? "—" : formatRate({ value });
 };
 
 // Minutes read as whole numbers: a per-game average or a season total, rounded.
-const minutesValue = ({
-  stats,
-  mode,
-}: {
+type MinutesValueProps = {
   stats: PlayerPoolRow["stats"];
   mode: PlayerStatMode;
-}): number | null => {
+};
+
+const minutesValue = ({ stats, mode }: MinutesValueProps): number | null => {
   const value =
     mode === "total"
       ? stats.min
@@ -60,28 +65,29 @@ const minutesValue = ({
   return value === null ? null : Math.round(value);
 };
 
-const formatMinutes = ({
-  stats,
-  mode,
-}: {
+type FormatMinutesProps = {
   stats: PlayerPoolRow["stats"];
   mode: PlayerStatMode;
-}): string => minutesValue({ stats, mode })?.toString() ?? "—";
+};
+
+const formatMinutes = ({ stats, mode }: FormatMinutesProps): string =>
+  minutesValue({ stats, mode })?.toString() ?? "—";
 
 // The regular table's columns. Counting stats read per game or as totals, per
 // the stat mode; games played and the percentages read the same either way.
+type RegularColumnsProps = {
+  mode: PlayerStatMode;
+};
+
 export const regularColumns = ({
   mode,
-}: {
-  mode: PlayerStatMode;
-}): readonly StatColumn<PlayerPoolRow>[] => {
-  const counting = ({
-    label,
-    key,
-  }: {
+}: RegularColumnsProps): readonly StatColumn<PlayerPoolRow>[] => {
+  type CountingProps = {
     label: string;
     key: CountingSortKey;
-  }): StatColumn<PlayerPoolRow> => ({
+  };
+
+  const counting = ({ label, key }: CountingProps): StatColumn<PlayerPoolRow> => ({
     label,
     sortKey: key,
     cell: ({ stats }) =>
@@ -140,13 +146,12 @@ export const regularColumns = ({
 // Share-style metrics (TS%, USG%, PIE, the rebound shares) are fractions and
 // display like FG%; ratings and ratios read to one decimal. The kind lives on
 // the shared meta so the player page formats the same metric the same way.
-const formatAdvancedMetric = ({
-  meta,
-  value,
-}: {
+type FormatAdvancedMetricProps = {
   meta: AdvancedStatMeta;
   value: number | null;
-}): string => {
+};
+
+const formatAdvancedMetric = ({ meta, value }: FormatAdvancedMetricProps): string => {
   if (value === null) return "—";
   return meta.kind === "percentage" ? formatRate({ value }) : value.toFixed(1);
 };
@@ -164,7 +169,9 @@ export const ADVANCED_COLUMNS: readonly StatColumn<AdvancedPlayerRow>[] = ADVANC
 // The consolidated player cell (spec §7): avatar, then name over team chip +
 // position tag. Replaces the old First name / Last name / Team / Position
 // quartet — which is where the horizontal room for stats comes from.
-function PlayerCell({ row }: { row: PlayerIdentity }) {
+type PlayerCellProps = { row: PlayerIdentity };
+
+function PlayerCell({ row }: PlayerCellProps) {
   return (
     <span className={styles.playerInner}>
       <PlayerAvatar
@@ -208,7 +215,9 @@ export function PlayersTable<Row extends PlayerIdentity>({
   isSignedIn,
   footer,
 }: PlayersTableProps<Row>) {
-  const nextDir = ({ sortKey }: { sortKey: PlayerSortKey | AdvancedSortKey }): SortDirection =>
+  type NextDirProps = { sortKey: PlayerSortKey | AdvancedSortKey };
+
+  const nextDir = ({ sortKey }: NextDirProps): SortDirection =>
     params.sort === sortKey ? (params.dir === "desc" ? "asc" : "desc") : "desc";
 
   // The one player column sorts by last name; a first-name sort (via URL)
@@ -216,17 +225,19 @@ export function PlayersTable<Row extends PlayerIdentity>({
   // the rows are ordered by a stat.
   const isPlayerSort = isNameSort(params.sort);
 
+  type RenderSortableHeaderProps = {
+    label: string;
+    sortKey: PlayerSortKey | AdvancedSortKey;
+    meta?: AdvancedStatMeta;
+    isStatColumn?: boolean;
+  };
+
   const renderSortableHeader = ({
     label,
     sortKey,
     meta,
     isStatColumn = false,
-  }: {
-    label: string;
-    sortKey: PlayerSortKey | AdvancedSortKey;
-    meta?: AdvancedStatMeta;
-    isStatColumn?: boolean;
-  }) => {
+  }: RenderSortableHeaderProps) => {
     const isActive = params.sort === sortKey;
     const tipId = meta && `stat-tip-${meta.key}`;
     const dir = nextDir({ sortKey });

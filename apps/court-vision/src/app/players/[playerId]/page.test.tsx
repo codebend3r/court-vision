@@ -66,13 +66,12 @@ vi.mock("@/lib/prisma", () => ({
 // scope — a static import would run the real one before the mock lands.
 const { default: PlayerPage } = await import("@/app/players/[playerId]/page");
 
-const renderPage = async ({
-  playerId,
-  query = {},
-}: {
+type RenderPageProps = {
   playerId: string;
   query?: Record<string, string>;
-}) => {
+};
+
+const renderPage = async ({ playerId, query = {} }: RenderPageProps) => {
   currentQuery = query;
   return render(
     <ThemeProvider>
@@ -194,15 +193,13 @@ const buildLog = (overrides: Partial<Record<string, unknown>> = {}) => ({
   ...overrides,
 });
 
-const buildSeasonRow = ({
-  playerId,
-  pts = 1000,
-  season = "2025-26",
-}: {
+type BuildSeasonRowProps = {
   playerId: number;
   pts?: number;
   season?: string;
-}) => ({
+};
+
+const buildSeasonRow = ({ playerId, pts = 1000, season = "2025-26" }: BuildSeasonRowProps) => ({
   id: `season-${playerId}-${season}`,
   playerId,
   season,

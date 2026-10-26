@@ -18,7 +18,9 @@ const { probeYahooLeague } = await import("@/lib/yahoo/probe");
 
 const NINE: Category[] = ["pts", "reb", "ast", "stl", "blk", "tpm", "tov", "fg", "ft"];
 
-const ref = ({ id, name }: { id: string; name: string }): YahooPlayerRef => ({
+type RefProps = { id: string; name: string };
+
+const ref = ({ id, name }: RefProps): YahooPlayerRef => ({
   yahooPlayerId: id,
   fullName: name,
   teamAbbr: "MEM",
@@ -27,15 +29,13 @@ const ref = ({ id, name }: { id: string; name: string }): YahooPlayerRef => ({
   status: null,
 });
 
-const team = ({
-  name,
-  managerName,
-  players,
-}: {
+type TeamProps = {
   name: string;
   managerName: string | null;
   players: YahooPlayerRef[];
-}): ImportedTeam => ({
+};
+
+const team = ({ name, managerName, players }: TeamProps): ImportedTeam => ({
   externalKey: `478.l.106344.t.${name}`,
   name,
   logoUrl: null,
@@ -74,8 +74,9 @@ const league: ImportedLeague = {
 
 const okResult: YahooLoadResult = { status: "ok", league, waiverRefs: [stewart] };
 
-const lines = ({ logger }: { logger: ReturnType<typeof vi.fn<Logger>> }): string[] =>
-  logger.mock.calls.map(([message]) => message);
+type LinesProps = { logger: ReturnType<typeof vi.fn<Logger>> };
+
+const lines = ({ logger }: LinesProps): string[] => logger.mock.calls.map(([message]) => message);
 
 describe("probeYahooLeague", () => {
   beforeEach(() => {

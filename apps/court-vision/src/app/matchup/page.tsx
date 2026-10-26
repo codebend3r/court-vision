@@ -32,7 +32,9 @@ const IMPORT_PATH = "/leagues/import";
 
 // Every state short of the week: the page's own header, then why there is no
 // matchup yet and what to do about it.
-function MatchupGate({ message, children }: { message: string; children?: ReactNode }) {
+type MatchupGateProps = { message: string; children?: ReactNode };
+
+function MatchupGate({ message, children }: MatchupGateProps) {
   return (
     <main className={styles.page}>
       <PageHeader {...MATCHUP_PAGE_HEADER} />
@@ -45,7 +47,9 @@ function MatchupGate({ message, children }: { message: string; children?: ReactN
 }
 
 // "Week 3, Oct 20 to Oct 26".
-const weekEyebrow = ({ week }: { week: LeagueWeek }): string => {
+type WeekEyebrowProps = { week: LeagueWeek };
+
+const weekEyebrow = ({ week }: WeekEyebrowProps): string => {
   const format = (value: string | null): string | null => {
     const date = value === null ? null : new Date(`${value}T12:00:00Z`);
     return date === null || Number.isNaN(date.getTime())
@@ -59,11 +63,11 @@ const weekEyebrow = ({ week }: { week: LeagueWeek }): string => {
     : `Week ${week.week}`;
 };
 
-export default async function MatchupPage({
-  searchParams,
-}: {
+type MatchupPageProps = {
   searchParams: Promise<RawSearchParams>;
-}) {
+};
+
+export default async function MatchupPage({ searchParams }: MatchupPageProps) {
   const [profile, record] = await Promise.all([getProfile(), getActiveLeagueRecord()]);
   if (profile === null) redirect("/login?next=/matchup");
 

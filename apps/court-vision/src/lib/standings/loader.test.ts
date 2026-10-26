@@ -18,17 +18,14 @@ vi.mock("@/lib/balldontlie/endpoints", () => ({ fetchStandings }));
 // scope — a static import would capture the real one before the mock lands.
 const { getConferenceStandings } = await import("@/lib/standings/loader");
 
-const standing = ({
-  id,
-  conference,
-  rank,
-  wins,
-}: {
+type StandingProps = {
   id: number;
   conference: string;
   rank: number;
   wins: number;
-}): BdlStanding => ({
+};
+
+const standing = ({ id, conference, rank, wins }: StandingProps): BdlStanding => ({
   team: {
     id,
     conference,

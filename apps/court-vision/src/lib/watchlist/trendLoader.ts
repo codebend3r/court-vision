@@ -20,13 +20,12 @@ type PlayerTrends = Record<RollingMethod, TrendSeries>;
 // The homepage charts both trends for the same players, so one read feeds both
 // methods: the season, the pool, its stats and the player's logs are fetched
 // once rather than once per chart.
-const fetchTrends = async ({
-  playerId,
-  fullName,
-}: {
+type FetchTrendsProps = {
   playerId: number;
   fullName: string;
-}): Promise<PlayerTrends> => {
+};
+
+const fetchTrends = async ({ playerId, fullName }: FetchTrendsProps): Promise<PlayerTrends> => {
   const season = await latestSeason();
   if (season === null) {
     return { z: { playerId, fullName, points: [] }, g: { playerId, fullName, points: [] } };
@@ -40,7 +39,9 @@ const fetchTrends = async ({
     select: GAME_LOG_SELECT,
   });
   const logs = rows.map(({ gameDate, ...row }) => ({ ...toWindowLog({ row }), gameDate }));
-  const seriesFor = ({ method }: { method: RollingMethod }): TrendSeries =>
+  type SeriesForProps = { method: RollingMethod };
+
+  const seriesFor = ({ method }: SeriesForProps): TrendSeries =>
     buildRollingSeries({
       method,
       playerId,
@@ -62,11 +63,13 @@ const cachedTrends = unstable_cache(
 );
 
 // Every listed player's Z and G series, in the order given.
+type GetTrendSeriesProps = {
+  players: readonly { playerId: number; fullName: string }[];
+};
+
 export const getTrendSeries = async ({
   players,
-}: {
-  players: readonly { playerId: number; fullName: string }[];
-}): Promise<{ z: TrendSeries[]; g: TrendSeries[] }> => {
+}: GetTrendSeriesProps): Promise<{ z: TrendSeries[]; g: TrendSeries[] }> => {
   const trends = await Promise.all(
     players.map((player) => cachedTrends(player.playerId, player.fullName)),
   );

@@ -18,22 +18,22 @@ export type SortColumn<Row> = {
  * One click cycles a column: its first direction, the opposite, then back to
  * the table's own order. Another column starts at its own first direction.
  */
-export const nextSort = ({
-  current,
-  key,
-  firstDir,
-}: {
+type NextSortProps = {
   current: SortState;
   key: string;
   firstDir: SortDirection;
-}): SortState => {
+};
+
+export const nextSort = ({ current, key, firstDir }: NextSortProps): SortState => {
   if (current === null || current.key !== key) return { key, dir: firstDir };
   if (current.dir === firstDir) return { key, dir: firstDir === "asc" ? "desc" : "asc" };
   return null;
 };
 
 // Numbers by size, text alphabetically; a number sorts before text.
-const compareValues = ({ a, b }: { a: number | string; b: number | string }): number => {
+type CompareValuesProps = { a: number | string; b: number | string };
+
+const compareValues = ({ a, b }: CompareValuesProps): number => {
   if (typeof a === "number" && typeof b === "number") return a - b;
   if (typeof a === "string" && typeof b === "string") return a.localeCompare(b);
   return typeof a === "number" ? -1 : 1;
@@ -43,15 +43,13 @@ const compareValues = ({ a, b }: { a: number | string; b: number | string }): nu
  * The rows ordered by a column. A row with no value sinks to the bottom either
  * way, and ties keep the order they came in, so a sort never reshuffles.
  */
-export const sortRows = <Row>({
-  rows,
-  sort,
-  columns,
-}: {
+type SortRowsProps<Row> = {
   rows: readonly Row[];
   sort: SortState;
   columns: readonly SortColumn<Row>[];
-}): Row[] => {
+};
+
+export const sortRows = <Row>({ rows, sort, columns }: SortRowsProps<Row>): Row[] => {
   const column = sort === null ? undefined : columns.find((entry) => entry.key === sort.key);
   if (sort === null || column === undefined) return [...rows];
   const sign = sort.dir === "asc" ? 1 : -1;
@@ -67,13 +65,15 @@ export const sortRows = <Row>({
     .map(({ row }) => row);
 };
 
+type AriaSortForProps = {
+  sort: SortState;
+  key: string;
+};
+
 export const ariaSortFor = ({
   sort,
   key,
-}: {
-  sort: SortState;
-  key: string;
-}): "ascending" | "descending" | undefined => {
+}: AriaSortForProps): "ascending" | "descending" | undefined => {
   if (sort === null || sort.key !== key) return undefined;
   return sort.dir === "asc" ? "ascending" : "descending";
 };

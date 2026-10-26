@@ -25,7 +25,9 @@ const params: RegularSearchParams = {
   tab: "starred",
 };
 
-const row = ({ id }: { id: number }) => ({
+type RowProps = { id: number };
+
+const row = ({ id }: RowProps) => ({
   id,
   firstName: `First${id}`,
   lastName: `Last${id}`,

@@ -7,11 +7,11 @@ import { getUser } from "@/lib/auth/session";
 import { AuthCard } from "@/app/(auth)/AuthCard";
 import { LoginForm } from "@/app/(auth)/login/LoginForm";
 
-export default async function LoginPage({
-  searchParams,
-}: {
+type LoginPageProps = {
   searchParams: Promise<{ next?: string; error?: string }>;
-}) {
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
   const user = await getUser();
   if (user) {
     redirect("/");

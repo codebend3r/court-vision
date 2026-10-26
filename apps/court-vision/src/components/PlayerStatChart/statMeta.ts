@@ -42,7 +42,9 @@ const SHOOTING_STATS: ReadonlyArray<{ key: StatKey; label: string }> = [
 
 // Counting stats use all 7 palette slots (pts..tov); shooting stats reuse
 // slots 0-2 (fgPct/fg3Pct/ftPct).
-export const getStatMeta = ({ theme }: { theme: Theme }): StatMeta[] => {
+type GetStatMetaProps = { theme: Theme };
+
+export const getStatMeta = ({ theme }: GetStatMetaProps): StatMeta[] => {
   const palette = getSeriesPalette({ theme });
   const counting = COUNTING_STATS.map((stat, index): StatMeta => ({
     ...stat,

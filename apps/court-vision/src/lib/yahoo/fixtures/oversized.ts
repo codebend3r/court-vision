@@ -9,10 +9,14 @@ const fixtureLeague = league106344.fantasy_content.league;
 const fixtureTeams = fixtureLeague.teams;
 const fixturePagePlayers = waivers106344.fantasy_content.league.players;
 
-const repeated = ({ items, length }: { items: readonly unknown[]; length: number }): unknown[] =>
+type RepeatedProps = { items: readonly unknown[]; length: number };
+
+const repeated = ({ items, length }: RepeatedProps): unknown[] =>
   Array.from({ length }, (_, index) => items[index % items.length]);
 
-const snapshotWithTeams = ({ teams }: { teams: readonly unknown[] }) => ({
+type SnapshotWithTeamsProps = { teams: readonly unknown[] };
+
+const snapshotWithTeams = ({ teams }: SnapshotWithTeamsProps) => ({
   ...league106344,
   fantasy_content: {
     ...league106344.fantasy_content,
@@ -21,11 +25,15 @@ const snapshotWithTeams = ({ teams }: { teams: readonly unknown[] }) => ({
 });
 
 /** The Game of Courts snapshot with `count` teams, the fixture's repeated. */
-export const snapshotWithTeamCount = ({ count }: { count: number }) =>
+type SnapshotWithTeamCountProps = { count: number };
+
+export const snapshotWithTeamCount = ({ count }: SnapshotWithTeamCountProps) =>
   snapshotWithTeams({ teams: repeated({ items: fixtureTeams, length: count }) });
 
 /** The Game of Courts snapshot whose first team rosters `count` players. */
-export const snapshotWithRosterSize = ({ count }: { count: number }) =>
+type SnapshotWithRosterSizeProps = { count: number };
+
+export const snapshotWithRosterSize = ({ count }: SnapshotWithRosterSizeProps) =>
   snapshotWithTeams({
     teams: fixtureTeams.map((entry, index) =>
       index === 0
@@ -43,7 +51,9 @@ export const snapshotWithRosterSize = ({ count }: { count: number }) =>
   });
 
 /** A waiver page holding `count` players, the fixture page's repeated. */
-export const waiverPageWithPlayers = ({ count }: { count: number }) => ({
+type WaiverPageWithPlayersProps = { count: number };
+
+export const waiverPageWithPlayers = ({ count }: WaiverPageWithPlayersProps) => ({
   ...waivers106344,
   fantasy_content: {
     ...waivers106344.fantasy_content,
@@ -55,10 +65,12 @@ export const waiverPageWithPlayers = ({ count }: { count: number }) => ({
 });
 
 /** The Game of Courts payload with each named part replaced. */
+type GameOfCourtsPayloadProps = {
+  snapshot?: unknown;
+  waiverPages?: unknown[];
+};
+
 export const gameOfCourtsPayload = ({
   snapshot = league106344,
   waiverPages = [waivers106344],
-}: {
-  snapshot?: unknown;
-  waiverPages?: unknown[];
-} = {}) => ({ game: gameNba, snapshot, waiverPages });
+}: GameOfCourtsPayloadProps = {}) => ({ game: gameNba, snapshot, waiverPages });

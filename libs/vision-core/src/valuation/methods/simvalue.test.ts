@@ -114,7 +114,9 @@ describe("scoreSimValue", () => {
 const SIM_ITERATIONS = 400;
 const SIM_SEED = 0x5eed;
 
-const mulberry32 = ({ seed }: { seed: number }) => {
+type Mulberry32Props = { seed: number };
+
+const mulberry32 = ({ seed }: Mulberry32Props) => {
   let state = seed >>> 0;
   return (): number => {
     state = (state + 0x6d2b79f5) >>> 0;
@@ -125,10 +127,19 @@ const mulberry32 = ({ seed }: { seed: number }) => {
   };
 };
 
-const standardNormal = ({ random }: { random: () => number }): number => {
+type StandardNormalProps = { random: () => number };
+
+const standardNormal = ({ random }: StandardNormalProps): number => {
   const u = Math.max(random(), Number.MIN_VALUE);
   const v = random();
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+};
+
+type ReferenceScoreSimValueProps = {
+  lines: readonly FantasyStatLine[];
+  poolStats: PoolStats;
+  config: ValuationConfig;
+  iterations?: number;
 };
 
 const referenceScoreSimValue = ({
@@ -136,12 +147,7 @@ const referenceScoreSimValue = ({
   poolStats,
   config,
   iterations = SIM_ITERATIONS,
-}: {
-  lines: readonly FantasyStatLine[];
-  poolStats: PoolStats;
-  config: ValuationConfig;
-  iterations?: number;
-}): PlayerValue[] => {
+}: ReferenceScoreSimValueProps): PlayerValue[] => {
   const { replacement, spread } = buildLeague({ lines, poolStats, config });
 
   const random = mulberry32({ seed: SIM_SEED });
@@ -192,7 +198,9 @@ const referenceScoreSimValue = ({
 // A seeded pool of 300 box-score lines: realistic magnitudes, a few
 // zero-attempt shooters, and enough spread that many players sit near a
 // category's win threshold, where an off-by-one count would show.
-const randomPool = ({ seed, size }: { seed: number; size: number }): FantasyStatLine[] => {
+type RandomPoolProps = { seed: number; size: number };
+
+const randomPool = ({ seed, size }: RandomPoolProps): FantasyStatLine[] => {
   const random = mulberry32({ seed });
   const between = (low: number, high: number): number =>
     Math.floor(low + random() * (high - low + 1));

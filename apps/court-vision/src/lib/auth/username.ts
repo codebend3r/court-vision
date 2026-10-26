@@ -18,7 +18,9 @@ const RESERVED = new Set([
   "support",
 ]);
 
-export function normalizeUsername({ username }: { username: string }): string {
+type NormalizeUsernameProps = { username: string };
+
+export function normalizeUsername({ username }: NormalizeUsernameProps): string {
   return username.trim().toLowerCase();
 }
 

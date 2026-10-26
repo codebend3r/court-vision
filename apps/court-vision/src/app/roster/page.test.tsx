@@ -22,15 +22,23 @@ const pickerProps = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({ getProfile: () => getProfile() }));
 vi.mock("@/lib/leagues/queries", () => ({ getActiveLeague: () => getActiveLeague() }));
+type GetLeagueTeamsProps = { leagueId: string };
+
 vi.mock("@/lib/leagues/teamQueries", () => ({
-  getLeagueTeams: (args: { leagueId: string }) => getLeagueTeams(args),
+  getLeagueTeams: (args: GetLeagueTeamsProps) => getLeagueTeams(args),
 }));
+type GetRegularPoolProps = { range: string };
+
+type GetAdvancedPoolProps = { range: string };
+
 vi.mock("@/lib/players/searchCached", () => ({
-  getRegularPool: (args: { range: string }) => getRegularPool(args),
-  getAdvancedPool: (args: { range: string }) => getAdvancedPool(args),
+  getRegularPool: (args: GetRegularPoolProps) => getRegularPool(args),
+  getAdvancedPool: (args: GetAdvancedPoolProps) => getAdvancedPool(args),
 }));
+type GetFantasyPoolProps = { range: string };
+
 vi.mock("@/lib/valuation/loader", () => ({
-  getFantasyPool: (args: { range: string }) => getFantasyPool(args),
+  getFantasyPool: (args: GetFantasyPoolProps) => getFantasyPool(args),
 }));
 vi.mock("@/components/RosterStatCharts/RosterStatCharts", () => ({
   RosterStatCharts: (props: RosterStatChartsProps) => {
@@ -84,7 +92,9 @@ const league = (overrides: Partial<LeagueSummary> = {}): LeagueSummary => ({
   ...overrides,
 });
 
-const player = ({ playerId, name }: { playerId: number; name: string }): FantasyTeamPlayer => ({
+type PlayerProps = { playerId: number; name: string };
+
+const player = ({ playerId, name }: PlayerProps): FantasyTeamPlayer => ({
   playerId,
   firstName: "A",
   lastName: name,
@@ -121,7 +131,9 @@ const otherTeam: FantasyTeam = {
   slots: [{ id: "PG-1", type: "PG", player: player({ playerId: 9, name: "Rival" }) }],
 };
 
-const poolRow = ({ id, name, pts }: { id: number; name: string; pts: number }): PlayerPoolRow => ({
+type PoolRowProps = { id: number; name: string; pts: number };
+
+const poolRow = ({ id, name, pts }: PoolRowProps): PlayerPoolRow => ({
   id,
   firstName: "A",
   lastName: name,
@@ -154,7 +166,9 @@ const regularPool = [
   poolRow({ id: 9, name: "Rival", pts: 200 }),
 ];
 
-const advancedRow = ({ id, name }: { id: number; name: string }): AdvancedPlayerRow => ({
+type AdvancedRowProps = { id: number; name: string };
+
+const advancedRow = ({ id, name }: AdvancedRowProps): AdvancedPlayerRow => ({
   id,
   firstName: "A",
   lastName: name,
@@ -182,7 +196,9 @@ const advancedRow = ({ id, name }: { id: number; name: string }): AdvancedPlayer
   },
 });
 
-const renderPage = async ({ raw = {} }: { raw?: Record<string, string> } = {}) =>
+type RenderPageProps = { raw?: Record<string, string> };
+
+const renderPage = async ({ raw = {} }: RenderPageProps = {}) =>
   render(await RosterPage({ searchParams: Promise.resolve(raw) }));
 
 const lastChartsProps = (): RosterStatChartsProps => {

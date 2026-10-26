@@ -4,7 +4,9 @@ import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 // user manages, or nothing: every other team is a league-mate's, however new.
 // In a hand-built league it's the most recently created one, since that is
 // the roster a manager is most likely still filling. Null with no teams.
-export const featuredTeam = ({ teams }: { teams: readonly FantasyTeam[] }): FantasyTeam | null => {
+type FeaturedTeamProps = { teams: readonly FantasyTeam[] };
+
+export const featuredTeam = ({ teams }: FeaturedTeamProps): FantasyTeam | null => {
   if (teams.some((team) => team.isImported)) return teams.find((team) => team.isMine) ?? null;
   return teams.reduce<FantasyTeam | null>(
     (newest, team) => (newest === null || team.createdAt > newest.createdAt ? team : newest),

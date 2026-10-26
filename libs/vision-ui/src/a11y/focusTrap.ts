@@ -12,21 +12,21 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(", ");
 
-export const focusableWithin = ({ container }: { container: HTMLElement }): HTMLElement[] =>
+type FocusableWithinProps = { container: HTMLElement };
+
+export const focusableWithin = ({ container }: FocusableWithinProps): HTMLElement[] =>
   Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
 
 // Modal behaviour a `role="dialog"` claims but does not get for free: move
 // focus in on open, keep Tab inside while open, close on Escape, and put focus
 // back where it came from on close.
-export const useFocusTrap = ({
-  containerRef,
-  active,
-  onEscape,
-}: {
+type UseFocusTrapProps = {
   containerRef: RefObject<HTMLElement | null>;
   active: boolean;
   onEscape: () => void;
-}): void => {
+};
+
+export const useFocusTrap = ({ containerRef, active, onEscape }: UseFocusTrapProps): void => {
   // Held in a ref so an inline arrow from the caller does not re-run the effect
   // on every render, which would yank focus back to the first item each time.
   const onEscapeRef = useRef(onEscape);

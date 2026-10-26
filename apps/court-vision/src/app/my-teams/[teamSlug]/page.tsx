@@ -13,7 +13,9 @@ import styles from "@/styles/leagueScopedPage.module.scss";
 
 export const dynamic = "force-dynamic";
 
-export default async function EditTeamPage({ params }: { params: Promise<{ teamSlug: string }> }) {
+type EditTeamPageProps = { params: Promise<{ teamSlug: string }> };
+
+export default async function EditTeamPage({ params }: EditTeamPageProps) {
   const { teamSlug } = await params;
   const league = await loadMyTeamsLeague();
 

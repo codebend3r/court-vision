@@ -30,7 +30,9 @@ const SUBMIT_LABEL: Record<SubmitPhase, string> = {
 
 const REDIRECTING_MESSAGE = "Signed in. Loading your dashboard…";
 
-export function LoginForm({ next, notice }: { next: string; notice?: string | null }) {
+type LoginFormProps = { next: string; notice?: string | null };
+
+export function LoginForm({ next, notice }: LoginFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

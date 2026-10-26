@@ -92,37 +92,49 @@ export function FantasyControls({
     onCommit: ({ q: query }) => onChange({ q: query, page: 1 }),
   });
 
-  const onPunt = ({ category }: { category: Category }) => {
+  type OnPuntProps = { category: Category };
+
+  const onPunt = ({ category }: OnPuntProps) => {
     const cleared = withoutWeight({ weights, category });
     onChange({ w: weights[category] === 0 ? cleared : { ...cleared, [category]: 0 } });
   };
 
-  const onExclude = ({ category }: { category: Category }) => {
+  type OnExcludeProps = { category: Category };
+
+  const onExclude = ({ category }: OnExcludeProps) => {
     onChange({ x: [...excluded, category], w: withoutWeight({ weights, category }) });
   };
 
-  const onInclude = ({ category }: { category: Category }) => {
+  type OnIncludeProps = { category: Category };
+
+  const onInclude = ({ category }: OnIncludeProps) => {
     onChange({ x: excluded.filter((key) => key !== category) });
   };
 
+  type OnWeightBlurProps = { category: Category };
+
   const onWeightBlur =
-    ({ category }: { category: Category }) =>
+    ({ category }: OnWeightBlurProps) =>
     (event: FocusEvent<HTMLInputElement>) => {
       const snapped = normalizeWeight({ raw: event.target.value });
       const cleared = withoutWeight({ weights, category });
       onChange({ w: snapped === 1 ? cleared : { ...cleared, [category]: snapped } });
     };
 
+  type OnScoringBlurProps = { stat: ScoringStatKey };
+
   const onScoringBlur =
-    ({ stat }: { stat: ScoringStatKey }) =>
+    ({ stat }: OnScoringBlurProps) =>
     (event: FocusEvent<HTMLInputElement>) => {
       onChange({ s: { ...scoring, [stat]: normalizeScore({ raw: event.target.value, stat }) } });
     };
 
   // A cleared box falls back to the standard league (12 teams, 13 slots), the
   // same answer the league form, the server, and the URL parser give.
+  type OnLeagueBlurProps = { field: "teams" | "slots" };
+
   const onLeagueBlur =
-    ({ field }: { field: "teams" | "slots" }) =>
+    ({ field }: OnLeagueBlurProps) =>
     (event: FocusEvent<HTMLInputElement>) => {
       const value = normalizeCount({ raw: event.target.value, bounds: LEAGUE_BOUNDS[field] });
       onChange(field === "teams" ? { teams: value } : { slots: value });

@@ -14,7 +14,9 @@ afterEach(cleanup);
 
 // Games 71 to 82 of a season: the first nine wait for the window, the last
 // three (games 80, 81, 82) score.
-const filledTrend = ({ peak }: { peak: number }): FantasyTrendValue[] =>
+type FilledTrendProps = { peak: number };
+
+const filledTrend = ({ peak }: FilledTrendProps): FantasyTrendValue[] =>
   Array.from({ length: 12 }, (_, index) => ({
     gameIndex: index + 1,
     gameNumber: index + 71,
@@ -24,17 +26,14 @@ const filledTrend = ({ peak }: { peak: number }): FantasyTrendValue[] =>
     g: index < 9 ? null : (peak - (11 - index)) * 0.8,
   }));
 
-const row = ({
-  playerId,
-  z,
-  rank,
-  trend,
-}: {
+type RowProps = {
   playerId: number;
   z: number;
   rank: number;
   trend: FantasyTrendValue[];
-}): FantasyTrendRow => ({
+};
+
+const row = ({ playerId, z, rank, trend }: RowProps): FantasyTrendRow => ({
   ...makeStatLine({ playerId }),
   rank,
   values: { playerId, z, g: z * 0.8, points: 40, vorp: z, positional: z, sgp: z, sim: z },

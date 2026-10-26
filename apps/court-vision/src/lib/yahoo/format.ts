@@ -5,13 +5,12 @@ const DAY_MS = 24 * HOUR_MS;
 // How long ago an imported league last synced, in whole units: under a minute
 // is "just now", then minutes, hours, and days. A sync stamped a moment after
 // `now` (clock skew between server and browser) still reads "just now".
-export const formatSyncedAgo = ({
-  syncedAt,
-  now,
-}: {
+type FormatSyncedAgoProps = {
   syncedAt: string | null;
   now: Date;
-}): string => {
+};
+
+export const formatSyncedAgo = ({ syncedAt, now }: FormatSyncedAgoProps): string => {
   const syncedMs = syncedAt === null ? Number.NaN : Date.parse(syncedAt);
   if (Number.isNaN(syncedMs)) return "Never synced";
   const elapsed = now.getTime() - syncedMs;

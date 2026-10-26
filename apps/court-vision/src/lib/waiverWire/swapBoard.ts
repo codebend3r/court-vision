@@ -16,15 +16,13 @@ export type SwapBoard = { target: WaiverRow | null; rows: SwapRow[] };
 const MAX_CHIPS = 3;
 const MINUS = "−";
 
-const buildChips = ({
-  free,
-  target,
-  scoreKey,
-}: {
+type BuildChipsProps = {
   free: FantasyCategoryBreakdown[];
   target: FantasyCategoryBreakdown[];
   scoreKey: ScoreKey;
-}): CategoryChip[] =>
+};
+
+const buildChips = ({ free, target, scoreKey }: BuildChipsProps): CategoryChip[] =>
   free
     .flatMap((entry) => {
       const mine = target.find((candidate) => candidate.key === entry.key);
@@ -41,15 +39,19 @@ const buildChips = ({
 
 // The free agents who beat my weakest player, biggest gain first (ties by
 // player id), each with up to three category chips for what the swap changes.
+type BreakdownForProps = { playerId: number };
+
+type BuildSwapBoardProps = {
+  model: WaiverModel;
+  breakdownFor: ({ playerId }: BreakdownForProps) => FantasyCategoryBreakdown[];
+  scoreKey: ScoreKey;
+};
+
 export const buildSwapBoard = ({
   model,
   breakdownFor,
   scoreKey,
-}: {
-  model: WaiverModel;
-  breakdownFor: ({ playerId }: { playerId: number }) => FantasyCategoryBreakdown[];
-  scoreKey: ScoreKey;
-}): SwapBoard => {
+}: BuildSwapBoardProps): SwapBoard => {
   const target = model.weakest[0] ?? null;
   if (!target) return { target: null, rows: [] };
   const targetBreakdown = breakdownFor({ playerId: target.playerId });

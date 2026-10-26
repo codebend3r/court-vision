@@ -18,25 +18,39 @@ import {
   type SlotCounts,
 } from "@/lib/fantasyTeams/types";
 
+type CanDropProps = { slot: RosterSlot; player: FantasyTeamPlayer };
+
+type OpenSlotForProps = { player: FantasyTeamPlayer };
+
+type AssignProps = { slotId: string; player: FantasyTeamPlayer };
+
+type AddProps = { player: FantasyTeamPlayer };
+
+type ClearSlotProps = { slotId: string };
+
+type SetCountProps = { type: RosterSlotType; raw: string };
+
 export type Roster = {
   counts: SlotCounts;
   slots: RosterSlot[];
   rostered: ReadonlySet<number>;
   // An empty slot the player is eligible for, and not already rostered.
-  canDrop: (args: { slot: RosterSlot; player: FantasyTeamPlayer }) => boolean;
+  canDrop: (args: CanDropProps) => boolean;
   // The slot the + button would fill, or null when none is open.
-  openSlotFor: (args: { player: FantasyTeamPlayer }) => string | null;
-  assign: (args: { slotId: string; player: FantasyTeamPlayer }) => void;
-  add: (args: { player: FantasyTeamPlayer }) => void;
-  clearSlot: (args: { slotId: string }) => void;
+  openSlotFor: (args: OpenSlotForProps) => string | null;
+  assign: (args: AssignProps) => void;
+  add: (args: AddProps) => void;
+  clearSlot: (args: ClearSlotProps) => void;
   // Resizes one slot type from its stepper's raw value, keeping each type's
   // first N players.
-  setCount: (args: { type: RosterSlotType; raw: string }) => void;
+  setCount: (args: SetCountProps) => void;
 };
 
 // The builder's roster: the slot counts and the slots they produce, seeded
 // from the team being edited (or the default shape for a new one).
-export const useRoster = ({ team }: { team: FantasyTeam | null }): Roster => {
+type UseRosterProps = { team: FantasyTeam | null };
+
+export const useRoster = ({ team }: UseRosterProps): Roster => {
   const [counts, setCounts] = useState<SlotCounts>(() =>
     team === null ? DEFAULT_SLOT_COUNTS : countsFromSlots({ slots: team.slots }),
   );

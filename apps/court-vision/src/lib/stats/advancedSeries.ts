@@ -24,7 +24,9 @@ export const ADVANCED_MODES: readonly StatMode[] = ["game", "avg"];
 
 // The URL's mode may have been picked on the regular view; every cumulative
 // reading of a rate collapses to its running average here.
-export const toAdvancedMode = ({ mode }: { mode: StatMode }): AdvancedSeriesMode =>
+type ToAdvancedModeProps = { mode: StatMode };
+
+export const toAdvancedMode = ({ mode }: ToAdvancedModeProps): AdvancedSeriesMode =>
   mode === "game" ? "game" : "avg";
 
 export type AdvancedPoint = Record<AdvancedMetricKey, number | null> & {
@@ -50,25 +52,29 @@ const NULL_METRICS: Record<AdvancedMetricKey, number | null> = recordFromKeys({
 
 // One game's fifteen metrics from a stored advanced row, without its ids and
 // dates: what the game log needs, and nothing more to serialize.
+type PickAdvancedMetricsProps = {
+  log: AdvancedSeriesLog;
+};
+
 export const pickAdvancedMetrics = ({
   log,
-}: {
-  log: AdvancedSeriesLog;
-}): Record<AdvancedMetricKey, number | null> =>
+}: PickAdvancedMetricsProps): Record<AdvancedMetricKey, number | null> =>
   ADVANCED_METRIC_KEYS.reduce<Record<AdvancedMetricKey, number | null>>(
     (acc, key) => ({ ...acc, [key]: log[key] }),
     NULL_METRICS,
   );
 
+type BuildAdvancedSeriesProps = {
+  logs: readonly AdvancedSourceLog[];
+  advancedLogs: readonly AdvancedSeriesLog[];
+  mode: AdvancedSeriesMode;
+};
+
 export const buildAdvancedSeries = ({
   logs,
   advancedLogs,
   mode,
-}: {
-  logs: readonly AdvancedSourceLog[];
-  advancedLogs: readonly AdvancedSeriesLog[];
-  mode: AdvancedSeriesMode;
-}): AdvancedPoint[] => {
+}: BuildAdvancedSeriesProps): AdvancedPoint[] => {
   const byGameId = new Map(advancedLogs.map((row) => [row.gameId, row]));
 
   const { points } = logs.reduce<{ points: AdvancedPoint[]; running: RunningByKey }>(

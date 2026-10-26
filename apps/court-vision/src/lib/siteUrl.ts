@@ -37,8 +37,8 @@ function siteOriginFromEnv(): string | null {
   );
 }
 
-export function resolveSiteOrigin({
-  requestOrigin,
-}: { requestOrigin?: string | null } = {}): string {
+type ResolveSiteOriginProps = { requestOrigin?: string | null };
+
+export function resolveSiteOrigin({ requestOrigin }: ResolveSiteOriginProps = {}): string {
   return siteOriginFromEnv() ?? toOrigin(requestOrigin) ?? FALLBACK_ORIGIN;
 }
