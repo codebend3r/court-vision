@@ -6,6 +6,11 @@ import { SwapBoardPanel } from "@/components/WaiverWireView/SwapBoardPanel";
 import { type SwapBoard, type SwapRow } from "@/lib/waiverWire/swapBoard";
 import { type WaiverModel, type WaiverRow } from "@/lib/waiverWire/types";
 
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/waiver-wire",
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
+
 afterEach(cleanup);
 
 type MakeRowProps = Partial<WaiverRow> & { playerId: number };

@@ -100,7 +100,10 @@ players realistically rostered in the user's league.
 
 - Default pool size: `teams * rosterSlots`, with a floor of 150.
 - A minimum games played and minutes threshold filters out small sample noise
-  before pool selection.
+  before pool selection. For a season view, the games threshold uses the most
+  appearances in the loaded pool so far, capped at the sport's full schedule;
+  it does not require a full-season minimum in opening weeks. Last-N views use
+  their requested window size.
 - Pool membership is determined by ranking on the **active method**, which is
   circular by nature. The engine runs a single refinement pass: compute
   values on the broad thresholded population using a provisional Z-Score

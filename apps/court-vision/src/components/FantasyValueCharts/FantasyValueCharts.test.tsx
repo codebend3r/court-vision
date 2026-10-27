@@ -11,6 +11,11 @@ import { CATEGORY_META } from "@vision/sport-basketball/engine";
 import { makeStatLine } from "@/lib/valuation/fixtures";
 import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider";
 
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/players",
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
+
 afterEach(cleanup);
 
 // Every category scores the same z so a row's extent is easy to reason about.

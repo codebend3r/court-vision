@@ -73,8 +73,9 @@ export async function syncNightly(args: SyncNightlyProps): Promise<NightlySyncSu
     writers: {
       gameLogs: replaceGameLogsForGames,
       advancedGameLogs: replaceAdvancedGameLogsForGames,
-      seasonLogs: ({ gameLogs }) =>
+      seasonLogs: ({ gameLogs, tx }) =>
         findSeasonAggregateLogs({
+          tx,
           playerIds: unique(gameLogs.map((log) => log.playerId)),
           seasons: unique(gameLogs.map((log) => log.season)),
           seasonType: SEASON_TYPE,

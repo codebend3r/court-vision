@@ -143,16 +143,19 @@ const activateAndSummarize = async ({
   return toLeagueSummary({ league });
 };
 
-type EnsureDefaultLeagueProps = { profile?: Profile };
+type EnsureDefaultLeagueProps = { profile?: Profile; expectedLeagueId?: string | null };
 
 export const ensureDefaultLeague = async ({
   profile: providedProfile,
+  expectedLeagueId,
 }: EnsureDefaultLeagueProps = {}): Promise<LeagueSummary | null> => {
   const profile = providedProfile ?? (await getProfile());
   if (profile === null) return null;
   return prisma.$transaction(async (tx) => {
     const current = { ...profile, ...(await lockProfile({ tx, profileId: profile.id })) };
     const existing = await resolveActiveLeague({ profile: current, client: tx });
+    // Refuse a stale tab instead of writing to a league it never displayed.
+    if (expectedLeagueId !== undefined && expectedLeagueId !== (existing?.id ?? null)) return null;
     if (existing !== null) return activateAndSummarize({ profile: current, league: existing, tx });
 
     const config = defaultScoringConfig({ scoringType: "h2h_categories" });

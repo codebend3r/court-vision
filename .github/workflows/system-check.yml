@@ -106,11 +106,15 @@ jobs:
           PROJECT: ${{ matrix.project }}
         run: bunx nx run "$PROJECT:build" --output-style=static
 
+      # ubuntu-latest already carries every library Chromium links against, so
+      # `--with-deps` only pulled optional font packs and xvfb from the Azure
+      # apt mirror, and a slow mirror timed the step out. The suite runs
+      # headless, so the headless shell from Playwright's CDN is all it needs.
       - name: 🌐 Install Chromium
         if: ${{ matrix.a11y }}
         timeout-minutes: 5
         working-directory: apps/court-vision
-        run: bunx --no-install playwright install --with-deps chromium
+        run: bunx --no-install playwright install --only-shell chromium
 
       - name: ♿ Accessibility
         if: ${{ matrix.a11y }}

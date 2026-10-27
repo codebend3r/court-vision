@@ -1,7 +1,13 @@
+import type { Prisma } from "@generated/prisma/client";
 import type { Logger } from "@vision/core/util/logger";
 
 import { AdvancedGameLogInput, GameLogInput, SeasonAggregateLog } from "@/lib/stats/inputs";
-import { SyncSummary, upsertPlayers, upsertSeasonStats } from "@/lib/stats/persist";
+import {
+  SyncSummary,
+  upsertPlayers,
+  upsertSeasonStats,
+  withStatsTransaction,
+} from "@/lib/stats/persist";
 
 import { BdlClientDeps, fetchTeams } from "@/lib/balldontlie/endpoints";
 import { BdlAdvancedStat, BdlStat } from "@/lib/balldontlie/schemas";
@@ -29,11 +35,11 @@ export const fetchTeamAbbrById = async ({
 // so it replaces them and sums season lines from the logs it just fetched; the
 // nightly sync owns whole games, so it replaces those and sums season lines
 // from every stored log of the players who appeared.
-type GameLogsProps = { rows: GameLogInput[] };
+type GameLogsProps = { rows: GameLogInput[]; tx: Prisma.TransactionClient };
 
-type AdvancedGameLogsProps = { rows: AdvancedGameLogInput[] };
+type AdvancedGameLogsProps = { rows: AdvancedGameLogInput[]; tx: Prisma.TransactionClient };
 
-type SeasonLogsProps = { gameLogs: GameLogInput[] };
+type SeasonLogsProps = { gameLogs: GameLogInput[]; tx: Prisma.TransactionClient };
 
 export type BoxScoreWriters = {
   gameLogs: (args: GameLogsProps) => Promise<number>;
@@ -61,20 +67,25 @@ export const writeBoxScores = async ({
 }: WriteBoxScoresProps): Promise<SyncSummary> => {
   const gameLogInputs = stats.map((stat) => toGameLogInput({ stat, teamAbbrById }));
 
-  const players = await upsertPlayers({ players: toPlayerInputs({ stats, teamAbbrById }) });
-  logger(`Upserted ${players} players; replacing game logs…`);
+  const playerInputs = toPlayerInputs({ stats, teamAbbrById });
+  const advancedInputs = advanced.map((stat) => toAdvancedGameLogInput({ stat }));
+  return withStatsTransaction(async (tx) => {
+    const players = await upsertPlayers({ players: playerInputs, tx });
+    logger(`Upserted ${players} players; replacing game logs…`);
 
-  const gameLogs = await writers.gameLogs({ rows: gameLogInputs });
-  logger(`Replaced ${gameLogs} game logs; rebuilding season lines…`);
+    const gameLogs = await writers.gameLogs({ rows: gameLogInputs, tx });
+    logger(`Replaced ${gameLogs} game logs; rebuilding season lines…`);
 
-  const seasonLogs = await writers.seasonLogs({ gameLogs: gameLogInputs });
-  const seasonStats = await upsertSeasonStats({ rows: aggregateSeasonStats({ logs: seasonLogs }) });
-  logger(`Rebuilt ${seasonStats} season lines; replacing advanced game logs…`);
+    const seasonLogs = await writers.seasonLogs({ gameLogs: gameLogInputs, tx });
+    const seasonStats = await upsertSeasonStats({
+      rows: aggregateSeasonStats({ logs: seasonLogs }),
+      tx,
+    });
+    logger(`Rebuilt ${seasonStats} season lines; replacing advanced game logs…`);
 
-  const advancedGameLogs = await writers.advancedGameLogs({
-    rows: advanced.map((stat) => toAdvancedGameLogInput({ stat })),
+    const advancedGameLogs = await writers.advancedGameLogs({ rows: advancedInputs, tx });
+    logger(`Replaced ${advancedGameLogs} advanced game logs.`);
+
+    return { players, gameLogs, seasonStats, advancedGameLogs };
   });
-  logger(`Replaced ${advancedGameLogs} advanced game logs.`);
-
-  return { players, gameLogs, seasonStats, advancedGameLogs };
 };

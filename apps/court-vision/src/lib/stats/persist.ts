@@ -67,6 +67,7 @@ const chunk = <T>({ rows, size }: ChunkProps<T>): T[][] =>
   );
 
 type UpsertInChunksProps<T> = {
+  tx?: Prisma.TransactionClient;
   rows: readonly T[];
   toOperation: (row: T) => Prisma.PrismaPromise<unknown>;
 };
@@ -74,23 +75,28 @@ type UpsertInChunksProps<T> = {
 const upsertInChunks = async <T>({
   rows,
   toOperation,
+  tx,
 }: UpsertInChunksProps<T>): Promise<number> => {
   await sequentially({
     items: chunk({ rows, size: CHUNK_SIZE }),
     run: ({ item: batch }) =>
-      withRetry(() => prisma.$transaction(batch.map(toOperation), TRANSACTION_OPTIONS)),
+      tx
+        ? sequentially({ items: batch, run: ({ item }) => toOperation(item) })
+        : withRetry(() => prisma.$transaction(batch.map(toOperation), TRANSACTION_OPTIONS)),
   });
   return rows.length;
 };
 
-type UpsertPlayersProps = { players: PlayerInput[] };
+type UpsertPlayersProps = { players: PlayerInput[]; tx?: Prisma.TransactionClient };
 
-export async function upsertPlayers({ players }: UpsertPlayersProps): Promise<number> {
+export async function upsertPlayers({ players, tx }: UpsertPlayersProps): Promise<number> {
+  const client = tx ?? prisma;
   return upsertInChunks({
+    tx,
     rows: players,
     toOperation: (player) => {
       const { id, ...rest } = player;
-      return prisma.player.upsert({ where: { id }, create: player, update: rest });
+      return client.player.upsert({ where: { id }, create: player, update: rest });
     },
   });
 }
@@ -119,13 +125,15 @@ export async function markActiveRoster({ playerIds }: MarkActiveRosterProps): Pr
   return prisma.player.count({ where: { isActive: true } });
 }
 
-type UpsertSeasonStatsProps = { rows: SeasonStatsInput[] };
+type UpsertSeasonStatsProps = { rows: SeasonStatsInput[]; tx?: Prisma.TransactionClient };
 
-export async function upsertSeasonStats({ rows }: UpsertSeasonStatsProps): Promise<number> {
+export async function upsertSeasonStats({ rows, tx }: UpsertSeasonStatsProps): Promise<number> {
+  const client = tx ?? prisma;
   return upsertInChunks({
+    tx,
     rows,
     toOperation: (row) =>
-      prisma.playerSeasonStats.upsert({
+      client.playerSeasonStats.upsert({
         where: {
           playerId_season_seasonType: {
             playerId: row.playerId,
@@ -147,26 +155,36 @@ export async function upsertSeasonStats({ rows }: UpsertSeasonStatsProps): Promi
 type InsertProps<T> = { tx: Prisma.TransactionClient; batch: T[] };
 
 type ReplaceRowsProps<T> = {
+  tx?: Prisma.TransactionClient;
   rows: readonly T[];
   remove: (tx: Prisma.TransactionClient) => Promise<unknown>;
   insert: (args: InsertProps<T>) => Promise<unknown>;
 };
 
-const replaceRows = async <T>({ rows, remove, insert }: ReplaceRowsProps<T>): Promise<number> => {
-  if (rows.length === 0) {
-    return 0;
-  }
-  await withRetry(() =>
-    prisma.$transaction(async (tx) => {
-      await remove(tx);
-      await sequentially({
-        items: chunk({ rows, size: CREATE_CHUNK_SIZE }),
-        run: ({ item: batch }) => insert({ tx, batch }),
-      });
-    }, TRANSACTION_OPTIONS),
-  );
+const replaceRows = async <T>({
+  rows,
+  remove,
+  insert,
+  tx,
+}: ReplaceRowsProps<T>): Promise<number> => {
+  if (rows.length === 0) return 0;
+  const run = async (client: Prisma.TransactionClient): Promise<void> => {
+    await remove(client);
+    await sequentially({
+      items: chunk({ rows, size: CREATE_CHUNK_SIZE }),
+      run: ({ item: batch }) => insert({ tx: client, batch }),
+    });
+  };
+  if (tx) await run(tx);
+  else await withStatsTransaction(run);
   return rows.length;
 };
+
+// A complete season includes player and aggregate upserts over the remote pooler.
+export const withStatsTransaction = <T>(
+  run: (tx: Prisma.TransactionClient) => Promise<T>,
+): Promise<T> =>
+  withRetry(() => prisma.$transaction(run, { ...TRANSACTION_OPTIONS, timeout: 300_000 }));
 
 type SeasonScope = { season: string; seasonType: string };
 
@@ -185,10 +203,11 @@ const gameIdsOf = (rows: GameIdsOfProps): string[] => [...new Set(rows.map((row)
 
 // The season sync (`sync:bdl`) and the demo seed own whole seasons: every log
 // in the seasons the rows cover is replaced.
-type ReplaceGameLogsProps = { rows: GameLogInput[] };
+type ReplaceGameLogsProps = { rows: GameLogInput[]; tx?: Prisma.TransactionClient };
 
-export async function replaceGameLogs({ rows }: ReplaceGameLogsProps): Promise<number> {
+export async function replaceGameLogs({ rows, tx }: ReplaceGameLogsProps): Promise<number> {
   return replaceRows({
+    tx,
     rows,
     remove: (tx) => tx.playerGameLog.deleteMany({ where: { OR: seasonScopes(rows) } }),
     insert: ({ tx, batch }) => tx.playerGameLog.createMany({ data: batch }),
@@ -197,12 +216,15 @@ export async function replaceGameLogs({ rows }: ReplaceGameLogsProps): Promise<n
 
 type ReplaceAdvancedGameLogsProps = {
   rows: AdvancedGameLogInput[];
+  tx?: Prisma.TransactionClient;
 };
 
 export async function replaceAdvancedGameLogs({
   rows,
+  tx,
 }: ReplaceAdvancedGameLogsProps): Promise<number> {
   return replaceRows({
+    tx,
     rows,
     remove: (tx) => tx.playerAdvancedGameLog.deleteMany({ where: { OR: seasonScopes(rows) } }),
     insert: ({ tx, batch }) => tx.playerAdvancedGameLog.createMany({ data: batch }),
@@ -212,12 +234,14 @@ export async function replaceAdvancedGameLogs({
 // The nightly sync owns whole games rather than whole seasons: it deletes every
 // log for the games it fetched and re-inserts them, so a re-run (or a stat
 // correction) replaces the night cleanly and leaves the rest of the season alone.
-type ReplaceGameLogsForGamesProps = { rows: GameLogInput[] };
+type ReplaceGameLogsForGamesProps = { rows: GameLogInput[]; tx?: Prisma.TransactionClient };
 
 export async function replaceGameLogsForGames({
   rows,
+  tx,
 }: ReplaceGameLogsForGamesProps): Promise<number> {
   return replaceRows({
+    tx,
     rows,
     remove: (tx) => tx.playerGameLog.deleteMany({ where: { gameId: { in: gameIdsOf(rows) } } }),
     insert: ({ tx, batch }) => tx.playerGameLog.createMany({ data: batch }),
@@ -226,12 +250,15 @@ export async function replaceGameLogsForGames({
 
 type ReplaceAdvancedGameLogsForGamesProps = {
   rows: AdvancedGameLogInput[];
+  tx?: Prisma.TransactionClient;
 };
 
 export async function replaceAdvancedGameLogsForGames({
   rows,
+  tx,
 }: ReplaceAdvancedGameLogsForGamesProps): Promise<number> {
   return replaceRows({
+    tx,
     rows,
     remove: (tx) =>
       tx.playerAdvancedGameLog.deleteMany({ where: { gameId: { in: gameIdsOf(rows) } } }),
@@ -242,6 +269,7 @@ export async function replaceAdvancedGameLogsForGames({
 // Every stored log for these players in these seasons, trimmed to the fields a
 // season line sums, so the nightly sync can rebuild just their season rows.
 type FindSeasonAggregateLogsProps = {
+  tx?: Prisma.TransactionClient;
   playerIds: number[];
   seasons: string[];
   seasonType: string;
@@ -250,12 +278,12 @@ type FindSeasonAggregateLogsProps = {
 export async function findSeasonAggregateLogs(
   args: FindSeasonAggregateLogsProps,
 ): Promise<SeasonAggregateLog[]> {
-  const { playerIds, seasons, seasonType } = args;
+  const { playerIds, seasons, seasonType, tx } = args;
   if (playerIds.length === 0 || seasons.length === 0) {
     return [];
   }
-  return withRetry(() =>
-    prisma.playerGameLog.findMany({
+  const run = () =>
+    (tx ?? prisma).playerGameLog.findMany({
       where: { playerId: { in: playerIds }, season: { in: seasons }, seasonType },
       select: {
         playerId: true,
@@ -277,6 +305,6 @@ export async function findSeasonAggregateLogs(
         tov: true,
         pts: true,
       },
-    }),
-  );
+    });
+  return tx ? run() : withRetry(run);
 }

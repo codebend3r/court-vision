@@ -15,6 +15,7 @@ import {
   replaceGameLogsForGames,
   upsertPlayers,
   upsertSeasonStats,
+  withStatsTransaction,
 } from "@/lib/stats/persist";
 
 // Held as a module-scope const rather than built inside the factory: bun:test
@@ -392,6 +393,55 @@ describe("findSeasonAggregateLogs", () => {
 
     expect(logs).toEqual([]);
     expect(client.playerGameLog.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("atomic stats writes", () => {
+  it("uses one transaction client for players, logs, reads, totals, and advanced logs", async () => {
+    await withStatsTransaction(async (tx) => {
+      await upsertPlayers({ players: [player], tx });
+      await replaceGameLogsForGames({ rows: [baseGameLog], tx });
+      await findSeasonAggregateLogs({
+        playerIds: [201939],
+        seasons: ["2025-26"],
+        seasonType: "Regular Season",
+        tx,
+      });
+      await upsertSeasonStats({ rows: [{ ...baseGameLog, gamesPlayed: 1 }], tx });
+      await replaceAdvancedGameLogsForGames({ rows: [baseAdvancedLog], tx });
+    });
+    expect(client.$transaction).toHaveBeenCalledTimes(1);
+    expect(client.player.upsert).toHaveBeenCalledTimes(1);
+    expect(client.playerGameLog.createMany).toHaveBeenCalledTimes(1);
+    expect(client.playerGameLog.findMany).toHaveBeenCalledTimes(1);
+    expect(client.playerSeasonStats.upsert).toHaveBeenCalledTimes(1);
+    expect(client.playerAdvancedGameLog.createMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets a late failure abort the outer transaction without retrying an inner statement", async () => {
+    client.playerAdvancedGameLog.createMany.mockRejectedValueOnce(
+      new Error("invalid advanced row"),
+    );
+    await expect(
+      withStatsTransaction(async (tx) => {
+        await replaceGameLogsForGames({ rows: [baseGameLog], tx });
+        await replaceAdvancedGameLogsForGames({ rows: [baseAdvancedLog], tx });
+      }),
+    ).rejects.toThrow("invalid advanced row");
+    expect(client.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries the whole transaction after a late connection drop", async () => {
+    client.playerAdvancedGameLog.createMany.mockRejectedValueOnce(
+      new Error("connection terminated"),
+    );
+    await withStatsTransaction(async (tx) => {
+      await replaceGameLogsForGames({ rows: [baseGameLog], tx });
+      await replaceAdvancedGameLogsForGames({ rows: [baseAdvancedLog], tx });
+    });
+    expect(client.$transaction).toHaveBeenCalledTimes(2);
+    expect(client.playerGameLog.deleteMany).toHaveBeenCalledTimes(2);
+    expect(client.playerAdvancedGameLog.createMany).toHaveBeenCalledTimes(2);
   });
 });
 

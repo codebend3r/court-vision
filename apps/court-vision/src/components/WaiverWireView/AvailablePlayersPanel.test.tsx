@@ -7,6 +7,11 @@ import { makeStatLine } from "@/lib/valuation/fixtures";
 import { type FantasyStatLine } from "@/lib/valuation/types";
 import { type WaiverRow } from "@/lib/waiverWire/types";
 
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/waiver-wire",
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
+
 afterEach(cleanup);
 
 type RowProps = { playerId: number; rank: number };

@@ -11,6 +11,11 @@ import { type ValuationPort } from "@/lib/valuation/valuationClient";
 
 // A worker that never answers: the first valuation runs synchronously on
 // mount, so any later request it receives is a second valuation of the pool.
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/waiver-wire",
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
+
 const post = vi.fn<ValuationPort["post"]>();
 const fakePort: ValuationPort = { post, listen: () => () => {}, terminate: () => {} };
 vi.mock("@/lib/valuation/valuationPort", () => ({ createValuationPort: () => fakePort }));
