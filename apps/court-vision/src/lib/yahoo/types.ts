@@ -96,7 +96,9 @@ export type YahooImportResult =
   | YahooFailure;
 
 export type YahooSyncResult =
-  | { status: "ok"; syncedAt: string; unmatched: string[] }
+  // `matchupsMissing`: the league scores by categories but Yahoo's scoreboard
+  // didn't come through, so the stored week was left as it was.
+  | { status: "ok"; syncedAt: string; unmatched: string[]; matchupsMissing: boolean }
   | { status: "throttled" }
   | { status: "not_imported" }
   | { status: "needs_extension" }

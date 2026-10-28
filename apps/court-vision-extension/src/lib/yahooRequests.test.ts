@@ -48,7 +48,8 @@ const statusResponse = (status: number): Response =>
 type Route = Response | (() => Promise<Response>);
 
 // Serves each URL from a route table; an unknown URL is a 404. Every test asks
-// for a URL at most once, so a stored response is never read twice.
+// for a URL at most once, or gets only a status back, so a stored body is
+// never read twice.
 type FetchByUrlProps = { routes: Record<string, Route> };
 
 const fetchByUrl = ({ routes }: FetchByUrlProps) =>
@@ -183,6 +184,39 @@ describe("fetchLeaguePayload", () => {
       type: "league",
       payload: { game: gameBody, snapshot: leagueBody, waiverPages: [page] },
     });
+    expect(requestedUrls({ fetchImpl }).filter((url) => url === SCOREBOARD_URL)).toHaveLength(2);
+  });
+
+  it("asks for the scoreboard once more after Yahoo throttles it", async () => {
+    const answers = [statusResponse(999), jsonResponse(scoreboardBody)];
+    const fetchImpl = fetchByUrl({
+      routes: {
+        [GAME_URL]: jsonResponse(gameBody),
+        [LEAGUE_URL]: jsonResponse(leagueBody),
+        [waiverUrl({ start: 0 })]: jsonResponse(waiverPage({ size: 3 })),
+        [SCOREBOARD_URL]: async () => answers.shift() ?? statusResponse(500),
+      },
+    });
+
+    const result = await fetchLeaguePayload({ leagueId: "106344", fetchImpl });
+
+    expect(result.type === "league" && result.payload.scoreboard).toEqual(scoreboardBody);
+  });
+
+  it("doesn't ask for the scoreboard again after a 4xx", async () => {
+    const fetchImpl = fetchByUrl({
+      routes: {
+        [GAME_URL]: jsonResponse(gameBody),
+        [LEAGUE_URL]: jsonResponse(leagueBody),
+        [waiverUrl({ start: 0 })]: jsonResponse(waiverPage({ size: 3 })),
+        [SCOREBOARD_URL]: statusResponse(403),
+      },
+    });
+
+    const result = await fetchLeaguePayload({ leagueId: "106344", fetchImpl });
+
+    expect(result.type === "league" && "scoreboard" in result.payload).toBe(false);
+    expect(requestedUrls({ fetchImpl }).filter((url) => url === SCOREBOARD_URL)).toHaveLength(1);
   });
 
   it("pages waivers until a short page and never past ten", async () => {

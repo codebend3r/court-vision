@@ -9,6 +9,7 @@ import { YAHOO_STALE_AFTER_MS } from "@/lib/yahoo/constants";
 import { formatSyncedAgo } from "@/lib/yahoo/format";
 import {
   bridgeFailureMessage,
+  matchupsMissingMessage,
   unmatchedSyncMessage,
   yahooFailureMessage,
 } from "@/lib/yahoo/messages";
@@ -37,7 +38,7 @@ type FailedSync = Exclude<ClientSyncResult, { status: "ok" }>;
 // match), or the message for one that did not. A failure keeps the last sync
 // time on show beneath it, except a throttle, whose message is the time.
 type SyncOutcome =
-  | { kind: "synced"; syncedAt: string; unmatched: string[] }
+  | { kind: "synced"; syncedAt: string; unmatched: string[]; matchupsMissing: boolean }
   | { kind: "failed"; message: string; showsSyncedAt: boolean };
 
 // A throw and "not_imported" (a league that is no longer Yahoo's) read as the
@@ -63,6 +64,7 @@ type StatusTextForProps = {
   outcome: SyncOutcome | null;
   syncedAt: string | null;
   syncError: string | null;
+  syncVia: LeagueSyncVia;
   now: Date;
 };
 
@@ -71,6 +73,7 @@ const statusTextFor = ({
   outcome,
   syncedAt,
   syncError,
+  syncVia,
   now,
 }: StatusTextForProps): string => {
   // The status line changes as a sync starts, so its outcome is always news,
@@ -78,7 +81,11 @@ const statusTextFor = ({
   if (isPending) return SYNCING_TEXT;
   if (outcome === null) return syncError ?? formatSyncedAgo({ syncedAt, now });
   if (outcome.kind === "failed") return outcome.message;
-  if (outcome.unmatched.length > 0) return unmatchedSyncMessage({ names: outcome.unmatched });
+  const notices = [
+    ...(outcome.matchupsMissing ? [matchupsMissingMessage({ syncVia })] : []),
+    ...(outcome.unmatched.length > 0 ? [unmatchedSyncMessage({ names: outcome.unmatched })] : []),
+  ];
+  if (notices.length > 0) return notices.join(" ");
   return formatSyncedAgo({ syncedAt: outcome.syncedAt, now });
 };
 
@@ -132,7 +139,12 @@ export function SyncYahooButton({
         return;
       }
       startTransition(() => {
-        setOutcome({ kind: "synced", syncedAt: result.syncedAt, unmatched: result.unmatched });
+        setOutcome({
+          kind: "synced",
+          syncedAt: result.syncedAt,
+          unmatched: result.unmatched,
+          matchupsMissing: result.matchupsMissing,
+        });
         setNow(new Date());
         router.refresh();
       });
@@ -175,7 +187,7 @@ export function SyncYahooButton({
         className={styles.status}
         suppressHydrationWarning
       >
-        {statusTextFor({ isPending, outcome, syncedAt, syncError, now })}
+        {statusTextFor({ isPending, outcome, syncedAt, syncError, syncVia, now })}
       </p>
       {!isPending && outcome !== null && outcome.kind === "failed" && outcome.showsSyncedAt && (
         <p className={styles.syncedAt}>{formatSyncedAgo({ syncedAt, now })}</p>

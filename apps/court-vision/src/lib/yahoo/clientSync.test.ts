@@ -51,6 +51,7 @@ const SYNCED: YahooSyncResult = {
   status: "ok",
   syncedAt: "2026-10-16T12:00:00.000Z",
   unmatched: [],
+  matchupsMissing: false,
 };
 
 beforeEach(() => {

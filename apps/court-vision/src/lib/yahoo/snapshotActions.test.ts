@@ -471,6 +471,7 @@ describe("syncYahooLeagueFromSnapshot", () => {
       status: "ok",
       syncedAt: "2026-10-17T12:00:00.000Z",
       unmatched: [],
+      matchupsMissing: true,
     });
   });
 

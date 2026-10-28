@@ -1,6 +1,7 @@
 import { MAX_LEAGUES } from "@vision/core/league/constants";
 import { type BridgeErrorReason } from "@vision/yahoo-bridge/protocol";
 
+import { type LeagueSyncVia } from "@/lib/leagues/types";
 import { getExtensionId } from "@/lib/yahoo/extensionClient";
 import { type YahooFailure } from "@/lib/yahoo/types";
 
@@ -99,6 +100,17 @@ export const unmatchedSyncMessage = ({ names }: UnmatchedSyncMessageProps): stri
   const count = names.length === 1 ? "1 player" : `${names.length} players`;
   return `${count} couldn't be matched: ${names.join(", ")}. They won't count as rostered, so they may show up as free agents.`;
 };
+
+// Announced after a sync whose rosters landed but whose scoreboard didn't, so
+// the matchup page still shows the week it last read. An extension league is
+// usually running a build from before the scoreboard import, which only a
+// reload of the extension replaces.
+type MatchupsMissingMessageProps = { syncVia: LeagueSyncVia };
+
+export const matchupsMissingMessage = ({ syncVia }: MatchupsMissingMessageProps): string =>
+  syncVia === "extension"
+    ? "Synced, but this week's matchups didn't come through. Reload the Court Vision extension in chrome://extensions, then sync again."
+    : "Synced, but Yahoo's scoreboard didn't load, so this week's matchups weren't updated. Sync again in a minute.";
 
 // Announced after an import that left some of Yahoo's players unmatched.
 type UnmatchedPlayersMessageProps = { names: string[] };
