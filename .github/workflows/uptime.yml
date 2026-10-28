@@ -1,0 +1,90 @@
+name: 💓 Uptime
+
+# Polls production's /api/health every 10 minutes. That route answers 503 when
+# the database is unreachable or its schema lags the code (see its comment),
+# which is the failure a signed-out page never shows. A miss is retried twice,
+# 30 seconds apart, so one cold start or blip never pages anyone. A sustained
+# miss opens an `outage` issue (GitHub emails the repo's watchers), or comments
+# on the one already open; the first healthy run after that closes it. GitHub
+# can delay scheduled runs by several minutes under load, so the worst case
+# from breakage to issue is roughly 20 minutes, well inside the one-hour goal.
+#
+# GitHub disables scheduled workflows after 60 days with no repository
+# activity, so a free external monitor pointed at the same URL is the backstop.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  HEALTH_URL: https://court-vizion.netlify.app/api/health
+  GH_TOKEN: ${{ github.token }}
+  GH_REPO: ${{ github.repository }}
+
+jobs:
+  probe:
+    name: 💓 Probe production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: 🩺 Check /api/health
+        id: health
+        run: |
+          code=000
+          body=""
+          for attempt in 1 2 3; do
+            code="$(curl -sS -o body.json -w '%{http_code}' --max-time 20 "$HEALTH_URL" || echo 000)"
+            body="$(cat body.json 2>/dev/null || true)"
+            if [ "$code" = "200" ]; then break; fi
+            echo "Attempt $attempt: HTTP $code $body"
+            if [ "$attempt" -lt 3 ]; then sleep 30; fi
+          done
+          {
+            echo "code=$code"
+            echo "body<<EOF"
+            echo "$body"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "### 💓 $HEALTH_URL answered HTTP $code" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 🚨 Open or update the outage issue
+        if: steps.health.outputs.code != '200'
+        env:
+          CODE: ${{ steps.health.outputs.code }}
+          BODY: ${{ steps.health.outputs.body }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create outage --color B60205 --description "Production is down" --force
+          fence='```'
+          tick='`'
+          message="Production health check failed with HTTP $CODE.
+
+          $fence
+          $BODY
+          $fence
+
+          Run: $RUN_URL
+
+          The function log on Netlify names the failing query. A ${tick}failing${tick} list of tables usually means a migration has not reached production: ${tick}bun run --cwd apps/court-vision db:deploy${tick}."
+          open="$(gh issue list --label outage --state open --json number --jq '.[0].number')"
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body "$message"
+          else
+            gh issue create --title "🚨 court-vizion.netlify.app is down" --label outage --body "$message"
+          fi
+          exit 1
+
+      - name: ✅ Close the outage issue
+        if: steps.health.outputs.code == '200'
+        run: |
+          gh issue list --label outage --state open --json number --jq '.[].number' |
+            xargs -r -I{} gh issue close {} --comment "Recovered: $HEALTH_URL answered HTTP 200."

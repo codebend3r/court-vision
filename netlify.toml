@@ -13,6 +13,17 @@
 command = "bun run --cwd apps/court-vision build"
 publish = "apps/court-vision/.next"
 
+# Production applies pending Prisma migrations before it builds, so code that
+# reads a new column never goes live ahead of the column. On 2026-10-27 the
+# deploy of #88 shipped `League.syncStartedAt` without its migration and every
+# signed-in page 500'd until `db:deploy` was run by hand. A failed migration
+# fails the build, which leaves the previous deploy serving. Only production
+# migrates: deploy previews and branch deploys share the production database,
+# and an unmerged PR's migration must never reach it. `migrate deploy` uses
+# DIRECT_URL (prisma.config.ts), which Netlify exposes to builds.
+[context.production]
+command = "bun run --cwd apps/court-vision db:deploy && bun run --cwd apps/court-vision build"
+
 # Netlify Image CDN: allow transforming the remote images requested by the
 # next/image loader in apps/court-vision/src/lib/images/netlifyLoader.ts: NBA
 # headshots, and the Yahoo Fantasy league and team logos imported leagues
