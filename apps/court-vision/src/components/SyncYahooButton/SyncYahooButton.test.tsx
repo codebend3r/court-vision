@@ -106,7 +106,12 @@ describe("SyncYahooButton", () => {
     await user.click(button);
     expect(syncYahooLeagueMock).toHaveBeenCalledTimes(1);
 
-    pending.resolve({ status: "ok", syncedAt: new Date().toISOString(), unmatched: [] });
+    pending.resolve({
+      status: "ok",
+      syncedAt: new Date().toISOString(),
+      unmatched: [],
+      matchupsMissing: false,
+    });
 
     await waitFor(() => expect(refreshMock).toHaveBeenCalled());
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Synced just now"));
@@ -128,7 +133,12 @@ describe("SyncYahooButton", () => {
     await user.click(button);
     expect(button).toHaveFocus();
 
-    pending.resolve({ status: "ok", syncedAt: new Date().toISOString(), unmatched: [] });
+    pending.resolve({
+      status: "ok",
+      syncedAt: new Date().toISOString(),
+      unmatched: [],
+      matchupsMissing: false,
+    });
 
     await waitFor(() => expect(refreshMock).toHaveBeenCalled());
     expect(screen.getByRole("button", { name: "Sync with Yahoo" })).toHaveFocus();
@@ -292,6 +302,7 @@ describe("SyncYahooButton", () => {
       status: "ok",
       syncedAt: new Date().toISOString(),
       unmatched: ["Bronny James"],
+      matchupsMissing: false,
     });
     render(
       <SyncYahooButton {...SERVER_LEAGUE} leagueId="league-1" syncedAt={null} syncError={null} />,
@@ -307,6 +318,27 @@ describe("SyncYahooButton", () => {
     expect(refreshMock).toHaveBeenCalled();
   });
 
+  it("says when a sync landed without this week's matchups", async () => {
+    const user = userEvent.setup();
+    syncYahooLeagueMock.mockResolvedValue({
+      status: "ok",
+      syncedAt: new Date().toISOString(),
+      unmatched: [],
+      matchupsMissing: true,
+    });
+    render(
+      <SyncYahooButton {...SERVER_LEAGUE} leagueId="league-1" syncedAt={null} syncError={null} />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Sync with Yahoo" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Synced, but Yahoo's scoreboard didn't load, so this week's matchups weren't updated. Sync again in a minute.",
+      ),
+    );
+  });
+
   describe("an extension league", () => {
     it("syncs through the extension, never the server", async () => {
       const user = userEvent.setup();
@@ -315,6 +347,7 @@ describe("SyncYahooButton", () => {
         status: "ok",
         syncedAt: new Date().toISOString(),
         unmatched: [],
+        matchupsMissing: false,
       });
       render(
         <SyncYahooButton
@@ -338,6 +371,33 @@ describe("SyncYahooButton", () => {
       });
       expect(syncYahooLeagueMock).not.toHaveBeenCalled();
       expect(screen.getByRole("status")).toHaveTextContent("Synced just now");
+    });
+
+    it("asks for an extension reload when a sync landed without this week's matchups", async () => {
+      const user = userEvent.setup();
+      getExtensionIdMock.mockReturnValue(EXTENSION_ID);
+      syncYahooLeagueFromSnapshotMock.mockResolvedValue({
+        status: "ok",
+        syncedAt: new Date().toISOString(),
+        unmatched: [],
+        matchupsMissing: true,
+      });
+      render(
+        <SyncYahooButton
+          {...EXTENSION_LEAGUE}
+          leagueId="league-1"
+          syncedAt={null}
+          syncError={null}
+        />,
+      );
+
+      await user.click(screen.getByRole("button", { name: "Sync with Yahoo" }));
+
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "Synced, but this week's matchups didn't come through. Reload the Court Vision extension in chrome://extensions, then sync again.",
+        ),
+      );
     });
 
     it("says syncing needs the extension", async () => {
@@ -433,7 +493,12 @@ describe("SyncYahooButton", () => {
       expect(syncYahooLeagueMock).toHaveBeenCalledTimes(1);
       expect(syncYahooLeagueMock).toHaveBeenCalledWith({ leagueId: "league-1" });
 
-      pending.resolve({ status: "ok", syncedAt: NOW.toISOString(), unmatched: [] });
+      pending.resolve({
+        status: "ok",
+        syncedAt: NOW.toISOString(),
+        unmatched: [],
+        matchupsMissing: false,
+      });
 
       await waitFor(() => expect(refreshMock).toHaveBeenCalledTimes(1));
       expect(syncYahooLeagueMock).toHaveBeenCalledTimes(1);
@@ -444,6 +509,7 @@ describe("SyncYahooButton", () => {
         status: "ok",
         syncedAt: NOW.toISOString(),
         unmatched: [],
+        matchupsMissing: false,
       });
       render(
         <SyncYahooButton
@@ -515,6 +581,7 @@ describe("SyncYahooButton", () => {
         status: "ok",
         syncedAt: NOW.toISOString(),
         unmatched: [],
+        matchupsMissing: false,
       });
       render(
         <SyncYahooButton
@@ -572,6 +639,7 @@ describe("SyncYahooButton", () => {
         status: "ok",
         syncedAt: NOW.toISOString(),
         unmatched: [],
+        matchupsMissing: false,
       });
       render(
         <StrictMode>
@@ -594,6 +662,7 @@ describe("SyncYahooButton", () => {
         status: "ok",
         syncedAt: NOW.toISOString(),
         unmatched: [],
+        matchupsMissing: false,
       });
       const { rerender } = render(
         <SyncYahooButton
@@ -653,6 +722,7 @@ describe("SyncYahooButton", () => {
         status: "ok",
         syncedAt: NOW.toISOString(),
         unmatched: [],
+        matchupsMissing: false,
       });
       render(
         <SyncYahooButton

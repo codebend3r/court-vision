@@ -309,7 +309,21 @@ describe("syncLoadedLeague", () => {
       status: "ok",
       syncedAt: "2026-10-17T12:00:00.000Z",
       unmatched: ["Waiver Guy"],
+      matchupsMissing: true,
     });
+  });
+
+  it("doesn't flag a sync that read the scoreboard, even an empty one", async () => {
+    const result = await syncLoadedLeague({
+      profileId: PROFILE_ID,
+      leagueId: LEAGUE_ID,
+      loaded: { ...loaded(), league: { ...gameOfCourts(), matchups: [] } },
+      writeMappings: false,
+      syncStartedAt: new Date("2026-10-26T00:00:00Z"),
+      storedExternalKey: "478.l.106344",
+    });
+
+    expect(result).toEqual(expect.objectContaining({ status: "ok", matchupsMissing: false }));
   });
 
   it("records a changed Yahoo key without touching the league's data", async () => {

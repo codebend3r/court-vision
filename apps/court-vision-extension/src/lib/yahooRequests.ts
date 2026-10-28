@@ -23,7 +23,7 @@ type ProbeOutcome = Exclude<RequestOutcome, { type: "body" }>;
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
-// One league read is up to 13 requests, 15 seconds each, but the page stops
+// One league read is up to 14 requests, 15 seconds each, but the page stops
 // waiting for an answer after 60 seconds. The whole read gives up well before
 // that, so the page hears `unavailable` instead of nothing.
 const OVERALL_DEADLINE_MS = 45_000;
@@ -163,6 +163,35 @@ const fetchWaiverPages = async ({
     : { type: "pages", pages: collected };
 };
 
+// Yahoo answers a throttled caller with the non-standard status 999.
+const YAHOO_RATE_LIMIT_STATUS = 999;
+
+type IsTransientProps = { outcome: RequestOutcome };
+
+const isTransient = ({ outcome }: IsTransientProps): boolean =>
+  outcome.type === "failed" ||
+  (outcome.type === "status" &&
+    (outcome.status >= 500 || outcome.status === YAHOO_RATE_LIMIT_STATUS));
+
+// The scoreboard, asked for once more after a transient failure. A league with
+// no scoreboard still imports, so a lost read would otherwise drop the week's
+// matchups without a word.
+type RequestScoreboardProps = {
+  leagueId: string;
+  fetchImpl: FetchImpl;
+  deadline: AbortSignal;
+};
+
+const requestScoreboard = async ({
+  leagueId,
+  fetchImpl,
+  deadline,
+}: RequestScoreboardProps): Promise<RequestOutcome> => {
+  const path = scoreboardPath({ leagueId });
+  const outcome = await requestYahoo({ path, fetchImpl, deadline });
+  return isTransient({ outcome }) ? requestYahoo({ path, fetchImpl, deadline }) : outcome;
+};
+
 // Yahoo answers 400 both for a league the session can't read and for a caller
 // with no session at all. Asking for the signed-in user's games tells them apart,
 // by status alone: 401 means no session; a 5xx (Yahoo's 999 included), a network
@@ -207,7 +236,7 @@ const readLeague = async ({
   // Start the optional scoreboard alongside pagination, under the same deadline.
   const [waivers, scoreboard] = await Promise.all([
     fetchWaiverPages({ leagueId, fetchImpl, deadline }),
-    requestYahoo({ path: scoreboardPath({ leagueId }), fetchImpl, deadline }),
+    requestScoreboard({ leagueId, fetchImpl, deadline }),
   ]);
   if (waivers.type !== "pages") return waivers;
 

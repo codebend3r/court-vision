@@ -370,6 +370,7 @@ export const syncLoadedLeague = async ({
       status: "ok",
       syncedAt: synced.syncedAt?.toISOString() ?? new Date().toISOString(),
       unmatched: unmatchedNames({ resolved }),
+      matchupsMissing: loaded.league.matchups === null,
     };
   } catch {
     // A write that failed after a good load (a timeout, or the guarded
