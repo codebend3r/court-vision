@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
-import { TEST_WEEK } from "@/components/MatchupView/fixture";
+import { TEST_SEASON, TEST_WEEK } from "@/components/MatchupView/fixture";
 import { type MyTeamPickerProps } from "@/components/MyTeamPicker/MyTeamPicker";
 import { type SyncYahooButtonProps } from "@/components/SyncYahooButton/SyncYahooButton";
 import { type LeagueSummary } from "@/lib/leagues/types";
@@ -9,7 +9,7 @@ import { type LeagueSummary } from "@/lib/leagues/types";
 const getProfile = vi.fn();
 const getActiveLeagueRecord = vi.fn();
 const getLeagueTeams = vi.fn();
-const getLeagueWeek = vi.fn();
+const getLeagueSeason = vi.fn();
 const pickerProps = vi.fn();
 const syncProps = vi.fn();
 
@@ -27,7 +27,7 @@ vi.mock("@/lib/leagues/teamQueries", () => ({
   getLeagueTeams: (args: GetLeagueTeamsProps) => getLeagueTeams(args),
 }));
 vi.mock("@/lib/matchups/loader", () => ({
-  getLeagueWeek: (args: unknown) => getLeagueWeek(args),
+  getLeagueSeason: (args: unknown) => getLeagueSeason(args),
 }));
 vi.mock("@/components/MyTeamPicker/MyTeamPicker", () => ({
   MyTeamPicker: (props: MyTeamPickerProps) => {
@@ -82,7 +82,7 @@ beforeEach(() => {
   getProfile.mockReset().mockResolvedValue({ id: "profile-1" });
   getActiveLeagueRecord.mockReset().mockResolvedValue(importedLeague());
   getLeagueTeams.mockReset().mockResolvedValue([]);
-  getLeagueWeek.mockReset().mockResolvedValue(TEST_WEEK);
+  getLeagueSeason.mockReset().mockResolvedValue([TEST_WEEK]);
   pickerProps.mockReset();
   syncProps.mockReset();
 });
@@ -105,7 +105,7 @@ describe("MatchupPage", () => {
 
     expect(screen.getByText(/No league yet/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Import from Yahoo" })).toBeInTheDocument();
-    expect(getLeagueWeek).not.toHaveBeenCalled();
+    expect(getLeagueSeason).not.toHaveBeenCalled();
   });
 
   it("asks a hand-built league to be imported", async () => {
@@ -116,7 +116,7 @@ describe("MatchupPage", () => {
     await renderPage();
 
     expect(screen.getByText(/need a league imported from Yahoo/)).toBeInTheDocument();
-    expect(getLeagueWeek).not.toHaveBeenCalled();
+    expect(getLeagueSeason).not.toHaveBeenCalled();
   });
 
   it("explains that only head-to-head categories leagues have matchups", async () => {
@@ -125,7 +125,7 @@ describe("MatchupPage", () => {
     await renderPage();
 
     expect(screen.getByText(/head-to-head categories leagues/)).toBeInTheDocument();
-    expect(getLeagueWeek).not.toHaveBeenCalled();
+    expect(getLeagueSeason).not.toHaveBeenCalled();
   });
 
   it("asks which team is mine before showing a matchup", async () => {
@@ -135,11 +135,11 @@ describe("MatchupPage", () => {
 
     expect(screen.getByText("my team picker")).toBeInTheDocument();
     expect(pickerProps).toHaveBeenCalledWith(expect.objectContaining({ leagueId: "league-1" }));
-    expect(getLeagueWeek).not.toHaveBeenCalled();
+    expect(getLeagueSeason).not.toHaveBeenCalled();
   });
 
   it("offers a sync when the league has no matchup stored yet", async () => {
-    getLeagueWeek.mockResolvedValue(null);
+    getLeagueSeason.mockResolvedValue([]);
 
     await renderPage();
 
@@ -174,7 +174,7 @@ describe("MatchupPage", () => {
   });
 
   it("asks for a refresh when the scoreboard's timestamp is unknown", async () => {
-    getLeagueWeek.mockResolvedValue({ ...TEST_WEEK, syncedAt: null });
+    getLeagueSeason.mockResolvedValue([{ ...TEST_WEEK, syncedAt: null }]);
     await renderPage();
     expect(screen.getByText(/Scoreboard updated: unknown/)).toBeInTheDocument();
   });
@@ -192,10 +192,54 @@ describe("MatchupPage", () => {
   });
 
   it("says so when my team has no opponent this week", async () => {
-    getLeagueWeek.mockResolvedValue({ ...TEST_WEEK, pairings: [{ teamAId: "c", teamBId: "d" }] });
+    getLeagueSeason.mockResolvedValue([
+      { ...TEST_WEEK, pairings: [{ teamAId: "c", teamBId: "d" }] },
+    ]);
 
     await renderPage();
 
-    expect(screen.getByText(/no opponent this week/)).toBeInTheDocument();
+    expect(screen.getByText(/no opponent in week 2/)).toBeInTheDocument();
+  });
+
+  it("shows the latest week by default and offers every stored week", async () => {
+    getLeagueSeason.mockResolvedValue(TEST_SEASON);
+
+    await renderPage();
+
+    expect(screen.getByText(/Week 3, Nov 3 to Nov 9/)).toBeInTheDocument();
+    const weeks = screen.getByRole("navigation", { name: "Weeks" });
+    expect(weeks).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Week 3/ })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: /Week 1/ })).toHaveAttribute("href", "/matchup?week=1");
+  });
+
+  it("shows a past week the URL names, and keeps it across views", async () => {
+    getLeagueSeason.mockResolvedValue(TEST_SEASON);
+
+    await renderPage({ raw: { week: "1" } });
+
+    expect(screen.getByText(/Week 1, Oct 20 to Oct 26/)).toBeInTheDocument();
+    expect(screen.getByLabelText("2 wins, 0 losses, 0 ties")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /League totals/ })).toHaveAttribute(
+      "href",
+      "/matchup?view=league&week=1",
+    );
+  });
+
+  it("hides the week picker with a single stored week", async () => {
+    await renderPage();
+    expect(screen.queryByRole("navigation", { name: "Weeks" })).toBeNull();
+  });
+
+  it("shows the whole season on the season view", async () => {
+    getLeagueSeason.mockResolvedValue(TEST_SEASON);
+
+    await renderPage({ raw: { view: "season" } });
+
+    expect(screen.getByText(/Game of Courts · 3 weeks/)).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Team a season record" })).toBeInTheDocument();
+    expect(screen.getByLabelText("1 won, 1 lost, 0 tied")).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Weeks" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "This week's matchup" })).toBeNull();
   });
 });

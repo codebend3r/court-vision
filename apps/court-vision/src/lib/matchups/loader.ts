@@ -112,23 +112,47 @@ export const toLeagueWeek = ({
   };
 };
 
-/** The active league's current week, read from its last sync. */
-type GetLeagueWeekProps = {
+/**
+ * Every stored week, oldest first, each built as `toLeagueWeek` builds one.
+ * A week that builds to nothing (every team gone) is left out.
+ */
+type ToLeagueSeasonProps = ToLeagueWeekProps;
+
+export const toLeagueSeason = ({
+  statCategories,
+  matchups,
+  teams,
+  myTeamId,
+}: ToLeagueSeasonProps): LeagueWeek[] => {
+  const weeks = [...new Set(matchups.map(({ week }) => week))].toSorted((a, b) => a - b);
+  return weeks.flatMap((weekNumber) => {
+    const week = toLeagueWeek({
+      statCategories,
+      matchups: matchups.filter((matchup) => matchup.week === weekNumber),
+      teams,
+      myTeamId,
+    });
+    return week === null ? [] : [week];
+  });
+};
+
+/** The active league's every synced week, oldest first. Empty before the first scoreboard. */
+type GetLeagueSeasonProps = {
   league: Pick<League, "id" | "myTeamId" | "statCategories">;
 };
 
-export const getLeagueWeek = async ({ league }: GetLeagueWeekProps): Promise<LeagueWeek | null> => {
+export const getLeagueSeason = async ({ league }: GetLeagueSeasonProps): Promise<LeagueWeek[]> => {
   const [matchups, teams] = await Promise.all([
     prisma.leagueMatchup.findMany({
       where: { leagueId: league.id },
-      orderBy: { id: "asc" },
+      orderBy: [{ week: "asc" }, { id: "asc" }],
     }),
     prisma.leagueTeam.findMany({
       where: { leagueId: league.id },
       select: { id: true, name: true, slug: true, logoUrl: true, managerName: true },
     }),
   ]);
-  return toLeagueWeek({
+  return toLeagueSeason({
     statCategories: league.statCategories,
     matchups,
     teams,

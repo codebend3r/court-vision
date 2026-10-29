@@ -120,7 +120,7 @@ const writeWaivers = async ({
   await tx.leagueWaiverPlayer.createMany({ data, skipDuplicates: true });
 };
 
-// The current week's matchups, each side pointed at the team row its Yahoo key
+// The scoreboard's matchups, each side pointed at the team row its Yahoo key
 // names. A matchup naming a team the league doesn't have is skipped.
 type WriteMatchupsProps = {
   tx: Prisma.TransactionClient;
@@ -328,10 +328,14 @@ export const syncImportedLeague = async ({
   await tx.leagueWaiverPlayer.deleteMany({ where: { leagueId, profileId } });
   await writeWaivers({ tx, profileId, resolved, waiverRefs, leagueId });
 
-  // An unavailable scoreboard preserves its own timestamp; a successful empty
-  // read clears last week's rows just like a successful populated read.
-  if (league.matchups !== null) {
-    await tx.leagueMatchup.deleteMany({ where: { leagueId, profileId } });
+  // Only the weeks this scoreboard carries are replaced, so every earlier week
+  // stays as the season's history. An unavailable scoreboard (null) or an
+  // empty one leaves every stored week, and its timestamp, alone.
+  const syncedWeeks = [...new Set((league.matchups ?? []).map(({ week }) => week))];
+  if (syncedWeeks.length) {
+    await tx.leagueMatchup.deleteMany({
+      where: { leagueId, profileId, week: { in: syncedWeeks } },
+    });
     await writeMatchups({ tx, profileId, leagueId, league, teams });
   }
 

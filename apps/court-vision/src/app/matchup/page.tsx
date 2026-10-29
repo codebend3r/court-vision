@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { type ReactNode } from "react";
 
+import { SeasonPanel } from "@/components/MatchupView/SeasonPanel";
 import { LeagueTotalsTable } from "@/components/MatchupView/LeagueTotalsTable";
 import { MatchupPanel } from "@/components/MatchupView/MatchupPanel";
 import { StandingsSummary } from "@/components/MatchupView/StandingsSummary";
@@ -9,13 +10,15 @@ import { SyncYahooButton } from "@/components/SyncYahooButton/SyncYahooButton";
 import { getProfile } from "@/lib/auth/session";
 import { getActiveLeagueRecord, toLeagueSummary } from "@/lib/leagues/queries";
 import { getLeagueTeams } from "@/lib/leagues/teamQueries";
-import { getLeagueWeek } from "@/lib/matchups/loader";
+import { formatWeekRange } from "@/lib/matchups/format";
+import { getLeagueSeason } from "@/lib/matchups/loader";
 import {
   loadMatchupSearchParams,
   MATCHUP_VIEW_LABELS,
   MATCHUP_VIEWS,
   matchupHref,
 } from "@/lib/matchups/searchParams";
+import { buildSeasonSummary, findMatchup, pickWeek } from "@/lib/matchups/season";
 import { buildStandings } from "@/lib/matchups/standings";
 import { type LeagueWeek } from "@/lib/matchups/types";
 import { type RawSearchParams } from "@/lib/players/searchParams";
@@ -50,17 +53,8 @@ function MatchupGate({ message, children }: MatchupGateProps) {
 type WeekEyebrowProps = { week: LeagueWeek };
 
 const weekEyebrow = ({ week }: WeekEyebrowProps): string => {
-  const format = (value: string | null): string | null => {
-    const date = value === null ? null : new Date(`${value}T12:00:00Z`);
-    return date === null || Number.isNaN(date.getTime())
-      ? null
-      : date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
-  };
-  const start = format(week.weekStart);
-  const end = format(week.weekEnd);
-  return start !== null && end !== null
-    ? `Week ${week.week}, ${start} to ${end}`
-    : `Week ${week.week}`;
+  const range = formatWeekRange(week);
+  return range !== null ? `Week ${week.week}, ${range}` : `Week ${week.week}`;
 };
 
 type MatchupPageProps = {
@@ -103,10 +97,11 @@ export default async function MatchupPage({ searchParams }: MatchupPageProps) {
     );
   }
 
-  const [{ view }, week] = await Promise.all([
+  const [{ view, week: requestedWeek }, season] = await Promise.all([
     searchParams.then((raw) => loadMatchupSearchParams(raw)),
-    getLeagueWeek({ league: record }),
+    getLeagueSeason({ league: record }),
   ]);
+  const week = pickWeek({ season, week: requestedWeek }) ?? null;
 
   const syncButton = (
     <SyncYahooButton
@@ -136,23 +131,22 @@ export default async function MatchupPage({ searchParams }: MatchupPageProps) {
     );
   }
 
-  const mine = week.teams.find((team) => team.isMine);
-  const pairing = week.pairings.find(
-    ({ teamAId, teamBId }) => teamAId === league.myTeamId || teamBId === league.myTeamId,
-  );
-  const opponentId =
-    pairing === undefined
-      ? undefined
-      : pairing.teamAId === league.myTeamId
-        ? pairing.teamBId
-        : pairing.teamAId;
-  const opponent = week.teams.find((team) => team.teamId === opponentId);
+  const myTeamId = league.myTeamId;
+  const { mine, opponent } = findMatchup({ week, myTeamId });
+  const opponentId = opponent?.teamId;
+  // The latest week needs no week in its links, so they stay the plain URL.
+  const latest = season.at(-1)?.week;
+  const linkedWeek = week.week === latest ? null : week.week;
 
   return (
     <main className={styles.page}>
       <PageHeader
         {...MATCHUP_PAGE_HEADER}
-        eyebrow={`${league.name} · ${weekEyebrow({ week })}`}
+        eyebrow={
+          view === "season"
+            ? `${league.name} · ${season.length === 1 ? "1 week" : `${season.length} weeks`}`
+            : `${league.name} · ${weekEyebrow({ week })}`
+        }
         actions={
           <>
             {syncButton}
@@ -188,16 +182,27 @@ export default async function MatchupPage({ searchParams }: MatchupPageProps) {
           key: entry,
           label: MATCHUP_VIEW_LABELS[entry],
           isActive: entry === view,
-          href: matchupHref({ view: entry }),
+          href: matchupHref({ view: entry, week: linkedWeek }),
         }))}
       />
+      {view !== "season" && season.length > 1 && (
+        <StatViewTabs
+          label="Weeks"
+          entries={season.map((entry) => ({
+            key: String(entry.week),
+            label: `Week ${entry.week}`,
+            isActive: entry.week === week.week,
+            href: matchupHref({ view, week: entry.week === latest ? null : entry.week }),
+          }))}
+        />
+      )}
       {view === "matchup" &&
         (mine !== undefined && opponent !== undefined ? (
           <MatchupPanel week={week} mine={mine} opponent={opponent} />
         ) : (
           <section className={styles.gate} aria-label="Matchup status">
             <p className={styles.message}>
-              Your team has no opponent this week. See the league totals instead.
+              Your team has no opponent in week {week.week}. See the league totals instead.
             </p>
           </section>
         ))}
@@ -216,6 +221,12 @@ export default async function MatchupPage({ searchParams }: MatchupPageProps) {
           )}
           <LeagueTotalsTable week={week} opponentId={opponentId} />
         </>
+      )}
+      {view === "season" && (
+        <SeasonPanel
+          teamName={mine?.name ?? "Your team"}
+          summary={buildSeasonSummary({ season, myTeamId })}
+        />
       )}
       <p className={styles.credit}>League data from Yahoo Fantasy</p>
     </main>
