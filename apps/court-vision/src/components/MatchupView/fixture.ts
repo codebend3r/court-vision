@@ -41,3 +41,22 @@ export const TEST_WEEK: LeagueWeek = {
     { teamAId: "c", teamBId: "d" },
   ],
 };
+
+// Three weeks of the same league. Week 1 is final and mine (a) beat b in both
+// categories; week 2 is final and a lost both; week 3 is under way.
+export const TEST_SEASON: LeagueWeek[] = [
+  {
+    ...TEST_WEEK,
+    week: 1,
+    weekStart: "2026-10-20",
+    weekEnd: "2026-10-26",
+    status: "postevent",
+    teams: TEST_WEEK.teams.map((team) =>
+      team.teamId === "a"
+        ? week({ teamId: "a", isMine: true, steals: "40", turnovers: "30" })
+        : team,
+    ),
+  },
+  { ...TEST_WEEK, status: "postevent" },
+  { ...TEST_WEEK, week: 3, weekStart: "2026-11-03", weekEnd: "2026-11-09" },
+];

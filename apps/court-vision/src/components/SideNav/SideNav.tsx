@@ -18,6 +18,8 @@ const NAV_ICON_PATHS = {
   // Two bars facing each other over a divide: this week's head-to-head.
   matchup: "M9 14 H28 M9 24 H36 M9 34 H22 M39 12 V36",
   waiverWire: "M8 16 H38 M30 8 L38 16 L30 24 M40 32 H10 M18 24 L10 32 L18 40",
+  // A crosshair: the weak spot, and the player who covers it.
+  advisor: "M24 8 a16 16 0 1 1 0 32 a16 16 0 1 1 0-32 M24 4 V14 M24 34 V44 M4 24 H14 M34 24 H44",
   leagues: "M15 7 h18 v11 a9 9 0 0 1-18 0 Z M24 27 v7 M17 41 h14",
   starred: "M24 6 L29.5 18 L42 19.5 L33 28 L35.5 41 L24 34.5 L12.5 41 L15 28 L6 19.5 L18.5 18 Z",
   settings:
@@ -55,6 +57,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/roster", label: "Roster", icon: "roster" },
       { href: "/matchup", label: "Matchup", icon: "matchup" },
       { href: "/waiver-wire", label: "Waiver Wire", icon: "waiverWire" },
+      { href: "/advisor", label: "Roster Advisor", icon: "advisor" },
       { href: "/leagues", label: "Leagues", icon: "leagues" },
       { href: "/watchlist", label: "Starred", icon: "starred" },
     ],

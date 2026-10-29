@@ -6,5 +6,6 @@ import type { PageHeaderProps } from "@vision/ui/components/PageHeader/PageHeade
 export const MATCHUP_PAGE_HEADER = {
   eyebrow: "My league",
   title: "Matchup",
-  description: "This week's head-to-head, and where your totals stand against the whole league.",
+  description:
+    "Each week's head-to-head, where your totals stand against the whole league, and how the season has gone.",
 } satisfies PageHeaderProps;

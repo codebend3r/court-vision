@@ -103,6 +103,7 @@
 // written for column headers: undo the sticky, muted, uppercase look.
 @mixin row-header {
   position: static;
+  border-top: 1px solid var(--color-border);
   border-bottom: 0;
   background: transparent;
   color: var(--color-text);
@@ -114,7 +115,8 @@
   white-space: nowrap;
 }
 
-.category {
+// Qualified so it out-ranks data-table's own `th` rule.
+.table th.category {
   @include row-header;
   font-weight: var(--font-weight-semibold);
 }
@@ -151,7 +153,7 @@
 }
 
 // League totals: a team's name cell is a row header, not a column of its own.
-.teamCell {
+.table th.teamCell {
   @include row-header;
 }
 
@@ -276,4 +278,31 @@
 
 .standing[data-extreme="worst"] .standingBadge {
   color: var(--color-loss);
+}
+
+// The season's record beside its title.
+.seasonHead {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+// A week's outcome in words, tinted like a category result.
+.table tr[data-outcome="won"] .result {
+  color: var(--color-win);
+  font-weight: var(--font-weight-bold);
+}
+
+.table tr[data-outcome="lost"] .result {
+  color: var(--color-loss);
+  font-weight: var(--font-weight-bold);
+}
+
+.table tr[data-outcome="in_progress"] .result,
+.table tr[data-outcome="upcoming"] .result,
+.table tr[data-outcome="bye"] .result {
+  color: var(--color-text-muted);
 }

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "bun:test";
 
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 
-const { toLeagueWeek } = await import("@/lib/matchups/loader");
+const { toLeagueSeason, toLeagueWeek } = await import("@/lib/matchups/loader");
 
 const CATEGORIES = [
   { statId: 5, displayName: "FG%", higherIsBetter: true },
@@ -106,5 +106,48 @@ describe("toLeagueWeek", () => {
 
     expect(week?.teams).toHaveLength(1);
     expect(week?.teams[0]?.display).toEqual({});
+  });
+});
+
+describe("toLeagueSeason", () => {
+  it("builds one week per stored week, oldest first", () => {
+    const season = toLeagueSeason({
+      statCategories: CATEGORIES,
+      matchups: [
+        { ...MATCHUP, week: 3 },
+        { ...MATCHUP, week: 1, status: "postevent" },
+        { ...MATCHUP, week: 2, status: "postevent" },
+      ],
+      teams: TEAMS,
+      myTeamId: "t1",
+    });
+    expect(season.map(({ week, status }) => [week, status])).toEqual([
+      [1, "postevent"],
+      [2, "postevent"],
+      [3, "midevent"],
+    ]);
+  });
+
+  it("keeps each week's own matchups apart", () => {
+    const season = toLeagueSeason({
+      statCategories: CATEGORIES,
+      matchups: [
+        { ...MATCHUP, week: 1, statsA: { "5": ".400" } },
+        { ...MATCHUP, week: 2, statsA: { "5": ".500" } },
+      ],
+      teams: TEAMS,
+      myTeamId: "t1",
+    });
+    expect(season.map((week) => week.teams[0]?.values["5"])).toEqual([0.4, 0.5]);
+    expect(season.every((week) => week.teams.length === 2)).toBe(true);
+  });
+
+  it("is empty with no matchups or no categories", () => {
+    expect(
+      toLeagueSeason({ statCategories: CATEGORIES, matchups: [], teams: TEAMS, myTeamId: "t1" }),
+    ).toEqual([]);
+    expect(
+      toLeagueSeason({ statCategories: null, matchups: [MATCHUP], teams: TEAMS, myTeamId: "t1" }),
+    ).toEqual([]);
   });
 });

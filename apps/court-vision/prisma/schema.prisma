@@ -181,8 +181,9 @@ model LeagueTeamSlot {
   @@index([profileId])
 }
 
-// One head-to-head matchup of an imported league's current week, replaced on
-// every sync. statsA / statsB are the two teams' week totals as the provider
+// One head-to-head matchup of one week of an imported league. A sync replaces
+// only the weeks its scoreboard carries, so earlier weeks stay as the season's
+// history. statsA / statsB are the two teams' week totals as the provider
 // wrote them, keyed by statId: { "12": "412", "5": ".481" }. A bye retains
 // team A's totals with no team B. syncedAt is independent of roster syncs.
 model LeagueMatchup {
@@ -204,6 +205,7 @@ model LeagueMatchup {
   syncedAt  DateTime? // Null for rows written before scoreboard freshness was tracked.
 
   @@index([leagueId])
+  @@index([leagueId, week])
   @@index([profileId])
 }
 

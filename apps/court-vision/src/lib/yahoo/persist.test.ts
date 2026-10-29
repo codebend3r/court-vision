@@ -670,11 +670,13 @@ describe("syncImportedLeague matchups", () => {
   const syncWith = ({ league }: SyncWithProps) =>
     sync({ profileId: PROFILE_ID, leagueId: LEAGUE_ID, league, resolved, waiverRefs: [] });
 
-  it("replaces the matchups when Yahoo sent a scoreboard", async () => {
-    await syncWith({ league: importedLeagueWithMatchups() });
+  it("replaces only the synced week's matchups when Yahoo sent a scoreboard", async () => {
+    const league = importedLeagueWithMatchups();
+    const weeks = [...new Set((league.matchups ?? []).map(({ week }) => week))];
+    await syncWith({ league });
 
     expect(matchupDeleteMany).toHaveBeenCalledWith({
-      where: { leagueId: LEAGUE_ID, profileId: PROFILE_ID },
+      where: { leagueId: LEAGUE_ID, profileId: PROFILE_ID, week: { in: weeks } },
     });
     expect(matchupCreateMany.mock.calls[0]?.[0]?.data).toHaveLength(6);
     expect(matchupDeleteMany.mock.invocationCallOrder[0] ?? Infinity).toBeLessThan(
@@ -682,12 +684,20 @@ describe("syncImportedLeague matchups", () => {
     );
   });
 
-  it("clears old matchups when Yahoo successfully reports an empty week", async () => {
+  it("keeps every stored week when Yahoo successfully reports an empty week", async () => {
     await syncWith({ league: { ...importedLeague(), matchups: [] } });
-    expect(matchupDeleteMany).toHaveBeenCalledWith({
-      where: { leagueId: LEAGUE_ID, profileId: PROFILE_ID },
-    });
+    expect(matchupDeleteMany).not.toHaveBeenCalled();
     expect(matchupCreateMany).not.toHaveBeenCalled();
+  });
+
+  it("never deletes a week the scoreboard does not carry", async () => {
+    const league = importedLeagueWithMatchups();
+    const matchups = (league.matchups ?? []).map((matchup) => ({ ...matchup, week: 4 }));
+    await syncWith({ league: { ...league, matchups } });
+    expect(matchupDeleteMany).toHaveBeenCalledTimes(1);
+    expect(matchupDeleteMany).toHaveBeenCalledWith({
+      where: { leagueId: LEAGUE_ID, profileId: PROFILE_ID, week: { in: [4] } },
+    });
   });
 
   it("stores bye totals with no opponent and a scoreboard-specific timestamp", async () => {

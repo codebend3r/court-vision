@@ -1,0 +1,41 @@
+@use "@/styles/mixins" as *;
+
+// The keycap tab row over the one rendered panel.
+.tabs {
+  display: grid;
+  gap: var(--space-3);
+}
+
+// One row of keycaps, each as wide as its label; two to a row on a narrow
+// screen. The bottom padding keeps the lifted key's extrusion clear of the panel.
+.tablist {
+  display: grid;
+  grid-auto-columns: max-content;
+  grid-auto-flow: column;
+  justify-content: start;
+  gap: var(--space-2);
+  padding: 0 0 var(--space-1);
+
+  @media (width <= 40rem) {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tab {
+  @include keycap;
+
+  &[aria-selected="true"] {
+    @include keycap-engaged;
+  }
+}
+
+.tabpanel {
+  display: grid;
+  gap: var(--space-3);
+
+  &:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus-ring);
+    outline-offset: var(--space-1);
+  }
+}
