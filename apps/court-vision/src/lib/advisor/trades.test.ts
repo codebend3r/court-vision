@@ -72,4 +72,30 @@ describe("buildTradeOffers", () => {
   it("has nothing to offer from an empty roster", () => {
     expect(buildTradeOffers({ target: TARGET, myRoster: [] })).toEqual([]);
   });
+
+  it("always reads in order of value given, even when the bench can't overpay", () => {
+    // Every package is worth less than the target, the screen's own case.
+    const offers = buildTradeOffers({
+      target: player({ playerId: 100, value: 4, owner: OTHER }),
+      myRoster: [
+        player({ playerId: 1, value: 2.2 }),
+        player({ playerId: 2, value: -1.1 }),
+        player({ playerId: 3, value: -3.9 }),
+      ],
+    });
+    const balances = offers.map(({ balance }) => balance);
+    expect(balances).toEqual(balances.toSorted((a, b) => a - b));
+    expect(new Set(balances).size).toBe(3);
+    // A margin of 1: nothing lands within it of even, and nothing overpays.
+    expect(offers.map(({ tier, reachesTier }) => [tier, reachesTier])).toEqual([
+      ["favors_me", true],
+      ["fair", false],
+      ["favors_them", false],
+    ]);
+  });
+
+  it("marks every offer that lands on its own side as reaching its tier", () => {
+    const offers = buildTradeOffers({ target: TARGET, myRoster: ROSTER });
+    expect(offers.every(({ reachesTier }) => reachesTier)).toBe(true);
+  });
 });

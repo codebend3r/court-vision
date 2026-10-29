@@ -6,6 +6,7 @@ import { useQueryStates } from "nuqs";
 
 import { useValuation } from "@/components/FantasyValueView/useValuation";
 import { buildAdvice } from "@/lib/advisor/advice";
+import { formatScore } from "@/lib/advisor/format";
 import { isOnAnotherTeam } from "@/lib/advisor/owner";
 import { advisorParsers } from "@/lib/advisor/searchParams";
 import {
@@ -26,7 +27,7 @@ import {
 import { type FantasyStatLine } from "@/lib/valuation/types";
 import { unmatchedNotice } from "@/lib/waiverWire/format";
 import { scoreKeysFor } from "@/lib/waiverWire/model";
-import { formatOrdinal, formatSigned } from "@vision/core/util/format";
+import { formatOrdinal } from "@vision/core/util/format";
 import { type FantasyMethodKey } from "@vision/core/valuation/types";
 import { buildCategoryBreakdown } from "@vision/sport-basketball/engine";
 import {
@@ -62,12 +63,15 @@ const TIER_HINTS: Record<TradeTier, string> = {
   favors_them: "An overpay: you give more than you get, to make sure it happens.",
 };
 
+// When my roster can't put an offer where its tier belongs.
+const UNREACHED_HINTS: Record<TradeTier, string> = {
+  favors_me:
+    "Nothing on your roster is worth less than what you get, so this is the cheapest offer.",
+  fair: "Nothing on your roster lands near even, so this is the closest offer.",
+  favors_them: "Nothing on your roster adds up to an overpay, so this is your richest offer.",
+};
+
 const ONE_PLACE = 1;
-
-type FormatScoreProps = { value: number };
-
-const formatScore = ({ value }: FormatScoreProps): string =>
-  formatSigned({ value, digits: ONE_PLACE });
 
 type OwnerTextProps = { owner: AdvisorOwner };
 
@@ -109,7 +113,9 @@ function TradeCard({ offer, label, ownerName }: TradeCardProps) {
   return (
     <li className={styles.trade} data-tier={offer.tier}>
       <h4 className={styles.tradeTitle}>{TIER_TITLES[offer.tier]}</h4>
-      <p className={styles.hint}>{TIER_HINTS[offer.tier]}</p>
+      <p className={styles.hint}>
+        {offer.reachesTier ? TIER_HINTS[offer.tier] : UNREACHED_HINTS[offer.tier]}
+      </p>
       <dl className={styles.tradeTerms}>
         <dt>You give</dt>
         <dd>

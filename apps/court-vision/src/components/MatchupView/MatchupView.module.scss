@@ -103,6 +103,7 @@
 // written for column headers: undo the sticky, muted, uppercase look.
 @mixin row-header {
   position: static;
+  border-top: 1px solid var(--color-border);
   border-bottom: 0;
   background: transparent;
   color: var(--color-text);
@@ -114,7 +115,8 @@
   white-space: nowrap;
 }
 
-.category {
+// Qualified so it out-ranks data-table's own `th` rule.
+.table th.category {
   @include row-header;
   font-weight: var(--font-weight-semibold);
 }
@@ -151,7 +153,7 @@
 }
 
 // League totals: a team's name cell is a row header, not a column of its own.
-.teamCell {
+.table th.teamCell {
   @include row-header;
 }
 

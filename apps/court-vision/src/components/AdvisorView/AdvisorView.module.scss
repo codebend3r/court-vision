@@ -208,8 +208,10 @@
 }
 
 // A player's name cell is a row header: undo data-table's column-header look.
-.rowHeader {
+// Qualified so it out-ranks data-table's own `th` rule.
+.table th.rowHeader {
   position: static;
+  border-top: 1px solid var(--color-border);
   border-bottom: 0;
   background: transparent;
   color: var(--color-text);

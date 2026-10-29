@@ -53,7 +53,10 @@ export const marginFor = ({ target }: MarginForProps): number =>
  * 1.5 margins more). A package that gives away weak-category production, or
  * more players, costs extra, so the offers keep what the trade is for, and a
  * lopsided offer on the wrong side of even costs most of all. The three are
- * chosen together, from each tier's cheapest few, at the lowest total cost.
+ * chosen together, from each tier's cheapest few, at the lowest total cost,
+ * and always read in order of value given. An offer that cannot reach its
+ * side of even (a bench too thin to overpay), or a fair one more than a
+ * margin off even, says so in `reachesTier`.
  * Fewer than three only when my roster has fewer than three packages.
  */
 type BuildTradeOffersProps = {
@@ -73,6 +76,11 @@ export const buildTradeOffers = ({ target, myRoster }: BuildTradeOffersProps): T
     fair: () => true,
     favors_them: (balance) => balance > 0,
   };
+  // Fair reaches its tier within one margin of even; the others on their side.
+  type ReachesProps = { tier: TradeTier; balance: number };
+
+  const reaches = ({ tier, balance }: ReachesProps): boolean =>
+    tier === "fair" ? Math.abs(balance) <= margin : onSide[tier](balance);
   type CostOfProps = { pkg: Package; tier: TradeTier };
 
   const costOf = ({ pkg, tier }: CostOfProps): number => {
@@ -107,7 +115,24 @@ export const buildTradeOffers = ({ target, myRoster }: BuildTradeOffersProps): T
   );
   const totalOf = (combo: readonly Choice[]): number =>
     combo.reduce((sum, choice) => sum + choice.cost, 0);
-  const best = combos.toSorted((a, b) => b.length - a.length || totalOf(a) - totalOf(b))[0] ?? [];
+  // The tiers must read in order: what I give rises from favors-me to fair to
+  // favors-them. A combination that breaks the order is used only when none keeps it.
+  const balanceOf = (combo: readonly Choice[], tier: TradeTier): number | undefined => {
+    const choice = combo.find((entry) => entry.tier === tier);
+    return choice === undefined ? undefined : choice.pkg.value - target.value;
+  };
+  const isOrdered = (combo: readonly Choice[]): boolean => {
+    const order = SHOWN_ORDER.flatMap((tier) => {
+      const balance = balanceOf(combo, tier);
+      return balance === undefined ? [] : [balance];
+    });
+    return order.every((balance, index) => index === 0 || balance > (order[index - 1] ?? 0));
+  };
+  const ordered = combos.filter(isOrdered);
+  const best =
+    (ordered.length ? ordered : combos).toSorted(
+      (a, b) => b.length - a.length || totalOf(a) - totalOf(b),
+    )[0] ?? [];
 
   return SHOWN_ORDER.flatMap((tier) => {
     const entry = best.find((candidate) => candidate.tier === tier);
@@ -119,6 +144,7 @@ export const buildTradeOffers = ({ target, myRoster }: BuildTradeOffersProps): T
             give: entry.pkg.give,
             get: target,
             balance: entry.pkg.value - target.value,
+            reachesTier: reaches({ tier, balance: entry.pkg.value - target.value }),
             categoryChange: target.categoryScore - entry.pkg.categoryScore,
           },
         ];

@@ -54,6 +54,10 @@ export type TradeOffer = {
   get: AdvisorPlayer;
   // What I give minus what I get, in value: under 0 favours me.
   balance: number;
+  // False when my roster cannot put this tier where it belongs: no package
+  // worth less (favors me) or more (favors them) than the target, or none
+  // within a margin of even (fair).
+  reachesTier: boolean;
   // What the trade does to my roster's score in the weak category.
   categoryChange: number;
 };
