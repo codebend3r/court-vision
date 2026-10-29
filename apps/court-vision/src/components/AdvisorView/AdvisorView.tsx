@@ -4,13 +4,13 @@ import { type ChangeEvent, useId, useMemo } from "react";
 import { useQueryStates } from "nuqs";
 
 import { FreeAgentsPanel } from "@/components/AdvisorView/FreeAgentsPanel";
-import { PlayerName } from "@/components/AdvisorView/PlayerName";
+import { NeedsPanel } from "@/components/AdvisorView/NeedsPanel";
+import { TargetsPanel } from "@/components/AdvisorView/TargetsPanel";
 import { TradesPanel } from "@/components/AdvisorView/TradesPanel";
 import { TrendingPanel } from "@/components/AdvisorView/TrendingPanel";
 import { useValuation } from "@/components/FantasyValueView/useValuation";
 import { KeycapTabs } from "@/components/KeycapTabs/KeycapTabs";
 import { buildAdvice } from "@/lib/advisor/advice";
-import { formatScore, ownerText } from "@/lib/advisor/format";
 import {
   ADVISOR_TAB_LABELS,
   ADVISOR_TABS,
@@ -18,7 +18,7 @@ import {
   advisorParsers,
 } from "@/lib/advisor/searchParams";
 import { buildTrending, freePlayerIds, type TrendLines } from "@/lib/advisor/trending";
-import { type Advice, type AdvisorLeagueData } from "@/lib/advisor/types";
+import { type AdvisorFocus, type AdvisorLeagueData } from "@/lib/advisor/types";
 import {
   GAME_RANGE_LABELS,
   gamesForRange,
@@ -55,69 +55,11 @@ export type AdvisorViewProps = {
 
 export const NO_ADVICE = "No valued players on your roster in this range yet.";
 
-// The weakness and the player who fixes it: what every tab works from.
-type SummaryPanelsProps = { advice: Advice };
-
-function SummaryPanels({ advice }: SummaryPanelsProps) {
-  const { weakness, target } = advice;
-  const label = weakness.label;
-  return (
-    <>
-      <section className={styles.panel} aria-labelledby="advisor-weakness">
-        <h2 id="advisor-weakness" className={styles.panelTitle}>
-          Biggest weakness
-        </h2>
-        <p className={styles.readout}>
-          <span className={styles.readoutValue}>{label}</span>
-          <span className={styles.readoutRank}>
-            {formatOrdinal({ value: weakness.rank })} of {weakness.of}
-          </span>
-        </p>
-        <p className={styles.hint}>
-          Your healthy roster scores {formatScore({ value: weakness.myTotal })} in {label}; the
-          league averages {formatScore({ value: weakness.leagueAverage })}.
-        </p>
-        <ol className={styles.needs} aria-label="Every category, weakest first">
-          {advice.needs.map((need) => (
-            <li
-              key={need.key}
-              className={styles.need}
-              data-weakest={need.key === weakness.key || undefined}
-            >
-              <span className={styles.needLabel}>{need.label}</span>
-              <span className={styles.needRank}>
-                {formatOrdinal({ value: need.rank })}
-                <span className={styles.hint}> of {need.of}</span>
-              </span>
-            </li>
-          ))}
-        </ol>
-      </section>
-      <section className={styles.panel} aria-labelledby="advisor-target">
-        <h2 id="advisor-target" className={styles.panelTitle}>
-          Best fit for {label}
-        </h2>
-        {target === null ? (
-          <p className={styles.message}>Nobody outside your team is valued in this range.</p>
-        ) : (
-          <div className={styles.target}>
-            <PlayerName player={target} />
-            <p className={styles.hint}>
-              {ownerText({ owner: target.owner })} · {label}{" "}
-              {formatScore({ value: target.categoryScore })} · value{" "}
-              {formatScore({ value: target.value })}
-            </p>
-          </div>
-        )}
-      </section>
-    </>
-  );
-}
-
 // Client orchestrator: values the range's pool once, in the worker, the way
-// the Waiver Wire does, then hands it to the advisor engine. The weakness and
-// its best fit sit over three tabs: trades, free agent pickups, and the free
-// agents trending up. Only a new range goes back to the server.
+// the Waiver Wire does, then hands it to the advisor engine. The weak
+// categories and their best fits sit over three tabs: trades for the chosen
+// fit, free agent pickups, and the free agents trending up. Only a new range
+// goes back to the server.
 export function AdvisorView({
   range,
   lines,
@@ -184,8 +126,20 @@ export function AdvisorView({
         activePlayerIds: activeIds,
         breakdownFor,
         scoreKey,
+        focus: query.need,
+        targetId: query.target,
       }),
-    [valuation.lines, valuation.values, valueKey, league, activeIds, breakdownFor, scoreKey],
+    [
+      valuation.lines,
+      valuation.values,
+      valueKey,
+      league,
+      activeIds,
+      breakdownFor,
+      scoreKey,
+      query.need,
+      query.target,
+    ],
   );
 
   const trending = useMemo(
@@ -206,6 +160,20 @@ export function AdvisorView({
     void setQuery({ range: next });
   };
 
+  // A new focus starts from its own best fit.
+  type OnFocusProps = { focus: AdvisorFocus };
+
+  const onFocus = ({ focus }: OnFocusProps) => {
+    void setQuery({ need: focus === "all" ? null : focus, target: null }, { history: "replace" });
+  };
+
+  // Choosing a fit shows its trades.
+  type OnTargetProps = { playerId: number };
+
+  const onTarget = ({ playerId }: OnTargetProps) => {
+    void setQuery({ target: playerId, tab: "trades" }, { history: "replace" });
+  };
+
   type OnTabProps = { view: AdvisorTab };
 
   const onTab = ({ view }: OnTabProps) => {
@@ -217,7 +185,7 @@ export function AdvisorView({
     ? ""
     : advice === null
       ? NO_ADVICE
-      : `Biggest weakness: ${advice.weakness.label}, ${formatOrdinal({ value: advice.weakness.rank })} of ${advice.weakness.of}`;
+      : `Weakest in ${advice.weakNeeds.map(({ label, rank, of }) => `${label} (${formatOrdinal({ value: rank })} of ${of})`).join(", ")}. Best fits for ${advice.focusLabel}: ${advice.targets.length}`;
 
   return (
     <section className={styles.view} aria-label="Roster Advisor" aria-busy={valuation.isPending}>
@@ -239,7 +207,10 @@ export function AdvisorView({
       {advice === null ? (
         <p className={styles.message}>{NO_ADVICE}</p>
       ) : (
-        <SummaryPanels advice={advice} />
+        <>
+          <NeedsPanel advice={advice} onFocus={onFocus} />
+          <TargetsPanel advice={advice} onTarget={onTarget} />
+        </>
       )}
       <KeycapTabs
         label="Ways to fix it"
@@ -255,7 +226,7 @@ export function AdvisorView({
               <TradesPanel
                 target={advice.target}
                 trades={advice.trades}
-                label={advice.weakness.label}
+                label={advice.focusLabel}
               />
             ),
           free_agents:
@@ -265,7 +236,7 @@ export function AdvisorView({
               <FreeAgentsPanel
                 freeAgents={advice.freeAgents}
                 drop={advice.drop}
-                label={advice.weakness.label}
+                label={advice.focusLabel}
               />
             ),
           trending: <TrendingPanel rows={trending} />,

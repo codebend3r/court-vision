@@ -119,14 +119,41 @@ const renderView = ({ overrides = {}, searchParams = "?" }: RenderViewProps = {}
   });
 
 describe("AdvisorView", () => {
-  it("names the biggest weakness and ranks every category", () => {
+  it("names the weak categories and ranks every category", () => {
     renderView();
-    expect(screen.getByRole("heading", { level: 2, name: "Biggest weakness" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: /^Biggest weakness/ }),
+    ).toBeInTheDocument();
     const needs = screen.getByRole("list", { name: "Every category, weakest first" });
     expect(within(needs).getAllByRole("listitem")).toHaveLength(3);
-    expect(screen.getByRole("status").textContent).toMatch(/^Biggest weakness: \w+, 2nd of 2$/);
-    const target = screen.getByRole("region", { name: /^Best fit for/ });
-    expect(within(target).getByRole("link", { name: "Rival Star" })).toBeInTheDocument();
+    expect(screen.getByRole("status").textContent).toMatch(/^Weakest in .+ of 2\)/);
+  });
+
+  it("lists best fits across every weak category, with each category's score", () => {
+    renderView();
+    const fits = screen.getByRole("region", { name: /^Best fits for/ });
+    const rows = within(within(fits).getByRole("table")).getAllByRole("row");
+    expect(rows.length).toBeGreaterThan(2);
+    expect(within(fits).getByRole("link", { name: "Rival Star" })).toBeInTheDocument();
+    // The rival's star is the one fit on another team, so the only one with trades.
+    expect(
+      within(fits).getByRole("button", { name: "Show trades for Rival Star" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(within(fits).getAllByText("Pick up").length).toBeGreaterThan(0);
+  });
+
+  it("narrows the fits to one category and back", async () => {
+    const user = userEvent.setup();
+    renderView();
+    const group = screen.getByRole("group", { name: "Find players for" });
+    const [all, first] = within(group).getAllByRole("button");
+    expect(all).toHaveAttribute("aria-pressed", "true");
+    if (first === undefined) throw new Error("fixture: one weak category at least");
+    await user.click(first);
+    expect(first).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByRole("region", { name: `Best fits for ${first.textContent}` }),
+    ).toBeInTheDocument();
   });
 
   it("opens on the Trades tab with three options in each of three rows", () => {

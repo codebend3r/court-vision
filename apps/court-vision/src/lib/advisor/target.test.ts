@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 
 import { player } from "@/lib/advisor/fixture";
-import { findTarget, median } from "@/lib/advisor/target";
+import { findTargets, median, TARGET_LIMIT } from "@/lib/advisor/target";
 
 const OTHER = { kind: "team", teamId: "t2", teamName: "Two", managerName: null } as const;
 
@@ -13,10 +13,10 @@ describe("median", () => {
   });
 });
 
-describe("findTarget", () => {
+describe("findTargets", () => {
   const myRoster = [player({ playerId: 1, value: 2 }), player({ playerId: 2, value: 4 })];
 
-  it("picks the best in the category among players worth my median or more", () => {
+  it("ranks players worth my median or more by the focus score, then the rest", () => {
     const specialist = player({ playerId: 10, value: 1, categoryScore: 5, owner: OTHER });
     const allRounder = player({ playerId: 11, value: 6, categoryScore: 3, owner: OTHER });
     const freeAgent = player({
@@ -25,24 +25,29 @@ describe("findTarget", () => {
       categoryScore: 2,
       owner: { kind: "free_agent" },
     });
-    expect(findTarget({ candidates: [specialist, allRounder, freeAgent], myRoster })).toBe(
-      allRounder,
-    );
+    expect(
+      findTargets({ candidates: [specialist, allRounder, freeAgent], myRoster }).map(
+        ({ playerId }) => playerId,
+      ),
+    ).toEqual([11, 12, 10]);
   });
 
-  it("breaks a category tie by value", () => {
+  it("breaks a focus tie by value", () => {
     const low = player({ playerId: 10, value: 3, categoryScore: 3, owner: OTHER });
     const high = player({ playerId: 11, value: 7, categoryScore: 3, owner: OTHER });
-    expect(findTarget({ candidates: [low, high], myRoster })).toBe(high);
+    expect(findTargets({ candidates: [low, high], myRoster })[0]).toBe(high);
   });
 
-  it("falls back to the best in the category when nobody clears the bar", () => {
-    const a = player({ playerId: 10, value: 1, categoryScore: 5, owner: OTHER });
-    const b = player({ playerId: 11, value: 0, categoryScore: 1, owner: OTHER });
-    expect(findTarget({ candidates: [b, a], myRoster })).toBe(a);
+  it("stops at five", () => {
+    const candidates = [10, 11, 12, 13, 14, 15, 16].map((playerId) =>
+      player({ playerId, value: 5, categoryScore: playerId, owner: OTHER }),
+    );
+    const targets = findTargets({ candidates, myRoster });
+    expect(targets).toHaveLength(TARGET_LIMIT);
+    expect(targets[0]?.playerId).toBe(16);
   });
 
-  it("has no target without candidates", () => {
-    expect(findTarget({ candidates: [], myRoster })).toBeNull();
+  it("has no targets without candidates", () => {
+    expect(findTargets({ candidates: [], myRoster })).toEqual([]);
   });
 });

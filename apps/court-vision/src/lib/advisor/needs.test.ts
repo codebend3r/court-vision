@@ -1,7 +1,8 @@
 import { describe, expect, it } from "bun:test";
 
 import { fakeBreakdownFor } from "@/lib/advisor/fixture";
-import { buildNeeds, healthyIds } from "@/lib/advisor/needs";
+import { buildNeeds, healthyIds, MAX_WEAK_NEEDS, pickWeakNeeds } from "@/lib/advisor/needs";
+import { type CategoryNeed } from "@/lib/advisor/types";
 import { type AdvisorTeam } from "@/lib/advisor/types";
 
 type TeamProps = { teamId: string; ids: number[]; isMine?: boolean; il?: number[] };
@@ -77,5 +78,36 @@ describe("buildNeeds", () => {
         scoreKey: "z",
       }),
     ).toEqual([]);
+  });
+});
+
+describe("pickWeakNeeds", () => {
+  type NeedProps = { key: CategoryNeed["key"]; rank: number };
+
+  const need = ({ key, rank }: NeedProps): CategoryNeed => ({
+    key,
+    label: key.toUpperCase(),
+    myTotal: 0,
+    leagueAverage: 0,
+    rank,
+    of: 12,
+  });
+
+  it("keeps the bottom half of the league, weakest first, at most three", () => {
+    const needs = [
+      need({ key: "ast", rank: 12 }),
+      need({ key: "pts", rank: 11 }),
+      need({ key: "reb", rank: 9 }),
+      need({ key: "stl", rank: 7 }),
+      need({ key: "blk", rank: 6 }),
+    ];
+    expect(pickWeakNeeds({ needs }).map(({ key }) => key)).toEqual(["ast", "pts", "reb"]);
+    expect(pickWeakNeeds({ needs })).toHaveLength(MAX_WEAK_NEEDS);
+  });
+
+  it("always keeps the weakest, even for a team in the top half everywhere", () => {
+    const needs = [need({ key: "ast", rank: 5 }), need({ key: "pts", rank: 1 })];
+    expect(pickWeakNeeds({ needs }).map(({ key }) => key)).toEqual(["ast"]);
+    expect(pickWeakNeeds({ needs: [] })).toEqual([]);
   });
 });

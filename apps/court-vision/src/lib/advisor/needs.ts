@@ -80,3 +80,18 @@ export const buildNeeds = ({ teams, breakdownFor, scoreKey }: BuildNeedsProps): 
       (a, b) => b.rank - a.rank || a.myTotal - a.leagueAverage - (b.myTotal - b.leagueAverage),
     );
 };
+
+// At most this many categories count as needs at once.
+export const MAX_WEAK_NEEDS = 3;
+
+/**
+ * The categories worth fixing: every one where my roster sits in the bottom
+ * half of the league, weakest first, at most three. Never empty while there
+ * is any category: the weakest always counts.
+ */
+type PickWeakNeedsProps = { needs: readonly CategoryNeed[] };
+
+export const pickWeakNeeds = ({ needs }: PickWeakNeedsProps): CategoryNeed[] => {
+  const bottomHalf = needs.filter(({ rank, of }) => rank > of / 2).slice(0, MAX_WEAK_NEEDS);
+  return bottomHalf.length ? bottomHalf : needs.slice(0, 1);
+};

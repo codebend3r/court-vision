@@ -71,6 +71,8 @@ const advise = () =>
     activePlayerIds: new Set(IDS),
     breakdownFor: fakeBreakdownFor({ scores: SCORES }),
     scoreKey: "z",
+    focus: null,
+    targetId: null,
   });
 
 describe("buildAdvice", () => {
@@ -117,6 +119,8 @@ describe("buildAdvice", () => {
       activePlayerIds: new Set(IDS),
       breakdownFor: fakeBreakdownFor({ scores: SCORES }),
       scoreKey: "z",
+      focus: null,
+      targetId: null,
     });
     expect(advice?.target?.playerId).toBe(21);
     expect(advice?.trades).toEqual([]);
@@ -131,7 +135,81 @@ describe("buildAdvice", () => {
       activePlayerIds: new Set(),
       breakdownFor: fakeBreakdownFor({ scores: SCORES }),
       scoreKey: "z",
+      focus: null,
+      targetId: null,
     });
     expect(advice).toBeNull();
+  });
+});
+
+describe("buildAdvice with more than one weak category", () => {
+  // Mine (1, 2) trail team b in both points and rebounds. On b: 10 scores,
+  // 11 rebounds, 12 does a fair bit of both.
+  const scores = new Map([
+    [1, { pts: -1, reb: -1 }],
+    [2, { pts: 0, reb: -1 }],
+    [10, { pts: 3, reb: 0 }],
+    [11, { pts: 0, reb: 3 }],
+    [12, { pts: 2, reb: 2 }],
+  ]);
+  const ids = [...scores.keys()];
+  type AdviseWithProps = { focus: string | null; targetId?: number | null };
+
+  const adviseWith = ({ focus, targetId = null }: AdviseWithProps) =>
+    buildAdvice({
+      lines: ids.map((playerId) => makeStatLine({ playerId })),
+      values: ids.map((playerId) => valued({ playerId, z: 1 })),
+      valueKey: "z",
+      league: {
+        myRoster: [1, 2].map((playerId) => ({
+          playerId,
+          fullName: `Player ${playerId}`,
+          slotType: "BENCH",
+          injuryStatus: null,
+        })),
+        rosteredPlayerIds: ids,
+        waivers: [],
+        unmatched: [],
+        teams: [
+          team({ teamId: "a", ids: [1, 2], isMine: true }),
+          team({ teamId: "b", ids: [10, 11, 12] }),
+        ],
+      },
+      activePlayerIds: new Set(ids),
+      breakdownFor: fakeBreakdownFor({ scores }),
+      scoreKey: "z",
+      focus,
+      targetId,
+    });
+
+  it("treats every weak category as a need and ranks fits across all of them", () => {
+    const advice = adviseWith({ focus: null });
+    // Rebounds trail by more, so they lead.
+    expect(advice?.weakNeeds.map(({ key }) => key)).toEqual(["reb", "pts"]);
+    expect(advice?.focus).toBe("all");
+    expect(advice?.focusLabel).toBe("REB + PTS");
+    expect(advice?.targets.map(({ playerId }) => playerId)).toEqual([12, 10, 11]);
+    expect(advice?.targets[0]?.focusScores).toEqual([
+      { key: "reb", label: "REB", score: 2 },
+      { key: "pts", label: "PTS", score: 2 },
+    ]);
+  });
+
+  it("ranks fits for one category when the focus names it", () => {
+    expect(adviseWith({ focus: "pts" })?.targets[0]?.playerId).toBe(10);
+    expect(adviseWith({ focus: "reb" })?.targets[0]?.playerId).toBe(11);
+    expect(adviseWith({ focus: "pts" })?.focusLabel).toBe("PTS");
+  });
+
+  it("falls back to every weak category for a focus it doesn't know", () => {
+    expect(adviseWith({ focus: "nonsense" })?.focus).toBe("all");
+  });
+
+  it("builds the trades for the fit the URL picks, else the best", () => {
+    const picked = adviseWith({ focus: null, targetId: 10 });
+    expect(picked?.target?.playerId).toBe(10);
+    const gets = picked?.trades.flatMap(({ offers }) => offers.map(({ get }) => get.playerId));
+    expect(new Set(gets)).toEqual(new Set([10]));
+    expect(adviseWith({ focus: null, targetId: 99 })?.target?.playerId).toBe(12);
   });
 });

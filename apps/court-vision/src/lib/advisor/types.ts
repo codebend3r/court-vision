@@ -32,9 +32,16 @@ export type AdvisorPlayer = {
   position: string | null;
   injuryStatus: string | null;
   value: number;
+  // The score summed over the categories in focus, and each one apart.
   categoryScore: number;
+  focusScores: FocusScore[];
   owner: AdvisorOwner;
 };
+
+export type FocusScore = { key: Category; label: string; score: number };
+
+// What the advisor is fixing: every weak category at once, or one of them.
+export type AdvisorFocus = "all" | Category;
 
 // Where my roster stands in one category against the league.
 export type CategoryNeed = {
@@ -72,9 +79,14 @@ export type FreeAgentPick = AdvisorPlayer & {
 };
 
 export type Advice = {
-  needs: CategoryNeed[]; // weakest first
-  weakness: CategoryNeed;
-  target: AdvisorPlayer | null;
+  needs: CategoryNeed[]; // every category, weakest first
+  weakNeeds: CategoryNeed[]; // the ones worth fixing, weakest first
+  weakness: CategoryNeed; // the weakest
+  focus: AdvisorFocus;
+  focusNeeds: CategoryNeed[]; // the categories the scores below sum over
+  focusLabel: string; // "AST + PTS"
+  targets: AdvisorPlayer[]; // best fits for the focus, best first
+  target: AdvisorPlayer | null; // the one the trades are for
   trades: TradeGroup[]; // every tier, in display order; empty with no trade target
   freeAgents: FreeAgentPick[];
   drop: AdvisorPlayer | null;

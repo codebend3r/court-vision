@@ -39,5 +39,6 @@ export const player = ({
   injuryStatus: null,
   value,
   categoryScore,
+  focusScores: [],
   owner,
 });

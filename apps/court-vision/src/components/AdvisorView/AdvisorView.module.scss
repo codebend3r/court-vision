@@ -54,22 +54,39 @@
   @include visually-hidden;
 }
 
-// The weak category as a large readout, its place beside it.
-.readout {
+// Each weak category as a large readout, its place beside it, the totals under.
+.readouts {
   display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: baseline;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
   gap: var(--space-3);
   margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.readout {
+  display: grid;
+  grid-template-areas:
+    "value rank"
+    "hint hint";
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+
+  > .hint {
+    grid-area: hint;
+  }
 }
 
 .readoutValue {
+  grid-area: value;
   @include retro-extrude;
   font-family: var(--font-display);
   font-size: var(--font-size-xl);
 }
 
 .readoutRank {
+  grid-area: rank;
   color: var(--color-loss);
   font-family: var(--font-mono);
   font-weight: var(--font-weight-bold);
@@ -239,4 +256,42 @@
 .table td[data-rising] {
   color: var(--color-win);
   font-weight: var(--font-weight-bold);
+}
+
+// What the fits fix: all weak categories, or one. A fieldset only to group the
+// keycaps under their legend; no frame.
+.keycapGroup {
+  display: grid;
+  grid-auto-columns: max-content;
+  grid-auto-flow: column;
+  justify-content: start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  @media (width <= 40rem) {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.legend {
+  padding: 0 0 var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.keycap {
+  @include keycap;
+
+  &[aria-pressed="true"] {
+    @include keycap-engaged;
+  }
+}
+
+// The fit the Trades tab is showing: tinted, with its pressed keycap saying so
+// in words for assistive tech.
+.table tr[data-chosen] > * {
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
 }
