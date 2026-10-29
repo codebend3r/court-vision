@@ -87,7 +87,10 @@ describe("buildAdvice", () => {
   it("offers three trades for a player on another team", () => {
     const trades = advise()?.trades ?? [];
     expect(trades.map(({ tier }) => tier)).toEqual(["favors_me", "fair", "favors_them"]);
-    expect(trades.every(({ get }) => get.playerId === 10)).toBe(true);
+    const offers = trades.flatMap((group) => group.offers);
+    // Three players make six packages, all of them offered once.
+    expect(offers).toHaveLength(6);
+    expect(offers.every(({ get }) => get.playerId === 10)).toBe(true);
   });
 
   it("lists free agents for the category and who to drop", () => {

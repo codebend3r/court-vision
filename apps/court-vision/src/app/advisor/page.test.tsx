@@ -164,6 +164,7 @@ describe("AdvisorPage", () => {
   it("hands the pool, the league and the method to the view", async () => {
     await renderPage({ raw: { range: "last10" } });
     expect(getFantasyPool).toHaveBeenCalledWith({ range: "last10" });
+    expect(getFantasyPool).toHaveBeenCalledWith({ range: "all" });
     expect(getAdvisorLeagueData).toHaveBeenCalledWith({ leagueId: "league-1", myTeamId: "team-5" });
     expect(viewProps).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -175,5 +176,19 @@ describe("AdvisorPage", () => {
       }),
     );
     expect(screen.getByText("Game of Courts · Yahoo")).toBeInTheDocument();
+  });
+
+  it("sends only the free players' lines for the trend list", async () => {
+    const free = makeStatLine({ playerId: 2 });
+    const rostered = makeStatLine({ playerId: 1 });
+    getFantasyPool.mockResolvedValue([rostered, free]);
+    getAdvisorLeagueData.mockResolvedValue({ ...leagueData, rosteredPlayerIds: [1] });
+    getActiveRosterPlayers.mockResolvedValue([{ playerId: 1 }, { playerId: 2 }]);
+
+    await renderPage();
+
+    expect(viewProps).toHaveBeenCalledWith(
+      expect.objectContaining({ trendLines: { season: [free], recent: [free] } }),
+    );
   });
 });

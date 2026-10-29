@@ -6,6 +6,7 @@ import { MyTeamPicker } from "@/components/MyTeamPicker/MyTeamPicker";
 import { SyncYahooButton } from "@/components/SyncYahooButton/SyncYahooButton";
 import { getAdvisorLeagueData } from "@/lib/advisor/loader";
 import { loadAdvisorSearchParams } from "@/lib/advisor/searchParams";
+import { freePlayerIds, TREND_RANGE } from "@/lib/advisor/trending";
 import { getProfile } from "@/lib/auth/session";
 import { getActiveRosterPlayers } from "@/lib/fantasyTeams/loader";
 import { buildLeagueSeed, configFromSeed } from "@/lib/leagues/fantasyDefaults";
@@ -81,11 +82,20 @@ export default async function AdvisorPage({ searchParams }: AdvisorPageProps) {
   }
 
   const { range } = loadAdvisorSearchParams(await searchParams);
-  const [lines, leagueData, activeRoster] = await Promise.all([
+  const [lines, seasonLines, recentLines, leagueData, activeRoster] = await Promise.all([
     getFantasyPool({ range }),
+    getFantasyPool({ range: "all" }),
+    getFantasyPool({ range: TREND_RANGE }),
     getAdvisorLeagueData({ leagueId: league.id, myTeamId: league.myTeamId }),
     getActiveRosterPlayers(),
   ]);
+  const activePlayerIds = activeRoster.map((player) => player.playerId);
+  // Only the free players' lines cross to the client for the trend list.
+  const freeIds = freePlayerIds({ league: leagueData, activePlayerIds });
+  const trendLines = {
+    season: seasonLines.filter((line) => freeIds.has(line.playerId)),
+    recent: recentLines.filter((line) => freeIds.has(line.playerId)),
+  };
   const method =
     FANTASY_METHODS.find((entry) => entry.key === profile.preferredFormula)?.key ?? "zscore";
   // The Fantasy tab's first load for this league, as the Waiver Wire does, so
@@ -119,7 +129,8 @@ export default async function AdvisorPage({ searchParams }: AdvisorPageProps) {
         range={range}
         lines={lines}
         league={leagueData}
-        activePlayerIds={activeRoster.map((player) => player.playerId)}
+        activePlayerIds={activePlayerIds}
+        trendLines={trendLines}
         config={config}
         methodWeights={methodWeights}
         method={method}

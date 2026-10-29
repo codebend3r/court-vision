@@ -128,7 +128,33 @@
   font-size: var(--font-size-xs);
 }
 
-// The three offers side by side where they fit, stacked where they don't.
+// One kind of trade: its title and hint over its options. The rule above
+// carries the tier's colour, and the title says it in words.
+.tradeRow {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) 0 0;
+  border-top: 0.25rem solid var(--tier-color);
+
+  &[data-tier="favors_me"] {
+    --tier-color: var(--color-win);
+  }
+
+  &[data-tier="fair"] {
+    --tier-color: var(--color-accent);
+  }
+
+  &[data-tier="favors_them"] {
+    --tier-color: var(--color-highlight);
+  }
+}
+
+.tierTitle {
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+// A tier's options side by side where they fit, stacked where they don't.
 .trades {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
@@ -144,26 +170,13 @@
   gap: var(--space-2);
   padding: var(--space-3);
   border: 1px solid var(--color-border);
-  border-top: 0.25rem solid var(--tier-color);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-
-  &[data-tier="favors_me"] {
-    --tier-color: var(--color-win);
-  }
-
-  &[data-tier="fair"] {
-    --tier-color: var(--color-accent);
-  }
-
-  &[data-tier="favors_them"] {
-    --tier-color: var(--color-highlight);
-  }
 }
 
 .tradeTitle {
+  @include micro-label;
   margin: 0;
-  font-size: var(--font-size-md);
 }
 
 .tradeTerms {
@@ -220,4 +233,10 @@
   letter-spacing: normal;
   text-align: left;
   text-transform: none;
+}
+
+// A trending player's change: weighted, and signed, so it never rests on colour.
+.table td[data-rising] {
+  color: var(--color-win);
+  font-weight: var(--font-weight-bold);
 }

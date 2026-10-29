@@ -1,24 +1,26 @@
-import { type AdvisorPlayer, type TradeOffer, type TradeTier } from "@/lib/advisor/types";
+import {
+  type AdvisorPlayer,
+  type TradeGroup,
+  type TradeOffer,
+  type TradeTier,
+} from "@/lib/advisor/types";
 
-// How far past even the lopsided offers aim, in margins, and the smallest
-// margin, so a low-value target still gets three different offers.
-const LOPSIDED_MARGINS = 1.5;
+// A margin is a quarter of the target's value, never under half a point, so a
+// low-value target still spreads its offers. Fair is within one margin of
+// even; the lopsided tiers sit beyond it and aim 1.5 margins out.
 const MARGIN_SHARE = 0.25;
 const MIN_MARGIN = 0.5;
+const LOPSIDED_MARGINS = 1.5;
 // Giving away the weak category's production costs this much per point, and
 // each extra player in a package this share of a margin.
 const CATEGORY_COST = 0.5;
 const EXTRA_PLAYER_COST = 0.25;
-// A lopsided offer on the wrong side of even costs this many margins.
-const WRONG_SIDE_MARGINS = 10;
-// Each tier's cheapest packages that the joint choice considers.
-const SHORTLIST = 8;
+// Options shown per tier.
+export const OFFERS_PER_TIER = 3;
 
-const TIER_ORDER: readonly TradeTier[] = ["fair", "favors_me", "favors_them"];
-const SHOWN_ORDER: readonly TradeTier[] = ["favors_me", "fair", "favors_them"];
+export const TRADE_TIERS: readonly TradeTier[] = ["favors_me", "fair", "favors_them"];
 
 type Package = { give: AdvisorPlayer[]; key: string; value: number; categoryScore: number };
-type Choice = { tier: TradeTier; pkg: Package; cost: number };
 
 const toPackage = (give: AdvisorPlayer[]): Package => ({
   give,
@@ -30,123 +32,128 @@ const toPackage = (give: AdvisorPlayer[]): Package => ({
   categoryScore: give.reduce((sum, player) => sum + player.categoryScore, 0),
 });
 
-// Every single player and every pair.
+// Every single player, pair and trio: a trio is how a thin roster reaches an
+// overpay for a star.
 type PackagesOfProps = { roster: readonly AdvisorPlayer[] };
 
 const packagesOf = ({ roster }: PackagesOfProps): Package[] => [
   ...roster.map((player) => toPackage([player])),
-  ...roster.flatMap((first, index) =>
-    roster.slice(index + 1).map((second) => toPackage([first, second])),
+  ...roster.flatMap((first, i) => roster.slice(i + 1).map((second) => toPackage([first, second]))),
+  ...roster.flatMap((first, i) =>
+    roster
+      .slice(i + 1)
+      .flatMap((second, j) =>
+        roster.slice(i + j + 2).map((third) => toPackage([first, second, third])),
+      ),
   ),
 ];
 
-/** A quarter of the target's value, never under half a point. */
+/** A quarter of the target's value, at least half a point. */
 type MarginForProps = { target: AdvisorPlayer };
 
 export const marginFor = ({ target }: MarginForProps): number =>
   Math.max(MIN_MARGIN, Math.abs(target.value) * MARGIN_SHARE);
 
 /**
- * Three trades for a player on another team, as distinct packages of one or
- * two of my healthy players: one that favours me (I give about 1.5 margins
- * less value than I get), one that is even, and one that favours them (about
- * 1.5 margins more). A package that gives away weak-category production, or
- * more players, costs extra, so the offers keep what the trade is for, and a
- * lopsided offer on the wrong side of even costs most of all. The three are
- * chosen together, from each tier's cheapest few, at the lowest total cost,
- * and always read in order of value given. An offer that cannot reach its
- * side of even (a bench too thin to overpay), or a fair one more than a
- * margin off even, says so in `reachesTier`.
- * Fewer than three only when my roster has fewer than three packages.
+ * Up to three trades per tier for a player on another team, every one a
+ * distinct package of one to three of my healthy players. Each tier has a
+ * band of value balance (what I give minus what I get): favors me under minus
+ * one margin, fair within one margin of even, favors them over one margin.
+ * Fair takes the three nearest even, leaving the three cheapest and three
+ * richest packages for the other rows. Favors me then picks from packages
+ * worth less than every fair one, and favors them from packages worth more,
+ * each in band first (by distance from an aim 1.5 margins out) and then the
+ * furthest toward its side, so the rows always read in order of value given.
+ * Giving away the weak category, and each extra player, costs extra.
+ * `reachesTier` is false for an offer outside its tier's band.
  */
 type BuildTradeOffersProps = {
   target: AdvisorPlayer;
   myRoster: readonly AdvisorPlayer[];
 };
 
-export const buildTradeOffers = ({ target, myRoster }: BuildTradeOffersProps): TradeOffer[] => {
+export const buildTradeOffers = ({ target, myRoster }: BuildTradeOffersProps): TradeGroup[] => {
   const margin = marginFor({ target });
+  const balanceOf = (pkg: Package): number => pkg.value - target.value;
   const aims: Record<TradeTier, number> = {
     favors_me: -LOPSIDED_MARGINS * margin,
     fair: 0,
     favors_them: LOPSIDED_MARGINS * margin,
   };
-  const onSide: Record<TradeTier, (balance: number) => boolean> = {
-    favors_me: (balance) => balance < 0,
-    fair: () => true,
-    favors_them: (balance) => balance > 0,
+  const inBand: Record<TradeTier, (balance: number) => boolean> = {
+    favors_me: (balance) => balance < -margin,
+    fair: (balance) => Math.abs(balance) <= margin,
+    favors_them: (balance) => balance > margin,
   };
-  // Fair reaches its tier within one margin of even; the others on their side.
-  type ReachesProps = { tier: TradeTier; balance: number };
-
-  const reaches = ({ tier, balance }: ReachesProps): boolean =>
-    tier === "fair" ? Math.abs(balance) <= margin : onSide[tier](balance);
   type CostOfProps = { pkg: Package; tier: TradeTier };
 
-  const costOf = ({ pkg, tier }: CostOfProps): number => {
-    const balance = pkg.value - target.value;
-    return (
-      Math.abs(balance - aims[tier]) +
-      CATEGORY_COST * Math.max(0, pkg.categoryScore) +
-      EXTRA_PLAYER_COST * margin * (pkg.give.length - 1) +
-      (onSide[tier](balance) ? 0 : WRONG_SIDE_MARGINS * margin)
-    );
-  };
+  const costOf = ({ pkg, tier }: CostOfProps): number =>
+    Math.abs(balanceOf(pkg) - aims[tier]) +
+    CATEGORY_COST * Math.max(0, pkg.categoryScore) +
+    EXTRA_PLAYER_COST * margin * (pkg.give.length - 1);
+  type BestForProps = { tier: TradeTier; packages: readonly Package[] };
+
+  const bestFor = ({ tier, packages }: BestForProps): Package[] =>
+    packages
+      .map((pkg) => ({ pkg, cost: costOf({ pkg, tier }) }))
+      .toSorted((a, b) => a.cost - b.cost || a.pkg.key.localeCompare(b.pkg.key))
+      .slice(0, OFFERS_PER_TIER)
+      .map(({ pkg }) => pkg);
 
   const packages = packagesOf({ roster: myRoster });
-  const shortlist = (tier: TradeTier): Choice[] =>
-    packages
-      .map((pkg) => ({ tier, pkg, cost: costOf({ pkg, tier }) }))
-      .toSorted((a, b) => a.cost - b.cost || a.pkg.key.localeCompare(b.pkg.key))
-      .slice(0, SHORTLIST);
-
-  // Every way to give each tier its own package, cheapest overall first. A
-  // roster too small for three distinct packages fills as many tiers as it can.
-  const combos = TIER_ORDER.reduce<Choice[][]>(
-    (partials, tier) => {
-      const extended = partials.flatMap((partial) =>
-        shortlist(tier)
-          .filter((choice) => !partial.some((entry) => entry.pkg.key === choice.pkg.key))
-          .map((choice) => [...partial, choice]),
-      );
-      return extended.length ? extended : partials;
-    },
-    [[]],
+  const byBalance = packages.toSorted(
+    (a, b) => balanceOf(a) - balanceOf(b) || a.key.localeCompare(b.key),
   );
-  const totalOf = (combo: readonly Choice[]): number =>
-    combo.reduce((sum, choice) => sum + choice.cost, 0);
-  // The tiers must read in order: what I give rises from favors-me to fair to
-  // favors-them. A combination that breaks the order is used only when none keeps it.
-  const balanceOf = (combo: readonly Choice[], tier: TradeTier): number | undefined => {
-    const choice = combo.find((entry) => entry.tier === tier);
-    return choice === undefined ? undefined : choice.pkg.value - target.value;
-  };
-  const isOrdered = (combo: readonly Choice[]): boolean => {
-    const order = SHOWN_ORDER.flatMap((tier) => {
-      const balance = balanceOf(combo, tier);
-      return balance === undefined ? [] : [balance];
-    });
-    return order.every((balance, index) => index === 0 || balance > (order[index - 1] ?? 0));
-  };
-  const ordered = combos.filter(isOrdered);
-  const best =
-    (ordered.length ? ordered : combos).toSorted(
-      (a, b) => b.length - a.length || totalOf(a) - totalOf(b),
-    )[0] ?? [];
-
-  return SHOWN_ORDER.flatMap((tier) => {
-    const entry = best.find((candidate) => candidate.tier === tier);
-    return entry === undefined
-      ? []
-      : [
-          {
-            tier,
-            give: entry.pkg.give,
-            get: target,
-            balance: entry.pkg.value - target.value,
-            reachesTier: reaches({ tier, balance: entry.pkg.value - target.value }),
-            categoryChange: target.categoryScore - entry.pkg.categoryScore,
-          },
-        ];
+  // The three cheapest and three richest packages are kept from fair, so a
+  // lopsided row always has somewhere to go, once there are enough to spare.
+  const reserved =
+    packages.length >= OFFERS_PER_TIER * TRADE_TIERS.length
+      ? [...byBalance.slice(0, OFFERS_PER_TIER), ...byBalance.slice(-OFFERS_PER_TIER)]
+      : [];
+  const fair = bestFor({
+    tier: "fair",
+    packages: packages.filter((pkg) => !reserved.includes(pkg)),
   });
+  const fairLow = Math.min(...fair.map(balanceOf));
+  const fairHigh = Math.max(...fair.map(balanceOf));
+
+  // A lopsided row from its side of fair: in band by distance from its aim,
+  // then, if the band is thin, the packages furthest toward its side.
+  type SideForProps = { tier: "favors_me" | "favors_them"; from: readonly Package[] };
+
+  const sideFor = ({ tier, from }: SideForProps): Package[] => {
+    const banded = bestFor({ tier, packages: from.filter((pkg) => inBand[tier](balanceOf(pkg))) });
+    const outward = tier === "favors_me" ? 1 : -1;
+    const rest = from
+      .filter((pkg) => !banded.includes(pkg))
+      .toSorted((a, b) => outward * (balanceOf(a) - balanceOf(b)) || a.key.localeCompare(b.key));
+    return [...banded, ...rest].slice(0, OFFERS_PER_TIER);
+  };
+  // A package level with fair's edge may join a side row; fair's own never.
+  const open = packages.filter((pkg) => !fair.includes(pkg));
+  const favorsThem = sideFor({
+    tier: "favors_them",
+    from: open.filter((pkg) => balanceOf(pkg) >= fairHigh),
+  });
+  const favorsMe = sideFor({
+    tier: "favors_me",
+    from: open.filter((pkg) => balanceOf(pkg) <= fairLow && !favorsThem.includes(pkg)),
+  });
+  const picks: Record<TradeTier, Package[]> = {
+    favors_me: favorsMe,
+    fair,
+    favors_them: favorsThem,
+  };
+
+  return TRADE_TIERS.map((tier) => ({
+    tier,
+    offers: picks[tier].map((pkg): TradeOffer => ({
+      tier,
+      give: pkg.give,
+      get: target,
+      balance: balanceOf(pkg),
+      reachesTier: inBand[tier](balanceOf(pkg)),
+      categoryChange: target.categoryScore - pkg.categoryScore,
+    })),
+  }));
 };

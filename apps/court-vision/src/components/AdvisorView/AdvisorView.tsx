@@ -1,22 +1,24 @@
 "use client";
 
 import { type ChangeEvent, useId, useMemo } from "react";
-import Link from "next/link";
 import { useQueryStates } from "nuqs";
 
+import { FreeAgentsPanel } from "@/components/AdvisorView/FreeAgentsPanel";
+import { PlayerName } from "@/components/AdvisorView/PlayerName";
+import { TradesPanel } from "@/components/AdvisorView/TradesPanel";
+import { TrendingPanel } from "@/components/AdvisorView/TrendingPanel";
 import { useValuation } from "@/components/FantasyValueView/useValuation";
+import { KeycapTabs } from "@/components/KeycapTabs/KeycapTabs";
 import { buildAdvice } from "@/lib/advisor/advice";
-import { formatScore } from "@/lib/advisor/format";
-import { isOnAnotherTeam } from "@/lib/advisor/owner";
-import { advisorParsers } from "@/lib/advisor/searchParams";
+import { formatScore, ownerText } from "@/lib/advisor/format";
 import {
-  type Advice,
-  type AdvisorLeagueData,
-  type AdvisorOwner,
-  type AdvisorPlayer,
-  type TradeOffer,
-  type TradeTier,
-} from "@/lib/advisor/types";
+  ADVISOR_TAB_LABELS,
+  ADVISOR_TABS,
+  type AdvisorTab,
+  advisorParsers,
+} from "@/lib/advisor/searchParams";
+import { buildTrending, freePlayerIds, type TrendLines } from "@/lib/advisor/trending";
+import { type Advice, type AdvisorLeagueData } from "@/lib/advisor/types";
 import {
   GAME_RANGE_LABELS,
   gamesForRange,
@@ -42,6 +44,8 @@ export type AdvisorViewProps = {
   // The range the server loaded `lines` for; see WaiverWireView.
   range: PlayerGameRange;
   lines: FantasyStatLine[];
+  // The free players' season and last-ten lines, for the Trending tab.
+  trendLines: TrendLines;
   league: AdvisorLeagueData;
   activePlayerIds: number[];
   config: ValuationConfig;
@@ -51,107 +55,12 @@ export type AdvisorViewProps = {
 
 export const NO_ADVICE = "No valued players on your roster in this range yet.";
 
-const TIER_TITLES: Record<TradeTier, string> = {
-  favors_me: "Favors you",
-  fair: "Fair and balanced",
-  favors_them: "Favors them",
-};
+// The weakness and the player who fixes it: what every tab works from.
+type SummaryPanelsProps = { advice: Advice };
 
-const TIER_HINTS: Record<TradeTier, string> = {
-  favors_me: "A reach: you give less than you get. Expect a counter.",
-  fair: "About even on value. The likeliest to be accepted.",
-  favors_them: "An overpay: you give more than you get, to make sure it happens.",
-};
-
-// When my roster can't put an offer where its tier belongs.
-const UNREACHED_HINTS: Record<TradeTier, string> = {
-  favors_me:
-    "Nothing on your roster is worth less than what you get, so this is the cheapest offer.",
-  fair: "Nothing on your roster lands near even, so this is the closest offer.",
-  favors_them: "Nothing on your roster adds up to an overpay, so this is your richest offer.",
-};
-
-const ONE_PLACE = 1;
-
-type OwnerTextProps = { owner: AdvisorOwner };
-
-const ownerText = ({ owner }: OwnerTextProps): string => {
-  if (owner.kind === "team") return owner.teamName;
-  if (owner.kind === "waivers") return "On waivers";
-  if (owner.kind === "free_agent") return "Free agent";
-  return "Your team";
-};
-
-type PlayerNameProps = { player: AdvisorPlayer };
-
-function PlayerName({ player }: PlayerNameProps) {
-  const meta = [player.teamAbbr, player.position, player.injuryStatus].flatMap((part) =>
-    part ? [part] : [],
-  );
-  return (
-    <span className={styles.player}>
-      <Link href={`/players/${player.playerId}`} className={styles.name}>
-        {player.fullName}
-      </Link>
-      {!!meta.length && <span className={styles.meta}>{meta.join(" · ")}</span>}
-    </span>
-  );
-}
-
-// "+1.5 in your favor", "even", "1.5 in their favor".
-type BalanceTextProps = { balance: number };
-
-const balanceText = ({ balance }: BalanceTextProps): string => {
-  const size = Math.abs(balance).toFixed(ONE_PLACE);
-  if (size === (0).toFixed(ONE_PLACE)) return "Even on value";
-  return balance < 0 ? `${size} value in your favor` : `${size} value in their favor`;
-};
-
-type TradeCardProps = { offer: TradeOffer; label: string; ownerName: string };
-
-function TradeCard({ offer, label, ownerName }: TradeCardProps) {
-  return (
-    <li className={styles.trade} data-tier={offer.tier}>
-      <h4 className={styles.tradeTitle}>{TIER_TITLES[offer.tier]}</h4>
-      <p className={styles.hint}>
-        {offer.reachesTier ? TIER_HINTS[offer.tier] : UNREACHED_HINTS[offer.tier]}
-      </p>
-      <dl className={styles.tradeTerms}>
-        <dt>You give</dt>
-        <dd>
-          <ul className={styles.plainList}>
-            {offer.give.map((player) => (
-              <li key={player.playerId}>
-                <PlayerName player={player} />
-              </li>
-            ))}
-          </ul>
-        </dd>
-        <dt>You get</dt>
-        <dd>
-          <PlayerName player={offer.get} />
-        </dd>
-        <dt>Balance</dt>
-        <dd>{balanceText({ balance: offer.balance })}</dd>
-        <dt>{label} change</dt>
-        <dd>{formatScore({ value: offer.categoryChange })}</dd>
-      </dl>
-      {offer.give.length > 1 && (
-        <p className={styles.hint}>{ownerName} would need to drop a player to take two.</p>
-      )}
-    </li>
-  );
-}
-
-type AdvicePanelsProps = { advice: Advice };
-
-function AdvicePanels({ advice }: AdvicePanelsProps) {
-  const { weakness, target, trades, freeAgents, drop } = advice;
+function SummaryPanels({ advice }: SummaryPanelsProps) {
+  const { weakness, target } = advice;
   const label = weakness.label;
-  const owner = target?.owner;
-  const tradePartner = owner !== undefined && isOnAnotherTeam(owner) ? owner : null;
-  const partnerName = tradePartner?.managerName ?? tradePartner?.teamName ?? "They";
-
   return (
     <>
       <section className={styles.panel} aria-labelledby="advisor-weakness">
@@ -184,7 +93,6 @@ function AdvicePanels({ advice }: AdvicePanelsProps) {
           ))}
         </ol>
       </section>
-
       <section className={styles.panel} aria-labelledby="advisor-target">
         <h2 id="advisor-target" className={styles.panelTitle}>
           Best fit for {label}
@@ -202,108 +110,18 @@ function AdvicePanels({ advice }: AdvicePanelsProps) {
           </div>
         )}
       </section>
-
-      {target !== null && (
-        <section className={styles.panel} aria-labelledby="advisor-trades">
-          <h2 id="advisor-trades" className={styles.panelTitle}>
-            {tradePartner === null ? "Trade ideas" : `Trade ideas with ${tradePartner.teamName}`}
-          </h2>
-          {tradePartner === null ? (
-            <p className={styles.message}>
-              {target.fullName} is not on another team, so no trade is needed: pick them up below.
-            </p>
-          ) : !trades.length ? (
-            <p className={styles.message}>Your roster has nobody valued to offer.</p>
-          ) : (
-            <>
-              <h3 className={styles.srOnly}>Three offers for {target.fullName}</h3>
-              <ul className={styles.trades}>
-                {trades.map((offer) => (
-                  <TradeCard key={offer.tier} offer={offer} label={label} ownerName={partnerName} />
-                ))}
-              </ul>
-            </>
-          )}
-        </section>
-      )}
-
-      <section className={styles.panel} aria-labelledby="advisor-free-agents">
-        <h2 id="advisor-free-agents" className={styles.panelTitle}>
-          Free agents for {label}
-        </h2>
-        {!freeAgents.length ? (
-          <p className={styles.message}>No free agent is valued in this range.</p>
-        ) : (
-          <div className={styles.tableWrapper}>
-            <table className={styles.table}>
-              <caption className={styles.srOnly}>
-                Free agents who help {label}, best in it first
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Player</th>
-                  <th scope="col">Status</th>
-                  <th scope="col" className={styles.numeric}>
-                    {label}
-                  </th>
-                  <th scope="col" className={styles.numeric}>
-                    Value
-                  </th>
-                  <th scope="col" className={styles.numeric}>
-                    {drop === null ? "Over drop" : `Over ${drop.fullName}`}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {freeAgents.map((pick) => (
-                  <tr key={pick.playerId}>
-                    <th scope="row" className={styles.rowHeader}>
-                      <PlayerName player={pick} />
-                      {!pick.isUpgrade && (
-                        <span className={styles.hint}> Helps {label}, not an overall upgrade</span>
-                      )}
-                    </th>
-                    <td>{ownerText({ owner: pick.owner })}</td>
-                    <td className={styles.numeric}>{formatScore({ value: pick.categoryScore })}</td>
-                    <td className={styles.numeric}>{formatScore({ value: pick.value })}</td>
-                    <td className={styles.numeric}>
-                      {pick.gainOverDrop === null ? "-" : formatScore({ value: pick.gainOverDrop })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      <section className={styles.panel} aria-labelledby="advisor-drop">
-        <h2 id="advisor-drop" className={styles.panelTitle}>
-          Who to drop
-        </h2>
-        {drop === null ? (
-          <p className={styles.message}>Nobody on your healthy roster is valued in this range.</p>
-        ) : (
-          <div className={styles.target}>
-            <PlayerName player={drop} />
-            <p className={styles.hint}>
-              Value {formatScore({ value: drop.value })}, {label}{" "}
-              {formatScore({ value: drop.categoryScore })}. Your lowest-value player once their{" "}
-              {label} is counted, so dropping them costs the least.
-            </p>
-          </div>
-        )}
-      </section>
     </>
   );
 }
 
 // Client orchestrator: values the range's pool once, in the worker, the way
-// the Waiver Wire does, then hands it to the advisor engine. Only a new range
-// goes back to the server for a new pool.
+// the Waiver Wire does, then hands it to the advisor engine. The weakness and
+// its best fit sit over three tabs: trades, free agent pickups, and the free
+// agents trending up. Only a new range goes back to the server.
 export function AdvisorView({
   range,
   lines,
+  trendLines,
   league,
   activePlayerIds,
   config,
@@ -326,6 +144,21 @@ export function AdvisorView({
     [valuation.lines],
   );
   const { poolStats, config: settledConfig, methodWeights: settledWeights } = valuation;
+  type LineBreakdownProps = { line: FantasyStatLine };
+
+  // Any line against the settled pool, so a recent line and a season line
+  // land on the same yardstick.
+  const lineBreakdown = useMemo(
+    () =>
+      ({ line }: LineBreakdownProps): FantasyCategoryBreakdown[] =>
+        buildCategoryBreakdown({
+          line,
+          poolStats,
+          config: settledConfig,
+          methodWeights: settledWeights,
+        }),
+    [poolStats, settledConfig, settledWeights],
+  );
   type BreakdownForProps = { playerId: number };
 
   // Memoized per player: the engine asks for the same breakdown many times.
@@ -335,18 +168,11 @@ export function AdvisorView({
       const cached = cache.get(playerId);
       if (cached !== undefined) return cached;
       const line = linesById.get(playerId);
-      const breakdown = line
-        ? buildCategoryBreakdown({
-            line,
-            poolStats,
-            config: settledConfig,
-            methodWeights: settledWeights,
-          })
-        : [];
+      const breakdown = line ? lineBreakdown({ line }) : [];
       cache.set(playerId, breakdown);
       return breakdown;
     };
-  }, [linesById, poolStats, settledConfig, settledWeights]);
+  }, [linesById, lineBreakdown]);
 
   const advice = useMemo(
     () =>
@@ -362,10 +188,28 @@ export function AdvisorView({
     [valuation.lines, valuation.values, valueKey, league, activeIds, breakdownFor, scoreKey],
   );
 
+  const trending = useMemo(
+    () =>
+      buildTrending({
+        lines: trendLines,
+        freeIds: freePlayerIds({ league, activePlayerIds }),
+        waivers: league.waivers,
+        scoreLine: ({ line }) =>
+          lineBreakdown({ line }).reduce((sum, entry) => sum + entry[scoreKey], 0),
+      }),
+    [trendLines, league, activePlayerIds, lineBreakdown, scoreKey],
+  );
+
   const onRange = (event: ChangeEvent<HTMLSelectElement>) => {
     const next = event.target.value;
     if (!isPlayerGameRange(next)) return;
     void setQuery({ range: next });
+  };
+
+  type OnTabProps = { view: AdvisorTab };
+
+  const onTab = ({ view }: OnTabProps) => {
+    void setQuery({ tab: view }, { history: "replace" });
   };
 
   // Quiet while the worker values a new pool; it speaks once the values land.
@@ -395,8 +239,38 @@ export function AdvisorView({
       {advice === null ? (
         <p className={styles.message}>{NO_ADVICE}</p>
       ) : (
-        <AdvicePanels advice={advice} />
+        <SummaryPanels advice={advice} />
       )}
+      <KeycapTabs
+        label="Ways to fix it"
+        tabs={ADVISOR_TABS}
+        labels={ADVISOR_TAB_LABELS}
+        view={query.tab}
+        onChange={onTab}
+        panels={{
+          trades:
+            advice === null ? (
+              <p className={styles.message}>{NO_ADVICE}</p>
+            ) : (
+              <TradesPanel
+                target={advice.target}
+                trades={advice.trades}
+                label={advice.weakness.label}
+              />
+            ),
+          free_agents:
+            advice === null ? (
+              <p className={styles.message}>{NO_ADVICE}</p>
+            ) : (
+              <FreeAgentsPanel
+                freeAgents={advice.freeAgents}
+                drop={advice.drop}
+                label={advice.weakness.label}
+              />
+            ),
+          trending: <TrendingPanel rows={trending} />,
+        }}
+      />
       <p role="status" className={styles.srOnly}>
         {announcement}
       </p>

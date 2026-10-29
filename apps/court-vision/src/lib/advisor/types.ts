@@ -54,13 +54,15 @@ export type TradeOffer = {
   get: AdvisorPlayer;
   // What I give minus what I get, in value: under 0 favours me.
   balance: number;
-  // False when my roster cannot put this tier where it belongs: no package
-  // worth less (favors me) or more (favors them) than the target, or none
-  // within a margin of even (fair).
+  // False when the offer sits outside its tier's band of value balance: the
+  // roster had nothing nearer, so the card says so.
   reachesTier: boolean;
   // What the trade does to my roster's score in the weak category.
   categoryChange: number;
 };
+
+// One tier's options, best first.
+export type TradeGroup = { tier: TradeTier; offers: TradeOffer[] };
 
 export type FreeAgentPick = AdvisorPlayer & {
   // Value over the drop candidate; null with no one to drop.
@@ -73,7 +75,7 @@ export type Advice = {
   needs: CategoryNeed[]; // weakest first
   weakness: CategoryNeed;
   target: AdvisorPlayer | null;
-  trades: TradeOffer[];
+  trades: TradeGroup[]; // every tier, in display order; empty with no trade target
   freeAgents: FreeAgentPick[];
   drop: AdvisorPlayer | null;
 };

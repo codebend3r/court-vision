@@ -1,4 +1,5 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it, vi } from "bun:test";
 
@@ -25,58 +26,51 @@ import { type ValuationConfig } from "@vision/sport-basketball/types";
 
 afterEach(cleanup);
 
-// Two of mine, a rival's star who outdoes both, and four free agents.
+type LineProps = { playerId: number; fullName: string; pts: number; reb: number; ast: number };
+
+const line = ({ playerId, fullName, pts, reb, ast }: LineProps) =>
+  makeStatLine({ playerId, fullName, position: "F", pts, reb, ast });
+
+// Four of mine (one weak, three solid), a rival's star who outdoes each of
+// them, and four free agents.
 const lines = [
-  makeStatLine({ playerId: 1, fullName: "Mine Low", position: "G", pts: 200, reb: 100, ast: 50 }),
-  makeStatLine({
-    playerId: 2,
-    fullName: "Mine High",
-    position: "F",
-    pts: 1200,
-    reb: 400,
-    ast: 300,
-  }),
-  makeStatLine({
-    playerId: 3,
-    fullName: "Rival Star",
-    position: "C",
-    pts: 1500,
-    reb: 600,
-    ast: 300,
-  }),
-  makeStatLine({
-    playerId: 4,
-    fullName: "Free Guard",
-    position: "G",
-    pts: 1000,
-    reb: 200,
-    ast: 400,
-  }),
-  makeStatLine({
-    playerId: 5,
-    fullName: "Free Center",
-    position: "C",
-    pts: 900,
-    reb: 600,
-    ast: 100,
-  }),
-  makeStatLine({
-    playerId: 6,
-    fullName: "Free Forward",
-    position: "F",
-    pts: 800,
-    reb: 400,
-    ast: 200,
-  }),
-  makeStatLine({ playerId: 7, fullName: "Deep Bench", position: "G", pts: 100, reb: 50, ast: 30 }),
+  line({ playerId: 1, fullName: "Mine Low", pts: 200, reb: 100, ast: 50 }),
+  line({ playerId: 2, fullName: "Mine High", pts: 1200, reb: 400, ast: 300 }),
+  line({ playerId: 8, fullName: "Mine Mid", pts: 1100, reb: 350, ast: 300 }),
+  line({ playerId: 9, fullName: "Mine Role", pts: 1000, reb: 300, ast: 300 }),
+  line({ playerId: 3, fullName: "Rival Star", pts: 1500, reb: 600, ast: 300 }),
+  line({ playerId: 4, fullName: "Free Guard", pts: 1000, reb: 200, ast: 400 }),
+  line({ playerId: 5, fullName: "Free Center", pts: 900, reb: 600, ast: 100 }),
+  line({ playerId: 6, fullName: "Free Forward", pts: 800, reb: 400, ast: 200 }),
+  line({ playerId: 7, fullName: "Deep Bench", pts: 100, reb: 50, ast: 30 }),
 ];
+const MINE = [1, 2, 8, 9];
+
+// Free Forward's last ten games are far better than their season; Deep
+// Bench's are worse.
+const trendLines = {
+  season: lines.filter(({ playerId }) => playerId >= 4 && playerId <= 7),
+  recent: [
+    makeStatLine({
+      playerId: 6,
+      fullName: "Free Forward",
+      gamesPlayed: 10,
+      pts: 400,
+      reb: 150,
+      ast: 80,
+    }),
+    makeStatLine({ playerId: 7, fullName: "Deep Bench", gamesPlayed: 10, pts: 5, reb: 5, ast: 2 }),
+  ],
+};
 
 const league: AdvisorLeagueData = {
-  myRoster: [
-    { playerId: 1, fullName: "Mine Low", slotType: "BENCH", injuryStatus: null },
-    { playerId: 2, fullName: "Mine High", slotType: "UTIL", injuryStatus: null },
-  ],
-  rosteredPlayerIds: [1, 2, 3],
+  myRoster: MINE.map((playerId) => ({
+    playerId,
+    fullName: `Player ${playerId}`,
+    slotType: "BENCH",
+    injuryStatus: null,
+  })),
+  rosteredPlayerIds: [...MINE, 3],
   waivers: [{ playerId: 5, injuryStatus: null }],
   unmatched: [],
   teams: [
@@ -85,10 +79,7 @@ const league: AdvisorLeagueData = {
       name: "Team Mine",
       managerName: null,
       isMine: true,
-      players: [
-        { playerId: 1, slotType: "BENCH", injuryStatus: null },
-        { playerId: 2, slotType: "UTIL", injuryStatus: null },
-      ],
+      players: MINE.map((playerId) => ({ playerId, slotType: "BENCH", injuryStatus: null })),
     },
     {
       teamId: "b",
@@ -112,18 +103,19 @@ const config: ValuationConfig = {
 const props: AdvisorViewProps = {
   range: "all",
   lines,
+  trendLines,
   league,
-  activePlayerIds: [1, 2, 3, 4, 5, 6, 7],
+  activePlayerIds: [1, 2, 3, 4, 5, 6, 7, 8, 9],
   config,
   methodWeights: {},
   method: "zscore",
 };
 
-type RenderViewProps = { overrides?: Partial<AdvisorViewProps> };
+type RenderViewProps = { overrides?: Partial<AdvisorViewProps>; searchParams?: string };
 
-const renderView = ({ overrides = {} }: RenderViewProps = {}) =>
+const renderView = ({ overrides = {}, searchParams = "?" }: RenderViewProps = {}) =>
   render(<AdvisorView {...props} {...overrides} />, {
-    wrapper: withNuqsTestingAdapter({ searchParams: "?" }),
+    wrapper: withNuqsTestingAdapter({ searchParams, hasMemory: true }),
   });
 
 describe("AdvisorView", () => {
@@ -133,31 +125,49 @@ describe("AdvisorView", () => {
     const needs = screen.getByRole("list", { name: "Every category, weakest first" });
     expect(within(needs).getAllByRole("listitem")).toHaveLength(3);
     expect(screen.getByRole("status").textContent).toMatch(/^Biggest weakness: \w+, 2nd of 2$/);
-  });
-
-  it("finds the rival's star and offers three trades for them", () => {
-    renderView();
     const target = screen.getByRole("region", { name: /^Best fit for/ });
     expect(within(target).getByRole("link", { name: "Rival Star" })).toBeInTheDocument();
-    const trades = screen.getByRole("region", { name: "Trade ideas with Team Rival" });
-    expect(
-      within(trades)
-        .getAllByRole("heading", { level: 4 })
-        .map((heading) => heading.textContent),
-    ).toEqual(["Favors you", "Fair and balanced", "Favors them"]);
   });
 
-  it("lists two to five free agents and who to drop", () => {
+  it("opens on the Trades tab with three options in each of three rows", () => {
     renderView();
-    const table = within(screen.getByRole("region", { name: /^Free agents for/ })).getByRole(
-      "table",
-    );
-    const rows = within(table).getAllByRole("row").slice(1);
+    expect(
+      screen.getAllByRole("tab").map((tab) => [tab.textContent, tab.getAttribute("aria-selected")]),
+    ).toEqual([
+      ["Trades", "true"],
+      ["Free agent pickups", "false"],
+      ["Trending", "false"],
+    ]);
+    const panel = screen.getByRole("tabpanel", { name: "Trades" });
+    ["Favors you", "Fair and balanced", "Favors them"].forEach((tier) => {
+      const row = within(panel).getByRole("region", { name: tier });
+      expect(
+        within(row)
+          .getAllByRole("heading", { level: 4 })
+          .map((h) => h.textContent),
+      ).toEqual(["Option 1", "Option 2", "Option 3"]);
+    });
+  });
+
+  it("lists two to five free agents and who to drop on its own tab", async () => {
+    const user = userEvent.setup();
+    renderView();
+    await user.click(screen.getByRole("tab", { name: "Free agent pickups" }));
+    const panel = screen.getByRole("tabpanel", { name: "Free agent pickups" });
+    const rows = within(within(panel).getByRole("table")).getAllByRole("row").slice(1);
     expect(rows.length).toBeGreaterThanOrEqual(2);
     expect(rows.length).toBeLessThanOrEqual(5);
-    expect(table.textContent).not.toContain("Rival Star");
-    const drop = screen.getByRole("region", { name: "Who to drop" });
+    expect(panel.textContent).not.toContain("Rival Star");
+    const drop = within(panel).getByRole("region", { name: "Who to drop" });
     expect(within(drop).getByRole("link", { name: "Mine Low" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Favors you" })).toBeNull();
+  });
+
+  it("lists free agents trending up on the Trending tab", () => {
+    renderView({ searchParams: "?tab=trending" });
+    const panel = screen.getByRole("tabpanel", { name: "Trending" });
+    const rows = within(within(panel).getByRole("table")).getAllByRole("row").slice(1);
+    expect(rows.map((row) => within(row).getByRole("link").textContent)).toEqual(["Free Forward"]);
   });
 
   it("needs no trade when the best fit is a free agent", () => {
@@ -166,7 +176,7 @@ describe("AdvisorView", () => {
         league: {
           ...league,
           teams: league.teams.map((team) => (team.isMine ? team : { ...team, players: [] })),
-          rosteredPlayerIds: [1, 2],
+          rosteredPlayerIds: MINE,
         },
       },
     });
