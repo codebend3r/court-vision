@@ -1,0 +1,221 @@
+@use "@/styles/mixins" as *;
+
+.view {
+  display: grid;
+  gap: var(--space-4);
+
+  &[aria-busy="true"] {
+    opacity: 0.85;
+  }
+}
+
+.controls {
+  display: grid;
+  grid-auto-flow: column;
+  justify-content: start;
+  align-items: end;
+  gap: var(--space-4);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.select {
+  @include control-field;
+}
+
+.panel {
+  @include panel-shell;
+  min-width: 0;
+}
+
+.panelTitle {
+  @include panel-title;
+}
+
+.message {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+}
+
+.srOnly {
+  @include visually-hidden;
+}
+
+// The weak category as a large readout, its place beside it.
+.readout {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.readoutValue {
+  @include retro-extrude;
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+}
+
+.readoutRank {
+  color: var(--color-loss);
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-bold);
+}
+
+// Every category, weakest first, as a row of small cards.
+.needs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.need {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+
+  &[data-weakest] {
+    border-color: var(--color-loss);
+  }
+}
+
+.needLabel {
+  @include micro-label;
+}
+
+.needRank {
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-bold);
+}
+
+.target {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.player {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.name {
+  font-weight: var(--font-weight-semibold);
+}
+
+.meta {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+// The three offers side by side where they fit, stacked where they don't.
+.trades {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trade {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-top: 0.25rem solid var(--tier-color);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+
+  &[data-tier="favors_me"] {
+    --tier-color: var(--color-win);
+  }
+
+  &[data-tier="fair"] {
+    --tier-color: var(--color-accent);
+  }
+
+  &[data-tier="favors_them"] {
+    --tier-color: var(--color-highlight);
+  }
+}
+
+.tradeTitle {
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+.tradeTerms {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+
+  dt {
+    @include micro-label;
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.plainList {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tableWrapper {
+  @include table-wrapper;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  @include data-table;
+}
+
+.numeric {
+  @include numeric-cell;
+}
+
+.table th.numeric {
+  text-align: right;
+}
+
+// A player's name cell is a row header: undo data-table's column-header look.
+.rowHeader {
+  position: static;
+  border-bottom: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-md);
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+}
