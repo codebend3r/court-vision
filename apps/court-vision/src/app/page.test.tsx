@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 vi.mock("next/navigation", () => ({
@@ -13,14 +14,14 @@ const getProfile = vi.fn();
 const getWatchlistPlayers = vi.fn();
 const getWatchlistCount = vi.fn();
 const getTrendSeries = vi.fn();
-const getConferenceStandings = vi.fn();
+const getHomeInsights = vi.fn();
 const getActiveLeague = vi.fn();
 const getLeagueTeams = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({ getProfile: () => getProfile() }));
 vi.mock("@/lib/watchlist/queries", () => ({ getWatchlistPlayers, getWatchlistCount }));
 vi.mock("@/lib/watchlist/trendLoader", () => ({ getTrendSeries }));
-vi.mock("@/lib/standings/loader", () => ({ getConferenceStandings }));
+vi.mock("@/lib/home/insights", () => ({ getHomeInsights }));
 vi.mock("@/lib/leagues/queries", () => ({ getActiveLeague: () => getActiveLeague() }));
 type GetLeagueTeamsProps = { leagueId: string };
 
@@ -33,7 +34,8 @@ import { ThemeProvider } from "@vision/ui/components/ThemeProvider/ThemeProvider
 
 // The chart is a client component that reads the theme; in the app that comes
 // from the root layout, so the test supplies the same wrapper.
-const renderHome = async () => render(<ThemeProvider>{await Home()}</ThemeProvider>);
+const renderHome = async () =>
+  render(<ThemeProvider>{await Home()}</ThemeProvider>, { wrapper: withNuqsTestingAdapter() });
 
 afterEach(cleanup);
 
@@ -42,11 +44,11 @@ beforeEach(() => {
   getWatchlistPlayers.mockReset();
   getWatchlistCount.mockReset();
   getTrendSeries.mockReset();
-  getConferenceStandings.mockReset();
+  getHomeInsights.mockReset();
   getWatchlistPlayers.mockResolvedValue([]);
   getWatchlistCount.mockResolvedValue(0);
-  getTrendSeries.mockResolvedValue({ z: [], g: [] });
-  getConferenceStandings.mockResolvedValue(null);
+  getTrendSeries.mockResolvedValue(trends({ series: [] }));
+  getHomeInsights.mockResolvedValue({ valueById: new Map(), methodLabel: "Z-Score", advice: null });
   getActiveLeague.mockReset().mockResolvedValue(null);
   getLeagueTeams.mockReset().mockResolvedValue([]);
 });
@@ -60,6 +62,22 @@ const summary = ({ playerId, fullName }: SummaryProps) => ({
   position: "G",
   nbaPersonId: null,
   starredAt: "2026-07-30T12:00:00.000Z",
+});
+
+type TrendsProps = { series: readonly unknown[] };
+
+// Every method's series, all the same, with no league average yet.
+const trends = ({ series }: TrendsProps) => ({
+  series: {
+    z: series,
+    g: series,
+    points: series,
+    vorp: series,
+    positional: series,
+    sgp: series,
+    sim: series,
+  },
+  averages: { z: [], g: [], points: [], vorp: [], positional: [], sgp: [], sim: [] },
 });
 
 // Next's redirect() throws an error whose digest encodes the destination
@@ -113,12 +131,12 @@ describe("Home", () => {
     );
   });
 
-  it("asks only for the homepage's five players", async () => {
+  it("asks only for the homepage's ten players", async () => {
     getProfile.mockResolvedValue({ username: "steve" });
 
     await renderHome();
 
-    expect(getWatchlistPlayers).toHaveBeenCalledWith({ limit: 5 });
+    expect(getWatchlistPlayers).toHaveBeenCalledWith({ limit: 10 });
   });
 
   it("shows the empty watchlist state when the user has starred nobody", async () => {
@@ -239,45 +257,57 @@ describe("Home", () => {
     expect(screen.getByText("12-team")).toBeInTheDocument();
   });
 
-  it("shows the conference standings ladders for a signed-in user", async () => {
+  it("lists the advisor's trade targets and free agents", async () => {
     getProfile.mockResolvedValue({ username: "steve" });
-    getConferenceStandings.mockResolvedValue({
-      east: [
-        {
-          teamId: 21,
-          abbreviation: "BOS",
-          fullName: "Boston Celtics",
-          rank: 1,
-          wins: 50,
-          losses: 15,
-        },
-      ],
-      west: [
-        {
-          teamId: 14,
-          abbreviation: "OKC",
-          fullName: "Oklahoma City Thunder",
-          rank: 1,
-          wins: 55,
-          losses: 10,
-        },
-      ],
+    const advisorPlayer = ({ playerId, fullName }: SummaryProps) => ({
+      playerId,
+      fullName,
+      teamAbbr: "NYK",
+      position: "G",
+      injuryStatus: null,
+      value: 4.2,
+      categoryScore: 1,
+      focusScores: [],
+    });
+    getHomeInsights.mockResolvedValue({
+      valueById: new Map(),
+      methodLabel: "Z-Score",
+      advice: {
+        weakness: { key: "ast", label: "AST", myTotal: 0, leagueAverage: 1, rank: 12, of: 12 },
+        focusLabel: "AST",
+        tradeTargets: [
+          {
+            ...advisorPlayer({ playerId: 3, fullName: "Trae Young" }),
+            owner: { kind: "team", teamId: "t", teamName: "Rivals", managerName: null },
+          },
+        ],
+        freeAgents: [
+          {
+            ...advisorPlayer({ playerId: 4, fullName: "Tyus Jones" }),
+            owner: { kind: "free_agent" },
+            gainOverDrop: 1,
+            isUpgrade: true,
+          },
+        ],
+      },
     });
 
     await renderHome();
 
-    expect(screen.getByRole("heading", { name: "Conference Standings" })).toBeInTheDocument();
-    // BOS appears in the ladder and again as the East-leader readout.
-    expect(screen.getAllByText("BOS").length).toBeGreaterThan(0);
-    expect(screen.getByText("OKC")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Top Trade Targets" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Trae Young" })).toHaveAttribute("href", "/players/3");
+    expect(screen.getByText(/Rivals/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Top Free Agents" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Tyus Jones" })).toHaveAttribute("href", "/players/4");
+    expect(screen.getByText("12th of 12 teams")).toBeInTheDocument();
   });
 
-  it("still renders the standings panel when the API is unavailable", async () => {
+  it("points to the Yahoo import when there is no advice", async () => {
     getProfile.mockResolvedValue({ username: "steve" });
 
     await renderHome();
 
-    expect(screen.getByText(/Standings are unavailable/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Import your Yahoo league/)).toHaveLength(2);
   });
 
   it("charts the same players it lists", async () => {
@@ -285,14 +315,20 @@ describe("Home", () => {
     const players = [summary({ playerId: 1, fullName: "Jalen Brunson" })];
     getWatchlistPlayers.mockResolvedValue(players);
     const series = [{ playerId: 1, fullName: "Jalen Brunson", points: [] }];
-    getTrendSeries.mockResolvedValue({ z: series, g: series });
+    getTrendSeries.mockResolvedValue(trends({ series }));
 
     await renderHome();
 
     // One read feeds both charts.
     expect(getTrendSeries).toHaveBeenCalledTimes(1);
-    expect(getTrendSeries).toHaveBeenCalledWith({ players });
+    // ...valued on the same league settings as the panels.
+    expect(getTrendSeries).toHaveBeenCalledWith({
+      players,
+      settings: expect.objectContaining({ config: expect.any(Object), methodWeights: {} }),
+    });
     expect(screen.getByRole("heading", { name: "Z-Score Trend" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "G-Score Trend" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "PL Linear Trend" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Sim Value Trend" })).toBeInTheDocument();
   });
 });

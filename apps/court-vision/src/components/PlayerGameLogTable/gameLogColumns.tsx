@@ -233,13 +233,13 @@ const FANTASY_VALUE_COLUMNS: readonly GameLogColumn<FantasyGameLogRow>[] = [
   scoreColumn({
     key: "rollingZ",
     label: "Roll Z",
-    title: `Z-Score over the ${ROLLING_WINDOW_GAMES} games ending here`,
+    title: `Z-Score over up to ${ROLLING_WINDOW_GAMES} games ending here`,
     pick: ({ rollingZ }) => rollingZ,
   }),
   scoreColumn({
     key: "rollingG",
     label: "Roll G",
-    title: `G-Score over the ${ROLLING_WINDOW_GAMES} games ending here`,
+    title: `G-Score over up to ${ROLLING_WINDOW_GAMES} games ending here`,
     pick: ({ rollingG }) => rollingG,
   }),
 ];

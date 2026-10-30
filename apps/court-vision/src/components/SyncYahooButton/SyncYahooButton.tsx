@@ -177,9 +177,16 @@ export function SyncYahooButton({
         aria-label={leagueName === undefined ? undefined : `${label}: ${leagueName}`}
         aria-describedby={statusId}
         onClick={() => sync({ isAuto: false })}
+        data-syncing={isPending || undefined}
       >
+        <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 12a8 8 0 0 1-13.66 5.66M4 12a8 8 0 0 1 13.66-5.66" />
+          <path d="M18 2v4.5h-4.5M6 22v-4.5h4.5" />
+        </svg>
         {label}
       </button>
+      {/* An indeterminate bar under the key while Yahoo is being read. */}
+      {isPending && <span className={styles.progress} aria-hidden="true" />}
       <p
         id={statusId}
         role="status"

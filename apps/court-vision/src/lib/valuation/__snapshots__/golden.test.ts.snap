@@ -254,15 +254,15 @@ exports[`valuation golden master breaks the same players down by category 1`] = 
 
 exports[`valuation golden master scores the same game values, trends, and rolling series 1`] = `
 {
-  "sample": "[{categories:{ast:-3.9828920982158764,blk:-6.855737844690383,fg:0.00043273274943777477,ft:-0.006391284967962635,pts:-4.013081458363784,reb:-4.337398870277522,stl:-2.114893656261846,tov:-2.0386524760013875,tpm:-3.695340816882238},g:-8.325907952518568,rollingG:null,rollingZ:null,z:-27.04395577291156}]",
-  "sha256": "d1cd2d1ea31444b9bed552f2db1522fdb4bd54afca43b2246dfbf0f7c337b3ae",
+  "sample": "[{categories:{ast:-3.9828920982158764,blk:-6.855737844690383,fg:0.00043273274943777477,ft:-0.006391284967962635,pts:-4.013081458363784,reb:-4.337398870277522,stl:-2.114893656261846,tov:-2.0386524760013875,tpm:-3.695340816882238},g:-8.325907952518568,rollingG:-8.325907952518568,rollingZ:-27.04395577291156,z:-27.04395577291156}]",
+  "sha256": "37aee5a86700d8e6c8efb26cd1a1ddf38aee644464cc55d56d8ac54b845adff1",
 }
 `;
 
 exports[`valuation golden master builds the same player fantasy profiles 1`] = `
 {
   "sample": "[{key:"zscore",label:"Z-Score",of:220,rank:220,value:-27.04395577291156},{key:"gscore",label:"G-Score",of:220,rank:220,value:-8.325907952518568},{key:"points",label:"PL Linear",of:220,rank:219,value:1},{key:"vorp",label:"VORP",of:220,rank:220,value:-21.00643166111417},{key:"positional",label:"Pos VORP",of:220,rank:219,value:-21.682877042109745},{key:"sgp",label:"SGP",of:220,rank:219,value:2.0316446636627905},{key:"simvalue",label:"Sim Value",of:220,rank:220,value:-1.9474999999999996}]",
-  "sha256": "872418eb217e69c11ae4e9f4064c2e877b66adbc86484d6ddba5ca5a7e876f55",
+  "sha256": "b1725b7f9a880ac0c74329f5bff79f03dbf7ebd4f17211d99d6e9d7002503e92",
 }
 `;
 
@@ -312,5 +312,12 @@ exports[`valuation golden master builds and ranks the same team stats 1`] = `
 {
   "sample": "{ranks:Map[["T00",{apg:2,bpg:2,diff:30,fgPct:30,ftPct:30,games:29,losses:29,oppPpg:2,ppg:30,rpg:1,spg:2,topg:30,tpmPg:2,winPct:13,wins:30}],["T01",{apg:21,bpg:16,diff:28,fgPct:29,ftPct:29,games:1,losses:28,oppPpg:4,ppg:28,rpg:23,spg:13,topg:20,tpmPg:30,winPct:1,wins:1}],["T02",{apg:16,bpg:9,diff:27,fgPct:28,ftPct:28,games:1,losses:21,oppPpg:4,ppg:26,rpg:19,spg:4,topg:15,tpmPg:29,winPct:7,wins:6}],["T03",{apg:10,bpg:4,diff:25,fgPct:27,ftPct:27,games:1,losses:24,oppPpg:4,ppg:25,rpg:15,spg:22,topg:10,tpmPg:28,winPct:3,wins:3}],["T04",{apg:4,bpg:24,diff:24,fgPct:26,ftPct:26,games:1,losses:17,oppPpg:4,ppg:24,rpg:12,spg:13,topg:5,tpmPg:27,winPct:10,wins:9}],["T05",{apg:26,bpg:16,diff:23,fgPct:25,ftPct:25,games:1,losses:17,oppPpg:4,ppg:23,rpg:8,spg:4,topg:1,tpmPg:26,winPct:10,wins:9}],["T06",{apg:21,bpg:9,diff:21,fgPct:24,ftPct:24,games:1,losses:24,oppPpg:4,ppg:21,rpg:4,spg:22,topg:24,tpmPg:25,winPct:3,wins:3}],["T07",{apg:1,bpg:1,diff:26,fgPct:23,ftPct:23,games:29,losses:30,oppPpg:2,ppg:27,rpg:1,spg:1,topg:29,tpmPg:1,winPct:5,wins:28}],["T08",{apg:10,bpg:24,diff:20,fgPct:22,ftPct:22,games:1,losses:13,oppPpg:4,ppg:20,rpg:23,spg:4,topg:15,tpmPg:24,winPct:15,wins:13}],["T09",{apg:4,bpg:16,diff:19,fgPct:21,ftPct:21,games:1,losses:3,oppPpg:4,ppg:19,rpg:19,spg:22,topg:10,tpmPg:23,winPct:24,wins:21}],["T10",{apg:26,bpg:9,diff:18,fgPct:20,ftPct:20,games:1,losses:17,oppPpg:4,ppg:18,rpg:15,spg:13,topg:5,tpmPg:22,winPct:10,wins:9}],["T11",{apg:3,bpg:3,diff:22,fgPct:19,ftPct:19,games:28,losses:24,oppPpg:1,ppg:22,rpg:3,spg:3,topg:28,tpmPg:3,winPct:18,wins:28}],["T12",{apg:16,bpg:24,diff:17,fgPct:18,ftPct:18,games:1,losses:8,oppPpg:4,ppg:17,rpg:8,spg:22,topg:24,tpmPg:21,winPct:19,wins:16}],["T13",{apg:10,bpg:16,diff:16,fgPct:17,ftPct:17,games:1,losses:3,oppPpg:4,ppg:16,rpg:4,spg:13,topg:20,tpmPg:20,winPct:24,wins:21}],["T14",{apg:4,bpg:9,diff:15,fgPct:16,ftPct:16,games:1,losses:13,oppPpg:4,ppg:15,rpg:28,spg:4,topg:15,tpmPg:19,winPct:15,wins:13}],["T15",{apg:26,bpg:4,diff:14,fgPct:15,ftPct:15,games:1,losses:8,oppPpg:4,ppg:14,rpg:23,spg:22,topg:10,tpmPg:18,winPct:19,wins:16}],["T16",{apg:21,bpg:24,diff:13,fgPct:14,ftPct:14,games:1,losses:16,oppPpg:4,ppg:13,rpg:19,spg:13,topg:5,tpmPg:17,winPct:14,wins:12}],["T17",{apg:16,bpg:16,diff:12,fgPct:13,ftPct:13,games:1,losses:27,oppPpg:4,ppg:12,rpg:15,spg:4,topg:1,tpmPg:16,winPct:2,wins:2}],["T18",{apg:10,bpg:9,diff:11,fgPct:12,ftPct:12,games:1,losses:3,oppPpg:4,ppg:11,rpg:12,spg:22,topg:24,tpmPg:15,winPct:24,wins:21}],["T19",{apg:4,bpg:4,diff:10,fgPct:11,ftPct:11,games:1,losses:8,oppPpg:4,ppg:10,rpg:8,spg:13,topg:20,tpmPg:14,winPct:19,wins:16}],["T20",{apg:26,bpg:24,diff:9,fgPct:10,ftPct:10,games:1,losses:3,oppPpg:4,ppg:9,rpg:4,spg:4,topg:15,tpmPg:13,winPct:24,wins:21}],["T21",{apg:21,bpg:16,diff:8,fgPct:9,ftPct:9,games:1,losses:3,oppPpg:4,ppg:8,rpg:28,spg:22,topg:10,tpmPg:12,winPct:24,wins:21}],["T22",{apg:16,bpg:9,diff:7,fgPct:8,ftPct:8,games:1,losses:1,oppPpg:4,ppg:7,rpg:23,spg:13,topg:5,tpmPg:11,winPct:30,wins:27}],["T23",{apg:10,bpg:4,diff:6,fgPct:7,ftPct:7,games:1,losses:21,oppPpg:4,ppg:6,rpg:19,spg:4,topg:1,tpmPg:10,winPct:7,wins:6}],["T24",{apg:4,bpg:24,diff:5,fgPct:6,ftPct:6,games:1,losses:8,oppPpg:4,ppg:5,rpg:15,spg:22,topg:24,tpmPg:9,winPct:19,wins:16}],["T25",{apg:26,bpg:16,diff:4,fgPct:5,ftPct:5,games:1,losses:13,oppPpg:4,ppg:4,rpg:12,spg:13,topg:20,tpmPg:8,winPct:15,wins:13}],["T26",{apg:21,bpg:9,diff:3,fgPct:4,ftPct:4,games:1,losses:20,oppPpg:4,ppg:3,rpg:8,spg:4,topg:15,tpmPg:7,winPct:9,wins:8}],["T27",{apg:16,bpg:4,diff:2,fgPct:3,ftPct:3,games:1,losses:23,oppPpg:4,ppg:2,rpg:4,spg:22,topg:10,tpmPg:6,winPct:6,wins:5}],["T28",{apg:10,bpg:24,diff:1,fgPct:2,ftPct:2,games:1,losses:2,oppPpg:4,ppg:1,rpg:28,spg:13,topg:5,tpmPg:5,winPct:29,wins:26}],["T29",{apg:4,bpg:16,diff:29,fgPct:1,ftPct:1,games:1,losses:8,oppPpg:4,ppg:29,rpg:23,spg:4,topg:1,tpmPg:4,winPct:19,wins:16}]],stats:[{abbr:"T00",apg:23.80952380952381,bpg:4.761904761904762,diff:-17.61904761904762,fgPct:0.47058823529411764,ftPct:0.7894736",
   "sha256": "e573ab119311d8ce2f9eb773563a21fdaf90da232d9a86f657c3c9e9d19651cf",
+}
+`;
+
+exports[`valuation golden master scores the other five methods' rolling trends 1`] = `
+{
+  "sample": "[{gameNumber:1,points:1,positional:-21.682877042109745,sgp:2.0316446636627905,sim:-1.9474999999999996,vorp:-21.00643166111417}]",
+  "sha256": "39b83e43de71405fc52bdbe7705953891c9255e5aaf8dfbd44c3aa971750d066",
 }
 `;

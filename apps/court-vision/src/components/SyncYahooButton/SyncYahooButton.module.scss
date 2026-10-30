@@ -17,12 +17,91 @@
     @include keycap-press;
   }
 
-  &[aria-disabled="true"],
-  &[aria-disabled="true"]:hover {
-    transform: none;
-    box-shadow: none;
-    opacity: var(--control-disabled-opacity);
-    cursor: not-allowed;
+  position: relative;
+  overflow: hidden;
+
+  // Syncing is the loudest the key gets: it lifts into the engaged accent,
+  // its icon spins, and a light band sweeps across the face, so a sync in
+  // flight is unmistakable. No glow; the extrusion stays the shared geometry.
+  &[data-syncing="true"],
+  &[data-syncing="true"]:hover {
+    @include keycap-engaged;
+
+    cursor: progress;
+
+    &::after {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        100deg,
+        transparent 30%,
+        color-mix(in srgb, var(--color-bg) 45%, transparent) 50%,
+        transparent 70%
+      );
+      animation: sweep 1.1s var(--ease-out) infinite;
+      content: "";
+    }
+
+    .icon {
+      animation: spin 0.9s linear infinite;
+    }
+  }
+}
+
+.icon {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+// A sliver of accent racing along a track under the key: an indeterminate
+// progress bar, since Yahoo gives no percentage to report.
+.progress {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: var(--space-1);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-accent) 20%, transparent);
+
+  &::before {
+    position: absolute;
+    inset-block: 0;
+    width: 40%;
+    border-radius: inherit;
+    background: var(--color-accent);
+    animation: race 1.2s ease-in-out infinite;
+    content: "";
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes sweep {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes race {
+  from {
+    left: -40%;
+  }
+
+  to {
+    left: 100%;
   }
 }
 

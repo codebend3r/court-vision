@@ -1,4 +1,4 @@
-import { formatScore } from "@/lib/advisor/format";
+import { formatScore } from "@vision/core/util/format";
 import { type Advice, type AdvisorFocus } from "@/lib/advisor/types";
 import { formatOrdinal } from "@vision/core/util/format";
 

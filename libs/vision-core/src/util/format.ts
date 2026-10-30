@@ -94,6 +94,15 @@ export const formatSigned = (args: FormatSignedProps): string => {
   return `${isPlus ? "+" : ""}${value.toFixed(digits)}`;
 };
 
+// A fantasy score or value to one place, signed. Rounded first, so a tiny
+// negative reads "0.0", never "-0.0".
+type FormatScoreProps = { value: number };
+
+export const formatScore = ({ value }: FormatScoreProps): string => {
+  const rounded = Number(value.toFixed(1));
+  return formatSigned({ value: rounded === 0 ? 0 : rounded, digits: 1 });
+};
+
 // A make rate the way box scores print it, to three places with the leading
 // zero dropped: 0.48 reads ".480". A perfect 1 keeps its digit ("1.000").
 type FormatRateProps = { value: number };

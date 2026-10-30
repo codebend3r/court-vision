@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test";
 import {
   aggregateWindowLogs,
   buildRollingSeries,
+  buildYardstick,
   CATEGORY_KEYS,
   computePoolStats,
   type DatedLog,
@@ -10,31 +11,27 @@ import {
   DEFAULT_VALUATION_CONFIG,
   type FantasyStatLine,
   makeStatLine,
-  type PlayerValue,
-  type PoolStats,
   rollingWindowLines,
-  scoreGScore,
-  scoreZScore,
   type ValuationConfig,
   makeDatedLog,
   type BasketballKeys,
 } from "#core/testing/basketball";
+import { METHOD_VALUE_KEYS } from "#core/valuation/registry";
 import {
   ROLLING_WINDOW_GAMES,
-  type RollingMethod,
   type RollingSeriesArgs,
   type TrendPoint,
   type TrendSeries,
 } from "#core/valuation/rolling";
-import { type CategoryScoringConfig } from "#core/valuation/methods/perCategory";
-import { type ValuationLine } from "#core/valuation/types";
+import { type MethodValueKey, type ValuationLine } from "#core/valuation/types";
+import { type Yardstick } from "#core/valuation/yardstick";
 
-type LogProps = { day: number; pts: number };
+type LogProps = { day: number; pts: number; minutes?: number };
 
-const log = ({ day, pts }: LogProps): DatedLog =>
+const log = ({ day, pts, minutes = 32 }: LogProps): DatedLog =>
   makeDatedLog({
     gameDate: new Date(Date.UTC(2026, 0, day)),
-    minutes: 32,
+    minutes,
     pts,
     reb: 5,
     ast: 5,
@@ -68,32 +65,54 @@ const poolLine = (index: number) =>
     fta: 100 + index * 7,
   });
 
-const poolStats = computePoolStats({
-  lines: Array.from({ length: 20 }, (_, index) => poolLine(index)),
-  basis: DEFAULT_VALUATION_CONFIG.basis,
-  poolSize: 150,
-  windowGames: null,
-});
+// A yardstick over a pool's lines, on the config every test here shares
+// unless it says otherwise.
+type YardstickForProps = {
+  lines: readonly ValuationLine<BasketballKeys>[];
+  config?: ValuationConfig;
+};
 
-type SeriesProps = { logs: readonly DatedLog[] };
-
-const series = ({ logs }: SeriesProps) =>
-  buildRollingSeries({
-    method: "z",
-    playerId: 7,
-    fullName: "Jalen Brunson",
-    logs,
-    poolStats,
-    config: DEFAULT_VALUATION_CONFIG,
+const yardstickFor = ({
+  lines,
+  config = DEFAULT_VALUATION_CONFIG,
+}: YardstickForProps): Yardstick<BasketballKeys> =>
+  buildYardstick({
+    lines,
+    poolStats: computePoolStats({ lines, basis: config.basis, poolSize: 150, windowGames: null }),
+    config,
   });
 
+const poolLines = Array.from({ length: 20 }, (_, index) => poolLine(index));
+const yardstick = yardstickFor({ lines: poolLines });
+
+type AllSeriesProps = { logs: readonly DatedLog[]; minGames?: number };
+
+const allSeries = ({ logs, minGames }: AllSeriesProps) =>
+  buildRollingSeries({
+    playerId: 7,
+    fullName: "Jalen Brunson",
+    position: "G",
+    logs,
+    minGames,
+    yardstick,
+  });
+
+const series = ({ logs, minGames }: AllSeriesProps) => allSeries({ logs, minGames }).z;
+
 describe("buildRollingSeries on Z-Score", () => {
-  it("emits one point per game from the window size onward", () => {
+  it("emits one point per game from the first", () => {
     const logs = Array.from({ length: 12 }, (_, index) => log({ day: index + 1, pts: 20 }));
     const result = series({ logs });
+    expect(result.points).toHaveLength(12);
+    expect(result.points[0]?.date).toBe(Date.UTC(2026, 0, 1));
+    expect(result.points.at(-1)?.date).toBe(Date.UTC(2026, 0, 12));
+  });
+
+  it("emits one point per game from the window size onward when a full window is required", () => {
+    const logs = Array.from({ length: 12 }, (_, index) => log({ day: index + 1, pts: 20 }));
+    const result = series({ logs, minGames: ROLLING_WINDOW_GAMES });
     expect(result.points).toHaveLength(12 - ROLLING_WINDOW_GAMES + 1);
     expect(result.points[0]?.date).toBe(Date.UTC(2026, 0, ROLLING_WINDOW_GAMES));
-    expect(result.points.at(-1)?.date).toBe(Date.UTC(2026, 0, 12));
   });
 
   it("carries the player's identity through", () => {
@@ -104,11 +123,16 @@ describe("buildRollingSeries on Z-Score", () => {
     expect(result.fullName).toBe("Jalen Brunson");
   });
 
-  it("emits no points for a player under the window size", () => {
+  it("emits no points under the window size when a full window is required", () => {
     const logs = Array.from({ length: ROLLING_WINDOW_GAMES - 1 }, (_, index) =>
       log({ day: index + 1, pts: 20 }),
     );
-    expect(series({ logs }).points).toEqual([]);
+    expect(series({ logs, minGames: ROLLING_WINDOW_GAMES }).points).toEqual([]);
+  });
+
+  it("emits no points before the first appearance", () => {
+    const logs = [log({ day: 1, pts: 0, minutes: 0 }), log({ day: 2, pts: 20 })];
+    expect(series({ logs }).points.map((point) => point.date)).toEqual([Date.UTC(2026, 0, 2)]);
   });
 
   it("rises when recent games are stronger than early ones", () => {
@@ -163,88 +187,86 @@ const inflateSq = (sq: FantasyStatLine["sq"]): FantasyStatLine["sq"] => ({
 
 describe("buildRollingSeries on G-Score", () => {
   const logs = Array.from({ length: 12 }, (_, index) => log({ day: index + 1, pts: 20 }));
-  const args = {
-    playerId: 7,
-    fullName: "Jalen Brunson",
-    logs,
-    config: DEFAULT_VALUATION_CONFIG,
-  };
+  const args = { playerId: 7, fullName: "Jalen Brunson", position: "G", logs };
 
   it("matches the z-series against a pool with no game-to-game volatility", () => {
     // Constant-line pool players have zero within variance, so the G-Score
     // denominator collapses to the Z-Score one.
-    const gPoints = buildRollingSeries({ ...args, method: "g", poolStats }).points;
-    const zPoints = buildRollingSeries({ ...args, method: "z", poolStats }).points;
-    expect(gPoints).toHaveLength(zPoints.length);
-    gPoints.forEach((point, index) => {
-      expect(point.value).toBeCloseTo(zPoints[index]?.value ?? Number.NaN, 10);
+    const { z, g } = buildRollingSeries({ ...args, yardstick });
+    expect(g.points).toHaveLength(z.points.length);
+    g.points.forEach((point, index) => {
+      expect(point.value).toBeCloseTo(z.points[index]?.value ?? Number.NaN, 10);
     });
   });
 
   it("diverges from the z-series once the pool swings game to game", () => {
-    const volatileStats = computePoolStats({
-      lines: Array.from({ length: 20 }, (_, index) => {
-        const line = poolLine(index);
-        return { ...line, sq: inflateSq(line.sq) };
-      }),
-      basis: DEFAULT_VALUATION_CONFIG.basis,
-      poolSize: 150,
-      windowGames: null,
+    const volatile = yardstickFor({
+      lines: poolLines.map((line) => ({ ...line, sq: inflateSq(line.sq) })),
     });
-    const volatile = { ...args, poolStats: volatileStats };
-    const gValue = buildRollingSeries({ ...volatile, method: "g" }).points.at(-1)?.value;
-    const zValue = buildRollingSeries({ ...volatile, method: "z" }).points.at(-1)?.value;
-    expect(gValue).not.toBeCloseTo(zValue ?? Number.NaN, 5);
+    const { z, g } = buildRollingSeries({ ...args, yardstick: volatile });
+    expect(g.points.at(-1)?.value).not.toBeCloseTo(z.points.at(-1)?.value ?? Number.NaN, 5);
   });
 
-  it("emits no points for a player under the window size", () => {
+  it("scores a player under the window size over the games so far", () => {
     const short = logs.slice(0, ROLLING_WINDOW_GAMES - 1);
-    expect(buildRollingSeries({ ...args, method: "g", poolStats, logs: short }).points).toEqual([]);
+    expect(buildRollingSeries({ ...args, yardstick, logs: short }).g.points).toHaveLength(
+      ROLLING_WINDOW_GAMES - 1,
+    );
+  });
+});
+
+describe("buildRollingSeries on every method", () => {
+  const logs = Array.from({ length: 12 }, (_, index) =>
+    log({ day: index + 1, pts: 10 + index * 3 }),
+  );
+  const result = allSeries({ logs });
+
+  it("returns a series for each of the seven methods", () => {
+    expect(Object.keys(result).toSorted()).toEqual([...METHOD_VALUE_KEYS].toSorted());
+  });
+
+  it("plots every method on the same dates for the same player", () => {
+    const dates = result.z.points.map((point) => point.date);
+    METHOD_VALUE_KEYS.forEach((key) => {
+      expect(result[key].playerId).toBe(7);
+      expect(result[key].fullName).toBe("Jalen Brunson");
+      expect(result[key].points.map((point) => point.date)).toEqual(dates);
+    });
   });
 });
 
 // The slice-and-score-every-window implementation the shared window lines
-// replaced, kept verbatim so the new series are held to exactly its output.
-// It aggregates through the current aggregateWindowLogs, which its own test
-// holds to the previous aggregator's exact output.
-type TrendScorerProps = {
-  lines: readonly ValuationLine<BasketballKeys>[];
-  poolStats: PoolStats;
-  config: CategoryScoringConfig<BasketballKeys>;
-};
+// replaced: each window aggregated on its own, given the player's position,
+// and valued through the yardstick, one method at a time. It aggregates
+// through the current aggregateWindowLogs, which its own test holds to the
+// previous aggregator's exact output.
 
-type TrendScorer = (args: TrendScorerProps) => PlayerValue[];
-
-// The rolling line carries only what the scorers read: who, and no position.
+// The rolling window line carries only what the scorers read: who, and no
+// position (the series lends the player's own).
 type IdentityProps = { playerId: number };
 
 const identity = ({ playerId }: IdentityProps) => ({ playerId, position: null });
 
 type ReferenceRollingSeriesProps = Omit<RollingSeriesArgs<BasketballKeys>, "sport"> & {
-  scorer: TrendScorer;
+  method: MethodValueKey;
 };
 
 const referenceRollingSeries = ({
   playerId,
   fullName,
+  position,
   logs,
-  poolStats,
-  config,
-  scorer,
+  yardstick: scale,
+  method,
   windowSize = ROLLING_WINDOW_GAMES,
 }: ReferenceRollingSeriesProps): TrendSeries => {
-  if (logs.length < windowSize) {
-    return { playerId, fullName, points: [] };
-  }
   const points = logs.reduce<TrendPoint[]>((acc, log, index) => {
-    if (index + 1 < windowSize) return acc;
-    const window = logs.slice(index + 1 - windowSize, index + 1);
-    const line = {
-      ...identity({ playerId }),
-      ...aggregateWindowLogs({ logs: window }),
-    };
-    const [value] = scorer({ lines: [line], poolStats, config });
-    return [...acc, { date: log.gameDate.getTime(), value: value?.total ?? 0 }];
+    // Every game so far until the window fills, once the player has played.
+    const window = logs.slice(Math.max(0, index + 1 - windowSize), index + 1);
+    if (window.length < windowSize && !window.some((game) => game.playingTime > 0)) return acc;
+    const line = { playerId, position, ...aggregateWindowLogs({ logs: window }) };
+    const [value] = scale.value({ lines: [line] });
+    return [...acc, { date: log.gameDate.getTime(), value: value?.[method] ?? 0 }];
   }, []);
   return { playerId, fullName, points };
 };
@@ -295,15 +317,14 @@ const seededSeason = ({ seed, length }: SeededSeasonProps): DatedLog[] => {
 
 // Pool lines aggregated from seeded seasons carry real game-to-game variance,
 // so G-Score's within term is live rather than collapsing onto Z-Score.
-const seededPoolStats = computePoolStats({
-  lines: Array.from({ length: 160 }, (_, index) => ({
-    ...identity({ playerId: index + 1000 }),
-    ...aggregateWindowLogs({ logs: seededSeason({ seed: index + 1, length: 60 }) }),
-  })),
-  basis: "perGame",
-  poolSize: 150,
-  windowGames: null,
-});
+// Positions cycle so Positional VORP has a replacement level in every group.
+const SEEDED_POSITIONS = ["G", "F", "C", "G-F", "F-C"];
+
+const seededPoolLines = Array.from({ length: 160 }, (_, index) => ({
+  playerId: index + 1000,
+  position: SEEDED_POSITIONS[index % SEEDED_POSITIONS.length] ?? null,
+  ...aggregateWindowLogs({ logs: seededSeason({ seed: index + 1, length: 60 }) }),
+}));
 
 const allCategories: ValuationConfig = {
   categories: [...CATEGORY_KEYS],
@@ -315,10 +336,7 @@ const allCategories: ValuationConfig = {
 };
 
 describe("rolling series against the per-window reference", () => {
-  const seriesCases: { name: string; method: RollingMethod; scorer: TrendScorer }[] = [
-    { name: "Z", method: "z", scorer: scoreZScore },
-    { name: "G", method: "g", scorer: scoreGScore },
-  ];
+  const seededYardstick = yardstickFor({ lines: seededPoolLines, config: allCategories });
   const shapes: { length: number; windowSize?: number }[] = [
     { length: 0 },
     { length: ROLLING_WINDOW_GAMES - 1 },
@@ -328,20 +346,19 @@ describe("rolling series against the per-window reference", () => {
     { length: 30, windowSize: 1 },
   ];
 
-  seriesCases.forEach(({ name, method, scorer }) => {
-    shapes.forEach(({ length, windowSize }) => {
-      it(`${name}: matches exactly over ${length} games (window ${windowSize ?? "default"})`, () => {
-        const args = {
-          playerId: 7,
-          fullName: "Shai Gilgeous-Alexander",
-          logs: seededSeason({ seed: 0xbeef + length, length }),
-          poolStats: seededPoolStats,
-          config: allCategories,
-          windowSize,
-        };
-        expect(buildRollingSeries({ ...args, method })).toStrictEqual(
-          referenceRollingSeries({ ...args, scorer }),
-        );
+  shapes.forEach(({ length, windowSize }) => {
+    it(`matches exactly on every method over ${length} games (window ${windowSize ?? "default"})`, () => {
+      const args = {
+        playerId: 7,
+        fullName: "Shai Gilgeous-Alexander",
+        position: "F-C",
+        logs: seededSeason({ seed: 0xbeef + length, length }),
+        yardstick: seededYardstick,
+        windowSize,
+      };
+      const result = buildRollingSeries(args);
+      METHOD_VALUE_KEYS.forEach((method) => {
+        expect(result[method]).toStrictEqual(referenceRollingSeries({ ...args, method }));
       });
     });
   });
@@ -351,8 +368,16 @@ describe("rollingWindowLines", () => {
   const logs = seededSeason({ seed: 42, length: 15 });
   const lineEndingAt = rollingWindowLines({ playerId: 7, logs });
 
-  it("has no line until the window fills", () => {
-    expect(lineEndingAt({ index: ROLLING_WINDOW_GAMES - 2 })).toBeNull();
+  it("has no line until the window fills when a full window is required", () => {
+    const full = rollingWindowLines({ playerId: 7, logs, minGames: ROLLING_WINDOW_GAMES });
+    expect(full({ index: ROLLING_WINDOW_GAMES - 2 })).toBeNull();
+  });
+
+  it("aggregates every game so far before the window fills", () => {
+    expect(lineEndingAt({ index: 3 })).toEqual({
+      ...identity({ playerId: 7 }),
+      ...aggregateWindowLogs({ logs: logs.slice(0, 4) }),
+    });
   });
 
   it("collapses the game and the nine before it under the player's id", () => {

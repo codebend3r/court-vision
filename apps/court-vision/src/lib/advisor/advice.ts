@@ -33,8 +33,9 @@ type BuildAdviceProps = {
 /**
  * The Roster Advisor's whole answer: every category weakest first, the weak
  * ones worth fixing, and for the focus (all of them together, or one) up to
- * five best fits, three rows of trades for the chosen fit when they are on
- * another team, two to five free agents, and who to drop for one.
+ * five best fits (and, apart, the five best on other teams), three rows of
+ * trades for the chosen fit when they are on another team, two to five free
+ * agents, and who to drop for one.
  * Null when there is nothing to rank (no team of mine, no valued players).
  */
 export const buildAdvice = ({
@@ -138,6 +139,7 @@ export const buildAdvice = ({
     focusNeeds,
     focusLabel: focusNeeds.map(({ label }) => label).join(" + "),
     targets,
+    tradeTargets: findTargets({ candidates: elsewhere, myRoster }),
     target,
     trades: target?.owner.kind === "team" ? buildTradeOffers({ target, myRoster }) : [],
     freeAgents: pickFreeAgents({ freePool, drop }),

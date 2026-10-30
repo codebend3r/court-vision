@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "bun:test";
 
 import {
+  buildLeagueAverageLines,
   buildPlayerFantasyProfile,
   DEFAULT_VALUATION_CONFIG,
   FANTASY_METHODS,
@@ -95,6 +96,7 @@ describe("buildPlayerFantasyProfile", () => {
     poolWindowGames: null,
     logs,
     windowGames: null,
+    averageLines: [],
   });
 
   it("returns null when the player has no line in the pool", () => {
@@ -107,6 +109,7 @@ describe("buildPlayerFantasyProfile", () => {
         poolWindowGames: null,
         logs,
         windowGames: null,
+        averageLines: [],
       }),
     ).toBeNull();
   });
@@ -144,23 +147,22 @@ describe("buildPlayerFantasyProfile", () => {
       poolWindowGames: null,
       logs,
       windowGames: null,
+      averageLines: [],
     });
 
     expect(excluded?.breakdown.map((entry) => entry.key)).toEqual(["pts", "reb"]);
   });
 
-  it("plots one trend point per game, empty until the rolling window fills", () => {
+  it("plots one trend point per game from the first", () => {
     expect(profile?.trend).toHaveLength(15);
     expect(profile?.trend[0]).toMatchObject({
       gameIndex: 1,
       gameDate: "2025-10-01T00:00:00.000Z",
       matchup: "LAL vs. OPP1",
       dnp: false,
-      z: null,
-      g: null,
     });
-    expect(profile?.trend[8]?.z).toBeNull();
-    expect(typeof profile?.trend[9]?.z).toBe("number");
+    expect(typeof profile?.trend[0]?.z).toBe("number");
+    expect(typeof profile?.trend[8]?.z).toBe("number");
     expect(typeof profile?.trend[14]?.g).toBe("number");
   });
 
@@ -173,6 +175,7 @@ describe("buildPlayerFantasyProfile", () => {
       poolWindowGames: 5,
       logs,
       windowGames: 5,
+      averageLines: [],
     });
 
     expect(windowed?.trend.map((point) => point.gameIndex)).toEqual([1, 2, 3, 4, 5]);
@@ -184,7 +187,7 @@ describe("buildPlayerFantasyProfile", () => {
   it("values every game in the season for the game log, aligned with the logs", () => {
     expect(profile?.games).toHaveLength(15);
     expect(typeof profile?.games[0]?.z).toBe("number");
-    expect(profile?.games[8]?.rollingZ).toBeNull();
+    expect(typeof profile?.games[0]?.rollingZ).toBe("number");
     expect(typeof profile?.games[14]?.rollingG).toBe("number");
   });
 
@@ -199,6 +202,7 @@ describe("buildPlayerFantasyProfile", () => {
         poolWindowGames: 5,
         logs: [...logs, log({ gameId: "dnp", day: 16, minutes: 0, pts: 0 })],
         windowGames: 5,
+        averageLines: [],
       });
 
       if (shared === null) throw new Error("missing fantasy profile");
@@ -231,6 +235,7 @@ describe("buildPlayerFantasyProfile", () => {
       poolWindowGames: null,
       logs: [...logs, log({ gameId: "dnp", day: 16, minutes: 0, pts: 0 })],
       windowGames: null,
+      averageLines: [],
     });
 
     expect(withDnp?.trend[15]?.dnp).toBe(true);
@@ -238,5 +243,25 @@ describe("buildPlayerFantasyProfile", () => {
 
   it("reports the standardizing pool size", () => {
     expect(profile?.poolSize).toBeGreaterThan(0);
+  });
+
+  it("scores the league-average line per date with the profile's own yardstick", () => {
+    const averageLines = buildLeagueAverageLines({ players: [{ playerId: 7, logs }] });
+    const withAverages = buildPlayerFantasyProfile({
+      lines,
+      playerId: 7,
+      config,
+      methodWeights,
+      poolWindowGames: null,
+      logs,
+      windowGames: null,
+      averageLines,
+    });
+    // One player: on each date the league average is that player's own form.
+    expect(withAverages?.averages.map(({ date }) => date)).toEqual(
+      averageLines.map(({ date }) => date),
+    );
+    const lastAverage = withAverages?.averages.at(-1)?.values.z;
+    expect(lastAverage).toBeCloseTo(withAverages?.trend.at(-1)?.z ?? Number.NaN);
   });
 });

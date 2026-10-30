@@ -1,4 +1,5 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it } from "bun:test";
 
 import {
@@ -33,8 +34,9 @@ type RenderChartProps = {
 const renderChart = ({ entries, caption = "Zero is league-average value." }: RenderChartProps) =>
   render(
     <ThemeProvider>
-      <WatchlistTrendChart series={entries} caption={caption} />
+      <WatchlistTrendChart series={entries} caption={caption} average={[]} />
     </ThemeProvider>,
+    { wrapper: withNuqsTestingAdapter() },
   );
 
 // Declared first on purpose: next/dynamic caches a module once it loads, so
@@ -72,21 +74,21 @@ describe("WatchlistTrendChart", () => {
     expect(screen.getByText("Karl-Anthony Towns")).toBeInTheDocument();
   });
 
-  it("flags a player without a full window instead of drawing a stub", () => {
+  it("flags a player with no games instead of drawing a stub", () => {
     renderChart({
       entries: [
         series({ playerId: 1, fullName: "Jalen Brunson", pointCount: 12 }),
         series({ playerId: 2, fullName: "Rookie Guy", pointCount: 0 }),
       ],
     });
-    expect(screen.getByText(/fewer than 10 games/)).toBeInTheDocument();
+    expect(screen.getByText(/no games yet/)).toBeInTheDocument();
   });
 
   it("explains an all-empty chart rather than rendering bare axes", () => {
     const { container } = renderChart({
       entries: [series({ playerId: 2, fullName: "Rookie Guy", pointCount: 0 })],
     });
-    expect(screen.getByText(/No starred player has 10 games yet/)).toBeInTheDocument();
+    expect(screen.getByText(/No starred player has played yet/)).toBeInTheDocument();
     expect(container.querySelector(".plot")).toBeNull();
   });
 

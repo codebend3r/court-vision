@@ -1,3 +1,4 @@
+import { DEFAULT_TREND_SPAN, TREND_SPANS } from "@/lib/charts/trendMethods";
 import {
   createParser,
   parseAsArrayOf,
@@ -134,6 +135,10 @@ export const fantasyParsers = {
   mode: listParsers.mode,
   owner: listParsers.owner,
   layout: parseAsStringLiteral(FANTASY_LAYOUTS).withDefault("table"),
+  // How far back the Rolling layout's charts look (the whole season by
+  // default). Which charts show, and the average line, are the shared chart
+  // settings (useTrendChartPrefs).
+  span: parseAsStringLiteral(TREND_SPANS).withDefault(DEFAULT_TREND_SPAN),
 };
 
 export type FantasySearchParams = inferParserType<typeof fantasyParsers>;

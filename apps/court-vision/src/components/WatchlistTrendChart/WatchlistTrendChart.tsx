@@ -1,12 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useTrendChartPrefs } from "@/components/TrendChartControls/useTrendChartPrefs";
 
 import { ChartPlaceholder } from "@vision/ui/components/ChartPlaceholder/ChartPlaceholder";
 import { CHART_CHROME, getTrendPalette } from "@vision/ui/charts/palette";
 import type { WatchlistTrendLine } from "@/components/WatchlistTrendChart/WatchlistTrendPlot";
 import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
-import { ROLLING_WINDOW_GAMES, type TrendSeries } from "@vision/core/valuation/rolling";
+import { type TrendPoint, type TrendSeries } from "@vision/core/valuation/rolling";
 
 import styles from "@/components/WatchlistTrendChart/WatchlistTrendChart.module.scss";
 
@@ -26,9 +27,17 @@ const WatchlistTrendPlot = dynamic(
 export type WatchlistTrendChartProps = {
   series: readonly TrendSeries[];
   // What the plotted number means — rendered as the figure's caption. The
-  // chart itself is method-agnostic; z- and g-score instances differ only here.
+  // chart itself is method-agnostic; one instance per method differs only in
+  // its series, caption and average.
   caption: string;
+  // The league's average on this method per game date, drawn as a dotted
+  // line that moves with the league while the page's League average switch
+  // is on (it starts on).
+  average: readonly TrendPoint[];
 };
+
+// The row field the league-average line reads.
+export const AVERAGE_KEY = "average";
 
 type SeriesKeyProps = { playerId: number };
 
@@ -45,9 +54,12 @@ export type ChartRow = Record<string, number | undefined>;
 // scale: dates then sit at even intervals however many days apart they are. A
 // time scale spaces them by real duration instead, which stretches the all-star
 // break into dead space and squeezes busy weeks together.
-type BuildRowsProps = { series: readonly TrendSeries[] };
+// The league average joins each row by date; it only fills dates a charted
+// player played, which is every date on the axis.
+type BuildRowsProps = { series: readonly TrendSeries[]; average?: readonly TrendPoint[] };
 
-export const buildRows = ({ series }: BuildRowsProps): ChartRow[] => {
+export const buildRows = ({ series, average = [] }: BuildRowsProps): ChartRow[] => {
+  const averageByDate = new Map(average.map((point) => [point.date, point.value]));
   const dates = [
     ...new Set(series.flatMap((entry) => entry.points.map((point) => point.date))),
   ].sort((a, b) => a - b);
@@ -63,12 +75,13 @@ export const buildRows = ({ series }: BuildRowsProps): ChartRow[] => {
         ...row,
         [seriesKey({ playerId: entry.playerId })]: byPlayer.get(entry.playerId)?.get(date),
       }),
-      { date },
+      { date, [AVERAGE_KEY]: averageByDate.get(date) },
     ),
   );
 };
 
-export function WatchlistTrendChart({ series, caption }: WatchlistTrendChartProps) {
+export function WatchlistTrendChart({ series, caption, average }: WatchlistTrendChartProps) {
+  const { showAverage } = useTrendChartPrefs();
   const { theme } = useTheme();
   const palette = getTrendPalette({ theme });
 
@@ -82,7 +95,7 @@ export function WatchlistTrendChart({ series, caption }: WatchlistTrendChartProp
     );
   }
 
-  const rows = buildRows({ series });
+  const rows = buildRows({ series, average });
   const lines = series.map((entry, index): WatchlistTrendLine => ({
     dataKey: seriesKey({ playerId: entry.playerId }),
     name: entry.fullName,
@@ -108,20 +121,20 @@ export function WatchlistTrendChart({ series, caption }: WatchlistTrendChartProp
                 />
               </svg>
               <span>{entry.fullName}</span>
-              {!isPlotted && (
-                <span className={styles.legendNote}>— fewer than {ROLLING_WINDOW_GAMES} games</span>
-              )}
+              {!isPlotted && <span className={styles.legendNote}>— no games yet</span>}
             </li>
           );
         })}
       </ul>
       {plotted.length === 0 ? (
-        <p className={styles.empty}>
-          No starred player has {ROLLING_WINDOW_GAMES} games yet this season.
-        </p>
+        <p className={styles.empty}>No starred player has played yet this season.</p>
       ) : (
         <div className={styles.plot}>
-          <WatchlistTrendPlot rows={rows} lines={lines} />
+          <WatchlistTrendPlot
+            rows={rows}
+            lines={lines}
+            showAverage={showAverage && !!average.length}
+          />
         </div>
       )}
       <figcaption className={styles.caption}>{caption}</figcaption>

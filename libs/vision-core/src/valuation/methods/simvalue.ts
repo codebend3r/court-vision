@@ -56,13 +56,18 @@ type ScoreSimValueProps<K extends SportKeys> = {
   iterations?: number;
 };
 
-export const scoreSimValue = <K extends SportKeys>({
+type ScoreLinesProps<K extends SportKeys> = { lines: readonly ValuationLine<K>[] };
+
+// The simulated season is built from the pool once; the scorer then values any
+// lines against it (the pool's own, or a rolling window held to the same
+// league).
+export const simValueScorer = <K extends SportKeys>({
   sport,
   lines,
   poolStats,
   config,
   iterations = SIM_ITERATIONS,
-}: ScoreSimValueProps<K>): PlayerValue<K>[] => {
+}: ScoreSimValueProps<K>) => {
   const { replacement, spread } = buildLeague({ sport, lines, poolStats, config });
 
   // One simulated season, drawn once and faced by every player. Re-rolling
@@ -103,21 +108,25 @@ export const scoreSimValue = <K extends SportKeys>({
     }),
   );
 
-  return scorePerCategory({
-    sport,
-    lines,
-    poolStats,
-    config,
-    raw: ({ category, value }) => {
-      const season = seasons.get(category);
-      if (season === undefined || season.sorted.length === 0) return 0;
-      const { mean, sorted, baselineWins, freeAgent } = season;
-      const withPlayer = mean + (value - freeAgent);
-      // Common random numbers: the same weeks are scored with and without the
-      // player, so every week that is not close to the threshold cancels
-      // instead of adding noise.
-      const gained = weeksWon({ sorted, total: withPlayer }) - baselineWins;
-      return gained / sorted.length;
-    },
-  });
+  return ({ lines: scored }: ScoreLinesProps<K>): PlayerValue<K>[] =>
+    scorePerCategory({
+      sport,
+      lines: scored,
+      poolStats,
+      config,
+      raw: ({ category, value }) => {
+        const season = seasons.get(category);
+        if (season === undefined || season.sorted.length === 0) return 0;
+        const { mean, sorted, baselineWins, freeAgent } = season;
+        const withPlayer = mean + (value - freeAgent);
+        // Common random numbers: the same weeks are scored with and without the
+        // player, so every week that is not close to the threshold cancels
+        // instead of adding noise.
+        const gained = weeksWon({ sorted, total: withPlayer }) - baselineWins;
+        return gained / sorted.length;
+      },
+    });
 };
+
+export const scoreSimValue = <K extends SportKeys>(args: ScoreSimValueProps<K>): PlayerValue<K>[] =>
+  simValueScorer(args)({ lines: args.lines });

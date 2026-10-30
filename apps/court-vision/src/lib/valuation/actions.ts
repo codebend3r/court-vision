@@ -6,6 +6,7 @@ import { isActionArray, isActionInt } from "@vision/core/util/argGuards";
 import { PLAYERS_CACHE_OPTIONS } from "@/lib/cache";
 import { prisma } from "@/lib/prisma";
 import { SEASON_TYPE } from "@/lib/stats/season";
+import { getLeagueAverageLines } from "@/lib/valuation/leagueAverage";
 import { latestSeason } from "@/lib/valuation/season";
 import {
   GAME_LOG_SELECT,
@@ -46,8 +47,10 @@ const cachedLogs = unstable_cache(
 // Intentionally public: the Players Fantasy tab works signed out. This action
 // only reads NBA box scores, never account data or writes. Its security-scan
 // exception must be re-reviewed if this module gains other exports or queries.
-// The season's game logs for one page of the Fantasy tab, so the client can
-// draw each player's rolling value against the pool it already holds. Only
+// The season's game logs for one page of the Fantasy tab, plus the league's
+// average rolling line per game date, so the client can draw each player's
+// rolling value (and the moving league average) against the pool it already
+// holds. Only
 // the box-score fields travel: the rolling scorers need nothing else, and a
 // page of a hundred players is thousands of rows.
 type LoadFantasyTrendLogsProps = {
@@ -66,20 +69,26 @@ export const loadFantasyTrendLogs = async ({
   }
   try {
     const season = await latestSeason();
-    const rows =
-      season === null || playerIds.length === 0
-        ? []
-        : await cachedLogs(
-            season,
-            playerIds.toSorted((a, b) => a - b),
-          );
+    // The page's logs and the league's per-date average are independent reads.
+    const [rows, averageLines] =
+      season === null
+        ? [[], []]
+        : await Promise.all([
+            playerIds.length === 0
+              ? []
+              : cachedLogs(
+                  season,
+                  playerIds.toSorted((a, b) => a - b),
+                ),
+            getLeagueAverageLines({ season }),
+          ]);
     const players = playerIds.map((playerId) => ({
       playerId,
       logs: rows
         .filter((row) => row.playerId === playerId)
         .map(({ playerId: _playerId, ...log }): FantasyTrendLog => log),
     }));
-    return { status: "ok", players };
+    return { status: "ok", players, averageLines };
   } catch {
     return { status: "error" };
   }

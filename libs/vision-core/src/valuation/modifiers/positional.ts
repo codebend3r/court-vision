@@ -15,12 +15,17 @@ type PositionalValuesProps<K extends SportKeys> = {
   fallbackReplacement: number;
 };
 
-export const positionalValues = <K extends SportKeys>({
+type ReplacementForProps = { position: string | null };
+
+// The replacement level a player at `position` is measured against, from the
+// pool's levels by group: built once, then read for any player (a pool row or
+// a rolling window carrying that player's position).
+export const positionalReplacement = <K extends SportKeys>({
   sport,
   players,
   teams,
   fallbackReplacement,
-}: PositionalValuesProps<K>): Map<number, number> => {
+}: PositionalValuesProps<K>) => {
   const { groups, parse, replacementSlots } = sport.positions;
   const levelByGroup = groups.reduce<Partial<Record<K["group"], number>>>((acc, group) => {
     const eligible = players.filter((player) =>
@@ -32,13 +37,22 @@ export const positionalValues = <K extends SportKeys>({
       [group]: replacementLevel({ totals: eligible, rank: teams * replacementSlots[group] }),
     };
   }, {});
+  return ({ position }: ReplacementForProps): number => {
+    const levels = parse(position)
+      .map((group) => levelByGroup[group])
+      .filter((level): level is number => level !== undefined);
+    return levels.length > 0 ? Math.min(...levels) : fallbackReplacement;
+  };
+};
+
+export const positionalValues = <K extends SportKeys>(
+  args: PositionalValuesProps<K>,
+): Map<number, number> => {
+  const replacementFor = positionalReplacement(args);
   return new Map(
-    players.map((player) => {
-      const levels = parse(player.position)
-        .map((group) => levelByGroup[group])
-        .filter((level): level is number => level !== undefined);
-      const replacement = levels.length > 0 ? Math.min(...levels) : fallbackReplacement;
-      return [player.playerId, player.total - replacement];
-    }),
+    args.players.map((player) => [
+      player.playerId,
+      player.total - replacementFor({ position: player.position }),
+    ]),
   );
 };

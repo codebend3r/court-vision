@@ -86,6 +86,7 @@ export type Advice = {
   focusNeeds: CategoryNeed[]; // the categories the scores below sum over
   focusLabel: string; // "AST + PTS"
   targets: AdvisorPlayer[]; // best fits for the focus, best first
+  tradeTargets: AdvisorPlayer[]; // the same ranking over other teams' players only
   target: AdvisorPlayer | null; // the one the trades are for
   trades: TradeGroup[]; // every tier, in display order; empty with no trade target
   freeAgents: FreeAgentPick[];

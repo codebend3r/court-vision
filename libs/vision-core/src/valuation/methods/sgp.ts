@@ -47,23 +47,31 @@ type ScoreSGPProps<K extends SportKeys> = {
   config: ValuationConfig<K>;
 };
 
-export const scoreSGP = <K extends SportKeys>({
+type ScoreLinesProps<K extends SportKeys> = { lines: readonly ValuationLine<K>[] };
+
+// The denominators come from the pool once; the scorer then values any lines
+// against them (the pool's own, or a rolling window held to the same league).
+export const sgpScorer = <K extends SportKeys>({
   sport,
   lines,
   poolStats,
   config,
-}: ScoreSGPProps<K>): PlayerValue<K>[] => {
+}: ScoreSGPProps<K>) => {
   const denominators = standingsGainDenominators({ sport, lines, poolStats, config });
-  return scorePerCategory({
-    sport,
-    lines,
-    poolStats,
-    config,
-    raw: ({ category, value }) => {
-      const denominator = denominators[category] ?? 0;
-      // A category every team ties in cannot move you in the standings, so it
-      // carries no signal — same rule Z-Score applies to a zero sigma.
-      return denominator === 0 ? 0 : value / denominator;
-    },
-  });
+  return ({ lines: scored }: ScoreLinesProps<K>): PlayerValue<K>[] =>
+    scorePerCategory({
+      sport,
+      lines: scored,
+      poolStats,
+      config,
+      raw: ({ category, value }) => {
+        const denominator = denominators[category] ?? 0;
+        // A category every team ties in cannot move you in the standings, so it
+        // carries no signal — same rule Z-Score applies to a zero sigma.
+        return denominator === 0 ? 0 : value / denominator;
+      },
+    });
 };
+
+export const scoreSGP = <K extends SportKeys>(args: ScoreSGPProps<K>): PlayerValue<K>[] =>
+  sgpScorer(args)({ lines: args.lines });
