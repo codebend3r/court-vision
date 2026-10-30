@@ -15,6 +15,7 @@ describe("WatchlistTrendPlot", () => {
         <WatchlistTrendPlot
           rows={[{ date: Date.UTC(2026, 0, 1), p1: 0.4 }]}
           lines={[{ dataKey: "p1", name: "Jalen Brunson", endLabel: "Brunson", color: "#3987e5" }]}
+          showAverage
         />
       </ThemeProvider>,
     );

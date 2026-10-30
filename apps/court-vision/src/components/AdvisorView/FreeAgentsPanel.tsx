@@ -1,5 +1,6 @@
 import { PlayerName } from "@/components/AdvisorView/PlayerName";
-import { formatScore, ownerText } from "@/lib/advisor/format";
+import { formatScore } from "@vision/core/util/format";
+import { ownerText } from "@/lib/advisor/format";
 import { type AdvisorPlayer, type FreeAgentPick } from "@/lib/advisor/types";
 
 import styles from "@/components/AdvisorView/AdvisorView.module.scss";

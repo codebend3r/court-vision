@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it } from "bun:test";
 
@@ -56,14 +56,26 @@ const trendPoint = ({ gameIndex, z, g }: TrendPointProps): FantasyTrendPoint => 
   dnp: false,
   z,
   g,
+  // The other methods move with Z, on their own scales.
+  points: z === null ? null : 30 + z * 4,
+  vorp: z === null ? null : z - 1,
+  positional: z === null ? null : z - 0.5,
+  sgp: z === null ? null : z / 2,
+  sim: z === null ? null : z / 10,
 });
+
+// The league's average on each fixture game date, a little lower each day.
+const AVERAGES = [1, 2, 3].map((day) => ({
+  date: Date.UTC(2026, 0, day),
+  values: { z: -day / 10, g: 0, points: 22, vorp: -2, positional: -1.5, sgp: 0, sim: 0 },
+}));
 
 type RenderChartProps = { trend: FantasyTrendPoint[] };
 
 const renderChart = ({ trend }: RenderChartProps) =>
   render(
     <ThemeProvider>
-      <PlayerFantasyChart breakdown={breakdown} trend={trend} />
+      <PlayerFantasyChart breakdown={breakdown} trend={trend} averages={AVERAGES} />
     </ThemeProvider>,
     { wrapper: withNuqsTestingAdapter({ hasMemory: true }) },
   );
@@ -91,7 +103,7 @@ describe("PlayerFantasyChart", () => {
     expect(legend).toHaveTextContent("G-Score");
   });
 
-  it("plots the rolling value with one line per method once the window has filled", () => {
+  it("plots one small rolling chart per method", () => {
     const { container } = renderChart({
       trend: [
         trendPoint({ gameIndex: 1, z: null, g: null }),
@@ -101,7 +113,9 @@ describe("PlayerFantasyChart", () => {
     });
 
     expect(screen.getByText("Rolling value")).toBeInTheDocument();
-    expect(container.querySelectorAll(".recharts-line")).toHaveLength(2);
+    // Seven methods, each over its dotted league-average line.
+    expect(container.querySelectorAll(".recharts-line")).toHaveLength(14);
+    expect(screen.getByRole("heading", { name: "Sim Value" })).toBeInTheDocument();
   });
 
   it("explains an empty trend instead of drawing it", () => {
@@ -109,7 +123,19 @@ describe("PlayerFantasyChart", () => {
       trend: [1, 2, 3].map((gameIndex) => trendPoint({ gameIndex, z: null, g: null })),
     });
 
-    expect(screen.getByText(/needs 10 games/)).toBeInTheDocument();
+    expect(screen.getByText(/No games in this timeframe/)).toBeInTheDocument();
     expect(container.querySelectorAll(".recharts-line")).toHaveLength(0);
+  });
+
+  it("hides a method's chart from the controls, with the average on by default", () => {
+    const { container } = renderChart({
+      trend: [1, 2, 3].map((gameIndex) => trendPoint({ gameIndex, z: gameIndex / 2, g: 0.1 })),
+    });
+
+    expect(screen.getByRole("checkbox", { name: "League average" })).toBeChecked();
+    const charts = within(screen.getByRole("group", { name: "Charts shown" }));
+    fireEvent.click(charts.getByRole("button", { name: "SGP" }));
+    expect(container.querySelectorAll(".recharts-line")).toHaveLength(12);
+    expect(screen.queryByRole("heading", { name: "SGP" })).not.toBeInTheDocument();
   });
 });

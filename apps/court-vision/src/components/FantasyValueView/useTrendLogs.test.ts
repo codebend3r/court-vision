@@ -35,7 +35,7 @@ const renderTrendLogs = (initialProps: HookProps) =>
 describe("useTrendLogs", () => {
   beforeEach(() => {
     load.mockReset();
-    load.mockImplementation(() => Promise.resolve({ status: "ok", players: [] }));
+    load.mockImplementation(() => Promise.resolve({ status: "ok", players: [], averageLines: [] }));
   });
 
   it("requests nothing while disabled or for an empty page", () => {

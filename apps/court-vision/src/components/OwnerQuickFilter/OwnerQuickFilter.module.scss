@@ -11,6 +11,10 @@
 .option {
   @include keycap;
 
+  // "All players" and "Free agents" stay on one line instead of stacking
+  // into two-row keys when the toolbar is tight.
+  white-space: nowrap;
+
   &[aria-pressed="true"]:not(:disabled) {
     @include keycap-engaged;
   }

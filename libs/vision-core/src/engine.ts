@@ -45,6 +45,8 @@ import { teamCategoryTotals } from "#core/valuation/teamTotals";
 import { buildFantasyTrend } from "#core/valuation/trend";
 import { type ValuationLine } from "#core/valuation/types";
 import { valuePlayers } from "#core/valuation/valuePlayers";
+import { buildYardstick } from "#core/valuation/yardstick";
+import { buildLeagueAverageLines } from "#core/valuation/leagueAverage";
 
 // A function's argument object minus the sport the engine already holds.
 type WithoutSport<T> = Omit<T, "sport">;
@@ -105,6 +107,11 @@ export const createSportEngine = <K extends SportKeys>({ sport }: CreateSportEng
       buildLeague<K>({ ...args, sport }),
     valuePlayers: (args: WithoutSport<Parameters<typeof valuePlayers<K>>[0]>) =>
       valuePlayers<K>({ ...args, sport }),
+    buildYardstick: (args: WithoutSport<Parameters<typeof buildYardstick<K>>[0]>) =>
+      buildYardstick<K>({ ...args, sport }),
+    buildLeagueAverageLines: (
+      args: WithoutSport<Parameters<typeof buildLeagueAverageLines<K>>[0]>,
+    ) => buildLeagueAverageLines<K>({ ...args, sport }),
     buildCategoryBreakdown: (args: WithoutSport<Parameters<typeof buildCategoryBreakdown<K>>[0]>) =>
       buildCategoryBreakdown<K>({ ...args, sport }),
     teamCategoryTotals: (args: WithoutSport<Parameters<typeof teamCategoryTotals<K>>[0]>) =>

@@ -49,6 +49,8 @@ export const {
   standingsGainDenominators,
   teamCategoryTotals,
   valuePlayers,
+  buildYardstick,
+  buildLeagueAverageLines,
 } = basketballEngine;
 
 export const CATEGORY_META = basketballEngine.categoryMeta;

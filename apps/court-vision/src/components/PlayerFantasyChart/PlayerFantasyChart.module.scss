@@ -1,3 +1,5 @@
+@use "@/styles/mixins" as *;
+
 .legend {
   display: flex;
   flex-wrap: wrap;
@@ -27,4 +29,27 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
   gap: var(--space-4);
+}
+
+// The rolling panel's small multiples: one compact chart per method, as many
+// across as fit, so the seven read side by side on a wide screen.
+.multiples {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.multiple {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.multipleTitle {
+  @include micro-label;
+
+  margin: 0;
 }

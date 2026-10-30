@@ -9,14 +9,13 @@ import { loadAdvisorSearchParams } from "@/lib/advisor/searchParams";
 import { freePlayerIds, TREND_RANGE } from "@/lib/advisor/trending";
 import { getProfile } from "@/lib/auth/session";
 import { getActiveRosterPlayers } from "@/lib/fantasyTeams/loader";
-import { buildLeagueSeed, configFromSeed } from "@/lib/leagues/fantasyDefaults";
 import { getActiveLeague } from "@/lib/leagues/queries";
 import { getLeagueTeams } from "@/lib/leagues/teamQueries";
 import { type RawSearchParams } from "@/lib/players/searchParams";
+import { leagueValuationSettings } from "@/lib/valuation/leagueSettings";
 import { getFantasyPool } from "@/lib/valuation/loader";
 import { notValuedMessage } from "@/lib/yahoo/messages";
 import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
-import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
 
 import { ADVISOR_PAGE_HEADER } from "@/app/advisor/header";
 
@@ -96,12 +95,9 @@ export default async function AdvisorPage({ searchParams }: AdvisorPageProps) {
     season: seasonLines.filter((line) => freeIds.has(line.playerId)),
     recent: recentLines.filter((line) => freeIds.has(line.playerId)),
   };
-  const method =
-    FANTASY_METHODS.find((entry) => entry.key === profile.preferredFormula)?.key ?? "zscore";
-  // The Fantasy tab's first load for this league, as the Waiver Wire does, so
-  // a player's value here matches every other screen.
-  const { config, methodWeights } = configFromSeed({
-    seed: buildLeagueSeed({ league, preferredFormula: null, presentKeys: new Set() }),
+  const { method, config, methodWeights } = leagueValuationSettings({
+    league,
+    preferredFormula: profile.preferredFormula,
   });
 
   return (

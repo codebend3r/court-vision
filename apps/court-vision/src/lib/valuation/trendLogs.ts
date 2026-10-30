@@ -1,5 +1,11 @@
 import { isRecord, recordFromKeys } from "@vision/core/util/record";
-import { BASKETBALL_VALUED_STATS } from "@vision/sport-basketball/descriptor";
+import { ratioDefs } from "@vision/core/valuation/categories";
+import { type DatedAverageLine } from "@vision/core/valuation/leagueAverage";
+import {
+  basketball,
+  type BasketballKeys,
+  BASKETBALL_VALUED_STATS,
+} from "@vision/sport-basketball/descriptor";
 import { type DatedLog, type StatKey, type WindowLog } from "@vision/sport-basketball/types";
 
 import { PAGE_SIZES } from "@/lib/players/searchParams";
@@ -32,8 +38,11 @@ export type FantasyTrendLog = BasketballLogRow & { gameDate: string };
 
 export type FantasyTrendPlayerLogs = { playerId: number; logs: FantasyTrendLog[] };
 
+// The league-average rolling line per game date (see getLeagueAverageLines).
+export type LeagueAverageLines = DatedAverageLine<BasketballKeys>[];
+
 export type FantasyTrendLogsResult =
-  | { status: "ok"; players: FantasyTrendPlayerLogs[] }
+  | { status: "ok"; players: FantasyTrendPlayerLogs[]; averageLines: LeagueAverageLines }
   | { status: "error" };
 
 const LOG_NUMBER_KEYS: readonly (StatKey | "minutes")[] = ["minutes", ...BASKETBALL_VALUED_STATS];
@@ -49,6 +58,27 @@ const isFantasyTrendPlayerLogs = (value: unknown): value is FantasyTrendPlayerLo
   Array.isArray(value.logs) &&
   value.logs.every(isFantasyTrendLog);
 
+const RATIO_KEYS = ratioDefs({ sport: basketball }).map((def) => def.key);
+
+type IsNumberRecordProps = { value: unknown; keys: readonly string[] };
+
+const isNumberRecord = ({ value, keys }: IsNumberRecordProps): boolean =>
+  isRecord(value) && keys.every((key) => typeof value[key] === "number");
+
+export const isLeagueAverageLine = (value: unknown): value is DatedAverageLine<BasketballKeys> => {
+  if (!isRecord(value) || typeof value.date !== "number" || !isRecord(value.line)) return false;
+  const { line } = value;
+  return (
+    typeof line.playerId === "number" &&
+    (line.position === null || typeof line.position === "string") &&
+    typeof line.gamesPlayed === "number" &&
+    typeof line.playingTime === "number" &&
+    isNumberRecord({ value: line.stats, keys: BASKETBALL_VALUED_STATS }) &&
+    isNumberRecord({ value: line.sq, keys: BASKETBALL_VALUED_STATS }) &&
+    isNumberRecord({ value: line.cross, keys: RATIO_KEYS })
+  );
+};
+
 // A server action's reply is deserialized from the wire, so the client checks
 // the shape before reading it rather than trusting the annotation.
 export const isFantasyTrendLogsResult = (value: unknown): value is FantasyTrendLogsResult => {
@@ -57,7 +87,9 @@ export const isFantasyTrendLogsResult = (value: unknown): value is FantasyTrendL
   return (
     value.status === "ok" &&
     Array.isArray(value.players) &&
-    value.players.every(isFantasyTrendPlayerLogs)
+    value.players.every(isFantasyTrendPlayerLogs) &&
+    Array.isArray(value.averageLines) &&
+    value.averageLines.every(isLeagueAverageLine)
   );
 };
 

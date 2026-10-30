@@ -155,6 +155,23 @@ type MethodNeedsCategoriesProps = { key: FantasyMethodKey };
 export const methodNeedsCategories = ({ key }: MethodNeedsCategoriesProps): boolean =>
   DEFAULT_METHODS[key].needsCategories;
 
+// Every method's score field, in registry order: the seven readings a rolling
+// chart, a league average or a method picker covers.
+export const METHOD_VALUE_KEYS: readonly MethodValueKey[] = METHOD_LIST.map(
+  (method) => method.valueKey,
+);
+
+// Score field → the column header the registry gives that method, so a chart
+// labels a method exactly as the table does.
+export const LABEL_BY_VALUE_KEY: Record<MethodValueKey, string> = recordFromKeys({
+  keys: METHOD_VALUE_KEYS,
+  value: (valueKey) => {
+    const method = METHOD_LIST.find((entry) => entry.valueKey === valueKey);
+    if (method === undefined) throw new Error(`No registry method scores "${valueKey}"`);
+    return method.label;
+  },
+});
+
 // Registry key → the sort key its column answers to (`positional` → `pos`):
 // what a stored preferred formula seeds the table's sort with.
 export const SORT_KEY_BY_METHOD: Record<FantasyMethodKey, MethodSortKey> = recordFromKeys({

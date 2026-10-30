@@ -7,10 +7,12 @@ import { type ReactNode } from "react";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
 import {
   METHOD_KEYS,
-  METHOD_LABELS,
-  methodColors,
-  type MethodColors,
+  type MethodKey,
+  VALUE_LABELS,
+  valueColors,
+  type ValueColors,
 } from "@/components/PlayerFantasyChart/labels";
+import { type MethodValueKey } from "@vision/core/valuation/types";
 import { SortButton } from "@/components/SortButton/SortButton";
 import { StarButton } from "@/components/StarButton/StarButton";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
@@ -21,7 +23,10 @@ import { type FantasyTableRow, type ListSortProps } from "@/lib/valuation/fantas
 
 import styles from "@/components/FantasyChartList/FantasyChartList.module.scss";
 
-type RenderChartProps<Row extends FantasyTableRow> = { row: Row; colors: MethodColors };
+type RenderChartProps<Row extends FantasyTableRow> = { row: Row; colors: ValueColors };
+
+// Z and G: the legend the category charts draw, and every list's readouts.
+const DEFAULT_METHODS: readonly MethodKey[] = METHOD_KEYS;
 
 type DescribeChartProps<Row extends FantasyTableRow> = { row: Row };
 
@@ -42,6 +47,11 @@ export type FantasyChartListProps<Row extends FantasyTableRow> = ListSortProps &
   busy?: boolean;
   // A status line under the caption (a failed load, say), already marked up.
   notice?: ReactNode;
+  // The methods the charts draw, named in the legend (Z and G by default);
+  // empty when the charts label themselves.
+  legend?: readonly MethodValueKey[];
+  // Controls set under the caption: a method picker, the average toggle.
+  controls?: ReactNode;
 };
 
 // The Fantasy tab's chart layouts share this list: the same sorted, paged
@@ -62,9 +72,11 @@ export function FantasyChartList<Row extends FantasyTableRow>({
   describeChart,
   busy = false,
   notice,
+  legend = DEFAULT_METHODS,
+  controls,
 }: FantasyChartListProps<Row>) {
   const { theme } = useTheme();
-  const colors = methodColors({ theme });
+  const colors = valueColors({ theme });
   // Rank only means something when the rows are ordered by a score.
   const showRank = !isNameSort(sort);
 
@@ -72,18 +84,21 @@ export function FantasyChartList<Row extends FantasyTableRow>({
     <section className={styles.root} aria-label={label} aria-busy={busy || undefined}>
       <header className={styles.caption}>
         <p className={styles.hint}>{hint}</p>
-        <ul className={styles.legend} aria-label="Series">
-          {METHOD_KEYS.map((key) => (
-            <li key={key} className={styles.legendItem}>
-              <span
-                className={styles.swatch}
-                style={{ backgroundColor: colors[key] }}
-                aria-hidden="true"
-              />
-              {METHOD_LABELS[key]}
-            </li>
-          ))}
-        </ul>
+        {!!legend.length && (
+          <ul className={styles.legend} aria-label="Series">
+            {legend.map((key) => (
+              <li key={key} className={styles.legendItem}>
+                <span
+                  className={styles.swatch}
+                  style={{ backgroundColor: colors[key] }}
+                  aria-hidden="true"
+                />
+                {VALUE_LABELS[key]}
+              </li>
+            ))}
+          </ul>
+        )}
+        {!!controls && <div className={styles.controls}>{controls}</div>}
       </header>
       {notice}
       <div className={styles.wrapper} data-star={isSignedIn ? "true" : "false"}>
@@ -96,7 +111,7 @@ export function FantasyChartList<Row extends FantasyTableRow>({
           {METHOD_KEYS.map((key) => (
             <SortButton
               key={key}
-              label={METHOD_LABELS[key]}
+              label={VALUE_LABELS[key]}
               isActive={sort === key}
               dir={dir}
               onClick={() => onSort({ sort: key })}

@@ -4,6 +4,12 @@ import { type DatedLog } from "#core/valuation/aggregate";
 import { buildCategoryBreakdown, type FantasyCategoryBreakdown } from "#core/valuation/breakdown";
 import { buildFantasyGameValues, type FantasyGameValue } from "#core/valuation/gameValues";
 import { fantasyMethods } from "#core/valuation/registry";
+import { poolStatsFor } from "#core/valuation/pool";
+import {
+  type DatedAverageLine,
+  type DatedMethodValues,
+  scoreAverageLines,
+} from "#core/valuation/leagueAverage";
 import { buildFantasyTrend, type FantasyTrendValue } from "#core/valuation/trend";
 import {
   type FantasyMethodKey,
@@ -13,7 +19,7 @@ import {
   type ValuationConfig,
   type ValuationLine,
 } from "#core/valuation/types";
-import { valuePlayers } from "#core/valuation/valuePlayers";
+import { buildYardstick } from "#core/valuation/yardstick";
 
 // One method column's score for the viewed player, with their standing among
 // every player valued in the same window (competition ranking: ties share).
@@ -35,6 +41,9 @@ export type PlayerFantasyProfile<K extends SportKeys> = {
   trend: FantasyTrendPoint[];
   // Every game in `logs`, unwindowed and aligned by index, for the game log.
   games: FantasyGameValue<K>[];
+  // The league's average rolling value on every method, per game date, scored
+  // like the player's own trend: the chart's moving league-average line.
+  averages: DatedMethodValues[];
   poolSize: number;
 };
 
@@ -68,6 +77,8 @@ type BuildPlayerFantasyProfileProps<K extends SportKeys> = {
   poolWindowGames: number | null;
   logs: readonly FantasyProfileLog<K>[];
   windowGames: number | null;
+  // The season's league-average rolling line per game date.
+  averageLines: readonly DatedAverageLine<K>[];
 };
 
 export const buildPlayerFantasyProfile = <K extends SportKeys>({
@@ -79,17 +90,15 @@ export const buildPlayerFantasyProfile = <K extends SportKeys>({
   poolWindowGames,
   logs,
   windowGames,
+  averageLines,
 }: BuildPlayerFantasyProfileProps<K>): PlayerFantasyProfile<K> | null => {
   const line = lines.find((entry) => entry.playerId === playerId);
   if (line === undefined) return null;
 
-  const { values, poolStats } = valuePlayers({
-    sport,
-    lines,
-    config,
-    methodWeights,
-    windowGames: poolWindowGames,
-  });
+  const poolStats = poolStatsFor({ sport, lines, config, windowGames: poolWindowGames });
+  // Built once: the season values and every rolling window share it.
+  const yardstick = buildYardstick({ sport, lines, poolStats, config, methodWeights });
+  const values = yardstick.value({ lines });
   const own = values.find((entry) => entry.playerId === playerId);
   if (own === undefined) return null;
 
@@ -109,15 +118,7 @@ export const buildPlayerFantasyProfile = <K extends SportKeys>({
   // The full-season rolling timeline, computed once: the game log reads every
   // game of it, and the chart is a window onto the same readings, with
   // metadata from the log spine.
-  const season = buildFantasyTrend({
-    sport,
-    line,
-    logs,
-    poolStats,
-    config,
-    methodWeights,
-    windowGames: null,
-  });
+  const season = buildFantasyTrend({ sport, line, logs, yardstick, windowGames: null });
   const games = buildFantasyGameValues({
     sport,
     line,
@@ -134,5 +135,12 @@ export const buildPlayerFantasyProfile = <K extends SportKeys>({
   const windowed = windowGames === null ? points : points.slice(-windowGames);
   const trend = windowed.map((point, index) => ({ ...point, gameIndex: index + 1 }));
 
-  return { readouts, breakdown, trend, games, poolSize: poolStats.poolSize };
+  return {
+    readouts,
+    breakdown,
+    trend,
+    games,
+    averages: scoreAverageLines({ yardstick, lines: averageLines }),
+    poolSize: poolStats.poolSize,
+  };
 };

@@ -13,6 +13,15 @@
   gap: var(--space-3);
 }
 
+// The layout's own controls take a full row under the hint and legend.
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 .hint {
   margin: 0;
   color: var(--color-text-muted);

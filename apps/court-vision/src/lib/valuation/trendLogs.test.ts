@@ -1,7 +1,10 @@
 import { describe, expect, it } from "bun:test";
 
+import { buildLeagueAverageLines } from "@vision/sport-basketball/engine";
+
 import {
   isFantasyTrendLogsResult,
+  isLeagueAverageLine,
   MAX_TREND_PLAYERS,
   toDatedLogs,
   type FantasyTrendLog,
@@ -24,8 +27,32 @@ const trendLog = (overrides: Partial<FantasyTrendLog> = {}): FantasyTrendLog => 
   ...overrides,
 });
 
+// A real league-average line, as the server builds it.
+const [averageLine] = buildLeagueAverageLines({
+  players: [{ playerId: 7, logs: toDatedLogs({ logs: [trendLog()] }) }],
+});
+
+describe("isLeagueAverageLine", () => {
+  it("accepts a dated average line", () => {
+    expect(isLeagueAverageLine(averageLine)).toBe(true);
+  });
+
+  it("rejects a line missing a stat, a ratio cross term or its date", () => {
+    if (averageLine === undefined) throw new Error("fixture built no line");
+    const { pts: _pts, ...stats } = averageLine.line.stats;
+    expect(isLeagueAverageLine({ ...averageLine, line: { ...averageLine.line, stats } })).toBe(
+      false,
+    );
+    expect(
+      isLeagueAverageLine({ ...averageLine, line: { ...averageLine.line, cross: { fg: 1 } } }),
+    ).toBe(false);
+    expect(isLeagueAverageLine({ line: averageLine.line })).toBe(false);
+    expect(isLeagueAverageLine(null)).toBe(false);
+  });
+});
+
 describe("isFantasyTrendLogsResult", () => {
-  it("accepts an ok result with each player's serialized logs", () => {
+  it("accepts an ok result with each player's serialized logs and the league averages", () => {
     expect(
       isFantasyTrendLogsResult({
         status: "ok",
@@ -33,8 +60,16 @@ describe("isFantasyTrendLogsResult", () => {
           { playerId: 7, logs: [trendLog()] },
           { playerId: 8, logs: [] },
         ],
+        averageLines: [averageLine],
       }),
     ).toBe(true);
+  });
+
+  it("rejects an ok result without its league averages", () => {
+    expect(isFantasyTrendLogsResult({ status: "ok", players: [] })).toBe(false);
+    expect(
+      isFantasyTrendLogsResult({ status: "ok", players: [], averageLines: [{ date: 1 }] }),
+    ).toBe(false);
   });
 
   it("accepts the error result", () => {

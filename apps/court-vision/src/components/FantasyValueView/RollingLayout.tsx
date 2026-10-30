@@ -5,7 +5,9 @@ import { Suspense, use, useMemo } from "react";
 import type { FantasyTrendRow } from "@/components/FantasyValueTrends/FantasyValueTrends";
 import { FantasyValueTrends } from "@/components/FantasyValueView/layouts";
 import { type Valuation } from "@/components/FantasyValueView/useValuation";
-import { buildFantasyTrend } from "@vision/sport-basketball/engine";
+import { buildFantasyTrend, buildYardstick } from "@vision/sport-basketball/engine";
+import { scoreAverageLines } from "@vision/core/valuation/leagueAverage";
+import { type TrendSpan } from "@/lib/charts/trendMethods";
 import { type FantasyTableRow, type ListSortProps } from "@/lib/valuation/fantasyRows";
 import {
   isFantasyTrendLogsResult,
@@ -17,10 +19,15 @@ export type RollingLayoutProps = ListSortProps & {
   // The page's game logs, or null until they are requested.
   logsPromise: Promise<FantasyTrendLogsResult> | null;
   rows: readonly FantasyTableRow[];
-  // The pool, config and weights the rows' values were computed from.
-  valuation: Pick<Valuation, "poolStats" | "config" | "methodWeights">;
-  // How many of each player's most recent games the charts cover.
-  windowGames: number;
+  // The pool, its values, config and weights the rows' values were computed
+  // from.
+  valuation: Pick<Valuation, "lines" | "poolStats" | "config" | "methodWeights">;
+  // How many of each player's most recent games the charts cover; null is the
+  // whole season.
+  windowGames: number | null;
+  // The charts' timeframe control.
+  span: TrendSpan;
+  onSpan: (span: TrendSpan) => void;
 };
 
 // A page's rows before (or without) their game logs: each chart row draws its
@@ -37,10 +44,16 @@ type RollingRowsProps = RollingLayoutProps & { logsPromise: Promise<FantasyTrend
 function RollingRows({
   logsPromise,
   rows,
-  valuation: { poolStats, config, methodWeights },
+  valuation: { lines, poolStats, config, methodWeights },
   windowGames,
   ...listProps
 }: RollingRowsProps) {
+  // Built once per pool: SGP and Sim Value each simulate a league from it, so
+  // every row's every window shares the one yardstick.
+  const yardstick = useMemo(
+    () => buildYardstick({ lines, poolStats, config, methodWeights }),
+    [lines, poolStats, config, methodWeights],
+  );
   const result: unknown = use(logsPromise);
   // Scoring a page of rolling trends is this layout's heaviest work, so a
   // re-render that changes none of its inputs reuses the last result. Null
@@ -55,18 +68,26 @@ function RollingRows({
       trend: buildFantasyTrend({
         line: row,
         logs: logsById.get(row.playerId) ?? [],
-        poolStats,
-        config,
-        methodWeights,
+        yardstick,
         windowGames,
       }),
     }));
-  }, [result, rows, poolStats, config, methodWeights, windowGames]);
+  }, [result, rows, yardstick, windowGames]);
+  // The league's average line per game date, scored with the same yardstick
+  // as the rows, so it moves with the league on the same scale.
+  const averages = useMemo(
+    () =>
+      isFantasyTrendLogsResult(result) && result.status === "ok"
+        ? scoreAverageLines({ yardstick, lines: result.averageLines })
+        : [],
+    [result, yardstick],
+  );
   return (
     <FantasyValueTrends
       rows={trendRows ?? untrendedRows({ rows })}
       status={trendRows === null ? "error" : "ready"}
       windowGames={windowGames}
+      averages={averages}
       {...listProps}
     />
   );

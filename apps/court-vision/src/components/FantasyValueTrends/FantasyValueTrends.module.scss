@@ -8,6 +8,35 @@
   min-width: 0;
 }
 
+// One column per visible method chart, the same in the header's band labels
+// and every row, so each label sits over its column of sparklines.
+.multiples {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--space-2);
+  min-width: 0;
+
+  @for $count from 1 through 6 {
+    &[data-count="#{$count}"] {
+      grid-template-columns: repeat($count, minmax(0, 1fr));
+    }
+  }
+}
+
+// One sparkline's box: a hairline frame so seven charts read as seven.
+.cell {
+  min-width: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.band {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .ends {
   display: flex;
   justify-content: space-between;

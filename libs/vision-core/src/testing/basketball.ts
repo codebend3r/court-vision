@@ -109,6 +109,8 @@ export const {
   slotMeta,
   standingsGainDenominators,
   valuePlayers,
+  buildYardstick,
+  buildLeagueAverageLines,
 } = engine;
 
 export const CATEGORY_META = engine.categoryMeta;

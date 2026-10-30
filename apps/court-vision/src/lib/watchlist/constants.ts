@@ -3,5 +3,5 @@
 export const MAX_WATCHLIST = 50;
 
 // How many of the most recently starred players the homepage panel lists and
-// the z-score chart plots.
-export const HOMEPAGE_WATCHLIST_LIMIT = 5;
+// the trend charts plot.
+export const HOMEPAGE_WATCHLIST_LIMIT = 10;

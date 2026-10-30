@@ -1,5 +1,6 @@
 import { PlayerName } from "@/components/AdvisorView/PlayerName";
-import { formatScore, ownerText } from "@/lib/advisor/format";
+import { formatScore } from "@vision/core/util/format";
+import { ownerText } from "@/lib/advisor/format";
 import { MIN_TREND_GAMES, type TrendingRow } from "@/lib/advisor/trending";
 
 import styles from "@/components/AdvisorView/AdvisorView.module.scss";

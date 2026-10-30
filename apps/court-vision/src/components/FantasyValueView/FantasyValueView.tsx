@@ -30,7 +30,7 @@ import {
 } from "@vision/sport-basketball/engine";
 import { type ValuationConfig } from "@vision/sport-basketball/types";
 import { isWeightedMethodKey } from "@vision/core/valuation/registry";
-import { DEFAULT_TREND_GAMES } from "@vision/core/valuation/trend";
+import { gamesForSpan } from "@/lib/charts/trendMethods";
 import { type WeightedMethodKey } from "@vision/core/valuation/types";
 import { rankFantasyRows, type ListSortProps } from "@/lib/valuation/fantasyRows";
 import { FANTASY_LAYOUTS, fantasyParsers, type FantasySortKey } from "@/lib/valuation/searchParams";
@@ -267,9 +267,11 @@ export function FantasyValueView({
                 logsPromise={logsPromise}
                 rows={pageRows}
                 valuation={valuation}
-                // The rolling charts follow a Games window the filter names,
-                // and fall back to recent form (not the whole season) on All.
-                windowGames={gamesForRange({ range: params.range }) ?? DEFAULT_TREND_GAMES}
+                // The charts' own timeframe, the whole season by default; the
+                // range filter above sets the pool, not how far back they look.
+                windowGames={gamesForSpan({ span: params.span })}
+                span={params.span}
+                onSpan={(span) => void setParams({ span }, { history: "replace" })}
                 {...listProps}
               />
             )}

@@ -2,8 +2,10 @@ import { describe, expect, it } from "bun:test";
 
 import {
   aggregateWindowLogs,
+  type BasketballKeys,
   buildFantasyTrend,
   buildRollingSeries,
+  buildYardstick,
   CATEGORY_KEYS,
   computePoolStats,
   type DatedLog,
@@ -11,13 +13,14 @@ import {
   type FantasyStatLine,
   makeStatLine,
   type MethodWeights,
-  type PoolStats,
   type ValuationConfig,
   makeDatedLog,
 } from "#core/testing/basketball";
-import { weightedConfig } from "#core/valuation/config";
 import { DEFAULT_TREND_GAMES, type FantasyTrendValue } from "#core/valuation/trend";
-import { ROLLING_WINDOW_GAMES } from "#core/valuation/rolling";
+import { METHOD_VALUE_KEYS } from "#core/valuation/registry";
+import { ROLLING_WINDOW_GAMES, type TrendPoint } from "#core/valuation/rolling";
+import { type MethodValueKey, type ValuationLine } from "#core/valuation/types";
+import { type Yardstick } from "#core/valuation/yardstick";
 
 type LogProps = {
   day: number;
@@ -71,22 +74,21 @@ const config: ValuationConfig = {
   scoring: DEFAULT_POINTS_SCORING,
 };
 
+const yardstick = buildYardstick({ lines, poolStats, config });
+
 type BuildProps = { logs: DatedLog[]; windowGames?: number | null };
 
 const build = ({ logs, windowGames = null }: BuildProps) =>
-  buildFantasyTrend({ line: star, logs, poolStats, config, methodWeights: {}, windowGames });
+  buildFantasyTrend({ line: star, logs, yardstick, windowGames });
 
 describe("buildFantasyTrend", () => {
-  it("leaves the games before the window fills null and scores every game after", () => {
+  it("scores every game from the first, over the games so far until the window fills", () => {
     const trend = build({
       logs: Array.from({ length: 12 }, (_, index) => log({ day: index + 1 })),
     });
 
     expect(trend).toHaveLength(12);
-    const lead = trend.slice(0, ROLLING_WINDOW_GAMES - 1);
-    expect(lead.every((point) => point.z === null && point.g === null)).toBe(true);
-    expect(typeof trend[ROLLING_WINDOW_GAMES - 1]?.z).toBe("number");
-    expect(typeof trend[11]?.g).toBe("number");
+    expect(trend.every((point) => point.z !== null && point.g !== null)).toBe(true);
     expect(trend[0]?.gameIndex).toBe(1);
     expect(trend[0]?.gameDate).toBe("2026-01-01T00:00:00.000Z");
   });
@@ -114,6 +116,12 @@ describe("buildFantasyTrend", () => {
     expect(windowed.map((point) => point.gameIndex)).toEqual([1, 2, 3, 4, 5]);
   });
 
+  it("has no value before the first appearance", () => {
+    const trend = build({ logs: [log({ day: 1, minutes: 0 }), log({ day: 2 })] });
+
+    expect(trend.map((point) => point.z === null)).toEqual([true, false]);
+  });
+
   it("flags zero-minute games as missed", () => {
     const trend = build({
       logs: [log({ day: 1 }), log({ day: 2 }), log({ day: 3, minutes: 0 })],
@@ -136,47 +144,62 @@ describe("buildFantasyTrend", () => {
   it("is empty for a player with no games", () => {
     expect(build({ logs: [] })).toEqual([]);
   });
+
+  it("scores every method on each game once the player has played", () => {
+    const trend = build({ logs: [log({ day: 1, minutes: 0 }), log({ day: 2 })] });
+
+    METHOD_VALUE_KEYS.forEach((key) => {
+      expect(trend[0]?.[key]).toBeNull();
+      expect(typeof trend[1]?.[key]).toBe("number");
+    });
+  });
 });
 
 // The score-the-whole-season-then-cut implementation, kept verbatim so the
 // windowed one is held to exactly its output. Its series builders are the
 // current ones, which their own test holds to the previous per-window output.
 type ReferenceBuildFantasyTrendProps = {
-  line: Pick<FantasyStatLine, "playerId" | "fullName">;
+  line: Pick<FantasyStatLine, "playerId" | "fullName" | "position">;
   logs: readonly DatedLog[];
-  poolStats: PoolStats;
-  config: ValuationConfig;
-  methodWeights: MethodWeights;
+  yardstick: Yardstick<BasketballKeys>;
   windowGames: number | null;
 };
 
 const referenceBuildFantasyTrend = ({
   line,
   logs,
-  poolStats,
-  config,
-  methodWeights,
+  yardstick: scale,
   windowGames,
 }: ReferenceBuildFantasyTrendProps): FantasyTrendValue[] => {
-  const seriesArgs = { playerId: line.playerId, fullName: line.fullName, logs, poolStats };
-  const zPoints = buildRollingSeries({
-    ...seriesArgs,
-    method: "z",
-    config: weightedConfig({ config, methodWeights, method: "z" }),
-  }).points;
-  const gPoints = buildRollingSeries({
-    ...seriesArgs,
-    method: "g",
-    config: weightedConfig({ config, methodWeights, method: "g" }),
-  }).points;
-  const lead = ROLLING_WINDOW_GAMES - 1;
+  const series = buildRollingSeries({
+    playerId: line.playerId,
+    fullName: line.fullName,
+    position: line.position,
+    logs,
+    yardstick: scale,
+  });
+  // A series skips the games it has no window for, so match points by date.
+  type PointOnProps = { points: readonly TrendPoint[]; log: DatedLog };
+
+  const pointOn = ({ points, log }: PointOnProps): number | null =>
+    points.find((point) => point.date === log.gameDate.getTime())?.value ?? null;
+  type ValuesOnProps = { log: DatedLog };
+
+  const valuesOn = ({ log }: ValuesOnProps): { [M in MethodValueKey]: number | null } => ({
+    z: pointOn({ points: series.z.points, log }),
+    g: pointOn({ points: series.g.points, log }),
+    points: pointOn({ points: series.points.points, log }),
+    vorp: pointOn({ points: series.vorp.points, log }),
+    positional: pointOn({ points: series.positional.points, log }),
+    sgp: pointOn({ points: series.sgp.points, log }),
+    sim: pointOn({ points: series.sim.points, log }),
+  });
   const scored = logs.map((log, index): FantasyTrendValue => ({
     gameIndex: index + 1,
     gameNumber: index + 1,
     gameDate: log.gameDate.toISOString(),
     dnp: log.playingTime === 0,
-    z: index < lead ? null : (zPoints[index - lead]?.value ?? null),
-    g: index < lead ? null : (gPoints[index - lead]?.value ?? null),
+    ...valuesOn({ log }),
   }));
   const windowed = windowGames === null ? scored : scored.slice(-windowGames);
   return windowed.map((point, index) => ({ ...point, gameIndex: index + 1 }));
@@ -227,20 +250,42 @@ const seededSeason = ({ seed, length }: SeededSeasonProps): DatedLog[] => {
 describe("buildFantasyTrend against the whole-season reference", () => {
   // A pool with real game-to-game variance, so Z and G differ and a swap of
   // the two would show.
-  const volatilePoolStats = computePoolStats({
-    lines: Array.from({ length: 160 }, (_, index) =>
-      makeStatLine({
-        playerId: index + 1000,
-        ...aggregateWindowLogs({ logs: seededSeason({ seed: index + 1, length: 60 }) }),
+  const positions = ["G", "F", "C", "G-F", "F-C"];
+  // Plain window lines: makeStatLine would replace the aggregated stats with
+  // its flat defaults.
+  const volatileLines: ValuationLine<BasketballKeys>[] = Array.from(
+    { length: 160 },
+    (_, index) => ({
+      playerId: index + 1000,
+      position: positions[index % positions.length] ?? null,
+      ...aggregateWindowLogs({ logs: seededSeason({ seed: index + 1, length: 60 }) }),
+    }),
+  );
+  const methodWeights: MethodWeights = {
+    z: { pts: 2, tov: 0 },
+    g: { fg: 0.5, blk: 3 },
+    sgp: { reb: 2 },
+    sim: { ast: 0 },
+    vorp: { stl: 1.5 },
+    pos: { blk: 0.5 },
+  };
+  type YardstickForProps = { config: ValuationConfig };
+
+  const yardstickFor = ({ config: scoring }: YardstickForProps) =>
+    buildYardstick({
+      lines: volatileLines,
+      poolStats: computePoolStats({
+        lines: volatileLines,
+        basis: scoring.basis,
+        poolSize: 150,
+        windowGames: null,
       }),
-    ),
-    basis: "perGame",
-    poolSize: 150,
-    windowGames: null,
-  });
-  const methodWeights: MethodWeights = { z: { pts: 2, tov: 0 }, g: { fg: 0.5, blk: 3 } };
+      config: scoring,
+      methodWeights,
+    });
   // One season length scores on totals, so the basis reaches the window lines.
-  const totalsConfig: ValuationConfig = { ...config, basis: "total" };
+  const perGameYardstick = yardstickFor({ config });
+  const totalsYardstick = yardstickFor({ config: { ...config, basis: "total" } });
   // `0` is slice(-0), the whole season, which a naive suffix length gets wrong.
   const windows: (number | null)[] = [null, 0, 1, 5, DEFAULT_TREND_GAMES, 100];
   const lengths = [0, 5, ROLLING_WINDOW_GAMES - 1, ROLLING_WINDOW_GAMES, 30, 82];
@@ -249,11 +294,9 @@ describe("buildFantasyTrend against the whole-season reference", () => {
     windows.forEach((windowGames) => {
       it(`matches exactly over ${length} games, window ${windowGames ?? "all"}`, () => {
         const args = {
-          line: { playerId: 7, fullName: "Nikola Jokic" },
+          line: { playerId: 7, fullName: "Nikola Jokic", position: "C" },
           logs: seededSeason({ seed: 0x7e4d + length, length }),
-          poolStats: volatilePoolStats,
-          config: length === 30 ? totalsConfig : config,
-          methodWeights,
+          yardstick: length === 30 ? totalsYardstick : perGameYardstick,
           windowGames,
         };
         expect(buildFantasyTrend(args)).toStrictEqual(referenceBuildFantasyTrend(args));

@@ -4,6 +4,7 @@ const findMany = vi.fn();
 const latestSeason = vi.fn();
 const getUser = vi.fn();
 const getProfile = vi.fn();
+const getLeagueAverageLines = vi.fn();
 // Outside Next there is no incremental cache; the wrapper passes the fetch
 // through and records how it was registered.
 const unstableCache = vi.fn(
@@ -14,6 +15,7 @@ vi.mock("@/lib/auth/session", () => ({ getUser, getProfile }));
 vi.mock("@/lib/prisma", () => ({ prisma: { playerGameLog: { findMany } } }));
 vi.mock("@/lib/valuation/season", () => ({ latestSeason }));
 vi.mock("next/cache", () => ({ unstable_cache: unstableCache }));
+vi.mock("@/lib/valuation/leagueAverage", () => ({ getLeagueAverageLines }));
 
 // Loaded after the mocks: the cache wrapper is built when the module
 // evaluates, so a static import would capture the real `unstable_cache`.
@@ -47,6 +49,8 @@ beforeEach(() => {
   latestSeason.mockReset();
   latestSeason.mockResolvedValue("2025-26");
   findMany.mockResolvedValue([]);
+  getLeagueAverageLines.mockReset();
+  getLeagueAverageLines.mockResolvedValue([]);
 });
 
 describe("loadFantasyTrendLogs", () => {
@@ -74,6 +78,7 @@ describe("loadFantasyTrendLogs", () => {
           ],
         },
       ],
+      averageLines: [],
     });
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -92,6 +97,7 @@ describe("loadFantasyTrendLogs", () => {
     expect(await loadFantasyTrendLogs({ playerIds: [playerId] })).toEqual({
       status: "ok",
       players: [{ playerId, logs: [{ ...stats, gameDate: gameDate.toISOString() }] }],
+      averageLines: [],
     });
     expect(getUser).not.toHaveBeenCalled();
     expect(getProfile).not.toHaveBeenCalled();
@@ -99,7 +105,21 @@ describe("loadFantasyTrendLogs", () => {
 
   it("lists a requested player with no games as an empty log", async () => {
     const result = await loadFantasyTrendLogs({ playerIds: [9] });
-    expect(result).toEqual({ status: "ok", players: [{ playerId: 9, logs: [] }] });
+    expect(result).toEqual({
+      status: "ok",
+      players: [{ playerId: 9, logs: [] }],
+      averageLines: [],
+    });
+  });
+
+  it("sends the season's league-average lines alongside the page's logs", async () => {
+    const averageLines = [{ date: Date.UTC(2026, 0, 1), line: { playerId: 0 } }];
+    getLeagueAverageLines.mockResolvedValue(averageLines);
+
+    const result = await loadFantasyTrendLogs({ playerIds: [1] });
+
+    expect(getLeagueAverageLines).toHaveBeenCalledWith({ season: "2025-26" });
+    expect(result).toEqual(expect.objectContaining({ averageLines }));
   });
 
   it("refuses malformed or oversized requests without touching the database", async () => {
@@ -118,8 +138,10 @@ describe("loadFantasyTrendLogs", () => {
     expect(await loadFantasyTrendLogs({ playerIds: [1] })).toEqual({
       status: "ok",
       players: [{ playerId: 1, logs: [] }],
+      averageLines: [],
     });
     expect(findMany).not.toHaveBeenCalled();
+    expect(getLeagueAverageLines).not.toHaveBeenCalled();
   });
 
   it("caches the page's logs under the players tag so a sync busts it with every other surface", () => {

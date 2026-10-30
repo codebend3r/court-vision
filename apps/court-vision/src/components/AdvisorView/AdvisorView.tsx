@@ -11,6 +11,7 @@ import { TrendingPanel } from "@/components/AdvisorView/TrendingPanel";
 import { useValuation } from "@/components/FantasyValueView/useValuation";
 import { KeycapTabs } from "@/components/KeycapTabs/KeycapTabs";
 import { buildAdvice } from "@/lib/advisor/advice";
+import { cachedBreakdownFor } from "@/lib/advisor/breakdown";
 import {
   ADVISOR_TAB_LABELS,
   ADVISOR_TABS,
@@ -81,10 +82,6 @@ export function AdvisorView({
   });
 
   const activeIds = useMemo(() => new Set(activePlayerIds), [activePlayerIds]);
-  const linesById = useMemo(
-    () => new Map(valuation.lines.map((line) => [line.playerId, line])),
-    [valuation.lines],
-  );
   const { poolStats, config: settledConfig, methodWeights: settledWeights } = valuation;
   type LineBreakdownProps = { line: FantasyStatLine };
 
@@ -101,20 +98,11 @@ export function AdvisorView({
         }),
     [poolStats, settledConfig, settledWeights],
   );
-  type BreakdownForProps = { playerId: number };
-
   // Memoized per player: the engine asks for the same breakdown many times.
-  const breakdownFor = useMemo(() => {
-    const cache = new Map<number, FantasyCategoryBreakdown[]>();
-    return ({ playerId }: BreakdownForProps): FantasyCategoryBreakdown[] => {
-      const cached = cache.get(playerId);
-      if (cached !== undefined) return cached;
-      const line = linesById.get(playerId);
-      const breakdown = line ? lineBreakdown({ line }) : [];
-      cache.set(playerId, breakdown);
-      return breakdown;
-    };
-  }, [linesById, lineBreakdown]);
+  const breakdownFor = useMemo(
+    () => cachedBreakdownFor({ lines: valuation.lines, lineBreakdown }),
+    [valuation.lines, lineBreakdown],
+  );
 
   const advice = useMemo(
     () =>

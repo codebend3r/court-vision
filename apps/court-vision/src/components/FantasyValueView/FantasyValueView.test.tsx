@@ -353,10 +353,11 @@ const trendLogsFor = ({ playerIds }: TrendLogsForProps) => ({
   status: "ok" as const,
   players: playerIds.map((playerId) => ({
     playerId,
-    logs: Array.from({ length: playerId <= 2 ? 30 : 3 }, (_, index) =>
+    logs: Array.from({ length: playerId <= 2 ? 30 : 0 }, (_, index) =>
       serializedLog({ day: index + 1 }),
     ),
   })),
+  averageLines: [],
 });
 
 describe("FantasyValueView rolling layout", () => {
@@ -374,25 +375,29 @@ describe("FantasyValueView rolling layout", () => {
   const renderRolling = ({ searchParams = "?layout=rolling" } = {}) =>
     act(async () => renderView({ searchParams }));
 
-  it("loads the page's game logs once and draws rolling lines for filled windows", async () => {
+  it("loads the page's game logs once and draws rolling lines for players with games", async () => {
     const { container } = await renderRolling();
 
     const trends = within(await screen.findByRole("region", { name: "Fantasy value trends" }));
     const list = trends.getByRole("list", { name: "Players" });
-    await waitFor(() => expect(container.querySelectorAll(".recharts-line")).toHaveLength(4));
+    await waitFor(() => expect(container.querySelectorAll(".recharts-line")).toHaveLength(2 * 7));
     expect(within(list).getAllByRole("listitem")).toHaveLength(lines.length);
     expect(loadFantasyTrendLogs).toHaveBeenCalledTimes(1);
     const [args] = loadFantasyTrendLogs.mock.calls[0] ?? [];
     expect(args).toEqual({ playerIds: expect.arrayContaining([1, 2, 3, 4, 5, 6]) });
-    expect(screen.getAllByText(/needs 10 games/i)).toHaveLength(4);
+    expect(screen.getAllByText(/No games this season/i)).toHaveLength(4);
   });
 
   it("reuses loaded logs when sorting, reweighting, and switching layouts without changing players", async () => {
     const { container } = await renderRolling();
-    await waitFor(() => expect(container.querySelectorAll(".recharts-line")).toHaveLength(4));
+    await waitFor(() => expect(container.querySelectorAll(".recharts-line")).toHaveLength(2 * 7));
 
     await act(async () => {
-      screen.getByRole("button", { name: /G-Score/ }).click();
+      // The sort header's G-Score, not the "Charts shown" toggle of that name.
+      screen
+        .getAllByRole("button", { name: /G-Score/ })
+        .find((button) => button.closest('[role="group"]') === null)
+        ?.click();
     });
     await act(async () => {
       screen.getByRole("button", { name: "Punt FT%" }).click();
@@ -406,7 +411,7 @@ describe("FantasyValueView rolling layout", () => {
 
     expect(loadFantasyTrendLogs).toHaveBeenCalledTimes(1);
     expect(screen.queryByText(/loading rolling value/i)).not.toBeInTheDocument();
-    expect(container.querySelectorAll(".recharts-line")).toHaveLength(4);
+    expect(container.querySelectorAll(".recharts-line")).toHaveLength(2 * 7);
   });
 
   it("loads a new player set on paging and never shows the previous page's logs", async () => {
@@ -441,22 +446,30 @@ describe("FantasyValueView rolling layout", () => {
     expect(loadFantasyTrendLogs).toHaveBeenCalledTimes(2);
   });
 
-  it("charts each player's last 20 games by default, numbered by game in the season", async () => {
+  it("charts each player's whole season by default, numbered by game in the season", async () => {
     await renderRolling();
 
-    expect(await screen.findAllByText("Game 11")).toHaveLength(2);
+    expect(await screen.findAllByText("Game 1")).toHaveLength(2);
     expect(screen.getAllByText("Game 30")).toHaveLength(2);
-    const trends = within(screen.getByRole("region", { name: "Fantasy value trends" }));
-    expect(trends.getByText("Last 20 games")).toBeInTheDocument();
+    const timeframe = within(screen.getByRole("group", { name: "Timeframe" }));
+    expect(timeframe.getByRole("button", { name: "Season" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 
-  it("follows a Games window the filter names", async () => {
-    await renderRolling({ searchParams: "?layout=rolling&range=last5" });
+  it("follows the timeframe the reader picks, not the pool's range filter", async () => {
+    await renderRolling({ searchParams: "?layout=rolling&span=5&range=last10" });
 
     expect(await screen.findAllByText("Game 26")).toHaveLength(2);
     expect(screen.getAllByText("Game 30")).toHaveLength(2);
-    const trends = within(screen.getByRole("region", { name: "Fantasy value trends" }));
-    expect(trends.getByText("Last 5 games")).toBeInTheDocument();
+    expect(screen.getByText(/over each player's last 5 games/)).toBeInTheDocument();
+  });
+
+  it("hides the method charts named in the URL", async () => {
+    const { container } = await renderRolling({ searchParams: "?layout=rolling&hide=g,sgp" });
+
+    await waitFor(() => expect(container.querySelectorAll(".recharts-line")).toHaveLength(2 * 5));
   });
 
   it("shows loading placeholders until the logs arrive", async () => {

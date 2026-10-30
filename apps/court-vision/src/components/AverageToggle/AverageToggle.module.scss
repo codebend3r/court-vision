@@ -1,0 +1,31 @@
+@use "@/styles/mixins" as *;
+
+.toggle {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  justify-content: start;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.checkbox {
+  @include control-checkbox;
+}
+
+.label {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+// The same dotted stroke the chart draws, so the legend explains the line.
+.mark {
+  width: 1.5rem;
+  height: 0.5rem;
+  stroke: var(--color-text-muted);
+  stroke-width: 2;
+}

@@ -411,7 +411,7 @@ describe("PlayerGameLogTable fantasy view", () => {
 
     expect(screen.getByRole("button", { name: "Roll Z" })).toHaveAttribute(
       "title",
-      "Z-Score over the 10 games ending here",
+      "Z-Score over up to 10 games ending here",
     );
     expect(screen.getByRole("button", { name: "PTS Z" })).toHaveAttribute(
       "title",

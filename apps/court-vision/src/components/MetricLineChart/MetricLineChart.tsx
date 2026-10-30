@@ -15,6 +15,7 @@ import {
 } from "recharts";
 
 import { isMetricPoint, type MetricPoint } from "@vision/core/series/metricPoint";
+import { AVERAGE_LINE_STYLE } from "@/lib/charts/averageLine";
 import { CHART_CHROME, chartAxisProps } from "@vision/ui/charts/palette";
 import { endLabel, lastPlottedIndex } from "@/components/ChartEndLabel/ChartEndLabel";
 import { SeriesTooltip } from "@/components/SeriesTooltip/SeriesTooltip";
@@ -26,6 +27,8 @@ export type MetricMeta<K extends string> = {
   key: K;
   label: string;
   color: string;
+  // A reference series (a league average, say) draws dotted.
+  dashed?: boolean;
 };
 
 export type MetricSeriesPoint<K extends string> = MetricPoint & Record<K, number | null>;
@@ -38,6 +41,9 @@ export type MetricLineChartProps<K extends string> = {
   formatValue: (args: FormatValueProps<K>) => string;
   formatTick?: (value: number) => string;
   domain?: [number, number];
+  // Holds the axis to `domain` even when a value falls outside it. Only the
+  // fitted rolling charts want this; a fixed scale (0–100%) may stretch.
+  clipToDomain?: boolean;
   showDnp?: boolean;
   // Draws the zero line solid: for signed series (net rating, value over
   // average) it is the reading, not just a gridline.
@@ -47,6 +53,9 @@ export type MetricLineChartProps<K extends string> = {
   // identity instead.
   endLabels?: boolean;
   height?: number;
+  // Straight segments show a jump as sharply as it happened; the smoothed
+  // default suits the box-score panels.
+  curve?: "monotone" | "linear";
 };
 
 // `gameDate` is stored as a UTC-midnight ISO string. Formatting it in the
@@ -142,10 +151,12 @@ export function MetricLineChart<K extends string>({
   formatValue,
   formatTick,
   domain,
+  clipToDomain = false,
   showDnp = false,
   zeroLine = false,
   endLabels = true,
   height = 320,
+  curve = "monotone",
 }: MetricLineChartProps<K>) {
   return (
     <ResponsiveContainer width="100%" height={height} initialDimension={{ width: 800, height }}>
@@ -156,7 +167,12 @@ export function MetricLineChart<K extends string>({
           dataKey="gameIndex"
           interval="equidistantPreserveStart"
         />
-        <YAxis {...chartAxisProps({ rule: "grid" })} domain={domain} tickFormatter={formatTick} />
+        <YAxis
+          {...chartAxisProps({ rule: "grid" })}
+          domain={domain}
+          allowDataOverflow={clipToDomain}
+          tickFormatter={formatTick}
+        />
         <Tooltip
           content={<MetricTooltip metas={metas} series={series} formatValue={formatValue} />}
           cursor={{ stroke: CHART_CHROME.axis, strokeDasharray: "3 3" }}
@@ -179,10 +195,11 @@ export function MetricLineChart<K extends string>({
         {metas.map((meta) => (
           <Line
             key={meta.key}
-            type="monotone"
+            type={curve}
             dataKey={meta.key}
             stroke={meta.color}
-            strokeWidth={2}
+            strokeWidth={meta.dashed ? AVERAGE_LINE_STYLE.strokeWidth : 2}
+            strokeDasharray={meta.dashed ? AVERAGE_LINE_STYLE.strokeDasharray : undefined}
             dot={false}
             activeDot={{ r: 4 }}
             isAnimationActive={false}

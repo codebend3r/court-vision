@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test";
 import {
   buildFantasyGameValues,
   buildFantasyTrend,
+  buildYardstick,
   CATEGORY_KEYS,
   computePoolStats,
   type DatedLog,
@@ -73,7 +74,8 @@ type BuildProps = {
 
 const build = ({ logs, categories = [...CATEGORY_KEYS], methodWeights = {} }: BuildProps) => {
   const args = { line: star, logs, poolStats, config: { ...config, categories }, methodWeights };
-  const season = buildFantasyTrend({ ...args, windowGames: null });
+  const yardstick = buildYardstick({ lines, poolStats, config: args.config, methodWeights });
+  const season = buildFantasyTrend({ line: star, logs, yardstick, windowGames: null });
   return buildFantasyGameValues({ ...args, season });
 };
 
@@ -101,16 +103,14 @@ describe("buildFantasyGameValues", () => {
     const trend = buildFantasyTrend({
       line: star,
       logs,
-      poolStats,
-      config,
-      methodWeights: {},
+      yardstick: buildYardstick({ lines, poolStats, config }),
       windowGames: null,
     });
 
     expect(values).toHaveLength(12);
     expect(values.map((value) => value.rollingZ)).toEqual(trend.map((point) => point.z));
     expect(values.map((value) => value.rollingG)).toEqual(trend.map((point) => point.g));
-    expect(values[8]?.rollingZ).toBeNull();
+    expect(typeof values[0]?.rollingZ).toBe("number");
   });
 
   it("breaks each game into its included categories' raw Z, even when one is punted", () => {

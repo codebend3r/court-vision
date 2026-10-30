@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 
 import { type TeamGameResult } from "@vision/core/series/teamTrend";
+import { type FantasyTrendValue } from "@vision/core/valuation/trend";
 import { createPrng, gaussian } from "@vision/core/util/prng";
 import {
   aggregateWindowLogs,
@@ -13,6 +14,7 @@ import {
   buildPlayerInsights,
   buildRollingSeries,
   buildSlots,
+  buildYardstick,
   CATEGORY_KEYS,
   CATEGORY_META,
   computePoolStats,
@@ -318,16 +320,44 @@ const runLeaguePcts = ({ lines }: RunLeaguePctsProps) => {
   return { leagueFgPct: rates.fg, leagueFtPct: rates.ft };
 };
 
-type RollingArgs = Omit<Parameters<typeof buildRollingSeries>[0], "method">;
+// The rolling code now scores every method against a yardstick built from the
+// pool lines. The snapshots below pin its Z and G readings in their original
+// shape, so the refactor is held to the exact numbers it produced before; the
+// other five methods get a snapshot of their own.
+type YardstickForProps = {
+  poolStats: PoolStats;
+  config: ValuationConfig;
+  methodWeights?: MethodWeights;
+};
 
-// The rolling series take their method as an argument.
-const buildRollingZSeries = (args: RollingArgs) => buildRollingSeries({ ...args, method: "z" });
-const buildRollingGSeries = (args: RollingArgs) => buildRollingSeries({ ...args, method: "g" });
+const yardstickFor = ({ poolStats, config, methodWeights = {} }: YardstickForProps) =>
+  buildYardstick({ lines: LINES, poolStats, config, methodWeights });
+
+type ZgOnlyProps = { trend: readonly FantasyTrendValue[] };
+
+const zgOnly = ({ trend }: ZgOnlyProps) =>
+  trend.map(({ gameIndex, gameNumber, gameDate, dnp, z, g }) => ({
+    gameIndex,
+    gameNumber,
+    gameDate,
+    dnp,
+    z,
+    g,
+  }));
 
 // Game values read the season trend their caller computes once.
-const buildFantasyGameValues = (
-  args: Omit<Parameters<typeof buildSeasonGameValues>[0], "season">,
-) => buildSeasonGameValues({ ...args, season: buildFantasyTrend({ ...args, windowGames: null }) });
+type GameValuesProps = Omit<Parameters<typeof buildSeasonGameValues>[0], "season">;
+
+const buildFantasyGameValues = (args: GameValuesProps) =>
+  buildSeasonGameValues({
+    ...args,
+    season: buildFantasyTrend({
+      line: args.line,
+      logs: args.logs,
+      yardstick: yardstickFor(args),
+      windowGames: null,
+    }),
+  });
 
 // The method copy in its pinned shape: the registry's lookup keys (sortKey,
 // valueKey, needsCategories) are not copy, and the retired `available` flag
@@ -497,40 +527,68 @@ describe("valuation golden master", () => {
       if (line === undefined) return null;
       return {
         games: buildFantasyGameValues({ line, logs, poolStats: pool, config, methodWeights: {} }),
-        trendAll: buildFantasyTrend({
-          line,
-          logs,
-          poolStats: pool,
-          config,
-          methodWeights: { z: { pts: 2 } },
-          windowGames: null,
+        trendAll: zgOnly({
+          trend: buildFantasyTrend({
+            line,
+            logs,
+            yardstick: yardstickFor({
+              poolStats: pool,
+              config,
+              methodWeights: { z: { pts: 2 } },
+            }),
+            windowGames: null,
+          }),
         }),
-        trend15: buildFantasyTrend({
-          line,
-          logs,
-          poolStats: pool,
-          config,
-          methodWeights: {},
-          windowGames: 15,
+        trend15: zgOnly({
+          trend: buildFantasyTrend({
+            line,
+            logs,
+            yardstick: yardstickFor({ poolStats: pool, config }),
+            windowGames: 15,
+          }),
         }),
-        rollingZ: buildRollingZSeries({
+        rollingZ: buildRollingSeries({
           playerId: player.playerId,
           fullName: player.fullName,
+          position: line.position,
           logs,
-          poolStats: pool,
-          config,
-        }),
-        rollingG: buildRollingGSeries({
+          yardstick: yardstickFor({ poolStats: pool, config }),
+        }).z,
+        rollingG: buildRollingSeries({
           playerId: player.playerId,
           fullName: player.fullName,
+          position: line.position,
           logs,
-          poolStats: pool,
-          config,
+          yardstick: yardstickFor({ poolStats: pool, config }),
           windowSize: 5,
-        }),
+        }).g,
       };
     });
     expect(golden({ value, sample: value[0]?.games.slice(0, 3) })).toMatchSnapshot();
+  });
+
+  it("scores the other five methods' rolling trends", () => {
+    const config = baseConfig();
+    const pool = runPoolStats({ lines: LINES, basis: "perGame", poolSize: 156, range: "all" });
+    const yardstick = yardstickFor({ poolStats: pool, config, methodWeights: { sgp: { stl: 2 } } });
+    const value = PLAYERS.filter((player) => SAMPLE_IDS.has(player.playerId)).map((player) => {
+      const line = LINES.find((entry) => entry.playerId === player.playerId);
+      if (line === undefined) return null;
+      return buildFantasyTrend({
+        line,
+        logs: player.logs.map(toDatedLog),
+        yardstick,
+        windowGames: 20,
+      }).map(({ gameNumber, points, vorp, positional, sgp, sim }) => ({
+        gameNumber,
+        points,
+        vorp,
+        positional,
+        sgp,
+        sim,
+      }));
+    });
+    expect(golden({ value, sample: value[0]?.slice(0, 3) })).toMatchSnapshot();
   });
 
   it("builds the same player fantasy profiles", () => {
@@ -544,9 +602,28 @@ describe("valuation golden master", () => {
         poolWindowGames: null,
         logs: (player?.logs ?? []).map(toProfileLog),
         windowGames: 20,
+        averageLines: [],
       });
     });
-    expect(golden({ value, sample: value[0]?.readouts })).toMatchSnapshot();
+    // The profile's original shape: Z and G trend points, no averages.
+    const pinned = value.map((profile) => {
+      if (profile === null) return null;
+      const { averages: _averages, trend, ...rest } = profile;
+      return {
+        ...rest,
+        trend: trend.map(({ gameIndex, gameNumber, gameDate, dnp, matchup, winLoss, z, g }) => ({
+          gameIndex,
+          gameNumber,
+          gameDate,
+          dnp,
+          matchup,
+          winLoss,
+          z,
+          g,
+        })),
+      };
+    });
+    expect(golden({ value: pinned, sample: pinned[0]?.readouts })).toMatchSnapshot();
   });
 
   it("builds the same team-builder insights", () => {

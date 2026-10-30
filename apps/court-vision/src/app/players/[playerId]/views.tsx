@@ -42,6 +42,7 @@ import {
   type StatMode,
   type StatSpan,
 } from "@/lib/stats/searchParams";
+import { getLeagueAverageLines } from "@/lib/valuation/leagueAverage";
 import { getFantasyPool } from "@/lib/valuation/loader";
 import { toWindowLog } from "@/lib/valuation/trendLogs";
 import { buildPlayerFantasyProfile, FANTASY_METHODS } from "@vision/sport-basketball/engine";
@@ -203,10 +204,11 @@ const loadFantasyView = async (context: ViewContext): Promise<PlayerViewResult> 
     });
   }
   const range = rangeForSpan({ span });
-  const [lines, league, profile] = await Promise.all([
+  const [lines, league, profile, averageLines] = await Promise.all([
     getFantasyPool({ range, season: selection }),
     getActiveLeague(),
     getProfile(),
+    getLeagueAverageLines({ season: selection }),
   ]);
   const formula =
     FANTASY_METHODS.find((method) => method.key === profile?.preferredFormula)?.key ?? null;
@@ -226,6 +228,7 @@ const loadFantasyView = async (context: ViewContext): Promise<PlayerViewResult> 
       winLoss: log.winLoss,
     })),
     windowGames,
+    averageLines,
   });
   if (fantasy === null) {
     return fantasyEmptyView({
@@ -255,7 +258,11 @@ const loadFantasyView = async (context: ViewContext): Promise<PlayerViewResult> 
     content: (
       <>
         <PlayerStatFilters modes={[]} />
-        <PlayerFantasyChart breakdown={fantasy.breakdown} trend={fantasy.trend} />
+        <PlayerFantasyChart
+          breakdown={fantasy.breakdown}
+          trend={fantasy.trend}
+          averages={fantasy.averages}
+        />
         <FantasyValueLegend poolSize={fantasy.poolSize} windowLabel={windowLabel} basis="perGame" />
       </>
     ),

@@ -6,16 +6,15 @@ import { SyncYahooButton } from "@/components/SyncYahooButton/SyncYahooButton";
 import { WaiverWireView } from "@/components/WaiverWireView/WaiverWireView";
 import { getProfile } from "@/lib/auth/session";
 import { getActiveRosterPlayers } from "@/lib/fantasyTeams/loader";
-import { buildLeagueSeed, configFromSeed } from "@/lib/leagues/fantasyDefaults";
 import { getActiveLeague } from "@/lib/leagues/queries";
 import { getLeagueTeams } from "@/lib/leagues/teamQueries";
 import { type RawSearchParams } from "@/lib/players/searchParams";
+import { leagueValuationSettings } from "@/lib/valuation/leagueSettings";
 import { getFantasyPool } from "@/lib/valuation/loader";
 import { getWaiverLeagueData } from "@/lib/waiverWire/loader";
 import { loadWaiverWireSearchParams } from "@/lib/waiverWire/searchParams";
 import { notValuedMessage } from "@/lib/yahoo/messages";
 import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
-import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
 
 import { WAIVER_WIRE_PAGE_HEADER } from "@/app/waiver-wire/header";
 
@@ -84,12 +83,9 @@ export default async function WaiverWirePage({ searchParams }: WaiverWirePagePro
     getWaiverLeagueData({ leagueId: league.id, myTeamId: league.myTeamId }),
     getActiveRosterPlayers(),
   ]);
-  const method =
-    FANTASY_METHODS.find((entry) => entry.key === profile.preferredFormula)?.key ?? "zscore";
-  // The Fantasy tab's first load for this league, so a player's value here
-  // matches the one the tab shows before anyone touches its controls.
-  const { config, methodWeights } = configFromSeed({
-    seed: buildLeagueSeed({ league, preferredFormula: null, presentKeys: new Set() }),
+  const { method, config, methodWeights } = leagueValuationSettings({
+    league,
+    preferredFormula: profile.preferredFormula,
   });
 
   return (

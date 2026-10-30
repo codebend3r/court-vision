@@ -1,5 +1,6 @@
 import { PlayerName } from "@/components/AdvisorView/PlayerName";
-import { formatScore, ownerText } from "@/lib/advisor/format";
+import { formatScore } from "@vision/core/util/format";
+import { ownerText } from "@/lib/advisor/format";
 import { isOnAnotherTeam } from "@/lib/advisor/owner";
 import { type Advice } from "@/lib/advisor/types";
 

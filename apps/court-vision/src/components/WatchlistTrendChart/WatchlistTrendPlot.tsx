@@ -5,7 +5,6 @@ import {
   LabelList,
   Line,
   LineChart,
-  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -14,10 +13,12 @@ import {
 } from "recharts";
 
 import { formatSigned } from "@vision/core/util/format";
+import { AVERAGE_LINE_LABEL, AVERAGE_LINE_STYLE } from "@/lib/charts/averageLine";
+import { fittedDomain } from "@/lib/charts/trendMethods";
 import { CHART_CHROME, chartAxisProps } from "@vision/ui/charts/palette";
 import { endLabel, lastPlottedIndex } from "@/components/ChartEndLabel/ChartEndLabel";
 import { ListTooltip } from "@/components/ListTooltip/ListTooltip";
-import type { ChartRow } from "@/components/WatchlistTrendChart/WatchlistTrendChart";
+import { AVERAGE_KEY, type ChartRow } from "@/components/WatchlistTrendChart/WatchlistTrendChart";
 import { usePrefersReducedMotion } from "@vision/ui/hooks/usePrefersReducedMotion";
 
 // One plotted player, already resolved by the figure: which row field the
@@ -32,6 +33,8 @@ export type WatchlistTrendLine = {
 export type WatchlistTrendPlotProps = {
   rows: ChartRow[];
   lines: readonly WatchlistTrendLine[];
+  // Draws each row's league average as a dotted line.
+  showAverage: boolean;
 };
 
 const formatDate = (value: number): string =>
@@ -63,8 +66,16 @@ function ChartTooltip({ active, label, payload }: ChartTooltipProps) {
 // The recharts half of WatchlistTrendChart, loaded client-only so the chart
 // library stays off the home page's critical path. It fills the plot box its
 // parent sizes, the same box the loading placeholder holds.
-export function WatchlistTrendPlot({ rows, lines }: WatchlistTrendPlotProps) {
+export function WatchlistTrendPlot({ rows, lines, showAverage }: WatchlistTrendPlotProps) {
   const prefersReducedMotion = usePrefersReducedMotion();
+  // Fitted to the lines (and the average, when shown) so a jump in form
+  // fills the plot instead of hugging a line padded out to zero.
+  const domain = fittedDomain({
+    values: rows.flatMap((row) => [
+      ...lines.map((line) => row[line.dataKey]),
+      showAverage ? row[AVERAGE_KEY] : undefined,
+    ]),
+  });
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -78,9 +89,25 @@ export function WatchlistTrendPlot({ rows, lines }: WatchlistTrendPlotProps) {
           minTickGap={24}
           interval="preserveStartEnd"
         />
-        <YAxis {...chartAxisProps({ rule: "axis" })} tickFormatter={formatValue} width={48} />
-        {/* Zero is league-average value: above it a player helps you. */}
-        <ReferenceLine y={0} stroke={CHART_CHROME.axis} strokeDasharray="4 4" />
+        <YAxis
+          {...chartAxisProps({ rule: "axis" })}
+          domain={domain}
+          allowDataOverflow
+          tickFormatter={formatValue}
+          width={48}
+        />
+        {showAverage && (
+          <Line
+            dataKey={AVERAGE_KEY}
+            name={AVERAGE_LINE_LABEL}
+            type="linear"
+            {...AVERAGE_LINE_STYLE}
+            dot={false}
+            activeDot={false}
+            isAnimationActive={false}
+            connectNulls
+          />
+        )}
         <Tooltip content={<ChartTooltip />} cursor={{ stroke: CHART_CHROME.axis }} />
         {lines.map((line) => {
           // A player can miss the final dates; their name belongs beside
@@ -91,7 +118,9 @@ export function WatchlistTrendPlot({ rows, lines }: WatchlistTrendPlotProps) {
               key={line.dataKey}
               dataKey={line.dataKey}
               name={line.name}
-              type="monotone"
+              // Straight segments: a smoothed curve rounds off the very jumps
+              // these charts exist to show.
+              type="linear"
               stroke={line.color}
               strokeWidth={3}
               dot={false}

@@ -2,7 +2,8 @@ import Link from "next/link";
 
 import { DashboardPanel, DashboardPanelEmpty } from "@/components/DashboardPanel/DashboardPanel";
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
-import { slotMeta } from "@vision/sport-basketball/engine";
+import { formatScore } from "@vision/core/util/format";
+import { rankRoster } from "@/lib/fantasyTeams/rank";
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
 
 import styles from "@/components/HomeTeamPanel/HomeTeamPanel.module.scss";
@@ -10,19 +11,30 @@ import styles from "@/components/HomeTeamPanel/HomeTeamPanel.module.scss";
 // Fantasy teams live in the database (lib/leagues/teamQueries.ts); the home
 // page picks the featured team (lib/fantasyTeams/featured.ts) server-side and
 // hands it down here, so this panel and the page's Roster readout always
-// describe the same team. Bench and IL are left to /my-teams; the homepage
-// shows starters only.
+// describe the same team. Every rostered player is listed, bench and IL
+// included, highest season value first, so the roster reads as a ranking.
 export type HomeTeamPanelProps = {
   team: FantasyTeam | null;
   // The active league is imported: its teams are Yahoo's, so there is no
   // builder to point at.
   isImported: boolean;
+  // Season value by player id on the user's method; a player missing from it
+  // has no games yet and sorts last.
+  values: ReadonlyMap<number, number>;
+  // The method's short label, for the value column's accessible name.
+  methodLabel: string;
   // Lets the page's grid place the panel; the panel itself stays
   // container-agnostic.
   className?: string;
 };
 
-export function HomeTeamPanel({ team, isImported, className }: HomeTeamPanelProps) {
+export function HomeTeamPanel({
+  team,
+  isImported,
+  values,
+  methodLabel,
+  className,
+}: HomeTeamPanelProps) {
   if (team === null) {
     return (
       <DashboardPanel id="home-team-title" title="Your Team" className={className}>
@@ -39,8 +51,7 @@ export function HomeTeamPanel({ team, isImported, className }: HomeTeamPanelProp
     );
   }
 
-  const filled = team.slots.filter((slot) => slot.player !== null).length;
-  const starters = team.slots.filter((slot) => slotMeta({ type: slot.type }).kind === "starter");
+  const roster = rankRoster({ team, values });
 
   return (
     <DashboardPanel id="home-team-title" title="Your Team" className={className}>
@@ -52,28 +63,28 @@ export function HomeTeamPanel({ team, isImported, className }: HomeTeamPanelProp
         {team.name}
       </Link>
       <p className={styles.meta}>
-        {filled}/{team.slots.length} slots filled
+        {roster.length}/{team.slots.length} slots filled · sorted by {methodLabel}
       </p>
-      <ul className={styles.slotList}>
-        {starters.map((slot) => (
-          <li key={slot.id} className={styles.slot}>
-            <span className={styles.slotType}>{slotMeta({ type: slot.type }).label}</span>
-            {slot.player === null ? (
-              <span className={styles.emptySlot}>Empty</span>
-            ) : (
-              <span className={styles.player}>
-                <PlayerAvatar
-                  fullName={slot.player.fullName}
-                  nbaPersonId={slot.player.nbaPersonId}
-                  size="sm"
-                  teamAbbr={slot.player.teamAbbr}
-                />
-                <Link href={`/players/${slot.player.playerId}`}>{slot.player.fullName}</Link>
-              </span>
-            )}
+      <ol className={styles.slotList}>
+        {roster.map(({ slotId, slotLabel, player, value }) => (
+          <li key={slotId} className={styles.slot}>
+            <PlayerAvatar
+              fullName={player.fullName}
+              nbaPersonId={player.nbaPersonId}
+              size="sm"
+              teamAbbr={player.teamAbbr}
+            />
+            <Link href={`/players/${player.playerId}`} className={styles.name}>
+              {player.fullName}
+            </Link>
+            <span className={styles.slotType}>{slotLabel}</span>
+            <span className={styles.value}>
+              <span className={styles.srOnly}>{methodLabel} </span>
+              {value === null ? "—" : formatScore({ value })}
+            </span>
           </li>
         ))}
-      </ul>
+      </ol>
     </DashboardPanel>
   );
 }

@@ -100,6 +100,10 @@ describe("SyncYahooButton", () => {
     expect(syncYahooLeagueMock).toHaveBeenCalledWith({ leagueId: "league-1" });
     const button = screen.getByRole("button", { name: "Syncing…" });
     expect(button).toHaveAttribute("aria-disabled", "true");
+    // The animated state: the key is flagged for the spin and sweep, and the
+    // indeterminate bar runs beneath it.
+    expect(button).toHaveAttribute("data-syncing", "true");
+    expect(button.parentElement?.querySelector(".progress")).not.toBeNull();
     expect(screen.getByRole("status")).toHaveTextContent(/^Syncing…$/);
 
     // A second press while pending does nothing.
