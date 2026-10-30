@@ -66,7 +66,28 @@ beforeEach(() => {
 });
 
 describe("syncLeagueFromClient", () => {
-  it("syncs a server league on the server", async () => {
+  it("syncs a server league through the extension when it is installed", async () => {
+    const result = await syncLeagueFromClient({
+      leagueId: LEAGUE_ID,
+      syncVia: "server",
+      externalUrl: LEAGUE_URL,
+    });
+
+    expect(result).toEqual(SYNCED);
+    expect(fetchLeagueViaExtensionMock).toHaveBeenCalledWith({
+      extensionId: EXTENSION_ID,
+      leagueId: "106344",
+    });
+    expect(syncYahooLeagueFromSnapshotMock).toHaveBeenCalledWith({
+      leagueId: LEAGUE_ID,
+      payload: PAYLOAD,
+    });
+    expect(syncYahooLeagueMock).not.toHaveBeenCalled();
+  });
+
+  it("syncs a server league on the server when no extension id is configured", async () => {
+    getExtensionIdMock.mockReturnValue(null);
+
     const result = await syncLeagueFromClient({
       leagueId: LEAGUE_ID,
       syncVia: "server",
@@ -77,6 +98,41 @@ describe("syncLeagueFromClient", () => {
     expect(syncYahooLeagueMock).toHaveBeenCalledWith({ leagueId: LEAGUE_ID });
     expect(fetchLeagueViaExtensionMock).not.toHaveBeenCalled();
     expect(syncYahooLeagueFromSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the server when the extension is absent or can't read a server league", async () => {
+    fetchLeagueViaExtensionMock.mockResolvedValueOnce({ status: "failed", reason: "logged_out" });
+
+    const failed = await syncLeagueFromClient({
+      leagueId: LEAGUE_ID,
+      syncVia: "server",
+      externalUrl: LEAGUE_URL,
+    });
+
+    fetchLeagueViaExtensionMock.mockResolvedValueOnce({ status: "missing" });
+
+    const missing = await syncLeagueFromClient({
+      leagueId: LEAGUE_ID,
+      syncVia: "server",
+      externalUrl: LEAGUE_URL,
+    });
+
+    expect(failed).toEqual(SYNCED);
+    expect(missing).toEqual(SYNCED);
+    expect(syncYahooLeagueMock).toHaveBeenCalledTimes(2);
+    expect(syncYahooLeagueFromSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("syncs a server league with no readable Yahoo URL on the server", async () => {
+    const result = await syncLeagueFromClient({
+      leagueId: LEAGUE_ID,
+      syncVia: "server",
+      externalUrl: null,
+    });
+
+    expect(result).toEqual(SYNCED);
+    expect(syncYahooLeagueMock).toHaveBeenCalledWith({ leagueId: LEAGUE_ID });
+    expect(fetchLeagueViaExtensionMock).not.toHaveBeenCalled();
   });
 
   it("syncs an extension league through the extension", async () => {
