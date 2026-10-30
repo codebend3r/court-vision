@@ -13,25 +13,18 @@ export type ClientSyncResult =
   | { status: "extension_missing" }
   | { status: "extension_failed"; reason: BridgeErrorReason };
 
-// Syncs a league along the path it was imported on. A server league asks the
-// server to read Yahoo; an extension league is read by the extension in this
-// browser and handed to the server as a snapshot. An extension league never
-// reaches the server sync, which can't read a private league and would record
-// a syncError for it.
-type SyncLeagueFromClientProps = {
+// Reads the league through the extension in this browser and hands it to the
+// server as a snapshot.
+type SyncThroughExtensionProps = {
   leagueId: string;
-  syncVia: LeagueSyncVia;
   // The Yahoo league id is parsed back out of it.
   externalUrl: string | null;
 };
 
-export const syncLeagueFromClient = async ({
+const syncThroughExtension = async ({
   leagueId,
-  syncVia,
   externalUrl,
-}: SyncLeagueFromClientProps): Promise<ClientSyncResult> => {
-  if (syncVia === "server") return syncYahooLeague({ leagueId });
-
+}: SyncThroughExtensionProps): Promise<ClientSyncResult> => {
   const extensionId = getExtensionId();
   if (extensionId === null) return { status: "extension_missing" };
 
@@ -42,4 +35,28 @@ export const syncLeagueFromClient = async ({
   if (fetched.status === "missing") return { status: "extension_missing" };
   if (fetched.status === "failed") return { status: "extension_failed", reason: fetched.reason };
   return syncYahooLeagueFromSnapshot({ leagueId, payload: fetched.payload });
+};
+
+// Every league tries the extension first: it reads Yahoo with the user's own
+// login, so it can sync a private league. When it can't read the league, a
+// server league falls back to the server sync. An extension league never
+// reaches the server sync, which can't read a private league and would record
+// a syncError for it.
+type SyncLeagueFromClientProps = {
+  leagueId: string;
+  syncVia: LeagueSyncVia;
+  externalUrl: string | null;
+};
+
+export const syncLeagueFromClient = async ({
+  leagueId,
+  syncVia,
+  externalUrl,
+}: SyncLeagueFromClientProps): Promise<ClientSyncResult> => {
+  const viaExtension = await syncThroughExtension({ leagueId, externalUrl });
+  const extensionCouldNotRead =
+    viaExtension.status === "extension_missing" || viaExtension.status === "extension_failed";
+  return syncVia === "server" && extensionCouldNotRead
+    ? syncYahooLeague({ leagueId })
+    : viaExtension;
 };
