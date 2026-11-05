@@ -169,7 +169,6 @@ export function PlayerFantasyChart({ breakdown, trend, averages }: PlayerFantasy
                         values: series.flatMap((point) => [point[key], point.average]),
                       })}
                       clipToDomain
-                      curve="linear"
                       endLabels={false}
                       height={140}
                       formatValue={({ value }) => formatSigned({ value, digits: 1 })}

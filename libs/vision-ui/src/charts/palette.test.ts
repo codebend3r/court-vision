@@ -2,7 +2,9 @@ import { describe, expect, it } from "bun:test";
 
 import {
   CHART_CHROME,
+  CHART_CURVE,
   chartAxisProps,
+  chartLineProps,
   getSeriesPalette,
   getTrendPalette,
 } from "#ui/charts/palette";
@@ -48,5 +50,29 @@ describe("getTrendPalette", () => {
 
   it("darkens the light theme's hues for contrast on white", () => {
     expect(getTrendPalette({ theme: "light" })).not.toEqual(getTrendPalette({ theme: "dark" }));
+  });
+});
+
+describe("chartLineProps", () => {
+  it("draws one shared smooth curve with a bold, round-capped stroke", () => {
+    const props = chartLineProps({ color: "#3987e5" });
+    expect(props.type).toBe(CHART_CURVE);
+    expect(CHART_CURVE).toBe("basis");
+    expect(props).toMatchObject({
+      stroke: "#3987e5",
+      strokeWidth: 3,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      dot: false,
+    });
+  });
+
+  it("sizes the hover dot from the stroke and rings it in the surface colour", () => {
+    expect(chartLineProps({ color: "#199e70", width: 4 }).activeDot).toEqual({
+      r: 6,
+      fill: "#199e70",
+      stroke: "var(--color-surface)",
+      strokeWidth: 2,
+    });
   });
 });

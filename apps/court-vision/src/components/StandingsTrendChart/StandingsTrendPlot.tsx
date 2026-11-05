@@ -11,7 +11,7 @@ import {
   type TooltipPayloadEntry,
 } from "recharts";
 
-import { CHART_CHROME, chartAxisProps } from "@vision/ui/charts/palette";
+import { CHART_CHROME, chartAxisProps, chartLineProps } from "@vision/ui/charts/palette";
 import { ListTooltip } from "@/components/ListTooltip/ListTooltip";
 import { usePrefersReducedMotion } from "@vision/ui/hooks/usePrefersReducedMotion";
 import { useTheme, type Theme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
@@ -123,12 +123,10 @@ export function StandingsTrendPlot({ teams, rows, active, onHover }: StandingsTr
               key={team.abbr}
               dataKey={team.abbr}
               name={team.name}
-              type="monotone"
-              stroke={color}
-              strokeWidth={active === team.abbr ? 3 : 1.5}
+              // Thirty teams share this plot, so the resting stroke stays
+              // lighter than the shared default and the hovered team goes bold.
+              {...chartLineProps({ color, width: active === team.abbr ? 4 : 2 })}
               strokeOpacity={emphasized ? 1 : 0.18}
-              dot={false}
-              activeDot={{ r: 4 }}
               isAnimationActive={!prefersReducedMotion}
               connectNulls
               onMouseEnter={() => onHover({ abbr: team.abbr })}
