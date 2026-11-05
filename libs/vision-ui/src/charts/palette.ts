@@ -83,3 +83,43 @@ type GetSeriesPaletteProps = { theme: Theme };
 
 export const getSeriesPalette = ({ theme }: GetSeriesPaletteProps): readonly string[] =>
   SERIES_BY_THEME[theme];
+
+// Every line chart draws its series with one curve: a cubic B-spline
+// ("basis"). Game-by-game stats are spiky, and any curve forced through every
+// point keeps those spikes as kinks; the B-spline instead rounds each turn
+// into a wide, even arc and, staying inside its points, never overshoots below
+// zero or past a peak. The exact value stays one hover away: the hover dot
+// sits on the recorded point and the tooltip reads it out. Stroke ends and
+// joins are rounded so no corner survives at any zoom.
+export const CHART_CURVE = "basis";
+
+type ChartLinePropsProps = {
+  // The series' own colour; the hover dot is filled with it.
+  color: string;
+  // Stroke width in px. Lines default to a bold 3px; a highlighted line in a
+  // crowded chart goes heavier, a muted one lighter.
+  width?: number;
+};
+
+type ChartLineStyle = {
+  type: typeof CHART_CURVE;
+  stroke: string;
+  strokeWidth: number;
+  strokeLinecap: "round";
+  strokeLinejoin: "round";
+  dot: false;
+  activeDot: { r: number; fill: string; stroke: string; strokeWidth: number };
+};
+
+// The look every chart line shares: smooth curve, bold rounded stroke, no
+// resting dots, and a hover dot ringed in the surface colour so it reads
+// cleanly over the line it sits on. Spread it onto a recharts `Line`.
+export const chartLineProps = ({ color, width = 3 }: ChartLinePropsProps): ChartLineStyle => ({
+  type: CHART_CURVE,
+  stroke: color,
+  strokeWidth: width,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  dot: false,
+  activeDot: { r: width + 2, fill: color, stroke: "var(--color-surface)", strokeWidth: 2 },
+});

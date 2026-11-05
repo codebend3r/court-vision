@@ -15,7 +15,12 @@ import {
 import { formatSigned } from "@vision/core/util/format";
 import { AVERAGE_LINE_LABEL, AVERAGE_LINE_STYLE } from "@/lib/charts/averageLine";
 import { fittedDomain } from "@/lib/charts/trendMethods";
-import { CHART_CHROME, chartAxisProps } from "@vision/ui/charts/palette";
+import {
+  CHART_CHROME,
+  CHART_CURVE,
+  chartAxisProps,
+  chartLineProps,
+} from "@vision/ui/charts/palette";
 import { endLabel, lastPlottedIndex } from "@/components/ChartEndLabel/ChartEndLabel";
 import { ListTooltip } from "@/components/ListTooltip/ListTooltip";
 import { AVERAGE_KEY, type ChartRow } from "@/components/WatchlistTrendChart/WatchlistTrendChart";
@@ -100,7 +105,7 @@ export function WatchlistTrendPlot({ rows, lines, showAverage }: WatchlistTrendP
           <Line
             dataKey={AVERAGE_KEY}
             name={AVERAGE_LINE_LABEL}
-            type="linear"
+            type={CHART_CURVE}
             {...AVERAGE_LINE_STYLE}
             dot={false}
             activeDot={false}
@@ -118,13 +123,7 @@ export function WatchlistTrendPlot({ rows, lines, showAverage }: WatchlistTrendP
               key={line.dataKey}
               dataKey={line.dataKey}
               name={line.name}
-              // Straight segments: a smoothed curve rounds off the very jumps
-              // these charts exist to show.
-              type="linear"
-              stroke={line.color}
-              strokeWidth={3}
-              dot={false}
-              activeDot={{ r: 5 }}
+              {...chartLineProps({ color: line.color })}
               isAnimationActive={!prefersReducedMotion}
               // A missed game date must not cut the line in half.
               connectNulls

@@ -16,7 +16,7 @@ import {
 
 import { isMetricPoint, type MetricPoint } from "@vision/core/series/metricPoint";
 import { AVERAGE_LINE_STYLE } from "@/lib/charts/averageLine";
-import { CHART_CHROME, chartAxisProps } from "@vision/ui/charts/palette";
+import { CHART_CHROME, chartAxisProps, chartLineProps } from "@vision/ui/charts/palette";
 import { endLabel, lastPlottedIndex } from "@/components/ChartEndLabel/ChartEndLabel";
 import { SeriesTooltip } from "@/components/SeriesTooltip/SeriesTooltip";
 import { TeamMatchup } from "@/components/TeamMatchup/TeamMatchup";
@@ -53,9 +53,6 @@ export type MetricLineChartProps<K extends string> = {
   // identity instead.
   endLabels?: boolean;
   height?: number;
-  // Straight segments show a jump as sharply as it happened; the smoothed
-  // default suits the box-score panels.
-  curve?: "monotone" | "linear";
 };
 
 // `gameDate` is stored as a UTC-midnight ISO string. Formatting it in the
@@ -156,12 +153,11 @@ export function MetricLineChart<K extends string>({
   zeroLine = false,
   endLabels = true,
   height = 320,
-  curve = "monotone",
 }: MetricLineChartProps<K>) {
   return (
     <ResponsiveContainer width="100%" height={height} initialDimension={{ width: 800, height }}>
       <LineChart data={[...series]} margin={{ top: 8, right: 56, bottom: 8, left: 0 }}>
-        <CartesianGrid stroke={CHART_CHROME.grid} vertical={false} />
+        <CartesianGrid stroke={CHART_CHROME.grid} strokeDasharray="3 3" vertical={false} />
         <XAxis
           {...chartAxisProps({ rule: "grid" })}
           dataKey="gameIndex"
@@ -195,13 +191,12 @@ export function MetricLineChart<K extends string>({
         {metas.map((meta) => (
           <Line
             key={meta.key}
-            type={curve}
-            dataKey={meta.key}
-            stroke={meta.color}
-            strokeWidth={meta.dashed ? AVERAGE_LINE_STYLE.strokeWidth : 2}
+            {...chartLineProps({
+              color: meta.color,
+              width: meta.dashed ? AVERAGE_LINE_STYLE.strokeWidth : undefined,
+            })}
             strokeDasharray={meta.dashed ? AVERAGE_LINE_STYLE.strokeDasharray : undefined}
-            dot={false}
-            activeDot={{ r: 4 }}
+            dataKey={meta.key}
             isAnimationActive={false}
             connectNulls={false}
             // A line ends at its last recorded game, which a run of trailing

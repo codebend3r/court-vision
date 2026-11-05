@@ -19,7 +19,7 @@ import { AVERAGE_LINE_LABEL, AVERAGE_LINE_STYLE } from "@/lib/charts/averageLine
 import { fittedDomain, type TrendSpan, visibleMethods } from "@/lib/charts/trendMethods";
 import { type MethodValueKey } from "@vision/core/valuation/types";
 import { SeriesTooltip } from "@/components/SeriesTooltip/SeriesTooltip";
-import { CHART_CHROME } from "@vision/ui/charts/palette";
+import { CHART_CHROME, CHART_CURVE, chartLineProps } from "@vision/ui/charts/palette";
 import { formatSigned } from "@vision/core/util/format";
 import { type FantasyTableRow, type ListSortProps } from "@/lib/valuation/fantasyRows";
 import { type FantasyTrendValue } from "@vision/core/valuation/trend";
@@ -203,19 +203,17 @@ function Sparkline({ plotted, methodKey, color, colors, averageByDate }: Sparkli
           wrapperStyle={{ zIndex: 30 }}
         />
         <Line
-          type="linear"
+          // Each cell is a small sparkline, so a lighter stroke keeps the
+          // curve legible without crowding the row.
+          {...chartLineProps({ color, width: 2.5 })}
           dataKey={methodKey}
           name={VALUE_LABELS[methodKey]}
-          stroke={color}
-          strokeWidth={2}
-          dot={false}
-          activeDot={{ r: 3 }}
           isAnimationActive={false}
           connectNulls={false}
         />
         {averageByDate !== null && (
           <Line
-            type="linear"
+            type={CHART_CURVE}
             dataKey={AVERAGE_KEY}
             name={AVERAGE_LINE_LABEL}
             {...AVERAGE_LINE_STYLE}
