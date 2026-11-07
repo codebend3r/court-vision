@@ -25,9 +25,17 @@ const CALLABLE_TYPES = new Set([
   "TSConstructorType",
 ]);
 
-type InlineParameterTypesProps = { source: string };
-export const inlineParameterTypes = ({ source }: InlineParameterTypesProps): number[] => {
-  const ast = parse(source, { sourceType: "module", plugins: ["typescript", "jsx"] });
+// The file kind picks the grammar: Babel 8 reads `<T>(x) => x` as JSX once the
+// jsx plugin is on, so only .tsx turns it on. errorRecovery keeps Babel's scope
+// checks (which reject a `declare global` var that a module also exports) from
+// aborting a file tsgo already accepts; the AST still comes back whole.
+type InlineParameterTypesProps = { source: string; path: string };
+export const inlineParameterTypes = ({ source, path }: InlineParameterTypesProps): number[] => {
+  const ast = parse(source, {
+    sourceType: "module",
+    errorRecovery: true,
+    plugins: path.endsWith(".tsx") ? ["typescript", "jsx"] : ["typescript"],
+  });
   const violations = syntaxNodes({ value: ast.program })
     .filter((node) => CALLABLE_TYPES.has(String(node.type)))
     .flatMap((node) => {
@@ -54,7 +62,7 @@ if (import.meta.main) {
   const violations = (
     await Promise.all(
       paths.map(async (path) =>
-        inlineParameterTypes({ source: await Bun.file(path).text() }).map(
+        inlineParameterTypes({ source: await Bun.file(path).text(), path }).map(
           (line) => `${path}:${line}: use a named function Props type`,
         ),
       ),

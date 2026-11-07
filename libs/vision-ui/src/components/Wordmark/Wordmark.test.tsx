@@ -12,4 +12,9 @@ describe("Wordmark", () => {
     expect(screen.getByText("Vision")).toHaveClass("trail");
     expect(screen.getByText("Rink").parentElement).toHaveClass("wordmark");
   });
+
+  it("reads as two words", () => {
+    const { container } = render(<Wordmark lead="Rink" />);
+    expect(container.textContent).toBe("Rink Vision");
+  });
 });

@@ -59,10 +59,13 @@ export function LogoMark({ size }: LogoMarkProps) {
 
 // COURT over VISION. The two lines carry the extrusion; VISION takes the
 // accent so the wordmark re-inks with the theme like the mark does.
+// The space between the words is never laid out (the grid drops whitespace
+// text), but it makes the text read as "Court Vision", so a link around the
+// lockup takes its accessible name from what is on screen (WCAG 2.5.3).
 export function LogoWordmark() {
   return (
     <span className={styles.wordmark}>
-      <span className={styles.wordCourt}>Court</span>
+      <span className={styles.wordCourt}>Court</span>{" "}
       <span className={styles.wordVision}>Vision</span>
     </span>
   );

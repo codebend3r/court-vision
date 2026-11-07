@@ -30,7 +30,7 @@ describe("ShellLayout", () => {
     expect(skipLink).toHaveAttribute("href", "#main-content");
     expect(target).toHaveAttribute("tabindex", "-1");
     expect(target).toContainElement(screen.getByRole("main"));
-    expect(screen.getByRole("banner")).toHaveTextContent("RinkVision");
+    expect(screen.getByRole("banner")).toHaveTextContent("Rink Vision");
     expect(screen.getByRole("group", { name: "Theme" })).toBeInTheDocument();
   });
 });

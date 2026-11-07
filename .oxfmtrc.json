@@ -21,6 +21,7 @@
     ".agents/",
     ".windsurf/",
     ".claude/skills/prisma-*/",
-    ".nx/"
+    ".nx/",
+    "graphify-out/"
   ]
 }
