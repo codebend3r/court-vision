@@ -9,7 +9,7 @@ describe("inlineParameterTypes", () => {
       const run = ({ tx }: Pick<Client, 'tx'> & { tx: string }) => tx;
       type Handler = (event: { name: string }) => void;
     `;
-    expect(inlineParameterTypes({ source })).toEqual([2, 3, 4]);
+    expect(inlineParameterTypes({ source, path: "fixture.tsx" })).toEqual([2, 3, 4]);
   });
 
   it("allows named aliases, generic selectors and literal return types", () => {
@@ -18,23 +18,48 @@ describe("inlineParameterTypes", () => {
       type Result = Extract<Union, { kind: 'ok' }>;
       function save({ id }: SaveProps): { id: string } { return { id }; }
     `;
-    expect(inlineParameterTypes({ source })).toEqual([]);
+    expect(inlineParameterTypes({ source, path: "fixture.tsx" })).toEqual([]);
   });
 
   it("counts nested callback annotations only once", () => {
     expect(
       inlineParameterTypes({
         source: "function f({ run }: { run: (args: { id: number }) => void }) {}",
+        path: "fixture.tsx",
       }),
     ).toEqual([1, 1]);
   });
 
   it("checks nested parameter types and defaulted bindings", () => {
     expect(
-      inlineParameterTypes({ source: "const f = ({ id }: { id: number } = { id: 1 }) => id;" }),
+      inlineParameterTypes({
+        source: "const f = ({ id }: { id: number } = { id: 1 }) => id;",
+        path: "fixture.tsx",
+      }),
     ).toEqual([1]);
     expect(
-      inlineParameterTypes({ source: "type Props = { run: (args: { id: number }) => void };" }),
+      inlineParameterTypes({
+        source: "type Props = { run: (args: { id: number }) => void };",
+        path: "fixture.tsx",
+      }),
+    ).toEqual([1]);
+  });
+
+  it("parses JSX in .tsx sources", () => {
+    expect(
+      inlineParameterTypes({
+        source: "const C = ({ id }: { id: string }) => <p>{id}</p>;",
+        path: "component.tsx",
+      }),
+    ).toEqual([1]);
+  });
+
+  it("parses generic arrows in plain .ts sources", () => {
+    expect(
+      inlineParameterTypes({
+        source: "const f = <T>({ v }: { v: T }) => v;",
+        path: "generic.ts",
+      }),
     ).toEqual([1]);
   });
 });

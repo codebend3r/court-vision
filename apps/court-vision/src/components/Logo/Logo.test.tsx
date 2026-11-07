@@ -44,7 +44,7 @@ describe("LogoMark", () => {
 describe("LogoWordmark", () => {
   it("stacks Court over Vision", () => {
     const { container } = render(<LogoWordmark />);
-    expect(container.textContent).toBe("CourtVision");
+    expect(container.textContent).toBe("Court Vision");
   });
 });
 

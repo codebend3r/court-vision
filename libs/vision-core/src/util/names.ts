@@ -4,10 +4,7 @@
 type NormalizeNameProps = { name: string };
 
 export const normalizeName = ({ name }: NormalizeNameProps): string =>
-  name
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase();
+  name.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 // Sources disagree on punctuation ("A.J. Green" here vs "AJ Green" in the NBA
 // index, apostrophes, hyphens), so the match key drops everything but letters,

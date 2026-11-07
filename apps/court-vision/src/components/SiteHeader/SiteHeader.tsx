@@ -13,7 +13,7 @@ export async function SiteHeader() {
 
   return (
     <header className={styles.header}>
-      <Link href="/" className={styles.home} aria-label="Court Vision">
+      <Link href="/" className={styles.home}>
         <LogoLockup />
       </Link>
       {/* Centre-left: the active league pill (renders nothing when the store

@@ -25,35 +25,35 @@
     "map:headshots": "bun run src/lib/headshots/map.ts"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "7.10.0",
-    "@prisma/client": "7.10.0",
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
     "@supabase/ssr": "0.12.7",
-    "@supabase/supabase-js": "2.117.2",
+    "@supabase/supabase-js": "2.119.0",
     "@vision/core": "workspace:*",
     "@vision/sport-basketball": "workspace:*",
     "@vision/ui": "workspace:*",
     "@vision/yahoo-bridge": "workspace:*",
-    "lucide-react": "1.50.0",
-    "next": "16.3.8",
-    "nuqs": "2.10.1",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "lucide-react": "1.70.0",
+    "next": "16.4.5",
+    "nuqs": "2.10.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "recharts": "3.10.1",
-    "zod": "4.6.5",
-    "zustand": "5.0.15"
+    "zod": "4.6.7",
+    "zustand": "5.1.0"
   },
   "devDependencies": {
-    "@axe-core/playwright": "4.13.0",
-    "@playwright/test": "1.63.0",
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.65.0",
     "@testing-library/dom": "10.4.2",
     "@testing-library/react": "16.3.3",
-    "@testing-library/user-event": "14.6.7",
+    "@testing-library/user-event": "14.6.8",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vision/testing": "workspace:*",
     "build-meta": "0.1.1",
-    "dotenv": "18.0.5",
-    "prisma": "7.10.0",
-    "sass": "1.105.1"
+    "dotenv": "18.0.9",
+    "prisma": "7.10.1",
+    "sass": "1.108.1"
   }
 }

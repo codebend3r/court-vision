@@ -40,7 +40,14 @@ remote_images = [
 # guarded by row-level security, not secrecy. Exempt them from Netlify's
 # secrets scanner, which otherwise blocks the build on detecting their inlined
 # values (in the bundle and in the auth design docs that reference the URL).
+#
+# Netlify ignores `packageManager` and installs with its image's bun (1.3.12 on
+# 2026-11-07), which flattened typos-bin's nested `isexe@4` to the hoisted
+# `isexe@2` and failed the install. BUN_VERSION pins it to the root
+# package.json's `packageManager`; scripts/netlify-bun-version.test.ts fails if
+# any netlify.toml drifts from it.
 [build.environment]
+BUN_VERSION = "1.4.2"
 SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_SUPABASE_URL"
 
 # Turbopack's persistent cache captures the build environment, so any secret
