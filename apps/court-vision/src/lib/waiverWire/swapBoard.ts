@@ -1,5 +1,6 @@
 import { type Category, type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
 
+import { MINUS } from "@/lib/waiverWire/format";
 import { type WaiverModel, type WaiverRow } from "@/lib/waiverWire/types";
 
 // Which sign-corrected score the chips compare: z, or g for the G-Score method.
@@ -14,7 +15,6 @@ export type SwapRow = WaiverRow & { gain: number; chips: CategoryChip[] };
 export type SwapBoard = { target: WaiverRow | null; rows: SwapRow[] };
 
 const MAX_CHIPS = 3;
-const MINUS = "−";
 
 type BuildChipsProps = {
   free: FantasyCategoryBreakdown[];
@@ -37,13 +37,18 @@ const buildChips = ({ free, target, scoreKey }: BuildChipsProps): CategoryChip[]
       improves: difference > 0,
     }));
 
-// The free agents who beat my weakest player, biggest gain first (ties by
-// player id), each with up to three category chips for what the swap changes.
+// A player's per-category breakdown on the league's method, by player id: the
+// one category reader the swap board, the head-to-head and the Roster Advisor
+// share.
 type BreakdownForProps = { playerId: number };
 
+export type BreakdownFor = ({ playerId }: BreakdownForProps) => FantasyCategoryBreakdown[];
+
+// The free agents who beat my weakest player, biggest gain first (ties by
+// player id), each with up to three category chips for what the swap changes.
 type BuildSwapBoardProps = {
   model: WaiverModel;
-  breakdownFor: ({ playerId }: BreakdownForProps) => FantasyCategoryBreakdown[];
+  breakdownFor: BreakdownFor;
   scoreKey: ScoreKey;
 };
 

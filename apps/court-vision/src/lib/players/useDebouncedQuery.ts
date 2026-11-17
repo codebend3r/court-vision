@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { MAX_QUERY_LENGTH } from "@/lib/players/searchParams";
+import { normalizeQuery } from "@/lib/players/searchParams";
 
 const DEBOUNCE_MS = 300;
 
@@ -55,7 +55,7 @@ export const useDebouncedQuery = ({
     cancel();
     timer.current = setTimeout(() => {
       timer.current = null;
-      const trimmed = value.trim().slice(0, MAX_QUERY_LENGTH);
+      const trimmed = normalizeQuery({ value });
       if (trimmed === latestQ.current) return;
       onCommit({ q: trimmed });
     }, DEBOUNCE_MS);

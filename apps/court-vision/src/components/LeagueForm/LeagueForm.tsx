@@ -192,13 +192,10 @@ export function LeagueForm({ league }: LeagueFormProps) {
     ({ category }: OnWeightBlurProps) =>
     (event: FocusEvent<HTMLInputElement>) => {
       const snapped = normalizeWeight({ raw: event.target.value });
-      setState((prev) => ({
-        ...prev,
-        weights:
-          snapped === 1
-            ? withoutWeight({ weights: prev.weights, category })
-            : { ...withoutWeight({ weights: prev.weights, category }), [category]: snapped },
-      }));
+      setState((prev) => {
+        const rest = withoutWeight({ weights: prev.weights, category });
+        return { ...prev, weights: snapped === 1 ? rest : { ...rest, [category]: snapped } };
+      });
     };
 
   type OnScoringBlurProps = { stat: ScoringStatKey };

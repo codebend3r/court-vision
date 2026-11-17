@@ -1,14 +1,9 @@
 "use server";
 
-import { z } from "zod";
-
 import { confirmationRedirectTo } from "@/lib/auth/confirmationRedirect";
+import { type AuthFormResult, emailSchema, firstIssue } from "@/lib/auth/formResult";
 import { RESET_PATH } from "@/lib/auth/loginNotice";
 import { createClient } from "@/lib/supabase/server";
-
-const emailSchema = z.string().email("Enter a valid email.");
-
-type ResetResult = { ok: true } | { ok: false; error: string };
 
 // Mails a recovery link that lands on /auth/confirm, which exchanges it for a
 // session and forwards to the new-password form. Supabase answers success for an
@@ -17,10 +12,10 @@ type RequestPasswordResetProps = { email: string };
 
 export async function requestPasswordReset({
   email,
-}: RequestPasswordResetProps): Promise<ResetResult> {
+}: RequestPasswordResetProps): Promise<AuthFormResult> {
   const parsed = emailSchema.safeParse(email);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Enter a valid email." };
+    return firstIssue({ error: parsed.error, fallback: "Enter a valid email." });
   }
 
   const supabase = await createClient();

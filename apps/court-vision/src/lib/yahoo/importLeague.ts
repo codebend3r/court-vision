@@ -22,6 +22,8 @@ import {
   yahooFailureMessage,
 } from "@/lib/yahoo/messages";
 import { createImportedLeague, syncImportedLeague } from "@/lib/yahoo/persist";
+import { claimSync, releaseSync } from "@/lib/yahoo/syncLease";
+import { rosteredPlayers } from "@/lib/yahoo/transform";
 import {
   type ImportedLeague,
   type YahooFailure,
@@ -30,7 +32,7 @@ import {
   type YahooPreview,
   type YahooSyncResult,
 } from "@/lib/yahoo/types";
-import { parseYahooLeagueUrl } from "@/lib/yahoo/url";
+import { parseYahooLeagueId } from "@/lib/yahoo/url";
 
 export type LoadedLeague = Extract<YahooLoadResult, { status: "ok" }>;
 
@@ -81,16 +83,15 @@ export const loadLeagueFromUrl = async ({
   url,
   includeWaivers,
 }: LoadLeagueFromUrlProps): Promise<LoadedLeague | YahooFailure> => {
-  const parsed = parseYahooLeagueUrl({ input: url });
-  if (parsed.status === "invalid") return { status: "invalid_url" };
-  if (parsed.status !== "ok") return { status: parsed.status };
+  const parsed = parseYahooLeagueId({ input: url });
+  if (parsed.status !== "ok") return parsed;
   const loaded = await loadYahooLeague({ leagueId: parsed.leagueId, includeWaivers });
   return loaded.status === "ok" ? loaded : loadFailureToResult({ failure: loaded });
 };
 
 // Every player Yahoo named: each team's roster, then the waiver list.
 const playerRefs = ({ league, waiverRefs }: LoadedLeague): YahooPlayerRef[] => [
-  ...league.teams.flatMap(({ slots }) => slots.flatMap(({ player }) => (player ? [player] : []))),
+  ...league.teams.flatMap((team) => rosteredPlayers({ team })),
   ...waiverRefs,
 ];
 
@@ -127,7 +128,7 @@ export const toYahooPreview = ({ league }: ToYahooPreviewProps): YahooPreview =>
     name: team.name,
     logoUrl: team.logoUrl,
     managerName: team.managerName,
-    rosterCount: team.slots.filter(({ player }) => !!player).length,
+    rosterCount: rosteredPlayers({ team }).length,
     isOwnedByCurrentLogin: team.isOwnedByCurrentLogin,
   })),
 });
@@ -270,6 +271,31 @@ export const readStoredSync = async ({
       throttled: Date.now() - lastSyncAttempt({ league: stored }) < YAHOO_SYNC_THROTTLE_MS,
     },
   };
+};
+
+// Runs a sync under the league's lease, so two syncs never write at once: a
+// league another sync holds answers `throttled`. The lease is released however
+// `run` ends; its `syncStartedAt` fences out any write a stale sync attempts.
+type LeasedSyncProps = { syncStartedAt: Date };
+
+type WithSyncLeaseProps = {
+  profileId: string;
+  leagueId: string;
+  run: (args: LeasedSyncProps) => Promise<YahooSyncResult>;
+};
+
+export const withSyncLease = async ({
+  profileId,
+  leagueId,
+  run,
+}: WithSyncLeaseProps): Promise<YahooSyncResult> => {
+  const syncStartedAt = await claimSync({ profileId, leagueId });
+  if (syncStartedAt === null) return { status: "throttled" };
+  try {
+    return await run({ syncStartedAt });
+  } finally {
+    await releaseSync({ profileId, leagueId, syncStartedAt });
+  }
 };
 
 // The league keeps its last good data on any failure; only the reason is

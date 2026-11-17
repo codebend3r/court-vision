@@ -1,5 +1,5 @@
 import { isKeyOf, isRecord } from "@vision/core/util/record";
-import { isWeightedMethodKey } from "@vision/core/valuation/registry";
+import { isWeightedMethodKey, METHOD_VALUE_KEYS } from "@vision/core/valuation/registry";
 import { basketball, BASKETBALL_VALUED_STATS } from "@vision/sport-basketball/descriptor";
 import {
   CATEGORY_KEYS,
@@ -42,16 +42,7 @@ export type ValuationResponse =
   | { type: "result"; requestId: number; values: FantasyPlayerValues[]; poolStats: PoolStats }
   | { type: "error"; requestId: number };
 
-const VALUE_KEYS: readonly (keyof FantasyPlayerValues)[] = [
-  "playerId",
-  "z",
-  "g",
-  "points",
-  "vorp",
-  "positional",
-  "sgp",
-  "sim",
-];
+const VALUE_KEYS: readonly (keyof FantasyPlayerValues)[] = ["playerId", ...METHOD_VALUE_KEYS];
 const RATIO_KEYS = CATEGORY_KEYS.filter(isKeyOf({ record: basketball.ratio }));
 
 type IsNumbersForProps<K extends string> = { keys: readonly K[] };

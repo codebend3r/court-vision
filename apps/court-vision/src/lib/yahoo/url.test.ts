@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { parseYahooLeagueUrl } from "@/lib/yahoo/url";
+import { parseYahooLeagueId, parseYahooLeagueUrl, type YahooLeagueIdResult } from "@/lib/yahoo/url";
 
 const HOST = "basketball.fantasysports.yahoo.com";
 
@@ -47,5 +47,26 @@ describe("parseYahooLeagueUrl", () => {
     ["a season-prefixed URL with no league id", `https://${HOST}/2025/nba`],
   ])("rejects input that is not a Yahoo basketball league: %s", (_label, input) => {
     expect(parseYahooLeagueUrl({ input })).toEqual({ status: "invalid" });
+  });
+});
+
+describe("parseYahooLeagueId", () => {
+  it("answers a league URL with its league id", () => {
+    expect(parseYahooLeagueId({ input: `https://${HOST}/nba/106344` })).toEqual({
+      status: "ok",
+      leagueId: "106344",
+    });
+  });
+
+  it.each<[string, string, Exclude<YahooLeagueIdResult, { status: "ok" }>["status"]]>([
+    ["something that isn't a league link", "not a url", "invalid_url"],
+    ["another sport's league", "https://football.fantasysports.yahoo.com/f1/106344", "wrong_sport"],
+    [
+      "a past season's league, without its season",
+      `https://${HOST}/2024/nba/106344`,
+      "past_season",
+    ],
+  ])("answers %s with its failure", (_label, input, status) => {
+    expect(parseYahooLeagueId({ input })).toEqual({ status });
   });
 });

@@ -3,18 +3,17 @@
 import { z } from "zod";
 
 import { confirmationRedirectTo } from "@/lib/auth/confirmationRedirect";
+import { type AuthFormResult, emailSchema, firstIssue } from "@/lib/auth/formResult";
 import { usernameSchema } from "@/lib/auth/username";
 import { isUsernameTaken } from "@/lib/auth/usernameTaken";
 import { allowUsernameAttempt, USERNAME_RATE_LIMIT_MESSAGE } from "@/lib/auth/usernameRateLimit";
 import { createClient } from "@/lib/supabase/server";
 
 const inputSchema = z.object({
-  email: z.string().email("Enter a valid email."),
+  email: emailSchema,
   username: usernameSchema,
   password: z.string().min(8, "Password must be at least 8 characters."),
 });
-
-type SignUpResult = { ok: true } | { ok: false; error: string };
 
 type SignUpProps = {
   email: string;
@@ -22,10 +21,10 @@ type SignUpProps = {
   password: string;
 };
 
-export async function signUp(input: SignUpProps): Promise<SignUpResult> {
+export async function signUp(input: SignUpProps): Promise<AuthFormResult> {
   const parsed = inputSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return firstIssue({ error: parsed.error, fallback: "Invalid input." });
   }
 
   const { email, username, password } = parsed.data;
@@ -58,8 +57,6 @@ export async function signUp(input: SignUpProps): Promise<SignUpResult> {
   return { ok: true };
 }
 
-const emailSchema = z.string().email("Enter a valid email.");
-
 // Accounts created before the confirmation link was fixed were mailed a
 // localhost URL they could never click, so they are stuck unconfirmed with no
 // way out of the sign-in form. This re-sends the signup confirmation, now
@@ -68,10 +65,10 @@ type ResendConfirmationProps = { email: string };
 
 export async function resendConfirmation({
   email,
-}: ResendConfirmationProps): Promise<SignUpResult> {
+}: ResendConfirmationProps): Promise<AuthFormResult> {
   const parsed = emailSchema.safeParse(email);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Enter a valid email." };
+    return firstIssue({ error: parsed.error, fallback: "Enter a valid email." });
   }
 
   const supabase = await createClient();

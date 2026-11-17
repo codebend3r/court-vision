@@ -1,6 +1,7 @@
 import { type AdvisorLeagueData } from "@/lib/advisor/types";
 import { type PlayerGameRange } from "@/lib/players/searchParams";
 import { type FantasyStatLine } from "@/lib/valuation/types";
+import { rosteredIds } from "@/lib/waiverWire/model";
 
 // Recent form is the last ten games, set against the whole season.
 export const TREND_RANGE: PlayerGameRange = "last10";
@@ -36,10 +37,7 @@ type FreePlayerIdsProps = {
 };
 
 export const freePlayerIds = ({ league, activePlayerIds }: FreePlayerIdsProps): Set<number> => {
-  const rostered = new Set([
-    ...league.rosteredPlayerIds,
-    ...league.myRoster.map(({ playerId }) => playerId),
-  ]);
+  const rostered = rosteredIds({ league });
   return new Set(activePlayerIds.filter((playerId) => !rostered.has(playerId)));
 };
 

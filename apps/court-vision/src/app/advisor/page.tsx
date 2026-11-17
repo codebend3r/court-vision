@@ -3,7 +3,6 @@ import { type ReactNode } from "react";
 
 import { AdvisorView } from "@/components/AdvisorView/AdvisorView";
 import { MyTeamPicker } from "@/components/MyTeamPicker/MyTeamPicker";
-import { SyncYahooButton } from "@/components/SyncYahooButton/SyncYahooButton";
 import { getAdvisorLeagueData } from "@/lib/advisor/loader";
 import { loadAdvisorSearchParams } from "@/lib/advisor/searchParams";
 import { freePlayerIds, TREND_RANGE } from "@/lib/advisor/trending";
@@ -15,15 +14,14 @@ import { type RawSearchParams } from "@/lib/players/searchParams";
 import { leagueValuationSettings } from "@/lib/valuation/leagueSettings";
 import { getFantasyPool } from "@/lib/valuation/loader";
 import { notValuedMessage } from "@/lib/yahoo/messages";
-import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
+import { PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 
+import { ImportFromYahooAction, LeagueGate, LeagueSyncButton } from "@/app/_league/LeagueGate";
 import { ADVISOR_PAGE_HEADER } from "@/app/advisor/header";
 
 import styles from "@/app/advisor/advisor.module.scss";
 
 export const dynamic = "force-dynamic";
-
-const IMPORT_PATH = "/leagues/import";
 
 // Every state short of the advice: the page's own header, then why the
 // advisor can't run yet and what to do about it.
@@ -31,13 +29,9 @@ type AdvisorGateProps = { message: string; children?: ReactNode };
 
 function AdvisorGate({ message, children }: AdvisorGateProps) {
   return (
-    <main className={styles.page}>
-      <PageHeader {...ADVISOR_PAGE_HEADER} />
-      <section className={styles.gate} aria-label="Roster Advisor status">
-        <p className={styles.message}>{message}</p>
-        {children}
-      </section>
-    </main>
+    <LeagueGate header={ADVISOR_PAGE_HEADER} label="Roster Advisor status" message={message}>
+      {children}
+    </LeagueGate>
   );
 }
 
@@ -52,7 +46,7 @@ export default async function AdvisorPage({ searchParams }: AdvisorPageProps) {
   if (league === null) {
     return (
       <AdvisorGate message="No league yet. Import your Yahoo league to find your team's biggest weakness.">
-        <PageAction href={IMPORT_PATH}>Import from Yahoo</PageAction>
+        <ImportFromYahooAction />
       </AdvisorGate>
     );
   }
@@ -60,7 +54,7 @@ export default async function AdvisorPage({ searchParams }: AdvisorPageProps) {
   if (!league.isImported) {
     return (
       <AdvisorGate message="The Roster Advisor needs a league imported from Yahoo, so it knows every team's roster.">
-        <PageAction href={IMPORT_PATH}>Import from Yahoo</PageAction>
+        <ImportFromYahooAction />
       </AdvisorGate>
     );
   }
@@ -105,16 +99,7 @@ export default async function AdvisorPage({ searchParams }: AdvisorPageProps) {
       <PageHeader
         {...ADVISOR_PAGE_HEADER}
         eyebrow={`${league.name} · Yahoo`}
-        actions={
-          <SyncYahooButton
-            leagueId={league.id}
-            syncedAt={league.syncedAt}
-            syncError={league.syncError}
-            syncVia={league.syncVia}
-            externalUrl={league.externalUrl}
-            autoSyncWhenStale
-          />
-        }
+        actions={<LeagueSyncButton league={league} />}
       />
       {!!league.unsupportedCategories.length && (
         <p className={styles.warning}>

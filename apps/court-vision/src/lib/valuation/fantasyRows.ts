@@ -1,6 +1,7 @@
 import { isNameSort, rankRows, type NamedRow, type Page, type RankOrder } from "@/lib/players/rank";
 import { type SortDirection } from "@/lib/players/searchParams";
-import { VALUE_KEY_BY_SORT } from "@vision/core/valuation/registry";
+import { recordFromKeys } from "@vision/core/util/record";
+import { METHOD_VALUE_KEYS, VALUE_KEY_BY_SORT } from "@vision/core/valuation/registry";
 import { type FantasySortKey } from "@/lib/valuation/searchParams";
 import { type FantasyPlayerValues } from "@vision/core/valuation/types";
 import { type FantasyStatLine } from "@/lib/valuation/types";
@@ -28,13 +29,7 @@ type NeutralValuesProps = { playerId: number };
 
 const neutralValues = ({ playerId }: NeutralValuesProps): FantasyPlayerValues => ({
   playerId,
-  z: 0,
-  g: 0,
-  points: 0,
-  vorp: 0,
-  positional: 0,
-  sgp: 0,
-  sim: 0,
+  ...recordFromKeys({ keys: METHOD_VALUE_KEYS, value: () => 0 }),
 });
 
 const nameOf = ({ line }: ScoredLine): NamedRow => ({

@@ -27,11 +27,12 @@ import {
 } from "@/components/PlayerFantasyChart/labels";
 import { AVERAGE_LINE_LABEL, AVERAGE_LINE_STYLE } from "@/lib/charts/averageLine";
 import { TrendChartControls } from "@/components/TrendChartControls/TrendChartControls";
-import { useTrendChartPrefs } from "@/components/TrendChartControls/useTrendChartPrefs";
-import { fittedDomain, visibleMethods } from "@/lib/charts/trendMethods";
+import { averageOn, useTrendChartView } from "@/components/TrendChartControls/useTrendChartPrefs";
+import { fittedDomain } from "@/lib/charts/trendMethods";
 import { type DatedMethodValues } from "@vision/core/valuation/leagueAverage";
 import { type MethodValueKey } from "@vision/core/valuation/types";
 import { ChartPanel } from "@/components/SeriesChart/ChartPanel";
+import { SeriesLegend } from "@/components/SeriesChart/SeriesLegend";
 import { GamesMissedSwitch, useShowDnp } from "@/components/SeriesChart/GamesMissedSwitch";
 import { CHART_CHROME } from "@vision/ui/charts/palette";
 
@@ -65,12 +66,8 @@ export function PlayerFantasyChart({ breakdown, trend, averages }: PlayerFantasy
   const { theme } = useTheme();
   const colors = methodColors({ theme });
   const { showDnp } = useShowDnp();
-  const { hidden, showAverage } = useTrendChartPrefs();
+  const { keys, averageByDate } = useTrendChartView({ averages });
   const lineColors = valueColors({ theme });
-  const keys = visibleMethods({ hidden });
-  const averageByDate = new Map(averages.map(({ date, values }) => [date, values]));
-  // No line at all when hidden or before the league has a reading.
-  const drawsAverage = showAverage && averageByDate.size > 0;
 
   const trendMetas: MetricMeta<MethodKey>[] = METHOD_KEYS.map((key) => ({
     key,
@@ -81,18 +78,7 @@ export function PlayerFantasyChart({ breakdown, trend, averages }: PlayerFantasy
 
   return (
     <div className={chartStyles.root}>
-      <ul className={styles.legend} aria-label="Series">
-        {trendMetas.map((meta) => (
-          <li key={meta.key} className={styles.legendItem}>
-            <span
-              className={styles.swatch}
-              style={{ backgroundColor: meta.color }}
-              aria-hidden="true"
-            />
-            {meta.label}
-          </li>
-        ))}
-      </ul>
+      <SeriesLegend entries={trendMetas} />
 
       <GamesMissedSwitch />
 
@@ -147,13 +133,11 @@ export function PlayerFantasyChart({ breakdown, trend, averages }: PlayerFantasy
                 // Each game joined to the league's average on its date.
                 const series = trend.map((point) => ({
                   ...point,
-                  average: drawsAverage
-                    ? (averageByDate.get(Date.parse(point.gameDate))?.[key] ?? null)
-                    : null,
+                  average: averageOn({ averageByDate, gameDate: point.gameDate, key }),
                 }));
                 const metas: MetricMeta<MethodValueKey | "average">[] = [
                   { key, label: VALUE_LABELS[key], color: lineColors[key] },
-                  ...(drawsAverage ? [AVERAGE_META] : []),
+                  ...(averageByDate === null ? [] : [AVERAGE_META]),
                 ];
                 return (
                   <li key={key} className={styles.multiple}>

@@ -173,11 +173,9 @@ export const parseYahooPayload = ({
   if (!parsedSnapshot.success || parsedPages.length !== waiverPages.length) return INVALID_PAYLOAD;
   if (parsedSnapshot.data.fantasy_content.league.season !== currentSeason) return PAST_SEASON;
 
-  const parsedScoreboard: YahooScoreboard | undefined =
-    scoreboard === undefined ? undefined : toParsedScoreboard({ scoreboard });
   const transformed = toImportedLeague({
     snapshot: parsedSnapshot.data,
-    scoreboard: parsedScoreboard,
+    scoreboard: toParsedScoreboard({ scoreboard }),
   });
   if (transformed.status !== "ok") return transformed;
   return {

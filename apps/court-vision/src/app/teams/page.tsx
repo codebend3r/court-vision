@@ -13,6 +13,7 @@ import {
 import { getTeamStats } from "@/lib/teams/loader";
 import { loadTeamsSearchParams, TEAMS_VIEWS, type TeamsView } from "@/lib/teams/searchParams";
 import { type TeamSeasonStats } from "@/lib/teams/stats";
+import { type RawSearchParams } from "@/lib/players/searchParams";
 import { buildCumulativeWins } from "@vision/core/series/teamTrend";
 
 import styles from "@/app/teams/page.module.scss";
@@ -24,8 +25,6 @@ const VIEW_LABELS: Record<TeamsView, string> = {
   conference: "Conference",
   league: "League",
 };
-
-type RawSearchParams = Record<string, string | string[] | undefined>;
 
 type TeamRow = NbaTeam & { stats?: TeamSeasonStats };
 
@@ -46,8 +45,10 @@ type TeamsPageProps = {
 };
 
 export default async function TeamsPage({ searchParams }: TeamsPageProps) {
-  const { view } = await loadTeamsSearchParams(searchParams);
-  const { season, stats, results } = await getTeamStats();
+  const [{ view }, { season, stats, results }] = await Promise.all([
+    loadTeamsSearchParams(searchParams),
+    getTeamStats(),
+  ]);
   const statsByAbbr = new Map(stats.map((team) => [team.abbr, team]));
   const rows: TeamRow[] = NBA_TEAMS.map((team) => ({
     ...team,

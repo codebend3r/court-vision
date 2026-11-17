@@ -5,19 +5,6 @@
   @include page-shell;
 }
 
-// A gate: why the advisor can't run yet, and the one thing to do next.
-.gate {
-  display: grid;
-  justify-items: start;
-  gap: var(--space-3);
-}
-
-.message {
-  margin: 0;
-  color: var(--color-text);
-  font-size: var(--font-size-md);
-}
-
 .warning {
   margin: 0;
   color: var(--color-text);

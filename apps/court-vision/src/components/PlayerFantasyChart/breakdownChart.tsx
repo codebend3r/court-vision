@@ -1,14 +1,18 @@
 "use client";
 
 import { type ReactElement } from "react";
-import { Rectangle, type BarShapeProps, type RectangleProps, type TooltipPayload } from "recharts";
+import { Rectangle, type BarShapeProps, type RectangleProps } from "recharts";
 
 import {
   METHOD_KEYS,
   METHOD_LABELS,
   type MethodColors,
 } from "@/components/PlayerFantasyChart/labels";
-import { SeriesTooltip } from "@/components/SeriesTooltip/SeriesTooltip";
+import {
+  hoveredRow,
+  SeriesTooltip,
+  type InjectedTooltipProps,
+} from "@/components/SeriesTooltip/SeriesTooltip";
 import { formatRate, formatSigned } from "@vision/core/util/format";
 import { type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
 
@@ -37,11 +41,7 @@ export function SignedBar(props: BarShapeProps): ReactElement {
   );
 }
 
-// Recharts clones `content` and injects `active`/`payload` at render time, so
-// they stay optional on the component's own prop type.
-export type BreakdownTooltipProps = {
-  active?: boolean;
-  payload?: TooltipPayload;
+export type BreakdownTooltipProps = InjectedTooltipProps & {
   breakdown: readonly FantasyCategoryBreakdown[];
   colors: MethodColors;
 };
@@ -54,10 +54,7 @@ export function BreakdownTooltip({
   breakdown,
   colors,
 }: BreakdownTooltipProps): ReactElement | null {
-  if (!active || !payload || !payload.length) {
-    return null;
-  }
-  const hovered: unknown = payload[0].payload;
+  const hovered = hoveredRow({ active, payload });
   if (typeof hovered !== "object" || hovered === null || !("key" in hovered)) {
     return null;
   }

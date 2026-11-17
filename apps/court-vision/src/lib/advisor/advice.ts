@@ -1,7 +1,7 @@
 import { type FantasyPlayerValues, type MethodValueKey } from "@vision/core/valuation/types";
 import { type Category } from "@vision/sport-basketball/types";
 
-import { type BreakdownFor, buildNeeds, healthyPlayers, pickWeakNeeds } from "@/lib/advisor/needs";
+import { buildNeeds, healthyPlayers, pickWeakNeeds } from "@/lib/advisor/needs";
 import { pickDrop, pickFreeAgents } from "@/lib/advisor/pickups";
 import { findTargets } from "@/lib/advisor/target";
 import { buildTradeOffers } from "@/lib/advisor/trades";
@@ -14,7 +14,7 @@ import {
 } from "@/lib/advisor/types";
 import { type FantasyStatLine } from "@/lib/valuation/types";
 import { buildWaiverModel } from "@/lib/waiverWire/model";
-import { type ScoreKey } from "@/lib/waiverWire/swapBoard";
+import { type BreakdownFor, type ScoreKey } from "@/lib/waiverWire/swapBoard";
 
 type BuildAdviceProps = {
   lines: readonly FantasyStatLine[];
@@ -74,21 +74,21 @@ export const buildAdvice = ({
   const toPlayer = ({ playerId, owner, injuryStatus }: ToPlayerProps): AdvisorPlayer[] => {
     const line = lineById.get(playerId);
     const value = valueById.get(playerId);
-    return line === undefined || value === undefined
-      ? []
-      : [
-          {
-            playerId,
-            fullName: line.fullName,
-            teamAbbr: line.teamAbbr,
-            position: line.position,
-            injuryStatus,
-            value,
-            categoryScore: focusScoresOf({ playerId }).reduce((sum, { score }) => sum + score, 0),
-            focusScores: focusScoresOf({ playerId }),
-            owner,
-          },
-        ];
+    if (line === undefined || value === undefined) return [];
+    const focusScores = focusScoresOf({ playerId });
+    return [
+      {
+        playerId,
+        fullName: line.fullName,
+        teamAbbr: line.teamAbbr,
+        position: line.position,
+        injuryStatus,
+        value,
+        categoryScore: focusScores.reduce((sum, { score }) => sum + score, 0),
+        focusScores,
+        owner,
+      },
+    ];
   };
 
   // The Waiver Wire's own slicing, so the free pool and my healthy roster

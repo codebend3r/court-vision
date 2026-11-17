@@ -54,8 +54,8 @@ export async function yahooFetch({
 }: YahooFetchOptions): Promise<YahooFetchResult> {
   const url = buildUrl(path);
 
-  // One request, timed from the call until its body is read. The timer is
-  // cleared before any backoff, so it never outlives its own attempt.
+  // One request, timed from the call until its body is read. The `finally`
+  // clears the timer before any backoff, so it never outlives its own attempt.
   const fetchOnce = async (): Promise<AttemptOutcome> => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -72,7 +72,6 @@ export async function yahooFetch({
         return { status: "unavailable", detail: `Yahoo responded ${response.status} for ${path}` };
       }
       const text = await response.text();
-      clearTimeout(timer);
       try {
         const body: unknown = JSON.parse(text);
         return { status: "ok", body };

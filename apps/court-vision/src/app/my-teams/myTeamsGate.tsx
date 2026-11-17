@@ -11,11 +11,12 @@ import styles from "@/styles/leagueScopedPage.module.scss";
 
 // The guard every /my-teams page opens with: a signed-out visitor is sent to
 // log in (and back to the team list after), and a signed-in one gets the
-// active league, or null when they have not made one yet.
+// active league, or null when they have not made one yet. The league read
+// returns null signed out, so it runs alongside the session check.
 export const loadMyTeamsLeague = async (): Promise<LeagueSummary | null> => {
-  const profile = await getProfile();
+  const [profile, league] = await Promise.all([getProfile(), getActiveLeague()]);
   if (profile === null) redirect("/login?next=/my-teams");
-  return getActiveLeague();
+  return league;
 };
 
 // What a /my-teams page shows without a league: its own header, then the

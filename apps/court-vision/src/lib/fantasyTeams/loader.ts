@@ -1,6 +1,8 @@
 import { unstable_cache } from "next/cache";
 
+import { PLAYERS_CACHE_OPTIONS } from "@/lib/cache";
 import { type FantasyTeamPlayer } from "@/lib/fantasyTeams/types";
+import { PLAYER_IDENTITY_SELECT } from "@/lib/players/identity";
 import { prisma } from "@/lib/prisma";
 
 // Every player on a current NBA roster, stats or not. The builder's pool is
@@ -9,15 +11,7 @@ import { prisma } from "@/lib/prisma";
 const fetchActiveRosterPlayers = async (): Promise<FantasyTeamPlayer[]> => {
   const players = await prisma.player.findMany({
     where: { isActive: true },
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      fullName: true,
-      teamAbbr: true,
-      position: true,
-      nbaPersonId: true,
-    },
+    select: PLAYER_IDENTITY_SELECT,
   });
   return players.map(({ id, ...identity }) => ({ playerId: id, ...identity }));
 };
@@ -26,7 +20,7 @@ const fetchActiveRosterPlayers = async (): Promise<FantasyTeamPlayer[]> => {
 const cachedActiveRosterPlayers = unstable_cache(
   () => fetchActiveRosterPlayers(),
   ["fantasyTeams:activeRosterPlayers"],
-  { revalidate: 300, tags: ["players"] },
+  PLAYERS_CACHE_OPTIONS,
 );
 
 export const getActiveRosterPlayers = (): Promise<FantasyTeamPlayer[]> =>

@@ -3,7 +3,7 @@
 import { type ChangeEvent, type ReactNode, useEffect, useId, useMemo, useState } from "react";
 import { useQueryStates } from "nuqs";
 
-import { useValuation } from "@/components/FantasyValueView/useValuation";
+import { useLineBreakdown, useValuation } from "@/components/FantasyValueView/useValuation";
 import { AvailablePlayersPanel } from "@/components/WaiverWireView/AvailablePlayersPanel";
 import { CutLinePanel, NO_FREE_AGENTS } from "@/components/WaiverWireView/CutLinePanel";
 import {
@@ -33,7 +33,6 @@ import {
 import { buildSwapBoard } from "@/lib/waiverWire/swapBoard";
 import { type WaiverLeagueData, type WaiverPosition } from "@/lib/waiverWire/types";
 import { type FantasyMethodKey } from "@vision/core/valuation/types";
-import { buildCategoryBreakdown } from "@vision/sport-basketball/engine";
 import {
   type FantasyCategoryBreakdown,
   type MethodWeights,
@@ -120,23 +119,16 @@ export function WaiverWireView({
 
   // One player's category breakdown against the settled pool. A player with
   // no line in the range has none.
-  const { poolStats, config: settledConfig, methodWeights: settledWeights } = valuation;
+  const lineBreakdown = useLineBreakdown(valuation);
   type BreakdownForProps = { playerId: number };
 
   const breakdownFor = useMemo(
     () =>
       ({ playerId }: BreakdownForProps): FantasyCategoryBreakdown[] => {
         const line = linesById.get(playerId);
-        return line
-          ? buildCategoryBreakdown({
-              line,
-              poolStats,
-              config: settledConfig,
-              methodWeights: settledWeights,
-            })
-          : [];
+        return line ? lineBreakdown({ line }) : [];
       },
-    [linesById, poolStats, settledConfig, settledWeights],
+    [linesById, lineBreakdown],
   );
 
   const board = useMemo(

@@ -1,7 +1,8 @@
-import { afterEach, describe, expect, it, vi } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 
 import * as endpoints from "@/lib/balldontlie/endpoints";
 import { BdlGame, BdlPlayer, BdlTeam } from "@/lib/balldontlie/schemas";
+import { prisma } from "@/lib/prisma";
 import * as persist from "@/lib/stats/persist";
 
 import { seedDemo } from "@/lib/demo/seed";
@@ -99,6 +100,10 @@ const fakeGames: BdlGame[] = [
   },
 ];
 
+beforeEach(() => {
+  vi.spyOn(persist, "withStatsTransaction").mockImplementation((run) => run(prisma));
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -145,8 +150,9 @@ describe("seedDemo", () => {
     expect(fetchTeamGames).toHaveBeenCalledTimes(5);
     expect(fetchTeamGames).toHaveBeenCalledWith(expect.objectContaining({ teamId: 18 }));
 
-    expect(replaceGameLogs).toHaveBeenCalledTimes(1);
-    expect(upsertSeasonStats).toHaveBeenCalledTimes(1);
+    expect(persist.withStatsTransaction).toHaveBeenCalledTimes(1);
+    expect(replaceGameLogs).toHaveBeenCalledWith({ rows: expect.any(Array), tx: prisma });
+    expect(upsertSeasonStats).toHaveBeenCalledWith({ rows: expect.any(Array), tx: prisma });
     // Only the five profiled players make the demo's rosters, not Bob Extra.
     const activeIds = markActiveRoster.mock.calls[0]?.[0]?.playerIds ?? [];
     expect([...activeIds].sort((a, b) => a - b)).toEqual([15, 3220, 4066, 3202128, 3547232]);
@@ -181,13 +187,15 @@ describe("seedDemo", () => {
       profiledPlayers.filter((player) => player.last_name !== "Edwards"),
     );
     vi.spyOn(endpoints, "fetchTeamGames").mockResolvedValue(fakeGames);
-    vi.spyOn(persist, "upsertPlayers").mockResolvedValue(4);
+    const upsertPlayers = vi.spyOn(persist, "upsertPlayers").mockResolvedValue(4);
     vi.spyOn(persist, "replaceGameLogs").mockResolvedValue(0);
     vi.spyOn(persist, "upsertSeasonStats").mockResolvedValue(0);
 
     await expect(seedDemo({ deps: { apiKey: "k" } })).rejects.toThrow(
       "Demo profile not resolvable",
     );
+    // Resolution fails before any write.
+    expect(upsertPlayers).not.toHaveBeenCalled();
   });
 
   it("rejects when a matched demo profile player has no team", async () => {

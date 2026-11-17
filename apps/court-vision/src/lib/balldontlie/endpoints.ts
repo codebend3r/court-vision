@@ -34,6 +34,22 @@ export type BdlClientDeps = {
 const defaultSleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
+// One request against an endpoint with the caller's key, fetch and sleep.
+type RequestProps = {
+  endpoint: string;
+  params?: Record<string, BdlParamValue>;
+  deps: BdlClientDeps;
+};
+
+const request = ({ endpoint, params, deps }: RequestProps): Promise<unknown> =>
+  bdlFetch({
+    endpoint,
+    params,
+    apiKey: deps.apiKey,
+    fetchImpl: deps.fetchImpl,
+    sleep: deps.sleep,
+  });
+
 // A stats fetch covers either a whole season or, for the nightly sync, just
 // the listed game dates (`YYYY-MM-DD`); dates win when both are given.
 type ScopeParamsProps = {
@@ -79,12 +95,10 @@ const fetchAllPages = async <T>({
   const loadPage = async ({ cursor, rows, page }: LoadPageProps): Promise<T[]> => {
     const cursorParam: Record<string, BdlParamValue> =
       cursor === null ? {} : { cursor: String(cursor) };
-    const raw = await bdlFetch({
+    const raw = await request({
       endpoint,
       params: { ...params, per_page: PER_PAGE, ...cursorParam },
-      apiKey: deps.apiKey,
-      fetchImpl: deps.fetchImpl,
-      sleep: deps.sleep,
+      deps,
     });
     const { data, meta } = pageSchema.parse(raw);
     const combined = rows.concat(data);
@@ -105,12 +119,7 @@ const fetchAllPages = async <T>({
 type FetchTeamsProps = { deps?: BdlClientDeps };
 
 export const fetchTeams = async ({ deps = {} }: FetchTeamsProps = {}): Promise<BdlTeam[]> => {
-  const raw = await bdlFetch({
-    endpoint: "teams",
-    apiKey: deps.apiKey,
-    fetchImpl: deps.fetchImpl,
-    sleep: deps.sleep,
-  });
+  const raw = await request({ endpoint: "teams", deps });
   return bdlPage(bdlTeamSchema).parse(raw).data;
 };
 
@@ -122,47 +131,40 @@ export const fetchStandings = async ({
   deps = {},
   season = SEASON_START_YEAR,
 }: FetchStandingsProps = {}): Promise<BdlStanding[]> => {
-  const raw = await bdlFetch({
-    endpoint: "standings",
-    params: { season: String(season) },
-    apiKey: deps.apiKey,
-    fetchImpl: deps.fetchImpl,
-    sleep: deps.sleep,
-  });
+  const raw = await request({ endpoint: "standings", params: { season: String(season) }, deps });
   return bdlPage(bdlStandingSchema).parse(raw).data;
 };
 
-type FetchAllStatsProps = { deps?: BdlClientDeps; season?: number; dates?: string[] };
+// A box-score fetch, basic or advanced: the season or the listed dates,
+// regular season only.
+type FetchBoxScoresProps = { deps?: BdlClientDeps; season?: number; dates?: string[] };
 
-export const fetchAllStats = async ({
+type FetchRegularSeasonRowsProps<T extends IsRegularSeasonProps> = FetchBoxScoresProps & {
+  endpoint: string;
+  item: z.ZodType<T>;
+};
+
+const fetchRegularSeasonRows = async <T extends IsRegularSeasonProps>({
+  endpoint,
+  item,
   deps = {},
   season = SEASON_START_YEAR,
   dates,
-}: FetchAllStatsProps = {}): Promise<BdlStat[]> =>
+}: FetchRegularSeasonRowsProps<T>): Promise<T[]> =>
   (
     await fetchAllPages({
-      endpoint: "stats",
+      endpoint,
       params: { ...scopeParams({ season, dates }), postseason: "false" },
-      item: bdlStatSchema,
+      item,
       deps,
     })
   ).filter(isRegularSeason);
 
-type FetchAllAdvancedStatsProps = { deps?: BdlClientDeps; season?: number; dates?: string[] };
+export const fetchAllStats = (args: FetchBoxScoresProps = {}): Promise<BdlStat[]> =>
+  fetchRegularSeasonRows({ ...args, endpoint: "stats", item: bdlStatSchema });
 
-export const fetchAllAdvancedStats = async ({
-  deps = {},
-  season = SEASON_START_YEAR,
-  dates,
-}: FetchAllAdvancedStatsProps = {}): Promise<BdlAdvancedStat[]> =>
-  (
-    await fetchAllPages({
-      endpoint: "stats/advanced",
-      params: { ...scopeParams({ season, dates }), postseason: "false" },
-      item: bdlAdvancedStatSchema,
-      deps,
-    })
-  ).filter(isRegularSeason);
+export const fetchAllAdvancedStats = (args: FetchBoxScoresProps = {}): Promise<BdlAdvancedStat[]> =>
+  fetchRegularSeasonRows({ ...args, endpoint: "stats/advanced", item: bdlAdvancedStatSchema });
 
 // `players` is every player Balldontlie has ever listed, each on their last
 // team; `players/active` is only the players on a current NBA roster, rookies

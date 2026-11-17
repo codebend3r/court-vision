@@ -74,6 +74,12 @@ const toImportedTeam = ({ team, slotLayout }: ToImportedTeamProps): ImportedTeam
   ),
 });
 
+// The players seated on a team, in slot order; empty slots are skipped.
+type RosteredPlayersProps = { team: ImportedTeam };
+
+export const rosteredPlayers = ({ team }: RosteredPlayersProps): YahooPlayerRef[] =>
+  team.slots.flatMap(({ player }) => (player ? [player] : []));
+
 // Yahoo marks turnovers `sort_order` "0"; a payload without it falls back to
 // that one known case.
 const TURNOVERS_STAT_ID = 19;
@@ -114,6 +120,18 @@ const toImportedMatchup = ({ matchup }: ToImportedMatchupProps): ImportedMatchup
   ];
 };
 
+// Only a categories league keeps matchups. With no scoreboard read they are
+// unknown (null), which a sync must tell apart from a week with none ([]).
+type ToMatchupsProps = { isCategories: boolean; scoreboard: YahooScoreboard | undefined };
+
+const toMatchups = ({ isCategories, scoreboard }: ToMatchupsProps): ImportedMatchup[] | null => {
+  if (!isCategories) return [];
+  if (scoreboard === undefined) return null;
+  return scoreboard.fantasy_content.league.scoreboard.matchups.flatMap((matchup) =>
+    toImportedMatchup({ matchup }),
+  );
+};
+
 /** Turns a parsed Yahoo league snapshot into a provider-neutral league, or reports why it can't be imported. */
 type ToImportedLeagueProps = {
   snapshot: YahooLeagueSnapshot;
@@ -141,13 +159,7 @@ export const toImportedLeague = ({
       rosterSlots: settings.rosterSlots,
       scoring: settings.scoring,
       statCategories: isCategories ? toStatCategories({ league }) : [],
-      matchups: !isCategories
-        ? []
-        : scoreboard === undefined
-          ? null
-          : scoreboard.fantasy_content.league.scoreboard.matchups.flatMap((matchup) =>
-              toImportedMatchup({ matchup }),
-            ),
+      matchups: toMatchups({ isCategories, scoreboard }),
       teams: league.teams.map((team) => toImportedTeam({ team, slotLayout: settings.slotLayout })),
     },
   };

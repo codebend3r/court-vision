@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 
 import { PLAYERS_CACHE_OPTIONS } from "@/lib/cache";
-import { filterByOwner, type PlayerOwnerFilter } from "@/lib/players/ownerFilter";
+import { filterByOwner } from "@/lib/players/ownerFilter";
 import {
   fetchRegularPool,
   rankPlayers,
@@ -42,39 +42,30 @@ const cachedAdvancedPool = unstable_cache(
 // null where the league's rosters are unknown, so the filter has no effect.
 type OwnerScope = { takenIds: ReadonlySet<number> | null };
 
-type OwnerFilteredProps<Row extends { id: number }> = {
-  pool: readonly Row[];
-  owner: PlayerOwnerFilter;
-  takenIds: ReadonlySet<number> | null;
-};
-
-const ownerFiltered = <Row extends { id: number }>({
-  pool,
-  owner,
-  takenIds,
-}: OwnerFilteredProps<Row>): readonly Row[] =>
-  filterByOwner({ rows: pool, owner, takenIds, idOf: (row) => row.id });
-
 type SearchPlayersProps = RegularSearchParams & OwnerScope & { playerIds?: readonly number[] };
 
 export const searchPlayers = async (args: SearchPlayersProps): Promise<PlayersSearchResult> =>
   rankPlayers({
-    pool: ownerFiltered({
-      pool: await cachedRegularPool(args.range),
+    pool: filterByOwner({
+      rows: await cachedRegularPool(args.range),
       owner: args.owner,
       takenIds: args.takenIds,
+      idOf: (row) => row.id,
     }),
     args,
   });
 
+type SearchPlayersAdvancedProps = AdvancedSearchParams & OwnerScope;
+
 export const searchPlayersAdvanced = async (
-  args: AdvancedSearchParams & OwnerScope,
+  args: SearchPlayersAdvancedProps,
 ): Promise<PlayersAdvancedSearchResult> =>
   rankAdvancedPlayers({
-    pool: ownerFiltered({
-      pool: await cachedAdvancedPool(args.range),
+    pool: filterByOwner({
+      rows: await cachedAdvancedPool(args.range),
       owner: args.owner,
       takenIds: args.takenIds,
+      idOf: (row) => row.id,
     }),
     args,
   });

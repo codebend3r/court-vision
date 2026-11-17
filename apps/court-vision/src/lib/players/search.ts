@@ -4,7 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { recordFromKeys } from "@vision/core/util/record";
 
 import { playerRowSchema, splitPlayerRow, type PlayerIdentity } from "@/lib/players/identity";
-import { MIN_FG3M, MIN_FGM, MIN_FTM } from "@/lib/players/minimums";
+import {
+  MIN_FG3M,
+  MIN_FGM,
+  MIN_FTM,
+  QUALIFYING_GAMES_SHARE,
+  SCHEDULE_GAMES,
+} from "@/lib/players/minimums";
 import { isNameSort, rankRows, type NameSortKey, type Page } from "@/lib/players/rank";
 import {
   gamesForRange,
@@ -139,15 +145,11 @@ export const fetchRegularPool = async ({
   return z.array(poolRowSchema).parse(rows).map(splitPlayerRow);
 };
 
-// Official NBA per-game leader qualifier: appearances in 70% of the schedule,
-// 58 of 82 games. A lastN range applies the same share to its own window,
-// e.g. 7 of the last 10.
-const QUALIFYING_GAMES_SHARE = 0.7;
-const SCHEDULE_GAMES = 82;
-
 const isCountingSortKey = (key: PlayerSortKey): key is CountingSortKey =>
   COUNTING_SORT_KEYS.some((statKey) => statKey === key);
 
+// 58 of 82 games for the season; a lastN range applies the same share to its
+// own window, e.g. 7 of the last 10.
 type MinQualifyingGamesProps = { range: PlayerGameRange };
 
 const minQualifyingGames = ({ range }: MinQualifyingGamesProps): number =>

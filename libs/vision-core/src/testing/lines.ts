@@ -1,6 +1,6 @@
 import { type SportDescriptor, type SportKeys } from "#core/sport/types";
 import { recordFromKeys } from "#core/util/record";
-import { ratioDefs } from "#core/valuation/categories";
+import { ratioKeys } from "#core/valuation/categories";
 import { type ValuationLine } from "#core/valuation/types";
 
 // A valuation line for any sport from its season totals (absent stats are 0).
@@ -45,7 +45,7 @@ export const makeLine = <K extends SportKeys>({
     cross:
       cross ??
       recordFromKeys({
-        keys: ratioDefs({ sport }).map((def) => def.key),
+        keys: ratioKeys({ sport }),
         value: (key) =>
           constant(totals[sport.ratio[key].numerator] * totals[sport.ratio[key].denominator]),
       }),

@@ -1,11 +1,13 @@
 import { unstable_cache } from "next/cache";
 
 import { PLAYERS_CACHE_OPTIONS } from "@/lib/cache";
+import { PLAYER_IDENTITY_SELECT } from "@/lib/players/identity";
 import { prisma } from "@/lib/prisma";
 import { SEASON_TYPE } from "@/lib/stats/season";
 import { type TeamGameResult } from "@vision/core/series/teamTrend";
+import { recordFromKeys } from "@vision/core/util/record";
 
-import { buildTeamStats, type TeamSeasonStats } from "@/lib/teams/stats";
+import { buildTeamStats, TEAM_BOX_KEYS, type TeamSeasonStats } from "@/lib/teams/stats";
 
 export type TeamsData = {
   season: string | null;
@@ -46,19 +48,7 @@ const fetchTeams = async (): Promise<TeamsData> => {
     prisma.playerGameLog.groupBy({
       by: ["teamAbbr"],
       where,
-      _sum: {
-        pts: true,
-        reb: true,
-        ast: true,
-        stl: true,
-        blk: true,
-        tov: true,
-        fg3m: true,
-        fgm: true,
-        fga: true,
-        ftm: true,
-        fta: true,
-      },
+      _sum: recordFromKeys({ keys: TEAM_BOX_KEYS, value: () => true as const }),
     }),
   ]);
   const results: TeamGameResult[] = [...gameRows].sort(
@@ -66,17 +56,7 @@ const fetchTeams = async (): Promise<TeamsData> => {
   );
   const totals = boxRows.map((row) => ({
     teamAbbr: row.teamAbbr,
-    pts: row._sum.pts ?? 0,
-    reb: row._sum.reb ?? 0,
-    ast: row._sum.ast ?? 0,
-    stl: row._sum.stl ?? 0,
-    blk: row._sum.blk ?? 0,
-    tov: row._sum.tov ?? 0,
-    fg3m: row._sum.fg3m ?? 0,
-    fgm: row._sum.fgm ?? 0,
-    fga: row._sum.fga ?? 0,
-    ftm: row._sum.ftm ?? 0,
-    fta: row._sum.fta ?? 0,
+    ...recordFromKeys({ keys: TEAM_BOX_KEYS, value: (key) => row._sum[key] ?? 0 }),
   }));
   return { season, stats: buildTeamStats({ results, totals }), results };
 };
@@ -109,16 +89,7 @@ export type TeamRosterPlayer = {
 const fetchRoster = (abbr: string): Promise<TeamRosterPlayer[]> =>
   prisma.player.findMany({
     where: { teamAbbr: abbr, isActive: true },
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      fullName: true,
-      position: true,
-      jerseyNumber: true,
-      nbaPersonId: true,
-      teamAbbr: true,
-    },
+    select: { ...PLAYER_IDENTITY_SELECT, jerseyNumber: true },
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
   });
 

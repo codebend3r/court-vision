@@ -10,12 +10,11 @@ import { getTeamRoster, getTeamStats } from "@/lib/teams/loader";
 import { teamBySlug } from "@/lib/teams/meta";
 import { loadTeamSearchParams } from "@/lib/teams/searchParams";
 import { rankTeams, TEAM_STAT_META } from "@/lib/teams/stats";
+import { type RawSearchParams } from "@/lib/players/searchParams";
 
 import styles from "@/app/team/page.module.scss";
 
 export const dynamic = "force-dynamic";
-
-type RawSearchParams = Record<string, string | string[] | undefined>;
 
 type TeamPageProps = {
   searchParams: Promise<RawSearchParams>;

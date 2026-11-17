@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 
-import { formatSyncedAgo } from "@/lib/yahoo/format";
+import { YAHOO_STALE_AFTER_MS } from "@/lib/yahoo/constants";
+import { formatSyncedAgo, isSyncStale } from "@/lib/yahoo/format";
 
 const NOW = new Date("2026-10-17T12:00:00.000Z");
 
@@ -61,5 +62,25 @@ describe("formatSyncedAgo", () => {
 
   it("treats an unreadable timestamp as never synced", () => {
     expect(formatSyncedAgo({ syncedAt: "not a date", now: NOW })).toBe("Never synced");
+  });
+});
+
+describe("isSyncStale", () => {
+  const staleSeconds = YAHOO_STALE_AFTER_MS / 1000;
+
+  it("counts a league that never synced as stale", () => {
+    expect(isSyncStale({ syncedAt: null, now: NOW })).toBe(true);
+  });
+
+  it("counts an unreadable stamp as stale", () => {
+    expect(isSyncStale({ syncedAt: "not a date", now: NOW })).toBe(true);
+  });
+
+  it("keeps a league synced exactly at the threshold fresh", () => {
+    expect(isSyncStale({ syncedAt: before({ seconds: staleSeconds }), now: NOW })).toBe(false);
+  });
+
+  it("counts a league synced past the threshold as stale", () => {
+    expect(isSyncStale({ syncedAt: before({ seconds: staleSeconds + 1 }), now: NOW })).toBe(true);
   });
 });

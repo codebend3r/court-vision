@@ -17,17 +17,13 @@ import {
 } from "@/components/FantasyValueView/layouts";
 import { RollingLayout } from "@/components/FantasyValueView/RollingLayout";
 import { useTrendLogs } from "@/components/FantasyValueView/useTrendLogs";
-import { useValuation } from "@/components/FantasyValueView/useValuation";
+import { useLineBreakdown, useValuation } from "@/components/FantasyValueView/useValuation";
 import { Pager } from "@/components/Pager/Pager";
 import { type FantasySeed } from "@/lib/leagues/fantasyDefaults";
 import { useTakenIds } from "@/lib/leagues/rosteredStore";
 import { filterByOwner } from "@/lib/players/ownerFilter";
 import { GAME_RANGE_LABELS, gamesForRange } from "@/lib/players/searchParams";
-import {
-  buildCategoryBreakdown,
-  CATEGORY_KEYS,
-  CATEGORY_META,
-} from "@vision/sport-basketball/engine";
+import { CATEGORY_KEYS, CATEGORY_META } from "@vision/sport-basketball/engine";
 import { type ValuationConfig } from "@vision/sport-basketball/types";
 import { isWeightedMethodKey } from "@vision/core/valuation/registry";
 import { gamesForSpan } from "@/lib/charts/trendMethods";
@@ -103,6 +99,7 @@ export function FantasyValueView({
     windowGames: gamesForRange({ range: params.range }),
   });
   const { values, poolStats } = valuation;
+  const lineBreakdown = useLineBreakdown(valuation);
 
   // Scored on the whole pool above, listed here: the roster's rows, and only those.
   const listedLines = useMemo(() => {
@@ -151,15 +148,7 @@ export function FantasyValueView({
   // against a pool already computed, not the whole pool's again.
   const chartRows: FantasyChartRow[] =
     params.layout === "categories"
-      ? pageRows.map((row) => ({
-          ...row,
-          breakdown: buildCategoryBreakdown({
-            line: row,
-            poolStats,
-            config: valuation.config,
-            methodWeights: valuation.methodWeights,
-          }),
-        }))
+      ? pageRows.map((row) => ({ ...row, breakdown: lineBreakdown({ line: row }) }))
       : [];
   const chartCategories = CATEGORY_META.filter((meta) =>
     valuation.config.categories.some((key) => key === meta.key),

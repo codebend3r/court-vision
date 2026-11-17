@@ -27,6 +27,11 @@ export type Yardstick<K extends SportKeys> = {
 
 type YardstickValueProps<K extends SportKeys> = { lines: readonly ValuationLine<K>[] };
 
+type TotalsByIdProps = { totals: readonly { playerId: number; total: number }[] };
+
+const totalsById = ({ totals }: TotalsByIdProps): Map<number, number> =>
+  new Map(totals.map((entry) => [entry.playerId, entry.total]));
+
 type BuildYardstickProps<K extends SportKeys> = {
   sport: SportDescriptor<K>;
   lines: readonly ValuationLine<K>[];
@@ -85,10 +90,6 @@ export const buildYardstick = <K extends SportKeys>({
 
   return {
     value: ({ lines: scored }) => {
-      type TotalsByIdProps = { totals: readonly { playerId: number; total: number }[] };
-
-      const totalsById = ({ totals }: TotalsByIdProps) =>
-        new Map(totals.map((entry) => [entry.playerId, entry.total]));
       const zValues = scoreZScore({ sport, lines: scored, poolStats, config: configFor("z") });
       const g = totalsById({
         totals: scoreGScore({ sport, lines: scored, poolStats, config: configFor("g") }),

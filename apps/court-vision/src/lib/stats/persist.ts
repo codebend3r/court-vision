@@ -1,4 +1,5 @@
 import { Prisma } from "@generated/prisma/client";
+import { recordFromKeys } from "@vision/core/util/record";
 import { sequentially } from "@vision/core/util/sequentially";
 
 import { prisma } from "@/lib/prisma";
@@ -7,6 +8,7 @@ import {
   AdvancedGameLogInput,
   GameLogInput,
   PlayerInput,
+  SEASON_SUM_KEYS,
   SeasonAggregateLog,
   SeasonStatsInput,
 } from "@/lib/stats/inputs";
@@ -289,21 +291,7 @@ export async function findSeasonAggregateLogs(
         playerId: true,
         season: true,
         seasonType: true,
-        minutes: true,
-        fgm: true,
-        fga: true,
-        fg3m: true,
-        fg3a: true,
-        ftm: true,
-        fta: true,
-        oreb: true,
-        dreb: true,
-        reb: true,
-        ast: true,
-        stl: true,
-        blk: true,
-        tov: true,
-        pts: true,
+        ...recordFromKeys({ keys: SEASON_SUM_KEYS, value: (): true => true }),
       },
     });
   return tx ? run() : withRetry(run);

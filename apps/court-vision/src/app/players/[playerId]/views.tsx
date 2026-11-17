@@ -43,10 +43,10 @@ import {
   type StatSpan,
 } from "@/lib/stats/searchParams";
 import { getLeagueAverageLines } from "@/lib/valuation/leagueAverage";
+import { leagueValuationSettings } from "@/lib/valuation/leagueSettings";
 import { getFantasyPool } from "@/lib/valuation/loader";
 import { toWindowLog } from "@/lib/valuation/trendLogs";
-import { buildPlayerFantasyProfile, FANTASY_METHODS } from "@vision/sport-basketball/engine";
-import { buildLeagueSeed, configFromSeed } from "@/lib/leagues/fantasyDefaults";
+import { buildPlayerFantasyProfile } from "@vision/sport-basketball/engine";
 
 import styles from "@/app/players/[playerId]/page.module.scss";
 
@@ -210,10 +210,10 @@ const loadFantasyView = async (context: ViewContext): Promise<PlayerViewResult> 
     getProfile(),
     getLeagueAverageLines({ season: selection }),
   ]);
-  const formula =
-    FANTASY_METHODS.find((method) => method.key === profile?.preferredFormula)?.key ?? null;
-  const seed = buildLeagueSeed({ league, preferredFormula: formula, presentKeys: new Set() });
-  const { config, methodWeights } = configFromSeed({ seed });
+  const { config, methodWeights } = leagueValuationSettings({
+    league,
+    preferredFormula: profile?.preferredFormula ?? null,
+  });
   const fantasy = buildPlayerFantasyProfile({
     lines,
     playerId,

@@ -3,18 +3,17 @@
 import { useId, useState } from "react";
 
 import { SortHeader } from "@/components/SortHeader/SortHeader";
+import { NoStatsDisclosure } from "@/components/WaiverWireView/NoStatsDisclosure";
+import { ROWS_SHOWN } from "@/components/WaiverWireView/ShowMoreButton";
 import { WaiverPlayer } from "@/components/WaiverWireView/WaiverPlayer";
 import { type SortColumn } from "@/lib/tableSort";
 import { useColumnSort } from "@/lib/useColumnSort";
 import { type SwapBoard, type SwapRow } from "@/lib/waiverWire/swapBoard";
 import { formatValue } from "@/lib/waiverWire/format";
-import { type WaiverModel, type WaiverRosterEntry, type WaiverRow } from "@/lib/waiverWire/types";
+import { type WaiverModel, type WaiverRow } from "@/lib/waiverWire/types";
 import { formatSigned } from "@vision/core/util/format";
-import { Disclosure } from "@vision/ui/components/Disclosure/Disclosure";
 
 import styles from "@/components/WaiverWireView/WaiverWireView.module.scss";
-
-const ROWS_SHOWN = 25;
 
 const WEAKEST_COLUMNS: readonly SortColumn<WaiverRow>[] = [
   { key: "player", firstDir: "asc", valueOf: (row) => row.fullName },
@@ -45,41 +44,6 @@ export type SwapBoardPanelProps = {
   onCompare: ({ fa }: OnCompareProps) => void;
   compareHintId: string;
 };
-
-// My rostered players with no line in the range: listed, never valued, so
-// they are not silently missing from "your weakest" or the cut line.
-type NoStatsDisclosureProps = {
-  entries: WaiverRosterEntry[];
-  compareHintId: string;
-};
-
-export function NoStatsDisclosure({ entries, compareHintId }: NoStatsDisclosureProps) {
-  return (
-    <Disclosure
-      className={styles.noStats}
-      summaryClassName={styles.noStatsSummary}
-      summary={<span>No stats in this range</span>}
-    >
-      <ul className={styles.noStatsList}>
-        {entries.map((entry) => (
-          <li key={entry.playerId}>
-            <WaiverPlayer
-              player={{
-                playerId: entry.playerId,
-                fullName: entry.fullName,
-                teamAbbr: null,
-                position: null,
-                owner: "mine",
-                injuryStatus: entry.injuryStatus,
-              }}
-              compareHintId={compareHintId}
-            />
-          </li>
-        ))}
-      </ul>
-    </Disclosure>
-  );
-}
 
 // Tab A: my weakest players beside the free agents who beat the weakest of
 // them, biggest gain first, with the categories the swap moves most.

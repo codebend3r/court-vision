@@ -77,25 +77,27 @@ export function LeagueSwitcher() {
     setOpen(false);
   };
 
+  // The item index each navigation key moves to from `index` (-1 when focus
+  // is on none yet); focusItem wraps the ends.
+  const keyTargets: Record<string, (index: number) => number> = {
+    ArrowDown: (index) => (index === -1 ? 0 : index + 1),
+    ArrowUp: (index) => (index === -1 ? itemCount - 1 : index - 1),
+    Home: () => 0,
+    End: () => itemCount - 1,
+  };
+
   const handleMenuKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {
-    const currentIndex = itemRefs.current.findIndex((item) => item === document.activeElement);
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      focusItem({ index: currentIndex === -1 ? 0 : currentIndex + 1 });
-    } else if (event.key === "ArrowUp") {
-      event.preventDefault();
-      focusItem({ index: currentIndex === -1 ? itemCount - 1 : currentIndex - 1 });
-    } else if (event.key === "Home") {
-      event.preventDefault();
-      focusItem({ index: 0 });
-    } else if (event.key === "End") {
-      event.preventDefault();
-      focusItem({ index: itemCount - 1 });
-    } else if (event.key === "Escape") {
+    if (event.key === "Escape") {
       event.preventDefault();
       setOpen(false);
       triggerRef.current?.focus();
+      return;
     }
+    const target = keyTargets[event.key];
+    if (target === undefined) return;
+    event.preventDefault();
+    const currentIndex = itemRefs.current.findIndex((item) => item === document.activeElement);
+    focusItem({ index: target(currentIndex) });
   };
 
   return (

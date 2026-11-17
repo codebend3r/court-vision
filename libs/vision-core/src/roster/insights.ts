@@ -31,6 +31,12 @@ export type PlayerInsight<K extends SportKeys> = {
   categories: PlayerCategoryInsight<K>[];
 };
 
+// Player id → 1-based rank by total, best first (ties broken by id).
+type RankByIdProps = { entries: readonly { playerId: number; total: number }[] };
+
+const rankById = ({ entries }: RankByIdProps): Map<number, number> =>
+  new Map(entries.toSorted(byTotalDescending).map((entry, index) => [entry.playerId, index + 1]));
+
 // Precomputed per-player quick stats + z-score ranks for a roster builder's
 // hover panel, under one neutral `config` (the builder shows a single read of
 // each player, not a configurable one). Pure and server-safe: runs once per
@@ -52,9 +58,7 @@ export const buildPlayerInsights = <K extends SportKeys>({
   const parse = sport.positions.parse;
 
   const overallOf = lines.length;
-  const overallRank = [...zValues]
-    .sort(byTotalDescending)
-    .reduce((acc, value, index) => acc.set(value.playerId, index + 1), new Map<number, number>());
+  const overallRank = rankById({ entries: zValues });
 
   // Rank every eligibility group independently by z, so a player eligible at
   // two groups carries a rank in both pools.
@@ -63,13 +67,12 @@ export const buildPlayerInsights = <K extends SportKeys>({
       const eligible = lines.filter((line) =>
         parse(line.position).some((candidate) => candidate === group),
       );
-      const rank = eligible
-        .map((line) => ({ playerId: line.playerId, total: zById.get(line.playerId)?.total ?? 0 }))
-        .sort(byTotalDescending)
-        .reduce(
-          (acc, entry, index) => acc.set(entry.playerId, index + 1),
-          new Map<number, number>(),
-        );
+      const rank = rankById({
+        entries: eligible.map((line) => ({
+          playerId: line.playerId,
+          total: zById.get(line.playerId)?.total ?? 0,
+        })),
+      });
       return [group, { rank, count: eligible.length }];
     }),
   );

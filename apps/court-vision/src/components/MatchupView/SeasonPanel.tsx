@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { ScoreLine } from "@/components/MatchupView/ScoreLine";
 import { formatWeeklyAverage, formatWeekRange } from "@/lib/matchups/format";
 import { matchupHref } from "@/lib/matchups/searchParams";
 import { type SeasonSummary, WEEK_OUTCOME_LABELS } from "@/lib/matchups/season";
@@ -21,20 +22,12 @@ export function SeasonPanel({ summary, teamName }: SeasonPanelProps) {
       <section className={styles.panel} aria-label={`${teamName} season record`}>
         <header className={styles.seasonHead}>
           <h2 className={styles.summaryTitle}>Season record</h2>
-          <p
-            className={styles.score}
-            aria-label={`${record.won} won, ${record.lost} lost, ${record.tied} tied`}
-          >
-            <span className={styles.scoreNumber}>{record.won}</span>
-            <span className={styles.scoreDivider} aria-hidden="true">
-              -
-            </span>
-            <span className={styles.scoreNumber}>{record.lost}</span>
-            <span className={styles.scoreDivider} aria-hidden="true">
-              -
-            </span>
-            <span className={styles.scoreNumber}>{record.tied}</span>
-          </p>
+          <ScoreLine
+            label={`${record.won} won, ${record.lost} lost, ${record.tied} tied`}
+            won={record.won}
+            lost={record.lost}
+            tied={record.tied}
+          />
         </header>
         <div className={styles.tableWrapper}>
           <table className={styles.table}>

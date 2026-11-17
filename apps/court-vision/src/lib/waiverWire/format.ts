@@ -3,7 +3,8 @@ import { type CategoryKind } from "@vision/core/valuation/categories";
 
 import { type WaiverLeagueData } from "@/lib/waiverWire/types";
 
-const MINUS = "−";
+// A true minus sign, not a hyphen.
+export const MINUS = "−";
 
 // A per-game category number: a ratio category as a rate (".532"), a counting
 // one to a tenth ("11.8").

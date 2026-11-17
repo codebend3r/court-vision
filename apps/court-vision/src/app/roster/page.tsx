@@ -36,37 +36,33 @@ import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
 import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { StatViewTabs } from "@vision/ui/components/StatViewTabs/StatViewTabs";
 
+import { ImportFromYahooAction, LeagueGate } from "@/app/_league/LeagueGate";
 import { ROSTER_PAGE_HEADER } from "@/app/roster/header";
 
 import styles from "@/app/roster/page.module.scss";
 
 export const dynamic = "force-dynamic";
 
-const IMPORT_PATH = "/leagues/import";
-
-type RosterScreenProps = { children: ReactNode; params?: RosterParams };
+type RosterScreenProps = { children: ReactNode; params: RosterParams };
 
 function RosterScreen({ children, params }: RosterScreenProps) {
-  const isOtherTeam = !!params?.team;
   return (
     <main className={styles.page}>
       <PageHeader
         {...ROSTER_PAGE_HEADER}
         actions={
-          <PageAction href="/my-teams">{isOtherTeam ? "All teams" : "Fantasy League"}</PageAction>
+          <PageAction href="/my-teams">{params.team ? "All teams" : "Fantasy League"}</PageAction>
         }
       />
-      {params !== undefined && (
-        <StatViewTabs
-          label="Roster stat views"
-          entries={ROSTER_TABS.map((tab) => ({
-            key: tab,
-            label: ROSTER_TAB_LABELS[tab],
-            isActive: tab === params.tab,
-            href: buildRosterHref({ ...params, tab }),
-          }))}
-        />
-      )}
+      <StatViewTabs
+        label="Roster stat views"
+        entries={ROSTER_TABS.map((tab) => ({
+          key: tab,
+          label: ROSTER_TAB_LABELS[tab],
+          isActive: tab === params.tab,
+          href: buildRosterHref({ ...params, tab }),
+        }))}
+      />
       {children}
     </main>
   );
@@ -78,12 +74,16 @@ type RosterGateProps = { message: string; children?: ReactNode };
 
 function RosterGate({ message, children }: RosterGateProps) {
   return (
-    <RosterScreen>
-      <section className={styles.gate} aria-label="Roster status">
-        <p className={styles.message}>{message}</p>
-        {children}
-      </section>
-    </RosterScreen>
+    <LeagueGate
+      header={{
+        ...ROSTER_PAGE_HEADER,
+        actions: <PageAction href="/my-teams">Fantasy League</PageAction>,
+      }}
+      label="Roster status"
+      message={message}
+    >
+      {children}
+    </LeagueGate>
   );
 }
 
@@ -177,7 +177,7 @@ export default async function RosterPage({ searchParams }: RosterPageProps) {
   if (league === null) {
     return (
       <RosterGate message="No league yet. Import your Yahoo league to see your roster's stats.">
-        <PageAction href={IMPORT_PATH}>Import from Yahoo</PageAction>
+        <ImportFromYahooAction />
       </RosterGate>
     );
   }

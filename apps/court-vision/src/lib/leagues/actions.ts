@@ -7,12 +7,13 @@ import { getProfile } from "@/lib/auth/session";
 import { withProfile } from "@/lib/auth/withProfile";
 import { teamNameToSlug } from "@vision/core/roster/slug";
 import { MAX_LEAGUES } from "@vision/core/league/constants";
-import { isLeagueScoringType } from "@vision/core/league/scoring";
+import { isLeagueScoringType, type LeagueScoringType } from "@vision/core/league/scoring";
 import { parseScoringConfig } from "@vision/sport-basketball/engine";
 import { toLeagueSummary } from "@/lib/leagues/queries";
 import { clampInt, LEAGUE_BOUNDS } from "@/lib/leagues/settings";
 import { uniqueSlug } from "@vision/core/league/slug";
 import {
+  isImportedProvider,
   type LeagueDeleteResult,
   type LeagueMutationResult,
   type SetActiveLeagueResult,
@@ -21,6 +22,29 @@ import { type LeagueScoringConfig } from "@vision/sport-basketball/types";
 import { prisma } from "@/lib/prisma";
 import { lockProfile } from "@/lib/leagues/locks";
 import { hasPrismaCode, PRISMA_RECORD_NOT_FOUND } from "@/lib/prismaErrors";
+
+// The settings a hand-built league stores, as both create and update write
+// them: sizes clamped to the league bounds, the config parsed for its type.
+// Spread into a fresh literal, since Prisma's InputJsonValue needs an index
+// signature that a fresh object satisfies without a cast.
+type ManualLeagueSettingsProps = {
+  scoringType: LeagueScoringType;
+  teamCount: number;
+  rosterSlots: number;
+  scoringConfig: LeagueScoringConfig;
+};
+
+const manualLeagueSettings = ({
+  scoringType,
+  teamCount,
+  rosterSlots,
+  scoringConfig,
+}: ManualLeagueSettingsProps) => ({
+  scoringType,
+  teamCount: clampInt({ value: teamCount, ...LEAGUE_BOUNDS.teams }),
+  rosterSlots: clampInt({ value: rosterSlots, ...LEAGUE_BOUNDS.slots }),
+  scoringConfig: { ...parseScoringConfig({ scoringType, value: scoringConfig }) },
+});
 
 type CreateLeagueProps = {
   name: string;
@@ -43,7 +67,7 @@ export const createLeague = async ({
     run: async ({ profile }) => {
       const trimmed = name.trim();
       if (trimmed === "" || !isLeagueScoringType(scoringType)) return { status: "invalid" };
-      const config = parseScoringConfig({ scoringType, value: scoringConfig });
+      const settings = manualLeagueSettings({ scoringType, teamCount, rosterSlots, scoringConfig });
       return prisma.$transaction(async (tx) => {
         await lockProfile({ tx, profileId: profile.id });
         const existing = await tx.league.findMany({
@@ -59,10 +83,7 @@ export const createLeague = async ({
               base: teamNameToSlug({ name: trimmed }),
               taken: existing.map((row) => row.slug),
             }),
-            scoringType,
-            teamCount: clampInt({ value: teamCount, ...LEAGUE_BOUNDS.teams }),
-            rosterSlots: clampInt({ value: rosterSlots, ...LEAGUE_BOUNDS.slots }),
-            scoringConfig: { ...config },
+            ...settings,
           },
         });
         // A user's first league becomes active without a second click.
@@ -126,24 +147,20 @@ export const updateLeague = async ({
       // An imported league's scoring and size are its host's: only the name
       // is the user's to change, and the scoring arguments are ignored. Tests
       // the raw column so a provider this build doesn't know fails closed.
-      if (owned.provider !== "manual") {
+      if (isImportedProvider({ provider: owned.provider })) {
         return writeLeague({
           where: { id: leagueId, profileId: profile.id },
           data: { name: trimmed },
         });
       }
       if (!isLeagueScoringType(scoringType)) return { status: "invalid" };
-      const config = parseScoringConfig({ scoringType, value: scoringConfig });
       // Scoped to a hand-built league in the write itself too, so the scoring
       // can never land on an imported league whatever the read above saw.
       return writeLeague({
         where: { id: leagueId, profileId: profile.id, provider: "manual" },
         data: {
           name: trimmed,
-          scoringType,
-          teamCount: clampInt({ value: teamCount, ...LEAGUE_BOUNDS.teams }),
-          rosterSlots: clampInt({ value: rosterSlots, ...LEAGUE_BOUNDS.slots }),
-          scoringConfig: { ...config },
+          ...manualLeagueSettings({ scoringType, teamCount, rosterSlots, scoringConfig }),
         },
       });
     },

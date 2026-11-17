@@ -14,6 +14,15 @@ export type FantasySeed = Partial<
   Pick<FantasySearchParams, "teams" | "slots" | "x" | "w" | "s" | "sort">
 >;
 
+// The sort a fresh view opens on: the user's preferred method, else points for
+// a points league, else the tab's own default.
+type DefaultSortProps = Pick<BuildLeagueSeedProps, "league" | "preferredFormula">;
+
+const defaultSort = ({ league, preferredFormula }: DefaultSortProps): FantasySeed => {
+  if (preferredFormula !== null) return { sort: SORT_KEY_BY_METHOD[preferredFormula] };
+  return league?.scoringType === "h2h_points" ? { sort: "points" } : {};
+};
+
 // Defaults for fantasy URL params the current URL doesn't set. Explicit params
 // always win — a key in presentKeys is never seeded — so shared links keep
 // meaning exactly what they said.
@@ -28,14 +37,7 @@ export const buildLeagueSeed = ({
   preferredFormula,
   presentKeys,
 }: BuildLeagueSeedProps): FantasySeed => {
-  const sortSeed: FantasySeed =
-    presentKeys.has("sort") === false
-      ? preferredFormula !== null
-        ? { sort: SORT_KEY_BY_METHOD[preferredFormula] }
-        : league !== null && league.scoringType === "h2h_points"
-          ? { sort: "points" }
-          : {}
-      : {};
+  const sortSeed = presentKeys.has("sort") ? {} : defaultSort({ league, preferredFormula });
   if (league === null) return sortSeed;
   const sizeSeed: FantasySeed = {
     ...(presentKeys.has("teams") ? {} : { teams: league.teamCount }),

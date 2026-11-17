@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { YAHOO_SYNC_THROTTLE_MS } from "@/lib/yahoo/constants";
+import { YAHOO_PROVIDER, YAHOO_SYNC_THROTTLE_MS } from "@/lib/yahoo/constants";
+
+// How long a claim holds before a crashed worker's lease counts as abandoned.
+const SYNC_LEASE_MS = 180_000;
 
 type ClaimSyncProps = { profileId: string; leagueId: string };
 
@@ -11,14 +14,17 @@ export const claimSync = async ({ profileId, leagueId }: ClaimSyncProps): Promis
     where: {
       id: leagueId,
       profileId,
-      provider: "yahoo",
+      provider: YAHOO_PROVIDER,
       AND: [
         { OR: [{ syncLeaseUntil: null }, { syncLeaseUntil: { lte: startedAt } }] },
         { OR: [{ syncStartedAt: null }, { syncStartedAt: { lte: cutoff } }] },
         { OR: [{ syncedAt: null }, { syncedAt: { lte: cutoff } }] },
       ],
     },
-    data: { syncStartedAt: startedAt, syncLeaseUntil: new Date(startedAt.getTime() + 180_000) },
+    data: {
+      syncStartedAt: startedAt,
+      syncLeaseUntil: new Date(startedAt.getTime() + SYNC_LEASE_MS),
+    },
   });
   return claimed.count === 1 ? startedAt : null;
 };

@@ -12,11 +12,11 @@ type WatchlistPageProps = {
 };
 
 export default async function WatchlistPage({ searchParams }: WatchlistPageProps) {
-  // The tab is fixed: this route is the starred view, whatever the query says.
-  const params = parseStarredSearchParams({ raw: await searchParams });
   // null for a signed-out visitor or a signed-in one with no league yet —
   // either way the scope line is simply omitted below.
-  const league = await getActiveLeague();
+  const [raw, league] = await Promise.all([searchParams, getActiveLeague()]);
+  // The tab is fixed: this route is the starred view, whatever the query says.
+  const params = parseStarredSearchParams({ raw });
 
   return (
     <main className={styles.page}>

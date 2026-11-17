@@ -13,9 +13,9 @@ import {
   recordLoadFailure,
   syncLoadedLeague,
   toYahooPreview,
+  withSyncLease,
 } from "@/lib/yahoo/importLeague";
 import { loadYahooLeague } from "@/lib/yahoo/load";
-import { claimSync, releaseSync } from "@/lib/yahoo/syncLease";
 import {
   type SetMyTeamResult,
   type YahooImportResult,
@@ -88,29 +88,29 @@ export const syncYahooLeague = async ({
       if (stored.league.syncVia !== "server") return { status: "needs_extension" };
       if (stored.league.throttled) return { status: "throttled" };
 
-      const syncStartedAt = await claimSync({ profileId: profile.id, leagueId });
-      if (syncStartedAt === null) return { status: "throttled" };
-      try {
-        const loaded = await loadYahooLeague({ leagueId: stored.league.yahooLeagueId });
-        if (loaded.status !== "ok") {
-          return await recordLoadFailure({
+      return withSyncLease({
+        profileId: profile.id,
+        leagueId,
+        run: async ({ syncStartedAt }) => {
+          const loaded = await loadYahooLeague({ leagueId: stored.league.yahooLeagueId });
+          if (loaded.status !== "ok") {
+            return recordLoadFailure({
+              profileId: profile.id,
+              leagueId,
+              failure: loaded,
+              syncStartedAt,
+            });
+          }
+          return syncLoadedLeague({
             profileId: profile.id,
             leagueId,
-            failure: loaded,
+            loaded,
+            writeMappings: true,
+            storedExternalKey: stored.league.externalKey,
             syncStartedAt,
           });
-        }
-        return await syncLoadedLeague({
-          profileId: profile.id,
-          leagueId,
-          loaded,
-          writeMappings: true,
-          storedExternalKey: stored.league.externalKey,
-          syncStartedAt,
-        });
-      } finally {
-        await releaseSync({ profileId: profile.id, leagueId, syncStartedAt });
-      }
+        },
+      });
     },
   });
 };

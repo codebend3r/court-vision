@@ -1,11 +1,8 @@
-import { type Category, type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
+import { type Category } from "@vision/sport-basketball/types";
 
 import { NON_ROSTER_SLOTS } from "@/lib/leagues/slots";
 import { type AdvisorTeam, type CategoryNeed } from "@/lib/advisor/types";
-import { type ScoreKey } from "@/lib/waiverWire/swapBoard";
-
-type BreakdownForProps = { playerId: number };
-export type BreakdownFor = ({ playerId }: BreakdownForProps) => FantasyCategoryBreakdown[];
+import { type BreakdownFor, type ScoreKey } from "@/lib/waiverWire/swapBoard";
 
 /** A team's healthy players, each once: IL and IL+ are not part of the active roster. */
 type HealthyPlayersProps = { team: AdvisorTeam };

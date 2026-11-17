@@ -76,6 +76,12 @@ const namesAgree = ({ left, right }: NamesAgreeProps): boolean =>
   left.baseKey === right.baseKey ||
   (left.last === right.last && isShortenedFirstName({ left: left.first, right: right.first }));
 
+// Whether a candidate plays for the team Yahoo lists; a ref with no team never does.
+type IsOnRefTeamProps = { ref: YahooPlayerRef; candidate: MatchCandidate };
+
+const isOnRefTeam = ({ ref, candidate }: IsOnRefTeamProps): boolean =>
+  !!ref.teamAbbr && candidate.teamAbbr === ref.teamAbbr;
+
 // The matched player among those sharing a name: the one on Yahoo's team, else
 // the only one. `null` when none share it, so the caller tries a looser rule;
 // unmatched when several do, so an ambiguous name never falls through to one.
@@ -86,9 +92,7 @@ type PickByNameProps = {
 
 const pickByName = ({ ref, sameName }: PickByNameProps): MatchOutcome | null => {
   if (!sameName.length) return null;
-  const sameTeam = sameName.filter(
-    (candidate) => !!ref.teamAbbr && candidate.teamAbbr === ref.teamAbbr,
-  );
+  const sameTeam = sameName.filter((candidate) => isOnRefTeam({ ref, candidate }));
   const [byTeam] = sameTeam;
   if (byTeam && sameTeam.length === 1) {
     return { status: "matched", playerId: byTeam.id, method: "name_team" };
@@ -145,7 +149,7 @@ export const matchPlayer = ({ ref, candidates, existing }: MatchPlayerProps): Ma
   const teammates = withName(
     (other) =>
       other.last === parts.last && isShortenedFirstName({ left: parts.first, right: other.first }),
-  ).filter((candidate) => !!ref.teamAbbr && candidate.teamAbbr === ref.teamAbbr);
+  ).filter((candidate) => isOnRefTeam({ ref, candidate }));
   const [teammate] = teammates;
   return teammate && teammates.length === 1
     ? { status: "matched", playerId: teammate.id, method: "short_name_team" }
@@ -324,10 +328,7 @@ type GroupByLastNameProps = {
 const groupByLastName = ({
   candidates,
 }: GroupByLastNameProps): ReadonlyMap<string, readonly MatchCandidate[]> =>
-  candidates.reduce<ReadonlyMap<string, readonly MatchCandidate[]>>((groups, candidate) => {
-    const { last } = nameParts({ name: candidate.fullName });
-    return new Map(groups).set(last, [...(groups.get(last) ?? []), candidate]);
-  }, new Map());
+  Map.groupBy(candidates, (candidate) => nameParts({ name: candidate.fullName }).last);
 
 type ResolveYahooPlayersProps = {
   refs: readonly YahooPlayerRef[];

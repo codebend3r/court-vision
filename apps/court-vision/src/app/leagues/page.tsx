@@ -10,9 +10,9 @@ import styles from "@/app/leagues/leagues.module.scss";
 export const dynamic = "force-dynamic";
 
 export default async function LeaguesPage() {
-  const profile = await getProfile();
+  // getLeagues returns [] signed out, so it runs alongside the session check.
+  const [profile, leagues] = await Promise.all([getProfile(), getLeagues()]);
   if (profile === null) redirect("/login?next=/leagues");
-  const leagues = await getLeagues();
   // Matches resolveActiveLeague's DB-side fallback (updatedAt desc), not
   // getLeagues' display order (createdAt asc) — see fallbackActiveLeagueId.
   const activeLeagueId = fallbackActiveLeagueId({

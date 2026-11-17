@@ -14,11 +14,14 @@ type EditLeaguePageProps = {
 };
 
 export default async function EditLeaguePage({ params }: EditLeaguePageProps) {
-  const { leagueSlug } = await params;
-  const profile = await getProfile();
+  // getLeagues returns [] signed out, so it runs alongside the session check.
+  const [{ leagueSlug }, profile, leagues] = await Promise.all([
+    params,
+    getProfile(),
+    getLeagues(),
+  ]);
   if (profile === null) redirect("/login?next=/leagues");
 
-  const leagues = await getLeagues();
   const league = leagues.find((entry) => entry.slug === leagueSlug) ?? null;
   if (league === null) notFound();
 

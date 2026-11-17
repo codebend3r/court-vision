@@ -1,4 +1,5 @@
 import { FantasyTeamLogo } from "@/components/FantasyTeamLogo/FantasyTeamLogo";
+import { ScoreLine } from "@/components/MatchupView/ScoreLine";
 import { type CategoryResult, scoreMatchup } from "@/lib/matchups/standings";
 import { type LeagueWeek, type WeekTeam } from "@/lib/matchups/types";
 
@@ -37,20 +38,12 @@ export function MatchupPanel({ week, mine, opponent }: MatchupPanelProps) {
     <section className={styles.panel} aria-label="This week's matchup">
       <header className={styles.matchupHead}>
         <Side team={mine} align="start" />
-        <p
-          className={styles.score}
-          aria-label={`${score.wins} wins, ${score.losses} losses, ${score.ties} ties`}
-        >
-          <span className={styles.scoreNumber}>{score.wins}</span>
-          <span className={styles.scoreDivider} aria-hidden="true">
-            -
-          </span>
-          <span className={styles.scoreNumber}>{score.losses}</span>
-          <span className={styles.scoreDivider} aria-hidden="true">
-            -
-          </span>
-          <span className={styles.scoreNumber}>{score.ties}</span>
-        </p>
+        <ScoreLine
+          label={`${score.wins} wins, ${score.losses} losses, ${score.ties} ties`}
+          won={score.wins}
+          lost={score.losses}
+          tied={score.ties}
+        />
         <Side team={opponent} align="end" />
       </header>
       <div className={styles.tableWrapper}>

@@ -1,4 +1,5 @@
 import { YAHOO_LEAGUE_HOST } from "@/lib/yahoo/constants";
+import { type YahooFailure } from "@/lib/yahoo/types";
 
 export type YahooUrlParse =
   | { status: "ok"; leagueId: string }
@@ -53,4 +54,19 @@ export const parseYahooLeagueUrl = ({ input }: ParseYahooLeagueUrlProps): YahooU
     return parseSegments({ segments: url.pathname.split("/").filter((segment) => segment !== "") });
   }
   return host.endsWith(YAHOO_SPORTS_SUFFIX) ? { status: "wrong_sport" } : INVALID;
+};
+
+export type YahooLeagueIdResult =
+  | { status: "ok"; leagueId: string }
+  | Extract<YahooFailure, { status: "invalid_url" | "wrong_sport" | "past_season" }>;
+
+// The league id a pasted URL names, or the import failure that explains why
+// it names none. Every importer path answers a bad URL with these statuses.
+type ParseYahooLeagueIdProps = { input: string };
+
+export const parseYahooLeagueId = ({ input }: ParseYahooLeagueIdProps): YahooLeagueIdResult => {
+  const parsed = parseYahooLeagueUrl({ input });
+  if (parsed.status === "ok") return parsed;
+  if (parsed.status === "invalid") return { status: "invalid_url" };
+  return { status: parsed.status };
 };

@@ -12,6 +12,7 @@ import { formatRate } from "@vision/core/util/format";
 import { ADVANCED_STAT_META, type AdvancedStatMeta } from "@/lib/players/advancedStatMeta";
 import { type PlayerIdentity } from "@/lib/players/identity";
 import { isNameSort } from "@/lib/players/rank";
+import { ariaSortFor } from "@/lib/tableSort";
 import { type CountingSortKey, type PlayerPoolRow } from "@/lib/players/search";
 import { type AdvancedPlayerRow } from "@/lib/players/searchAdvanced";
 import { type StatColumn } from "@/lib/players/statColumn";
@@ -39,14 +40,10 @@ type RateValueProps = { made: number; attempted: number };
 const rateValue = ({ made, attempted }: RateValueProps): number | null =>
   attempted > 0 ? made / attempted : null;
 
-type FormatPerGameProps = { total: number; gamesPlayed: number };
-
-const formatPerGame = ({ total, gamesPlayed }: FormatPerGameProps): string =>
+const formatPerGame = ({ total, gamesPlayed }: PerGameValueProps): string =>
   perGameValue({ total, gamesPlayed })?.toFixed(1) ?? "—";
 
-type FormatPercentageProps = { made: number; attempted: number };
-
-const formatPercentage = ({ made, attempted }: FormatPercentageProps): string => {
+const formatPercentage = ({ made, attempted }: RateValueProps): string => {
   const value = rateValue({ made, attempted });
   return value === null ? "—" : formatRate({ value });
 };
@@ -65,12 +62,7 @@ const minutesValue = ({ stats, mode }: MinutesValueProps): number | null => {
   return value === null ? null : Math.round(value);
 };
 
-type FormatMinutesProps = {
-  stats: PlayerPoolRow["stats"];
-  mode: PlayerStatMode;
-};
-
-const formatMinutes = ({ stats, mode }: FormatMinutesProps): string =>
+const formatMinutes = ({ stats, mode }: MinutesValueProps): string =>
   minutesValue({ stats, mode })?.toString() ?? "—";
 
 // The regular table's columns. Counting stats read per game or as totals, per
@@ -249,7 +241,7 @@ export function PlayersTable<Row extends PlayerIdentity>({
         // column position: the star column shifts every index by one, and only
         // for signed-in users.
         className={isStatColumn ? styles.statHeader : styles.player}
-        aria-sort={isActive ? (params.dir === "asc" ? "ascending" : "descending") : undefined}
+        aria-sort={ariaSortFor({ sort: { key: params.sort, dir: params.dir }, key: sortKey })}
         data-sort-active={(isStatColumn ? isActive : isPlayerSort) || undefined}
       >
         <Link

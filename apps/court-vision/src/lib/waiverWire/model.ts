@@ -68,6 +68,13 @@ const toRow = ({ ranked, line, owner, injuryStatus }: ToRowProps): WaiverRow => 
   injuryStatus,
 });
 
+// Every rostered id, mine included even when the league's list left my IL
+// players out of `rosteredPlayerIds`, so none of my players can surface as free.
+type RosteredIdsProps = { league: Pick<WaiverLeagueData, "rosteredPlayerIds" | "myRoster"> };
+
+export const rosteredIds = ({ league }: RosteredIdsProps): Set<number> =>
+  new Set([...league.rosteredPlayerIds, ...league.myRoster.map((entry) => entry.playerId)]);
+
 type MatchesPositionProps = { pos: WaiverPosition; position: string | null };
 
 const matchesPosition = ({ pos, position }: MatchesPositionProps) =>
@@ -111,12 +118,7 @@ export const buildWaiverModel = ({
       : [];
   });
 
-  // Every rostered id, mine included even when the caller left my IL players
-  // out of `rosteredPlayerIds`, so none of my players can surface as free.
-  const rostered = new Set([
-    ...league.rosteredPlayerIds,
-    ...league.myRoster.map((entry) => entry.playerId),
-  ]);
+  const rostered = rosteredIds({ league });
   const waiverById = new Map(league.waivers.map((waiver) => [waiver.playerId, waiver]));
 
   const freePool = ranked.flatMap((entry) => {

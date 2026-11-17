@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 
 import { FantasyTeamLogo } from "@/components/FantasyTeamLogo/FantasyTeamLogo";
+import { extremeOf } from "@/components/MatchupView/StandingsSummary";
 import { SortHeader } from "@/components/SortHeader/SortHeader";
 import { averageRank, buildStandings, type CategoryStanding } from "@/lib/matchups/standings";
 import { type LeagueWeek, type WeekTeam } from "@/lib/matchups/types";
@@ -24,6 +25,23 @@ const AVERAGE_FORMAT = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
+
+type Side = "mine" | "opponent";
+
+// How a highlighted row names its team: aloud ahead of the name, and as the
+// visible tag beside it.
+const SIDE_COPY: Record<Side, { spoken: string; tag: string }> = {
+  mine: { spoken: "Your team:", tag: "You" },
+  opponent: { spoken: "Your opponent:", tag: "Opponent" },
+};
+
+type SideOfProps = { team: WeekTeam; opponentId?: string };
+
+const sideOf = ({ team, opponentId }: SideOfProps): Side | undefined => {
+  if (team.isMine) return "mine";
+  if (team.teamId === opponentId) return "opponent";
+  return undefined;
+};
 
 type LeagueTotalsTableProps = { week: LeagueWeek; opponentId?: string };
 
@@ -90,61 +108,54 @@ export function LeagueTotalsTable({ week, opponentId }: LeagueTotalsTableProps) 
             </tr>
           </thead>
           <tbody>
-            {sorted(rows).map(({ team, standings, average }) => (
-              <tr
-                key={team.teamId}
-                data-side={
-                  team.isMine ? "mine" : team.teamId === opponentId ? "opponent" : undefined
-                }
-              >
-                <th scope="row" className={styles.teamCell}>
-                  {team.isMine && (
-                    <span data-on-your-team="true" className={styles.srOnly}>
-                      Your team:{" "}
-                    </span>
-                  )}
-                  {!team.isMine && team.teamId === opponentId && (
-                    <span className={styles.srOnly}>Your opponent: </span>
-                  )}
-                  <span className={styles.teamCellInner}>
-                    <FantasyTeamLogo name={team.name} logoUrl={team.logoUrl} />
-                    <span className={styles.teamName}>{team.name}</span>
-                    {team.isMine && (
-                      <span className={styles.sideTag} aria-hidden="true">
-                        You
+            {sorted(rows).map(({ team, standings, average }) => {
+              const side = sideOf({ team, opponentId });
+              return (
+                <tr key={team.teamId} data-side={side}>
+                  <th scope="row" className={styles.teamCell}>
+                    {!!side && (
+                      <span
+                        data-on-your-team={side === "mine" || undefined}
+                        className={styles.srOnly}
+                      >
+                        {SIDE_COPY[side].spoken}{" "}
                       </span>
                     )}
-                    {!team.isMine && team.teamId === opponentId && (
-                      <span className={styles.sideTag} aria-hidden="true">
-                        Opponent
-                      </span>
-                    )}
-                  </span>
-                </th>
-                <td className={styles.numeric}>
-                  {average === null ? "-" : AVERAGE_FORMAT.format(average)}
-                </td>
-                {standings.map(({ category, rank, isBest, isWorst }) => (
-                  <td
-                    key={category.statId}
-                    className={styles.numeric}
-                    data-sort-active={sort?.key === String(category.statId) || undefined}
-                  >
-                    <span className={styles.total}>
-                      {team.display[String(category.statId)] ?? "-"}
+                    <span className={styles.teamCellInner}>
+                      <FantasyTeamLogo name={team.name} logoUrl={team.logoUrl} />
+                      <span className={styles.teamName}>{team.name}</span>
+                      {!!side && (
+                        <span className={styles.sideTag} aria-hidden="true">
+                          {SIDE_COPY[side].tag}
+                        </span>
+                      )}
                     </span>
-                    <span
-                      className={styles.place}
-                      data-extreme={isBest ? "best" : isWorst ? "worst" : undefined}
-                    >
-                      {rank}
-                      {isBest && <span className={styles.srOnly}> (best in league)</span>}
-                      {isWorst && <span className={styles.srOnly}> (worst in league)</span>}
-                    </span>
+                  </th>
+                  <td className={styles.numeric}>
+                    {average === null ? "-" : AVERAGE_FORMAT.format(average)}
                   </td>
-                ))}
-              </tr>
-            ))}
+                  {standings.map((standing) => {
+                    const statKey = String(standing.category.statId);
+                    const extreme = extremeOf(standing);
+                    return (
+                      <td
+                        key={statKey}
+                        className={styles.numeric}
+                        data-sort-active={sort?.key === statKey || undefined}
+                      >
+                        <span className={styles.total}>{team.display[statKey] ?? "-"}</span>
+                        <span className={styles.place} data-extreme={extreme}>
+                          {standing.rank}
+                          {!!extreme && (
+                            <span className={styles.srOnly}> ({extreme} in league)</span>
+                          )}
+                        </span>
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

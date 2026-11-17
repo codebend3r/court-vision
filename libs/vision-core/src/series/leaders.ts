@@ -41,6 +41,28 @@ export const percentage = ({ made, attempted }: PercentageProps): number | null 
 
 const isPresent = (stat: LeaderStat | null): stat is LeaderStat => stat !== null;
 
+// One def's printed stat, ranked or not: the one place a LeaderStat is built.
+type LeaderStatProps<Row> = {
+  def: LeaderDef<Row>;
+  value: number;
+  rank: number | null;
+  eligibleCount: number;
+};
+
+const leaderStat = <Row>({
+  def,
+  value,
+  rank,
+  eligibleCount,
+}: LeaderStatProps<Row>): LeaderStat => ({
+  key: def.key,
+  label: def.label,
+  value: def.format(value),
+  rank,
+  rankTone: def.rankTone,
+  eligibleCount,
+});
+
 // Standard competition ranking against the qualified pool: rank is 1 plus the
 // number of qualified players strictly ahead, so ties share a rank. The viewed
 // player is always ranked (even below the qualifying floor) but only counts
@@ -79,14 +101,12 @@ export const buildLeaderLine = <Row extends { playerId: number }>({
         return other !== null && other > value ? count + 1 : count;
       }, 0);
       const eligibleCount = qualifiedOthers.length + (qualifies(playerRow) ? 1 : 0);
-      return {
-        key: def.key,
-        label: def.label,
-        value: def.format(value),
+      return leaderStat({
+        def,
+        value,
         rank: eligibleCount === 0 ? null : ahead + 1,
-        rankTone: def.rankTone,
         eligibleCount,
-      };
+      });
     })
     .filter(isPresent);
 };
@@ -105,13 +125,6 @@ export const buildUnrankedLine = <Row>({ defs, row }: BuildUnrankedLineProps<Row
       if (value === null) {
         return null;
       }
-      return {
-        key: def.key,
-        label: def.label,
-        value: def.format(value),
-        rank: null,
-        rankTone: def.rankTone,
-        eligibleCount: 0,
-      };
+      return leaderStat({ def, value, rank: null, eligibleCount: 0 });
     })
     .filter(isPresent);
