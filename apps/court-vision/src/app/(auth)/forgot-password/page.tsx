@@ -11,11 +11,10 @@ type ForgotPasswordPageProps = {
 };
 
 export default async function ForgotPasswordPage({ searchParams }: ForgotPasswordPageProps) {
-  const user = await getUser();
+  const [user, { error }] = await Promise.all([getUser(), searchParams]);
   if (user) {
     redirect("/");
   }
-  const { error } = await searchParams;
   // /auth/confirm redirects here with ?error=reset when a reset link fails.
   const notice = error === "reset" ? RESET_FAILED_MESSAGE : null;
   return (

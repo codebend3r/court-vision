@@ -7,6 +7,7 @@ import { CATEGORY_META } from "@vision/sport-basketball/engine";
 import { type CategoryMeta, type FantasyGameValue } from "@vision/sport-basketball/types";
 import { formatSigned } from "@vision/core/util/format";
 import { ROLLING_WINDOW_GAMES } from "@vision/core/valuation/rolling";
+import { type SortColumn } from "@/lib/tableSort";
 
 import styles from "@/components/PlayerGameLogTable/PlayerGameLogTable.module.scss";
 
@@ -48,16 +49,14 @@ export type FantasyGameLogRow = GameLogRow & { fantasy: FantasyGameValue | null 
 
 export type CategoryColumn = Pick<CategoryMeta, "key" | "label">;
 
-type SortValue = number | string | null;
-
-export type GameLogColumn<Row> = {
-  key: string;
+// `valueOf` is what the column sorts by (null sinks to the bottom either way)
+// and what a cell shows when it has no `render`; `firstDir` is the direction
+// a first click sorts.
+export type GameLogColumn<Row> = SortColumn<Row> & {
   label: string;
   // The column's full name, shown on hover over its header.
   title?: string;
   align?: "left" | "right";
-  // What the column sorts by; null sinks to the bottom either way.
-  value: (row: Row) => SortValue;
   render?: (row: Row) => ReactNode;
   // Signed scores colour their negatives (spec §7).
   signed?: boolean;
@@ -82,7 +81,8 @@ const formatScore = (value: number | null): string =>
 export const DATE_COLUMN: GameLogColumn<GameLogRow> = {
   key: "gameDate",
   label: "Date",
-  value: ({ gameDate }) => gameDate,
+  firstDir: "desc",
+  valueOf: ({ gameDate }) => gameDate,
   render: ({ gameDate }) => formatDate(gameDate),
 };
 
@@ -92,7 +92,8 @@ const GAME_COLUMNS: readonly GameLogColumn<GameLogRow>[] = [
     key: "gameNumber",
     label: "GM",
     align: "right",
-    value: ({ gameNumber }) => gameNumber,
+    firstDir: "asc",
+    valueOf: ({ gameNumber }) => gameNumber,
     render: ({ gameNumber, minutes }) => (
       <span className={styles.gameNumber}>
         {gameNumber}
@@ -111,13 +112,15 @@ const GAME_COLUMNS: readonly GameLogColumn<GameLogRow>[] = [
   {
     key: "matchup",
     label: "Matchup",
-    value: ({ matchup }) => matchup,
+    firstDir: "asc",
+    valueOf: ({ matchup }) => matchup,
     render: ({ matchup }) => <TeamMatchup matchup={matchup} size="sm" />,
   },
   {
     key: "winLoss",
     label: "Result",
-    value: ({ winLoss }) => winLoss,
+    firstDir: "asc",
+    valueOf: ({ winLoss }) => winLoss,
     render: ({ winLoss, teamScore, opponentScore }) => {
       // typeof guards (not null checks) so rows missing the score fields
       // entirely (e.g. a Prisma client generated before the score migration)
@@ -142,7 +145,8 @@ const GAME_COLUMNS: readonly GameLogColumn<GameLogRow>[] = [
     label: "MIN",
     align: "right",
     // Sorts on the exact minutes; reads as whole ones, as a box score does.
-    value: ({ minutes }) => minutes,
+    firstDir: "asc",
+    valueOf: ({ minutes }) => minutes,
     render: ({ minutes }) => String(Math.round(minutes)),
   },
 ];
@@ -158,7 +162,8 @@ const boxColumn = ({ key, label }: BoxColumnProps): GameLogColumn<GameLogRow> =>
   key,
   label,
   align: "right",
-  value: (row) => row[key],
+  firstDir: "asc",
+  valueOf: (row) => row[key],
 });
 
 const BOX_COLUMNS: readonly GameLogColumn<GameLogRow>[] = [
@@ -180,7 +185,8 @@ const BOX_COLUMNS: readonly GameLogColumn<GameLogRow>[] = [
     key: "plusMinus",
     label: "+/-",
     align: "right",
-    value: ({ plusMinus }) => plusMinus,
+    firstDir: "asc",
+    valueOf: ({ plusMinus }) => plusMinus,
     render: ({ plusMinus }) => formatPlusMinus(plusMinus),
   },
 ];
@@ -192,7 +198,8 @@ const ADVANCED_COLUMNS: readonly GameLogColumn<AdvancedGameLogRow>[] = ADVANCED_
     label: meta.label,
     title: meta.fullName,
     align: "right",
-    value: (row) => row.advanced?.[meta.key] ?? null,
+    firstDir: "asc",
+    valueOf: (row) => row.advanced?.[meta.key] ?? null,
     render: (row) => formatAdvancedStat({ key: meta.key, value: row.advanced?.[meta.key] ?? null }),
   }),
 );
@@ -218,7 +225,8 @@ const scoreColumn = ({
     title,
     align: "right",
     signed: true,
-    value,
+    firstDir: "asc",
+    valueOf: value,
     render: (row) => formatScore(value(row)),
   };
 };

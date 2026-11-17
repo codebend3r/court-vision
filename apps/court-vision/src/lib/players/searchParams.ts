@@ -15,26 +15,7 @@ export const MAX_QUERY_LENGTH = 100;
 // anyway; this only keeps an absurd number from reaching the ranker.
 const MAX_PAGE = 100000;
 
-export type PlayerSortKey =
-  | "firstName"
-  | "lastName"
-  | "starredAt"
-  | "gamesPlayed"
-  | "min"
-  | "pts"
-  | "reb"
-  | "ast"
-  | "stl"
-  | "blk"
-  | "fgm"
-  | "fga"
-  | "fg3m"
-  | "fg3a"
-  | "fgPct"
-  | "fg3Pct"
-  | "ftPct"
-  | "tov";
-export const PLAYER_SORT_KEYS: readonly PlayerSortKey[] = [
+export const PLAYER_SORT_KEYS = [
   "firstName",
   "lastName",
   "starredAt",
@@ -53,20 +34,14 @@ export const PLAYER_SORT_KEYS: readonly PlayerSortKey[] = [
   "fg3Pct",
   "ftPct",
   "tov",
-];
+] as const;
+export type PlayerSortKey = (typeof PLAYER_SORT_KEYS)[number];
 export const SORT_DIRECTIONS = ["asc", "desc"] as const;
 export type SortDirection = (typeof SORT_DIRECTIONS)[number];
 export const DEFAULT_SORT_DIR: SortDirection = "desc";
 
-export type PlayerGameRange = "all" | "last5" | "last10" | "last20" | "last40" | "last60";
-export const PLAYER_GAME_RANGES: readonly PlayerGameRange[] = [
-  "all",
-  "last5",
-  "last10",
-  "last20",
-  "last40",
-  "last60",
-];
+export const PLAYER_GAME_RANGES = ["all", "last5", "last10", "last20", "last40", "last60"] as const;
+export type PlayerGameRange = (typeof PLAYER_GAME_RANGES)[number];
 export const DEFAULT_GAME_RANGE: PlayerGameRange = "all";
 // The one wording every game-range picker and legend shows.
 export const GAME_RANGE_LABELS: Record<PlayerGameRange, string> = {
@@ -84,8 +59,8 @@ export const DEFAULT_STAT_MODE: PlayerStatMode = "average";
 
 // The four /players tabs. Starred lists only the signed-in user's watchlist
 // (lib/watchlist), through the same table the regular tab uses.
-export type PlayersTab = "regular" | "advanced" | "fantasy" | "starred";
-export const PLAYERS_TABS: readonly PlayersTab[] = ["regular", "advanced", "fantasy", "starred"];
+export const PLAYERS_TABS = ["regular", "advanced", "fantasy", "starred"] as const;
+export type PlayersTab = (typeof PLAYERS_TABS)[number];
 export const DEFAULT_TAB: PlayersTab = "regular";
 
 export const isPlayersTab = (value: string | undefined): value is PlayersTab =>
@@ -93,24 +68,7 @@ export const isPlayersTab = (value: string | undefined): value is PlayersTab =>
 
 // The 15 nullable per-game metrics Balldontlie's /v1/stats/advanced exposes,
 // averaged on the fly from PlayerAdvancedGameLog (see lib/players/searchAdvanced.ts).
-export type AdvancedMetricKey =
-  | "pie"
-  | "pace"
-  | "assistPercentage"
-  | "assistRatio"
-  | "assistToTurnover"
-  | "defensiveRating"
-  | "defensiveReboundPercentage"
-  | "effectiveFieldGoalPercentage"
-  | "netRating"
-  | "offensiveRating"
-  | "offensiveReboundPercentage"
-  | "reboundPercentage"
-  | "trueShootingPercentage"
-  | "turnoverRatio"
-  | "usagePercentage";
-
-export const ADVANCED_METRIC_KEYS: readonly AdvancedMetricKey[] = [
+export const ADVANCED_METRIC_KEYS = [
   "pie",
   "pace",
   "assistPercentage",
@@ -126,7 +84,8 @@ export const ADVANCED_METRIC_KEYS: readonly AdvancedMetricKey[] = [
   "trueShootingPercentage",
   "turnoverRatio",
   "usagePercentage",
-];
+] as const;
+export type AdvancedMetricKey = (typeof ADVANCED_METRIC_KEYS)[number];
 
 export type AdvancedSortKey = "firstName" | "lastName" | AdvancedMetricKey;
 export const ADVANCED_SORT_KEYS: readonly AdvancedSortKey[] = [
@@ -190,9 +149,14 @@ export const parseAsClampedInt = ({ min, max }: ParseAsClampedIntProps) =>
   });
 
 // Trimmed and capped, so a pasted essay or stray whitespace never reaches a
-// name match.
+// name match. The URL parser and the debounced search box both apply it.
+type NormalizeQueryProps = { value: string };
+
+export const normalizeQuery = ({ value }: NormalizeQueryProps): string =>
+  value.trim().slice(0, MAX_QUERY_LENGTH);
+
 const parseAsQuery = createParser({
-  parse: (value: string) => value.trim().slice(0, MAX_QUERY_LENGTH),
+  parse: (value: string) => normalizeQuery({ value }),
   serialize: (value: string) => value,
 });
 

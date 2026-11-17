@@ -1,24 +1,26 @@
 "use client";
 
 import { type ReactElement } from "react";
-import {
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-  type TooltipPayload,
-} from "recharts";
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { FantasyChartList } from "@/components/FantasyChartList/FantasyChartList";
 import { VALUE_LABELS, type ValueColors } from "@/components/PlayerFantasyChart/labels";
 import { TrendChartControls } from "@/components/TrendChartControls/TrendChartControls";
-import { useTrendChartPrefs } from "@/components/TrendChartControls/useTrendChartPrefs";
+import {
+  averageOn,
+  type AverageByDate,
+  useTrendChartView,
+} from "@/components/TrendChartControls/useTrendChartPrefs";
 import { AVERAGE_LINE_LABEL, AVERAGE_LINE_STYLE } from "@/lib/charts/averageLine";
-import { fittedDomain, type TrendSpan, visibleMethods } from "@/lib/charts/trendMethods";
+import { fittedDomain, type TrendSpan } from "@/lib/charts/trendMethods";
 import { type MethodValueKey } from "@vision/core/valuation/types";
-import { SeriesTooltip } from "@/components/SeriesTooltip/SeriesTooltip";
+import {
+  DNP_STATUS,
+  formatGameDate,
+  hoveredRow,
+  SeriesTooltip,
+  type InjectedTooltipProps,
+} from "@/components/SeriesTooltip/SeriesTooltip";
 import { CHART_CHROME, CHART_CURVE, chartLineProps } from "@vision/ui/charts/palette";
 import { formatSigned } from "@vision/core/util/format";
 import { type FantasyTableRow, type ListSortProps } from "@/lib/valuation/fantasyRows";
@@ -64,16 +66,7 @@ const plottedPoints = ({ trend }: PlottedPointsProps): FantasyTrendValue[] => {
   return first === -1 ? [] : trend.slice(first);
 };
 
-// `gameDate` is UTC midnight; rendering it in UTC keeps the date from
-// slipping back a day west of Greenwich.
-const formatDate = (isoDate: string): string =>
-  new Date(isoDate).toLocaleDateString(undefined, { timeZone: "UTC" });
-
-// Recharts clones `content` and injects `active`/`payload` at render time, so
-// they stay optional on the component's own prop type.
-export type TrendTooltipProps = {
-  active?: boolean;
-  payload?: TooltipPayload;
+export type TrendTooltipProps = InjectedTooltipProps & {
   trend: readonly FantasyTrendValue[];
   colors: ValueColors;
   // The methods drawn, named in the tooltip.
@@ -89,10 +82,7 @@ export function TrendTooltip({
   colors,
   keys = ["z", "g"],
 }: TrendTooltipProps): ReactElement | null {
-  if (!active || !payload || !payload.length) {
-    return null;
-  }
-  const hovered: unknown = payload[0].payload;
+  const hovered = hoveredRow({ active, payload });
   if (
     typeof hovered !== "object" ||
     hovered === null ||
@@ -108,7 +98,7 @@ export function TrendTooltip({
 
   return (
     <SeriesTooltip
-      header={`Game ${point.gameNumber} · ${formatDate(point.gameDate)}`}
+      header={`Game ${point.gameNumber} · ${formatGameDate(point.gameDate)}`}
       rows={[
         ...keys.map((key) => {
           const value = point[key];
@@ -131,7 +121,7 @@ export function TrendTooltip({
             ]
           : []),
       ]}
-      status={point.dnp ? "DNP / DNP-CD (0 MIN)" : undefined}
+      status={point.dnp ? DNP_STATUS : undefined}
     />
   );
 }
@@ -166,13 +156,13 @@ type SparklineProps = {
   color: string;
   colors: ValueColors;
   // The league average by game date, or null to draw none.
-  averageByDate: ReadonlyMap<number, DatedMethodValues["values"]> | null;
+  averageByDate: AverageByDate | null;
 };
 
 function Sparkline({ plotted, methodKey, color, colors, averageByDate }: SparklineProps) {
   const data = plotted.map((point) => ({
     ...point,
-    [AVERAGE_KEY]: averageByDate?.get(Date.parse(point.gameDate))?.[methodKey] ?? null,
+    [AVERAGE_KEY]: averageOn({ averageByDate, gameDate: point.gameDate, key: methodKey }),
   }));
   return (
     <ResponsiveContainer
@@ -242,13 +232,7 @@ export function FantasyValueTrends({
   averages = [],
   ...listProps
 }: FantasyValueTrendsProps) {
-  const { hidden, showAverage } = useTrendChartPrefs();
-  const keys = visibleMethods({ hidden });
-  // No line at all when hidden or before the league has a reading.
-  const averageByDate =
-    showAverage && !!averages.length
-      ? new Map(averages.map(({ date, values }) => [date, values]))
-      : null;
+  const { keys, averageByDate } = useTrendChartView({ averages });
 
   type PlaceholderProps = { plotted: readonly FantasyTrendValue[] };
 

@@ -4,6 +4,7 @@ import { useId, useMemo, useState } from "react";
 
 import { SortHeader } from "@/components/SortHeader/SortHeader";
 import { useColumnSort } from "@/lib/useColumnSort";
+import { ROWS_SHOWN, ShowMoreButton } from "@/components/WaiverWireView/ShowMoreButton";
 import { WaiverPlayer } from "@/components/WaiverWireView/WaiverPlayer";
 import { type FantasyStatLine } from "@/lib/valuation/types";
 import {
@@ -15,8 +16,6 @@ import { formatValue } from "@/lib/waiverWire/format";
 import { type WaiverRow } from "@/lib/waiverWire/types";
 
 import styles from "@/components/WaiverWireView/WaiverWireView.module.scss";
-
-const ROWS_SHOWN = 25;
 
 export const NO_AVAILABLE = "No available players match this range and position.";
 
@@ -142,13 +141,10 @@ export function AvailablePlayersPanel({
       )}
       {/* Stays mounted while there is more, so focus never drops. */}
       {remaining > 0 && (
-        <button
-          type="button"
-          className={styles.keycap}
-          onClick={() => setShown((current) => current + ROWS_SHOWN)}
-        >
-          Show {Math.min(ROWS_SHOWN, remaining)} more ({remaining} left)
-        </button>
+        <ShowMoreButton
+          remaining={remaining}
+          onMore={() => setShown((current) => current + ROWS_SHOWN)}
+        />
       )}
     </section>
   );

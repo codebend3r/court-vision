@@ -56,6 +56,19 @@ const withSlugs = ({ teams, kept }: WithSlugsProps): SluggedTeam[] =>
     [],
   );
 
+// A team row as an import or a sync first creates it.
+type ToTeamCreateProps = SluggedTeam & { leagueId: string; profileId: string };
+
+const toTeamCreate = ({ team, slug, leagueId, profileId }: ToTeamCreateProps) => ({
+  leagueId,
+  profileId,
+  name: team.name,
+  slug,
+  externalKey: team.externalKey,
+  logoUrl: team.logoUrl,
+  managerName: team.managerName,
+});
+
 // A matched player is stored by `playerId`; an unmatched one keeps its Yahoo
 // id and name so the slot still shows who is in it. Both carry Yahoo's injury
 // status. `position` is the slot's index in the team, as in the Team Builder.
@@ -214,15 +227,7 @@ export const createImportedLeague = async ({
     items: withSlugs({ teams: league.teams, kept: new Map() }),
     run: async ({ item: { team, slug } }): Promise<WrittenTeam> => {
       const row = await tx.leagueTeam.create({
-        data: {
-          leagueId: created.id,
-          profileId,
-          name: team.name,
-          slug,
-          externalKey: team.externalKey,
-          logoUrl: team.logoUrl,
-          managerName: team.managerName,
-        },
+        data: toTeamCreate({ team, slug, leagueId: created.id, profileId }),
       });
       return { teamId: row.id, team };
     },
@@ -301,15 +306,7 @@ export const syncImportedLeague = async ({
     run: async ({ item: { team, slug } }): Promise<WrittenTeam> => {
       const row = await tx.leagueTeam.upsert({
         where: { leagueId_externalKey: { leagueId, externalKey: team.externalKey } },
-        create: {
-          leagueId,
-          profileId,
-          name: team.name,
-          slug,
-          externalKey: team.externalKey,
-          logoUrl: team.logoUrl,
-          managerName: team.managerName,
-        },
+        create: toTeamCreate({ team, slug, leagueId, profileId }),
         // Yahoo hides manager names from anonymous reads, so a null here means
         // hidden, not gone: keep whatever name the extension last supplied.
         update: {

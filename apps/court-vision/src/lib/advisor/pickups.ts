@@ -1,3 +1,4 @@
+import { byCategoryThenValue } from "@/lib/advisor/target";
 import { type AdvisorPlayer, type FreeAgentPick } from "@/lib/advisor/types";
 
 const MAX_FREE_AGENTS = 5;
@@ -33,11 +34,7 @@ export const pickFreeAgents = ({ freePool, drop }: PickFreeAgentsProps): FreeAge
     gainOverDrop: drop === null ? null : player.value - drop.value,
     isUpgrade: drop === null || player.value > drop.value,
   });
-  const ranked = freePool
-    .toSorted(
-      (a, b) => b.categoryScore - a.categoryScore || b.value - a.value || a.playerId - b.playerId,
-    )
-    .map(toPick);
+  const ranked = freePool.toSorted(byCategoryThenValue).map(toPick);
   const upgrades = ranked.filter((pick) => pick.isUpgrade).slice(0, MAX_FREE_AGENTS);
   const fillers = ranked
     .filter((pick) => !pick.isUpgrade)

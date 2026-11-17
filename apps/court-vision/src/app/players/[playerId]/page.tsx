@@ -46,17 +46,30 @@ export default async function PlayerPage({ params, searchParams }: PlayerPagePro
   if (!Number.isSafeInteger(numericId) || numericId < 1 || numericId > MAX_INT4) {
     notFound();
   }
-  // None of these reads depends on another, so they share one round trip
-  // instead of four. The player's own season rows drive the dropdown history
-  // and career totals; the current league season remains the default.
-  const [user, player, filters, playerSeasonRows] = await Promise.all([
+  const filtersRead = loadStatFilters(searchParams ?? Promise.resolve({}));
+  // Every downstream view (games count, chart, log table) is scoped to the
+  // selection at the query level; career keeps the full history. The
+  // selection needs only the URL, so the logs read starts as soon as it parses.
+  const logsRead = filtersRead.then(({ season }) => {
+    const selection = resolveSeasonSelection({ requested: season });
+    return prisma.playerGameLog.findMany({
+      where:
+        selection === CAREER ? { playerId: numericId } : { playerId: numericId, season: selection },
+      orderBy: { gameDate: "asc" },
+    });
+  });
+  // None of these reads depends on another, so they share one round trip. The
+  // player's own season rows drive the dropdown history and career totals; the
+  // current league season remains the default.
+  const [user, player, filters, playerSeasonRows, logs] = await Promise.all([
     getUser(),
     prisma.player.findUnique({ where: { id: numericId } }),
-    loadStatFilters(searchParams ?? Promise.resolve({})),
+    filtersRead,
     prisma.playerSeasonStats.findMany({
       where: { playerId: numericId, seasonType: SEASON_TYPE },
       orderBy: { season: "desc" },
     }),
+    logsRead,
   ]);
   if (player === null) {
     notFound();
@@ -66,13 +79,6 @@ export default async function PlayerPage({ params, searchParams }: PlayerPagePro
   const playerSeasons = [...new Set(playerSeasonRows.map((row) => row.season))];
   const selection = resolveSeasonSelection({ requested: requestedSeason });
   const isCareer = selection === CAREER;
-
-  // Every downstream view (games count, chart, log table) is scoped to the
-  // selection at the query level; career keeps the full history.
-  const logs = await prisma.playerGameLog.findMany({
-    where: isCareer ? { playerId: numericId } : { playerId: numericId, season: selection },
-    orderBy: { gameDate: "asc" },
-  });
   // Games played counts appearances only, not DNPs (0-minute roster games).
   const gamesPlayed = logs.filter((log) => log.minutes > 0).length;
 

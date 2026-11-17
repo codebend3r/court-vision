@@ -8,7 +8,7 @@ import { NeedsPanel } from "@/components/AdvisorView/NeedsPanel";
 import { TargetsPanel } from "@/components/AdvisorView/TargetsPanel";
 import { TradesPanel } from "@/components/AdvisorView/TradesPanel";
 import { TrendingPanel } from "@/components/AdvisorView/TrendingPanel";
-import { useValuation } from "@/components/FantasyValueView/useValuation";
+import { useLineBreakdown, useValuation } from "@/components/FantasyValueView/useValuation";
 import { KeycapTabs } from "@/components/KeycapTabs/KeycapTabs";
 import { buildAdvice } from "@/lib/advisor/advice";
 import { cachedBreakdownFor } from "@/lib/advisor/breakdown";
@@ -32,12 +32,7 @@ import { unmatchedNotice } from "@/lib/waiverWire/format";
 import { scoreKeysFor } from "@/lib/waiverWire/model";
 import { formatOrdinal } from "@vision/core/util/format";
 import { type FantasyMethodKey } from "@vision/core/valuation/types";
-import { buildCategoryBreakdown } from "@vision/sport-basketball/engine";
-import {
-  type FantasyCategoryBreakdown,
-  type MethodWeights,
-  type ValuationConfig,
-} from "@vision/sport-basketball/types";
+import { type MethodWeights, type ValuationConfig } from "@vision/sport-basketball/types";
 
 import styles from "@/components/AdvisorView/AdvisorView.module.scss";
 
@@ -82,22 +77,9 @@ export function AdvisorView({
   });
 
   const activeIds = useMemo(() => new Set(activePlayerIds), [activePlayerIds]);
-  const { poolStats, config: settledConfig, methodWeights: settledWeights } = valuation;
-  type LineBreakdownProps = { line: FantasyStatLine };
-
   // Any line against the settled pool, so a recent line and a season line
   // land on the same yardstick.
-  const lineBreakdown = useMemo(
-    () =>
-      ({ line }: LineBreakdownProps): FantasyCategoryBreakdown[] =>
-        buildCategoryBreakdown({
-          line,
-          poolStats,
-          config: settledConfig,
-          methodWeights: settledWeights,
-        }),
-    [poolStats, settledConfig, settledWeights],
-  );
+  const lineBreakdown = useLineBreakdown(valuation);
   // Memoized per player: the engine asks for the same breakdown many times.
   const breakdownFor = useMemo(
     () => cachedBreakdownFor({ lines: valuation.lines, lineBreakdown }),

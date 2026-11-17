@@ -11,7 +11,8 @@ export const median = ({ values }: MedianProps): number | null => {
     : ((sorted[middle - 1] ?? 0) + (sorted[middle] ?? 0)) / 2;
 };
 
-const byCategoryThenValue = (a: AdvisorPlayer, b: AdvisorPlayer): number =>
+// Best in the focus first, then by overall value, ties by player id.
+export const byCategoryThenValue = (a: AdvisorPlayer, b: AdvisorPlayer): number =>
   b.categoryScore - a.categoryScore || b.value - a.value || a.playerId - b.playerId;
 
 // Best fits shown at once.

@@ -15,6 +15,7 @@ import {
   type GameLogColumn,
   type GameLogRow,
 } from "@/components/PlayerGameLogTable/gameLogColumns";
+import { ariaSortFor, sortRows, type SortDirection } from "@/lib/tableSort";
 import { Disclosure } from "@vision/ui/components/Disclosure/Disclosure";
 
 import styles from "@/components/PlayerGameLogTable/PlayerGameLogTable.module.scss";
@@ -32,36 +33,12 @@ export type PlayerGameLogTableProps =
       categories: readonly CategoryColumn[];
     };
 
-type SortDirection = "asc" | "desc";
-
 const SORT_DIRECTIONS: readonly SortDirection[] = ["asc", "desc"];
 
 const sortParsers = {
   sort: parseAsStringLiteral(GAME_LOG_SORT_KEYS),
   dir: parseAsStringLiteral(SORT_DIRECTIONS),
 };
-
-// Missing values sink to the bottom in both directions: a game with no
-// advanced row is not the lowest net rating, it has none.
-type SortRowsProps<Row> = {
-  rows: readonly Row[];
-  column: GameLogColumn<Row>;
-  direction: SortDirection;
-};
-
-const sortRows = <Row,>({ rows, column, direction }: SortRowsProps<Row>): Row[] =>
-  [...rows].sort((left, right) => {
-    const leftValue = column.value(left);
-    const rightValue = column.value(right);
-    if (leftValue === null || rightValue === null) {
-      return leftValue === rightValue ? 0 : leftValue === null ? 1 : -1;
-    }
-    const result =
-      typeof leftValue === "number" && typeof rightValue === "number"
-        ? leftValue - rightValue
-        : String(leftValue).localeCompare(String(rightValue));
-    return direction === "asc" ? result : -result;
-  });
 
 type GameLogTableProps<Row extends GameLogRow> = {
   rows: readonly Row[];
@@ -75,19 +52,21 @@ function GameLogTable<Row extends GameLogRow>({ rows, columns }: GameLogTablePro
   const pickedColumn = columns.find((column) => column.key === sort);
   const sortColumn: GameLogColumn<Row> = pickedColumn ?? DATE_COLUMN;
   const sortDirection: SortDirection = pickedColumn === undefined ? "desc" : (dir ?? "desc");
+  const sortState = { key: sortColumn.key, dir: sortDirection };
+  // Missing values sink to the bottom in both directions: a game with no
+  // advanced row is not the lowest net rating, it has none.
   const sortedRows = useMemo(
-    () => sortRows({ rows, column: sortColumn, direction: sortDirection }),
-    [rows, sortColumn, sortDirection],
+    () => sortRows({ rows, sort: { key: sortColumn.key, dir: sortDirection }, columns }),
+    [rows, sortColumn.key, sortDirection, columns],
   );
 
-  type SortByProps = { key: string };
+  // The sorted column flips; any other starts at its own first direction.
+  type SortByProps = { column: GameLogColumn<Row> };
 
-  const sortBy = ({ key }: SortByProps) => {
-    if (key === sortColumn.key) {
-      void setSorting({ sort: key, dir: sortDirection === "asc" ? "desc" : "asc" });
-      return;
-    }
-    void setSorting({ sort: key, dir: key === DATE_COLUMN.key ? "desc" : "asc" });
+  const sortBy = ({ column }: SortByProps) => {
+    const isSorted = column.key === sortColumn.key;
+    const flipped: SortDirection = sortDirection === "asc" ? "desc" : "asc";
+    void setSorting({ sort: column.key, dir: isSorted ? flipped : column.firstDir });
   };
 
   // Always the last block on the page, whichever view is showing; the
@@ -112,17 +91,13 @@ function GameLogTable<Row extends GameLogRow>({ rows, columns }: GameLogTablePro
           <thead>
             <tr>
               {columns.map((column) => {
-                const isActive = column.key === sortColumn.key;
-                const ariaSort = isActive
-                  ? sortDirection === "asc"
-                    ? "ascending"
-                    : "descending"
-                  : "none";
+                const ariaSort = ariaSortFor({ sort: sortState, key: column.key });
+                const isActive = !!ariaSort;
                 return (
                   <th
                     key={column.key}
                     scope="col"
-                    aria-sort={ariaSort}
+                    aria-sort={ariaSort ?? "none"}
                     data-align={column.align}
                     data-sort-active={isActive || undefined}
                   >
@@ -130,7 +105,7 @@ function GameLogTable<Row extends GameLogRow>({ rows, columns }: GameLogTablePro
                       type="button"
                       className={styles.sortButton}
                       title={column.title}
-                      onClick={() => sortBy({ key: column.key })}
+                      onClick={() => sortBy({ column })}
                     >
                       {column.label}
                       <span aria-hidden="true">
@@ -146,7 +121,7 @@ function GameLogTable<Row extends GameLogRow>({ rows, columns }: GameLogTablePro
             {sortedRows.map((row) => (
               <tr key={row.id}>
                 {columns.map((column) => {
-                  const value = column.value(row);
+                  const value = column.valueOf(row);
                   return (
                     <td
                       key={column.key}

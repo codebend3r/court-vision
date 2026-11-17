@@ -1,6 +1,6 @@
 import { type SportDescriptor, type SportKeys } from "#core/sport/types";
 import { recordFromKeys } from "#core/util/record";
-import { ratioDefs } from "#core/valuation/categories";
+import { ratioKeys } from "#core/valuation/categories";
 import { type DatedLog, isAppearance } from "#core/valuation/aggregate";
 import {
   type MethodValues,
@@ -42,7 +42,7 @@ const averageOf = <K extends SportKeys>({ sport, lines }: AverageOfProps<K>): Va
       value: (key) => mean({ read: (line) => line.sq[key] }),
     }),
     cross: recordFromKeys({
-      keys: ratioDefs({ sport }).map((def) => def.key),
+      keys: ratioKeys({ sport }),
       value: (key) => mean({ read: (line) => line.cross[key] }),
     }),
   };

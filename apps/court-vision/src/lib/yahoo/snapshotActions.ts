@@ -13,12 +13,12 @@ import {
   readStoredSync,
   syncLoadedLeague,
   toYahooPreview,
+  withSyncLease,
 } from "@/lib/yahoo/importLeague";
 import { parseYahooPayload } from "@/lib/yahoo/load";
 import { yahooGameSchema } from "@/lib/yahoo/schemas";
 import { checkSnapshotShape } from "@/lib/yahoo/snapshotShape";
 import { measureSnapshotBytes } from "@/lib/yahoo/snapshotSize";
-import { claimSync, releaseSync } from "@/lib/yahoo/syncLease";
 import {
   type YahooFailure,
   type YahooImportResult,
@@ -119,20 +119,19 @@ export const syncYahooLeagueFromSnapshot = async ({
 
       const loaded = loadSnapshot({ payload });
       if (loaded.status !== "ok") return loaded;
-      const syncStartedAt = await claimSync({ profileId: profile.id, leagueId });
-      if (syncStartedAt === null) return { status: "throttled" };
-      try {
-        return await syncLoadedLeague({
-          profileId: profile.id,
-          leagueId,
-          loaded,
-          writeMappings: false,
-          storedExternalKey: stored.league.externalKey,
-          syncStartedAt,
-        });
-      } finally {
-        await releaseSync({ profileId: profile.id, leagueId, syncStartedAt });
-      }
+      return withSyncLease({
+        profileId: profile.id,
+        leagueId,
+        run: ({ syncStartedAt }) =>
+          syncLoadedLeague({
+            profileId: profile.id,
+            leagueId,
+            loaded,
+            writeMappings: false,
+            storedExternalKey: stored.league.externalKey,
+            syncStartedAt,
+          }),
+      });
     },
   });
 };

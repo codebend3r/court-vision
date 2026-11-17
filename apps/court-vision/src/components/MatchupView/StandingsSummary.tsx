@@ -4,12 +4,21 @@ import { type CategoryStanding } from "@/lib/matchups/standings";
 
 import styles from "@/components/MatchupView/MatchupView.module.scss";
 
-type BadgeForProps = { standing: CategoryStanding };
+export type StandingExtreme = "best" | "worst";
 
-const badgeFor = ({ standing }: BadgeForProps): string | null => {
-  if (standing.isBest) return "Best in league";
-  if (standing.isWorst) return "Worst in league";
-  return null;
+// Whether a place is the league's best or worst in its category, for the
+// `data-extreme` tint and the words that back it up.
+type ExtremeOfProps = Pick<CategoryStanding, "isBest" | "isWorst">;
+
+export const extremeOf = ({ isBest, isWorst }: ExtremeOfProps): StandingExtreme | undefined => {
+  if (isBest) return "best";
+  if (isWorst) return "worst";
+  return undefined;
+};
+
+const EXTREME_BADGES: Record<StandingExtreme, string> = {
+  best: "Best in league",
+  worst: "Worst in league",
 };
 
 // Where your team's totals place in every category this week, so the best and
@@ -25,19 +34,15 @@ export function StandingsSummary({ standings, teamName }: StandingsSummaryProps)
       <h2 className={styles.summaryTitle}>Where you stand</h2>
       <ul className={styles.summaryList}>
         {standings.map((standing) => {
-          const badge = badgeFor({ standing });
+          const extreme = extremeOf(standing);
           return (
-            <li
-              key={standing.category.statId}
-              className={styles.standing}
-              data-extreme={standing.isBest ? "best" : standing.isWorst ? "worst" : undefined}
-            >
+            <li key={standing.category.statId} className={styles.standing} data-extreme={extreme}>
               <span className={styles.standingLabel}>{standing.category.label}</span>
               <span className={styles.standingRank}>
                 {formatOrdinal({ value: standing.rank })}
                 <span className={styles.standingOf}> of {standing.of}</span>
               </span>
-              {!!badge && <span className={styles.standingBadge}>{badge}</span>}
+              {!!extreme && <span className={styles.standingBadge}>{EXTREME_BADGES[extreme]}</span>}
             </li>
           );
         })}

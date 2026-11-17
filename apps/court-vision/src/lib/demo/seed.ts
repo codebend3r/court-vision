@@ -9,6 +9,7 @@ import {
   replaceGameLogs,
   upsertPlayers,
   upsertSeasonStats,
+  withStatsTransaction,
 } from "@/lib/stats/persist";
 
 import { generateGameLogs } from "@/lib/demo/generate";
@@ -23,14 +24,13 @@ type SeedDemoProps = { deps?: BdlClientDeps; logger?: Logger };
 export async function seedDemo(args: SeedDemoProps = {}): Promise<SyncSummary> {
   const { deps = {}, logger = silentLogger } = args;
 
-  const teamAbbrById = await fetchTeamAbbrById({ deps });
+  // Every fetch happens before any write, so a failed or unresolvable profile
+  // leaves the database untouched.
+  const [teamAbbrById, bdlPlayers] = await Promise.all([
+    fetchTeamAbbrById({ deps }),
+    fetchAllPlayers({ deps }),
+  ]);
   logger(`Fetched ${teamAbbrById.size} teams.`);
-
-  const bdlPlayers = await fetchAllPlayers({ deps });
-  const players = await upsertPlayers({
-    players: bdlPlayers.map((player) => toPlayerInput({ player })),
-  });
-  logger(`Fetched ${bdlPlayers.length} players, upserted ${players}.`);
 
   const byName = bdlPlayers.reduce(
     (map, player) =>
@@ -64,10 +64,19 @@ export async function seedDemo(args: SeedDemoProps = {}): Promise<SyncSummary> {
     })
   ).flat();
 
-  const gameLogs = await replaceGameLogs({ rows: gameLogInputs });
-  const seasonStats = await upsertSeasonStats({
-    rows: aggregateSeasonStats({ logs: gameLogInputs }),
+  const players = await upsertPlayers({
+    players: bdlPlayers.map((player) => toPlayerInput({ player })),
   });
+  logger(`Fetched ${bdlPlayers.length} players, upserted ${players}.`);
+
+  // The logs and the season lines summed from them land together.
+  const { gameLogs, seasonStats } = await withStatsTransaction(async (tx) => ({
+    gameLogs: await replaceGameLogs({ rows: gameLogInputs, tx }),
+    seasonStats: await upsertSeasonStats({
+      rows: aggregateSeasonStats({ logs: gameLogInputs }),
+      tx,
+    }),
+  }));
   // Team rosters list active players only, so the profiled players are the
   // demo's rosters.
   await markActiveRoster({

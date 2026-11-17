@@ -16,8 +16,7 @@ export const dynamic = "force-dynamic";
 type EditTeamPageProps = { params: Promise<{ teamSlug: string }> };
 
 export default async function EditTeamPage({ params }: EditTeamPageProps) {
-  const { teamSlug } = await params;
-  const league = await loadMyTeamsLeague();
+  const [{ teamSlug }, league] = await Promise.all([params, loadMyTeamsLeague()]);
 
   if (league === null) {
     return (

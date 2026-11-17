@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { type ReactNode } from "react";
 
 import { MyTeamPicker } from "@/components/MyTeamPicker/MyTeamPicker";
-import { SyncYahooButton } from "@/components/SyncYahooButton/SyncYahooButton";
 import { WaiverWireView } from "@/components/WaiverWireView/WaiverWireView";
 import { getProfile } from "@/lib/auth/session";
 import { getActiveRosterPlayers } from "@/lib/fantasyTeams/loader";
@@ -14,15 +13,19 @@ import { getFantasyPool } from "@/lib/valuation/loader";
 import { getWaiverLeagueData } from "@/lib/waiverWire/loader";
 import { loadWaiverWireSearchParams } from "@/lib/waiverWire/searchParams";
 import { notValuedMessage } from "@/lib/yahoo/messages";
-import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
+import { PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 
+import {
+  ImportFromYahooAction,
+  LeagueGate,
+  LeagueSyncButton,
+  OpenInYahooLink,
+} from "@/app/_league/LeagueGate";
 import { WAIVER_WIRE_PAGE_HEADER } from "@/app/waiver-wire/header";
 
 import styles from "@/app/waiver-wire/waiverWire.module.scss";
 
 export const dynamic = "force-dynamic";
-
-const IMPORT_PATH = "/leagues/import";
 
 // Every state short of the comparison: the page's own header, then why the
 // Waiver Wire can't run yet and what to do about it.
@@ -30,13 +33,9 @@ type WaiverWireGateProps = { message: string; children?: ReactNode };
 
 function WaiverWireGate({ message, children }: WaiverWireGateProps) {
   return (
-    <main className={styles.page}>
-      <PageHeader {...WAIVER_WIRE_PAGE_HEADER} />
-      <section className={styles.gate} aria-label="Waiver Wire status">
-        <p className={styles.message}>{message}</p>
-        {children}
-      </section>
-    </main>
+    <LeagueGate header={WAIVER_WIRE_PAGE_HEADER} label="Waiver Wire status" message={message}>
+      {children}
+    </LeagueGate>
   );
 }
 
@@ -51,7 +50,7 @@ export default async function WaiverWirePage({ searchParams }: WaiverWirePagePro
   if (league === null) {
     return (
       <WaiverWireGate message="No league yet. Import your Yahoo league to see who on the wire beats your weakest players.">
-        <PageAction href={IMPORT_PATH}>Import from Yahoo</PageAction>
+        <ImportFromYahooAction />
       </WaiverWireGate>
     );
   }
@@ -59,7 +58,7 @@ export default async function WaiverWirePage({ searchParams }: WaiverWirePagePro
   if (!league.isImported) {
     return (
       <WaiverWireGate message="The Waiver Wire needs a league imported from Yahoo, so it knows every team's roster.">
-        <PageAction href={IMPORT_PATH}>Import from Yahoo</PageAction>
+        <ImportFromYahooAction />
       </WaiverWireGate>
     );
   }
@@ -95,27 +94,8 @@ export default async function WaiverWirePage({ searchParams }: WaiverWirePagePro
         eyebrow={`${league.name} · Yahoo`}
         actions={
           <>
-            <SyncYahooButton
-              leagueId={league.id}
-              syncedAt={league.syncedAt}
-              syncError={league.syncError}
-              syncVia={league.syncVia}
-              externalUrl={league.externalUrl}
-              autoSyncWhenStale
-            />
-            {!!league.externalUrl && (
-              // The hidden note, read as the description, says the link
-              // leaves for a new tab.
-              <a
-                href={league.externalUrl}
-                target="_blank"
-                rel="noreferrer"
-                className={styles.external}
-              >
-                Open in Yahoo
-                <span className={styles.srOnly}> (opens in new tab)</span>
-              </a>
-            )}
+            <LeagueSyncButton league={league} />
+            {!!league.externalUrl && <OpenInYahooLink href={league.externalUrl} />}
           </>
         }
       />

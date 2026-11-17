@@ -11,25 +11,21 @@ export type BridgeLeaguePayload = {
   scoreboard?: unknown;
 };
 
-export type BridgeErrorReason =
-  | "forbidden_origin"
-  | "bad_request"
-  | "logged_out"
-  | "not_found"
-  | "unavailable";
-
-export type BridgeResponse =
-  | { type: "pong"; version: number }
-  | { type: "league"; payload: BridgeLeaguePayload }
-  | { type: "error"; reason: BridgeErrorReason };
-
-const ERROR_REASONS: readonly string[] = [
+// The one list of error reasons: the type and the guard both read it.
+const BRIDGE_ERROR_REASONS = [
   "forbidden_origin",
   "bad_request",
   "logged_out",
   "not_found",
   "unavailable",
-];
+] as const;
+
+export type BridgeErrorReason = (typeof BRIDGE_ERROR_REASONS)[number];
+
+export type BridgeResponse =
+  | { type: "pong"; version: number }
+  | { type: "league"; payload: BridgeLeaguePayload }
+  | { type: "error"; reason: BridgeErrorReason };
 
 const LEAGUE_ID_PATTERN = /^\d{1,9}$/;
 
@@ -56,9 +52,5 @@ export const isBridgeResponse = (value: unknown): value is BridgeResponse => {
   if (!isRecord(value)) return false;
   if (value.type === "pong") return typeof value.version === "number";
   if (value.type === "league") return isBridgeLeaguePayload(value.payload);
-  return (
-    value.type === "error" &&
-    typeof value.reason === "string" &&
-    ERROR_REASONS.includes(value.reason)
-  );
+  return value.type === "error" && BRIDGE_ERROR_REASONS.some((reason) => reason === value.reason);
 };

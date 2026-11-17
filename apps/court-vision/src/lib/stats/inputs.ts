@@ -17,27 +17,32 @@ export type PlayerInput = {
   draftNumber?: number | null;
 };
 
-export type SeasonStatsInput = {
-  playerId: number;
-  season: string;
-  seasonType: string;
-  gamesPlayed: number;
-  minutes: number;
-  fgm: number;
-  fga: number;
-  fg3m: number;
-  fg3a: number;
-  ftm: number;
-  fta: number;
-  oreb: number;
-  dreb: number;
-  reb: number;
-  ast: number;
-  stl: number;
-  blk: number;
-  tov: number;
-  pts: number;
-};
+// The box-score fields a season line sums from its game logs, in one list: the
+// season-stats row, the stored logs the nightly sync re-reads, and the
+// aggregation all derive their shape from it.
+export const SEASON_SUM_KEYS = [
+  "minutes",
+  "fgm",
+  "fga",
+  "fg3m",
+  "fg3a",
+  "ftm",
+  "fta",
+  "oreb",
+  "dreb",
+  "reb",
+  "ast",
+  "stl",
+  "blk",
+  "tov",
+  "pts",
+] as const;
+
+export type SeasonSumKey = (typeof SEASON_SUM_KEYS)[number];
+
+type SeasonScope = { playerId: number; season: string; seasonType: string };
+
+export type SeasonStatsInput = SeasonScope & { gamesPlayed: number } & Record<SeasonSumKey, number>;
 
 export type AdvancedGameLogInput = {
   playerId: number;
@@ -99,24 +104,4 @@ export type GameLogInput = {
 // The fields a season line is summed from. Both a fresh GameLogInput and a
 // PlayerGameLog row read back from the database fit it, so the nightly sync
 // can re-aggregate a player's season from stored logs.
-export type SeasonAggregateLog = Pick<
-  GameLogInput,
-  | "playerId"
-  | "season"
-  | "seasonType"
-  | "minutes"
-  | "fgm"
-  | "fga"
-  | "fg3m"
-  | "fg3a"
-  | "ftm"
-  | "fta"
-  | "oreb"
-  | "dreb"
-  | "reb"
-  | "ast"
-  | "stl"
-  | "blk"
-  | "tov"
-  | "pts"
->;
+export type SeasonAggregateLog = Pick<GameLogInput, keyof SeasonScope | SeasonSumKey>;

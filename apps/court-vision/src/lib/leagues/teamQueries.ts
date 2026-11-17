@@ -2,6 +2,8 @@ import { getActiveLeagueRecord } from "@/lib/leagues/queries";
 import { rowsToTeamSlots } from "@/lib/leagues/teams";
 import { type LeagueOwner, type LeaguePosition } from "@/lib/leagues/rosteredStore";
 import { type FantasyTeam } from "@/lib/fantasyTeams/types";
+import { isImportedProvider } from "@/lib/leagues/types";
+import { PLAYER_IDENTITY_SELECT } from "@/lib/players/identity";
 import { prisma } from "@/lib/prisma";
 
 // `include` returns every scalar column of the team and its slots, so the
@@ -11,17 +13,7 @@ export const TEAM_INCLUDE = {
   slots: {
     orderBy: { position: "asc" },
     include: {
-      player: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          fullName: true,
-          teamAbbr: true,
-          position: true,
-          nbaPersonId: true,
-        },
-      },
+      player: { select: PLAYER_IDENTITY_SELECT },
     },
   },
 } as const;
@@ -52,13 +44,6 @@ type TeamWithSlots = {
 // The two league columns that decide whose team this is and whether it can
 // be edited.
 type TeamLeague = { provider: string; myTeamId: string | null };
-
-// Tests the raw column so a provider this build doesn't know fails closed,
-// matching the `provider: "manual"` filters on the team write paths.
-type IsImportedLeagueProps = { league: TeamLeague };
-
-const isImportedLeague = ({ league }: IsImportedLeagueProps): boolean =>
-  league.provider !== "manual";
 
 // DB row → RSC-boundary-safe FantasyTeam. Player.id (the NBA player id) maps
 // onto FantasyTeamPlayer.playerId here.
@@ -117,7 +102,7 @@ export const getLeagueTeams = async ({ leagueId }: GetLeagueTeamsProps): Promise
     },
   });
   if (league === null) return [];
-  const isImported = isImportedLeague({ league });
+  const isImported = isImportedProvider({ provider: league.provider });
   const teams = league.teams.map((team) =>
     toFantasyTeam({ team, isMine: team.id === league.myTeamId, isImported }),
   );
@@ -141,7 +126,7 @@ export const getLeagueTeamBySlug = async ({
   return toFantasyTeam({
     team,
     isMine: team.id === team.league.myTeamId,
-    isImported: isImportedLeague({ league: team.league }),
+    isImported: isImportedProvider({ provider: team.league.provider }),
   });
 };
 
@@ -155,7 +140,7 @@ type RosterScope = { team: { leagueId: string } } | { teamId: string; team: { le
 type RosterScopeProps = { league: TeamLeague & { id: string } };
 
 const rosterScope = ({ league }: RosterScopeProps): RosterScope | null => {
-  if (!isImportedLeague({ league })) return { team: { leagueId: league.id } };
+  if (!isImportedProvider({ provider: league.provider })) return { team: { leagueId: league.id } };
   return league.myTeamId === null
     ? null
     : { teamId: league.myTeamId, team: { leagueId: league.id } };
@@ -185,7 +170,7 @@ export const getRosteredPlayerIds = async (): Promise<number[]> => {
 // agent.
 export const getLeagueOwners = async (): Promise<LeagueOwner[] | null> => {
   const league = await getActiveLeagueRecord();
-  if (league === null || !isImportedLeague({ league })) return null;
+  if (league === null || !isImportedProvider({ provider: league.provider })) return null;
   const slots = await prisma.leagueTeamSlot.findMany({
     where: { team: { leagueId: league.id }, playerId: { not: null } },
     select: { playerId: true, team: { select: { id: true, name: true } } },
@@ -202,7 +187,7 @@ export const getLeagueOwners = async (): Promise<LeagueOwner[] | null> => {
 // Yahoo. Empty for a hand-built league, which has no host.
 export const getLeaguePositions = async (): Promise<LeaguePosition[]> => {
   const league = await getActiveLeagueRecord();
-  if (league === null || !isImportedLeague({ league })) return [];
+  if (league === null || !isImportedProvider({ provider: league.provider })) return [];
   const where = { displayPosition: { not: null }, playerId: { not: null } } as const;
   const [slots, waivers] = await Promise.all([
     prisma.leagueTeamSlot.findMany({

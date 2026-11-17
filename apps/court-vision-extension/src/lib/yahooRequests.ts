@@ -1,14 +1,17 @@
 import type { FetchImpl } from "@vision/core/util/fetchImpl";
+import { isRecord } from "@vision/core/util/record";
 import {
   YAHOO_API_BASE_URL,
   YAHOO_MAX_WAIVER_PAGES,
   YAHOO_PAGE_SIZE,
 } from "@vision/yahoo-bridge/constants";
-import type { BridgeLeaguePayload } from "@vision/yahoo-bridge/protocol";
+import type { BridgeErrorReason, BridgeResponse } from "@vision/yahoo-bridge/protocol";
 
+// The answers a league read can give: the bridge's own league and error
+// shapes, minus the reasons only the message handler decides.
 export type LeagueFetchResult =
-  | { type: "league"; payload: BridgeLeaguePayload }
-  | { type: "error"; reason: "logged_out" | "not_found" | "unavailable" };
+  | Extract<BridgeResponse, { type: "league" }>
+  | { type: "error"; reason: Exclude<BridgeErrorReason, "forbidden_origin" | "bad_request"> };
 
 type LeagueFetchError = Extract<LeagueFetchResult, { type: "error" }>;
 
@@ -127,12 +130,8 @@ const probeYahoo = ({ path, fetchImpl, deadline }: ProbeYahooProps): Promise<Pro
 type PlayerCountProps = { page: unknown };
 
 const playerCount = ({ page }: PlayerCountProps): number => {
-  if (typeof page !== "object" || page === null || !("fantasy_content" in page)) return 0;
-  const content = page.fantasy_content;
-  if (typeof content !== "object" || content === null || !("league" in content)) return 0;
-  const league = content.league;
-  if (typeof league !== "object" || league === null || !("players" in league)) return 0;
-  return Array.isArray(league.players) ? league.players.length : 0;
+  const league = isRecord(page) && isRecord(page.fantasy_content) && page.fantasy_content.league;
+  return isRecord(league) && Array.isArray(league.players) ? league.players.length : 0;
 };
 
 // The waiver list a page at a time, until a short page or the page cap.

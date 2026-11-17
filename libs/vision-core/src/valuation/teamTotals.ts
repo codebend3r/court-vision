@@ -4,7 +4,7 @@ import {
   type SportDescriptor,
   type SportKeys,
 } from "#core/sport/types";
-import { categoryDef } from "#core/valuation/categories";
+import { categoryDef, perBasis } from "#core/valuation/categories";
 import { type ValuationLine } from "#core/valuation/types";
 
 export type TeamCategoryTotal<K extends SportKeys> = {
@@ -15,10 +15,6 @@ export type TeamCategoryTotal<K extends SportKeys> = {
   // player rates. Zero volume reads 0, never NaN.
   value: number;
 };
-
-type PerGameProps = { total: number; gamesPlayed: number };
-
-const perGame = ({ total, gamesPlayed }: PerGameProps): number => total / gamesPlayed;
 
 // A roster's weekly-style category line: what the team posts in a typical game
 // when everyone on `lines` plays. Players with no games add nothing.
@@ -34,7 +30,9 @@ export const teamCategoryTotals = <K extends SportKeys>({
   const played = lines.filter((line) => line.gamesPlayed > 0);
   const sumPerGame = (stat: K["valued"]): number =>
     played.reduce(
-      (sum, line) => sum + perGame({ total: line.stats[stat], gamesPlayed: line.gamesPlayed }),
+      (sum, line) =>
+        sum +
+        perBasis({ total: line.stats[stat], gamesPlayed: line.gamesPlayed, basis: "perGame" }),
       0,
     );
   return sport.categoryOrder.map((category): TeamCategoryTotal<K> => {

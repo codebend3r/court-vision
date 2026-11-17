@@ -134,6 +134,16 @@ const DEFAULT_METHODS: { readonly [M in FantasyMethodKey]: FantasyMethodMeta & {
 
 const METHOD_LIST: readonly FantasyMethodMeta[] = Object.values(DEFAULT_METHODS);
 
+// The registry entry whose score field or sort key is `value`. The lookup
+// tables below are built from the registry's own keys, so a miss is a bug.
+type RegistryMethodProps = { field: "valueKey" | "sortKey"; value: string };
+
+const registryMethod = ({ field, value }: RegistryMethodProps): FantasyMethodMeta => {
+  const method = METHOD_LIST.find((entry) => entry[field] === value);
+  if (method === undefined) throw new Error(`No registry method has ${field} "${value}"`);
+  return method;
+};
+
 // The sport's methods in registry order, with its own wording laid over the
 // defaults.
 type FantasyMethodsProps<K extends SportKeys> = {
@@ -165,11 +175,7 @@ export const METHOD_VALUE_KEYS: readonly MethodValueKey[] = METHOD_LIST.map(
 // labels a method exactly as the table does.
 export const LABEL_BY_VALUE_KEY: Record<MethodValueKey, string> = recordFromKeys({
   keys: METHOD_VALUE_KEYS,
-  value: (valueKey) => {
-    const method = METHOD_LIST.find((entry) => entry.valueKey === valueKey);
-    if (method === undefined) throw new Error(`No registry method scores "${valueKey}"`);
-    return method.label;
-  },
+  value: (valueKey) => registryMethod({ field: "valueKey", value: valueKey }).label,
 });
 
 // Registry key → the sort key its column answers to (`positional` → `pos`):
@@ -183,11 +189,7 @@ export const SORT_KEY_BY_METHOD: Record<FantasyMethodKey, MethodSortKey> = recor
 // `positional`): what a list sorted by a method column compares.
 export const VALUE_KEY_BY_SORT: Record<MethodSortKey, MethodValueKey> = recordFromKeys({
   keys: METHOD_LIST.map((method) => method.sortKey),
-  value: (sortKey) => {
-    const method = METHOD_LIST.find((entry) => entry.sortKey === sortKey);
-    if (method === undefined) throw new Error(`No registry method sorts by "${sortKey}"`);
-    return method.valueKey;
-  },
+  value: (sortKey) => registryMethod({ field: "sortKey", value: sortKey }).valueKey,
 });
 
 // Every weight set belongs to one method column (spec: per-column weights).
@@ -207,9 +209,5 @@ export const isWeightedMethodKey = (value: string | undefined): value is Weighte
 // column it is editing with the same label the table header uses.
 export const METHOD_KEY_BY_WEIGHTED: Record<WeightedMethodKey, FantasyMethodKey> = recordFromKeys({
   keys: WEIGHTED_METHOD_KEYS,
-  value: (sortKey) => {
-    const method = METHOD_LIST.find((entry) => entry.sortKey === sortKey);
-    if (method === undefined) throw new Error(`No registry method sorts by "${sortKey}"`);
-    return method.key;
-  },
+  value: (sortKey) => registryMethod({ field: "sortKey", value: sortKey }).key,
 });

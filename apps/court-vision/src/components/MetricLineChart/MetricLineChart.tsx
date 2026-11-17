@@ -11,14 +11,19 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-  type TooltipPayload,
 } from "recharts";
 
 import { isMetricPoint, type MetricPoint } from "@vision/core/series/metricPoint";
 import { AVERAGE_LINE_STYLE } from "@/lib/charts/averageLine";
 import { CHART_CHROME, chartAxisProps, chartLineProps } from "@vision/ui/charts/palette";
 import { endLabel, lastPlottedIndex } from "@/components/ChartEndLabel/ChartEndLabel";
-import { SeriesTooltip } from "@/components/SeriesTooltip/SeriesTooltip";
+import {
+  DNP_STATUS,
+  formatGameDate,
+  hoveredRow,
+  SeriesTooltip,
+  type InjectedTooltipProps,
+} from "@/components/SeriesTooltip/SeriesTooltip";
 import { TeamMatchup } from "@/components/TeamMatchup/TeamMatchup";
 
 import styles from "@/components/MetricLineChart/MetricLineChart.module.scss";
@@ -55,12 +60,6 @@ export type MetricLineChartProps<K extends string> = {
   height?: number;
 };
 
-// `gameDate` is stored as a UTC-midnight ISO string. Formatting it in the
-// viewer's local timezone can shift the displayed date back a day for any
-// timezone west of UTC, so the date is always rendered in UTC.
-const formatDate = (isoDate: string): string =>
-  new Date(isoDate).toLocaleDateString(undefined, { timeZone: "UTC" });
-
 type DnpMarkerProps = {
   viewBox?: { x?: number; y?: number; height?: number };
 };
@@ -83,12 +82,7 @@ function DnpMarker({ viewBox }: DnpMarkerProps): ReactElement | null {
   );
 }
 
-// Recharts clones `content` (see ContentType in its Tooltip types) and injects
-// `active`/`payload` at render time — they are never supplied at JSX-authoring
-// time here, so they must stay optional on this component's own prop type.
-type MetricTooltipProps<K extends string> = {
-  active?: boolean;
-  payload?: TooltipPayload;
+type MetricTooltipProps<K extends string> = InjectedTooltipProps & {
   metas: readonly MetricMeta<K>[];
   series: readonly MetricSeriesPoint<K>[];
   formatValue: (args: FormatValueProps<K>) => string;
@@ -101,13 +95,9 @@ function MetricTooltip<K extends string>({
   series,
   formatValue,
 }: MetricTooltipProps<K>): ReactElement | null {
-  if (!active || !payload || !payload.length) {
-    return null;
-  }
-
   // The hovered payload is untyped; the typed point is looked up by its game
   // index so every metric read below is a real key of the series.
-  const hovered: unknown = payload[0].payload;
+  const hovered = hoveredRow({ active, payload });
   if (!isMetricPoint(hovered)) {
     return null;
   }
@@ -120,7 +110,7 @@ function MetricTooltip<K extends string>({
     <SeriesTooltip
       header={
         <>
-          Game {point.gameIndex} · {formatDate(point.gameDate)} ·{" "}
+          Game {point.gameIndex} · {formatGameDate(point.gameDate)} ·{" "}
           <TeamMatchup matchup={point.matchup} size="sm" /> {point.winLoss ?? ""}
         </>
       }
@@ -133,7 +123,7 @@ function MetricTooltip<K extends string>({
           value: value === null ? "—" : formatValue({ key: meta.key, value }),
         };
       })}
-      status={point.dnp ? "DNP / DNP-CD (0 MIN)" : undefined}
+      status={point.dnp ? DNP_STATUS : undefined}
     />
   );
 }

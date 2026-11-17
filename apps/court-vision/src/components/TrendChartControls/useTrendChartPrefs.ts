@@ -2,6 +2,8 @@
 
 import { parseAsArrayOf, parseAsBoolean, parseAsStringLiteral, useQueryState } from "nuqs";
 
+import { visibleMethods } from "@/lib/charts/trendMethods";
+import { type DatedMethodValues } from "@vision/core/valuation/leagueAverage";
 import { METHOD_VALUE_KEYS } from "@vision/core/valuation/registry";
 import { type MethodValueKey } from "@vision/core/valuation/types";
 
@@ -31,3 +33,39 @@ export const useTrendChartPrefs = (): TrendChartPrefs => {
     setShowAverage: (next) => void setShowAverage(next),
   };
 };
+
+// The league's average on every method, by game date (epoch ms).
+export type AverageByDate = ReadonlyMap<number, DatedMethodValues["values"]>;
+
+export type TrendChartView = {
+  // The method charts left showing; never empty.
+  keys: MethodValueKey[];
+  // Null while the average line is hidden or before the league has a
+  // reading, so no line is drawn at all.
+  averageByDate: AverageByDate | null;
+};
+
+// What a rolling chart draws under the shared settings.
+type UseTrendChartViewProps = { averages: readonly DatedMethodValues[] };
+
+export const useTrendChartView = ({ averages }: UseTrendChartViewProps): TrendChartView => {
+  const { hidden, showAverage } = useTrendChartPrefs();
+  return {
+    keys: visibleMethods({ hidden }),
+    averageByDate:
+      showAverage && !!averages.length
+        ? new Map(averages.map(({ date, values }) => [date, values]))
+        : null,
+  };
+};
+
+// The league's average on one method for one game date, or null when there is
+// no line to draw or no reading that day.
+type AverageOnProps = {
+  averageByDate: AverageByDate | null;
+  gameDate: string;
+  key: MethodValueKey;
+};
+
+export const averageOn = ({ averageByDate, gameDate, key }: AverageOnProps): number | null =>
+  averageByDate?.get(Date.parse(gameDate))?.[key] ?? null;

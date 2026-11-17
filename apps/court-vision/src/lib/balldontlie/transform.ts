@@ -2,11 +2,13 @@ import {
   AdvancedGameLogInput,
   GameLogInput,
   PlayerInput,
+  SEASON_SUM_KEYS,
   SeasonAggregateLog,
   SeasonStatsInput,
 } from "@/lib/stats/inputs";
 import { SEASON_TYPE, seasonLabel } from "@/lib/stats/season";
 import { blankToNull, parseGameDate, parseMinutes } from "@vision/core/util/parse";
+import { recordFromKeys } from "@vision/core/util/record";
 
 import { BdlAdvancedStat, BdlGame, BdlPlayer, BdlStat } from "@/lib/balldontlie/schemas";
 
@@ -159,42 +161,14 @@ export const aggregateSeasonStats = ({ logs }: AggregateSeasonStatsProps): Seaso
       season: log.season,
       seasonType: log.seasonType,
       gamesPlayed: 0,
-      minutes: 0,
-      fgm: 0,
-      fga: 0,
-      fg3m: 0,
-      fg3a: 0,
-      ftm: 0,
-      fta: 0,
-      oreb: 0,
-      dreb: 0,
-      reb: 0,
-      ast: 0,
-      stl: 0,
-      blk: 0,
-      tov: 0,
-      pts: 0,
+      ...recordFromKeys({ keys: SEASON_SUM_KEYS, value: () => 0 }),
     };
     acc.set(key, {
       ...current,
       // Games played counts appearances only; a DNP (0 minutes) is on the
       // roster but did not play, so it must not inflate the count.
       gamesPlayed: current.gamesPlayed + (log.minutes > 0 ? 1 : 0),
-      minutes: current.minutes + log.minutes,
-      fgm: current.fgm + log.fgm,
-      fga: current.fga + log.fga,
-      fg3m: current.fg3m + log.fg3m,
-      fg3a: current.fg3a + log.fg3a,
-      ftm: current.ftm + log.ftm,
-      fta: current.fta + log.fta,
-      oreb: current.oreb + log.oreb,
-      dreb: current.dreb + log.dreb,
-      reb: current.reb + log.reb,
-      ast: current.ast + log.ast,
-      stl: current.stl + log.stl,
-      blk: current.blk + log.blk,
-      tov: current.tov + log.tov,
-      pts: current.pts + log.pts,
+      ...recordFromKeys({ keys: SEASON_SUM_KEYS, value: (stat) => current[stat] + log[stat] }),
     });
     return acc;
   }, new Map<string, SeasonStatsInput>());

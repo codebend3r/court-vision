@@ -43,12 +43,6 @@
   font-size: var(--font-size-sm);
 }
 
-.gate {
-  display: grid;
-  justify-items: start;
-  gap: var(--space-3);
-}
-
 .message {
   margin: 0;
   color: var(--color-text);

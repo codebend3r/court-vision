@@ -12,11 +12,10 @@ type LoginPageProps = {
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const user = await getUser();
+  const [user, { next, error }] = await Promise.all([getUser(), searchParams]);
   if (user) {
     redirect("/");
   }
-  const { next, error } = await searchParams;
   // /auth/confirm redirects here with ?error=confirm when a link fails; without
   // this the user got a bare form and no explanation.
   const notice = isLoginNoticeCode(error) ? loginNoticeMessage(error) : null;

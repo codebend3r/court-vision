@@ -1,6 +1,6 @@
 import { type SportDescriptor, type SportKeys } from "#core/sport/types";
 import { recordFromKeys } from "#core/util/record";
-import { ratioDefs } from "#core/valuation/categories";
+import { ratioDefs, ratioKeys } from "#core/valuation/categories";
 import { type ValuationLine } from "#core/valuation/types";
 
 // One game's line as the engine reads it: playing time plus the valued stats.
@@ -28,7 +28,7 @@ const emptyTotals = <K extends SportKeys>({ sport }: EmptyTotalsProps<K>): Windo
   playingTime: 0,
   stats: recordFromKeys({ keys: sport.valuedStats, value: () => 0 }),
   sq: recordFromKeys({ keys: sport.valuedStats, value: () => 0 }),
-  cross: recordFromKeys({ keys: ratioDefs({ sport }).map((def) => def.key), value: () => 0 }),
+  cross: recordFromKeys({ keys: ratioKeys({ sport }), value: () => 0 }),
 });
 
 // Collapses a game-log window into one stat line. The second moments (sums of

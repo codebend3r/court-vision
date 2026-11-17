@@ -30,7 +30,7 @@ import {
   type YahooPreviewResult,
   type YahooPreviewTeam,
 } from "@/lib/yahoo/types";
-import { parseYahooLeagueUrl } from "@/lib/yahoo/url";
+import { parseYahooLeagueId } from "@/lib/yahoo/url";
 
 import styles from "@/components/YahooImportForm/YahooImportForm.module.scss";
 
@@ -73,23 +73,12 @@ const failureMessage = ({ failure }: FailureMessageProps): string => {
 };
 
 // An action that throws (the network dropped) reads as the generic failure.
-type PreviewOrErrorProps = { url: string };
+type OrErrorProps<Result> = { request: Promise<Result> };
 
-const previewOrError = ({ url }: PreviewOrErrorProps): Promise<YahooPreviewResult> =>
-  previewYahooLeague({ url }).catch((): YahooPreviewResult => ({ status: "error" }));
-
-type ImportOrErrorProps = {
-  url: string;
-  myTeamExternalKey: string;
-};
-
-const importOrError = ({
-  url,
-  myTeamExternalKey,
-}: ImportOrErrorProps): Promise<YahooImportResult> =>
-  importYahooLeague({ url, myTeamExternalKey }).catch((): YahooImportResult => ({
-    status: "error",
-  }));
+const orError = <Result,>({
+  request,
+}: OrErrorProps<Result>): Promise<Result | { status: "error" }> =>
+  request.catch((): { status: "error" } => ({ status: "error" }));
 
 // The extension path parses the URL in the browser, then asks the extension to
 // read the league. Every failure here reads as one of the form's messages.
@@ -104,9 +93,8 @@ const fetchThroughExtension = async ({
 }: FetchThroughExtensionProps): Promise<
   { status: "ok"; payload: BridgeLeaguePayload } | Failure
 > => {
-  const parsed = parseYahooLeagueUrl({ input: url });
-  if (parsed.status === "invalid") return { status: "invalid_url" };
-  if (parsed.status !== "ok") return { status: parsed.status };
+  const parsed = parseYahooLeagueId({ input: url });
+  if (parsed.status !== "ok") return parsed;
   if (extensionId === null) return { status: "bridge", reason: "missing" };
   const fetched = await fetchLeagueViaExtension({ extensionId, leagueId: parsed.leagueId });
   if (fetched.status === "ok") return fetched;
@@ -124,9 +112,7 @@ const previewThroughExtension = async ({
 }: PreviewThroughExtensionProps): Promise<YahooPreviewResult | Failure> => {
   const fetched = await fetchThroughExtension({ extensionId, url });
   if (fetched.status !== "ok") return fetched;
-  return previewYahooSnapshot({ payload: fetched.payload }).catch((): YahooPreviewResult => ({
-    status: "error",
-  }));
+  return orError({ request: previewYahooSnapshot({ payload: fetched.payload }) });
 };
 
 // Reads the league through the extension again, so the import stores Yahoo's
@@ -145,9 +131,9 @@ const importThroughExtension = async ({
 }: ImportThroughExtensionProps): Promise<YahooImportResult | Failure> => {
   const fetched = await fetchThroughExtension({ extensionId, url });
   if (fetched.status !== "ok") return fetched;
-  return importYahooLeagueFromSnapshot({ payload: fetched.payload, myTeamExternalKey }).catch(
-    (): YahooImportResult => ({ status: "error" }),
-  );
+  return orError({
+    request: importYahooLeagueFromSnapshot({ payload: fetched.payload, myTeamExternalKey }),
+  });
 };
 
 type TeamDetailsProps = { team: YahooPreviewTeam };
@@ -250,7 +236,7 @@ export function YahooImportForm() {
     setFailure(null);
     setPendingMode("server");
     startTransition(async () => {
-      const result = await previewOrError({ url: submitted });
+      const result = await orError({ request: previewYahooLeague({ url: submitted }) });
       startTransition(() => {
         if (result.status === "not_found") {
           setFailure({ status: "server_not_found", url: submitted });
@@ -300,7 +286,7 @@ export function YahooImportForm() {
     startTransition(async () => {
       const result = viaExtension
         ? await importThroughExtension({ extensionId, url: leagueUrl, myTeamExternalKey })
-        : await importOrError({ url: leagueUrl, myTeamExternalKey });
+        : await orError({ request: importYahooLeague({ url: leagueUrl, myTeamExternalKey }) });
       if (result.status !== "ok") {
         startTransition(() => setFailure(result));
         return;

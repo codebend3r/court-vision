@@ -13,6 +13,7 @@ import {
   type ValueColors,
 } from "@/components/PlayerFantasyChart/labels";
 import { type MethodValueKey } from "@vision/core/valuation/types";
+import { SeriesLegend } from "@/components/SeriesChart/SeriesLegend";
 import { SortButton } from "@/components/SortButton/SortButton";
 import { StarButton } from "@/components/StarButton/StarButton";
 import { TeamChip } from "@/components/TeamChip/TeamChip";
@@ -85,18 +86,9 @@ export function FantasyChartList<Row extends FantasyTableRow>({
       <header className={styles.caption}>
         <p className={styles.hint}>{hint}</p>
         {!!legend.length && (
-          <ul className={styles.legend} aria-label="Series">
-            {legend.map((key) => (
-              <li key={key} className={styles.legendItem}>
-                <span
-                  className={styles.swatch}
-                  style={{ backgroundColor: colors[key] }}
-                  aria-hidden="true"
-                />
-                {VALUE_LABELS[key]}
-              </li>
-            ))}
-          </ul>
+          <SeriesLegend
+            entries={legend.map((key) => ({ key, label: VALUE_LABELS[key], color: colors[key] }))}
+          />
         )}
         {!!controls && <div className={styles.controls}>{controls}</div>}
       </header>

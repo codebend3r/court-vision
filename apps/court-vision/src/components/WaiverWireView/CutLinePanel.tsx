@@ -3,7 +3,8 @@
 import { useState } from "react";
 
 import { SortHeader } from "@/components/SortHeader/SortHeader";
-import { NoStatsDisclosure } from "@/components/WaiverWireView/SwapBoardPanel";
+import { NoStatsDisclosure } from "@/components/WaiverWireView/NoStatsDisclosure";
+import { ROWS_SHOWN, ShowMoreButton } from "@/components/WaiverWireView/ShowMoreButton";
 import { WaiverPlayer } from "@/components/WaiverWireView/WaiverPlayer";
 import { type SortColumn } from "@/lib/tableSort";
 import { useColumnSort } from "@/lib/useColumnSort";
@@ -32,8 +33,6 @@ const OWNER_LABELS: Record<WaiverOwner, string> = {
 };
 
 type CutRow = Extract<CutLineEntry, { kind: "row" }>;
-
-const ROWS_SHOWN = 25;
 
 const CUT_COLUMNS: readonly SortColumn<CutRow>[] = [
   { key: "rank", firstDir: "asc", valueOf: ({ row }) => row.rank },
@@ -65,7 +64,9 @@ export type CutLinePanelProps = {
 };
 
 // "Show all (3 above, 7 below)", naming only the sides that hide rows.
-const showAllLabel = ({ hiddenAbove, hiddenBelow }: Omit<CutLine, "entries">): string => {
+type ShowAllLabelProps = Pick<CutLine, "hiddenAbove" | "hiddenBelow">;
+
+const showAllLabel = ({ hiddenAbove, hiddenBelow }: ShowAllLabelProps): string => {
   const sides = [
     { count: hiddenAbove, side: "above" },
     { count: hiddenBelow, side: "below" },
@@ -76,7 +77,7 @@ const showAllLabel = ({ hiddenAbove, hiddenBelow }: Omit<CutLine, "entries">): s
 };
 
 // My rows carry the leading bar; free agents above the line are the upgrades.
-type RowClassNameProps = { entry: Extract<CutLineEntry, { kind: "row" }> };
+type RowClassNameProps = { entry: CutRow };
 
 const rowClassName = ({ entry }: RowClassNameProps) => {
   if (entry.row.owner === "mine") return styles.mine;
@@ -199,13 +200,10 @@ export function CutLinePanel({
         </button>
       )}
       {moreRows > 0 && (
-        <button
-          type="button"
-          className={styles.keycap}
-          onClick={() => setShown((current) => current + ROWS_SHOWN)}
-        >
-          Show {Math.min(ROWS_SHOWN, moreRows)} more ({moreRows} left)
-        </button>
+        <ShowMoreButton
+          remaining={moreRows}
+          onMore={() => setShown((current) => current + ROWS_SHOWN)}
+        />
       )}
       {noStats.length > 0 && <NoStatsDisclosure entries={noStats} compareHintId={compareHintId} />}
     </div>

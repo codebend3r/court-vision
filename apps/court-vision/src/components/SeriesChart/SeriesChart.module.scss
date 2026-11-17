@@ -51,3 +51,27 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-sm);
+}
+
+.legendItem {
+  display: grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.legendSwatch {
+  display: block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: var(--radius-sm);
+}

@@ -5,7 +5,7 @@ import {
   type SportKeys,
 } from "#core/sport/types";
 import { recordFromKeys } from "#core/util/record";
-import { categoryDef, categoryValue, perBasis, ratioDefs } from "#core/valuation/categories";
+import { categoryDef, categoryValue, perBasis, ratioKeys } from "#core/valuation/categories";
 import { scoreZScore } from "#core/valuation/methods/zscore";
 import { byTotalDescending } from "#core/valuation/rank";
 import {
@@ -27,9 +27,8 @@ export const leagueRates = <K extends SportKeys>({
   sport,
   lines,
 }: LeagueRatesProps<K>): Record<K["ratio"], number> => {
-  const defs = ratioDefs({ sport });
   return recordFromKeys({
-    keys: defs.map((def) => def.key),
+    keys: ratioKeys({ sport }),
     value: (key) => {
       const def = sport.ratio[key];
       const totals = lines.reduce(

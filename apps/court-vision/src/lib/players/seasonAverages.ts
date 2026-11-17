@@ -9,7 +9,13 @@ import {
 } from "@vision/core/series/leaders";
 import { recordFromKeys } from "@vision/core/util/record";
 
-import { MIN_FG3M, MIN_FGM, MIN_FTM } from "@/lib/players/minimums";
+import {
+  MIN_FG3M,
+  MIN_FGM,
+  MIN_FTM,
+  QUALIFYING_GAMES_SHARE,
+  SCHEDULE_GAMES,
+} from "@/lib/players/minimums";
 
 // Every summable total on a season row.
 const SEASON_TOTAL_KEYS = [
@@ -48,8 +54,6 @@ const MIN_GAMES = 20;
 // busiest player has played instead: games need 70% of that (capped at
 // MIN_GAMES), and made volume is the full-season figure times the share of a
 // season played. A full season gives the full floors.
-const SEASON_GAMES = 82;
-const QUALIFYING_GAMES_SHARE = 0.7;
 
 export type QualifyingFloors = { games: number; fgm: number; fg3m: number; ftm: number };
 
@@ -59,7 +63,7 @@ type QualifyingFloorsProps = {
 
 export const qualifyingFloors = ({ rows }: QualifyingFloorsProps): QualifyingFloors => {
   const mostGames = rows.reduce((most, row) => Math.max(most, row.gamesPlayed), 0);
-  const progress = Math.min(1, mostGames / SEASON_GAMES);
+  const progress = Math.min(1, mostGames / SCHEDULE_GAMES);
   const scaled = (full: number): number => Math.max(1, Math.ceil(full * progress));
   return {
     games: Math.max(1, Math.min(MIN_GAMES, Math.ceil(mostGames * QUALIFYING_GAMES_SHARE))),

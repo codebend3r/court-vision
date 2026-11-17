@@ -4,18 +4,14 @@ import { isMainModule } from "@vision/core/util/runtime";
 import { formatLeagueMeta } from "@/lib/leagues/format";
 import { loadYahooLeague, readCurrentGameUncached } from "@/lib/yahoo/load";
 import { resolveYahooPlayers } from "@/lib/yahoo/matchPlayers";
+import { rosteredPlayers } from "@/lib/yahoo/transform";
 import { type ImportedTeam } from "@/lib/yahoo/types";
 import { parseYahooLeagueUrl } from "@/lib/yahoo/url";
-
-type RosterCountProps = { team: ImportedTeam };
-
-const rosterCount = ({ team }: RosterCountProps): number =>
-  team.slots.filter(({ player }) => !!player).length;
 
 type TeamLineProps = { team: ImportedTeam };
 
 const teamLine = ({ team }: TeamLineProps): string => {
-  const count = rosterCount({ team });
+  const count = rosteredPlayers({ team }).length;
   return `  ${team.name} (${team.managerName ?? "manager hidden"}): ${count} ${count === 1 ? "player" : "players"}`;
 };
 
@@ -59,9 +55,7 @@ export const probeYahooLeague = async ({
   }
   league.teams.forEach((team) => logger(teamLine({ team })));
 
-  const rosterRefs = league.teams.flatMap((team) =>
-    team.slots.flatMap(({ player }) => (player ? [player] : [])),
-  );
+  const rosterRefs = league.teams.flatMap((team) => rosteredPlayers({ team }));
   const { byYahooId, unmatched } = await resolveYahooPlayers({
     refs: [...rosterRefs, ...waiverRefs],
     writeMappings: false,

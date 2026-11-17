@@ -5,14 +5,19 @@ import { getProfile } from "@/lib/auth/session";
 import { DEFAULT_LEAGUE_NAME, DEFAULT_LEAGUE_SLUG } from "@vision/core/league/constants";
 import { isLeagueScoringType } from "@vision/core/league/scoring";
 import { defaultScoringConfig, parseScoringConfig } from "@vision/sport-basketball/engine";
-import { type LeagueSummary, toLeagueProvider, toLeagueSyncVia } from "@/lib/leagues/types";
+import {
+  isImportedProvider,
+  type LeagueSummary,
+  toLeagueProvider,
+  toLeagueSyncVia,
+} from "@/lib/leagues/types";
 import { prisma } from "@/lib/prisma";
 import { lockProfile } from "@/lib/leagues/locks";
 
 // A stored scoringType predates a rename or was tampered with → treat the
 // league as h2h_categories rather than crash. An unknown provider likewise
 // displays as "manual", but `isImported` tests the raw column so it stays
-// locked.
+// locked (see isImportedProvider).
 type ToLeagueSummaryProps = { league: League };
 
 export const toLeagueSummary = ({ league }: ToLeagueSummaryProps): LeagueSummary => {
@@ -29,7 +34,7 @@ export const toLeagueSummary = ({ league }: ToLeagueSummaryProps): LeagueSummary
     scoringConfig: parseScoringConfig({ scoringType, value: league.scoringConfig }),
     provider: toLeagueProvider({ value: league.provider }),
     syncVia: toLeagueSyncVia({ value: league.syncVia }),
-    isImported: league.provider !== "manual",
+    isImported: isImportedProvider({ provider: league.provider }),
     externalUrl: league.externalUrl,
     myTeamId: league.myTeamId,
     syncedAt: league.syncedAt?.toISOString() ?? null,
@@ -114,12 +119,6 @@ export const getActiveLeague = async (): Promise<LeagueSummary | null> => {
   return league === null ? null : toLeagueSummary({ league });
 };
 
-// Server-action entry point: guarantees a league exists and is active. Spread
-// the config into a fresh literal — Prisma's InputJsonValue needs an index
-// signature, which a fresh object literal satisfies without a cast. Accepts
-// an already-resolved profile so a caller that resolved it for another
-// reason (e.g. to stamp profileId on rows it's about to write) doesn't pay
-// for a second session lookup.
 // Points the profile's activeLeagueId at `league` if it isn't already there,
 // then summarizes. Both the existing-league and creation paths hold the same
 // profile lock, so activation cannot overwrite another concurrent selection.
@@ -143,6 +142,12 @@ const activateAndSummarize = async ({
   return toLeagueSummary({ league });
 };
 
+// Server-action entry point: guarantees a league exists and is active. Spread
+// the config into a fresh literal — Prisma's InputJsonValue needs an index
+// signature, which a fresh object literal satisfies without a cast. Accepts
+// an already-resolved profile so a caller that resolved it for another
+// reason (e.g. to stamp profileId on rows it's about to write) doesn't pay
+// for a second session lookup.
 type EnsureDefaultLeagueProps = { profile?: Profile; expectedLeagueId?: string | null };
 
 export const ensureDefaultLeague = async ({

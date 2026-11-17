@@ -1,30 +1,5 @@
 @use "@/styles/mixins" as *;
 
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--font-size-sm);
-}
-
-.legendItem {
-  display: grid;
-  grid-auto-flow: column;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-// The swatch carries series identity; the label keeps its own ink.
-.swatch {
-  display: block;
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: var(--radius-sm);
-}
-
 .panels {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));

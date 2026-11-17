@@ -1,6 +1,6 @@
 import { type Category, type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
 
-import { type BreakdownFor } from "@/lib/advisor/needs";
+import { type BreakdownFor } from "@/lib/waiverWire/swapBoard";
 import { type AdvisorOwner, type AdvisorPlayer } from "@/lib/advisor/types";
 
 type ScoreLine = Partial<Record<Category, number>>;

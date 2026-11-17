@@ -6,20 +6,23 @@ import { rankByKeys } from "@vision/core/series/ranking";
 import { type TeamGameResult } from "@vision/core/series/teamTrend";
 import { formatSigned } from "@vision/core/util/format";
 
-export type TeamBoxTotals = {
-  teamAbbr: string;
-  pts: number;
-  reb: number;
-  ast: number;
-  stl: number;
-  blk: number;
-  tov: number;
-  fg3m: number;
-  fgm: number;
-  fga: number;
-  ftm: number;
-  fta: number;
-};
+// The box-score columns summed per team: the loader's groupBy reads exactly
+// these, and the stats below derive from them.
+export const TEAM_BOX_KEYS = [
+  "pts",
+  "reb",
+  "ast",
+  "stl",
+  "blk",
+  "tov",
+  "fg3m",
+  "fgm",
+  "fga",
+  "ftm",
+  "fta",
+] as const;
+
+export type TeamBoxTotals = { teamAbbr: string } & Record<(typeof TEAM_BOX_KEYS)[number], number>;
 
 export type TeamSeasonStats = {
   abbr: string;

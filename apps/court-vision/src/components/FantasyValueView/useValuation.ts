@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { valuePlayers } from "@vision/sport-basketball/engine";
+import { buildCategoryBreakdown, valuePlayers } from "@vision/sport-basketball/engine";
 import {
   createValuationClient,
   type SettledValuation,
@@ -8,8 +8,9 @@ import {
   type ValuationPort,
 } from "@/lib/valuation/valuationClient";
 import { createValuationPort } from "@/lib/valuation/valuationPort";
+import { type FantasyStatLine } from "@/lib/valuation/types";
 import { type FantasyValuationJob } from "@/lib/valuation/workerProtocol";
-import { type PoolStats } from "@vision/sport-basketball/types";
+import { type FantasyCategoryBreakdown, type PoolStats } from "@vision/sport-basketball/types";
 import { type FantasyPlayerValues } from "@vision/core/valuation/types";
 
 const valueNow = (job: FantasyValuationJob): SettledValuation => ({ job, ...valuePlayers(job) });
@@ -78,3 +79,24 @@ export const useValuation = ({
 
   return { ...settled.job, values: settled.values, poolStats: settled.poolStats, isPending };
 };
+
+type LineBreakdownProps = { line: FantasyStatLine };
+
+export type LineBreakdown = (args: LineBreakdownProps) => FantasyCategoryBreakdown[];
+
+// Any line's category breakdown against the settled pool, config and weights,
+// so a breakdown always agrees with the values on screen. Stable until the
+// valuation settles anew.
+type UseLineBreakdownProps = Pick<Valuation, "poolStats" | "config" | "methodWeights">;
+
+export const useLineBreakdown = ({
+  poolStats,
+  config,
+  methodWeights,
+}: UseLineBreakdownProps): LineBreakdown =>
+  useMemo(
+    () =>
+      ({ line }: LineBreakdownProps) =>
+        buildCategoryBreakdown({ line, poolStats, config, methodWeights }),
+    [poolStats, config, methodWeights],
+  );

@@ -1,0 +1,36 @@
+@use "@/styles/mixins" as *;
+
+// The shell a league screen's gate renders in: the same page shell the ready
+// view and its loading skeleton use, so the header holds still.
+.page {
+  @include page-shell;
+}
+
+// A gate: why the screen can't show its league yet, and the one thing to do next.
+.status {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+}
+
+.message {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+}
+
+.external {
+  @include keycap;
+
+  &:hover {
+    text-decoration: none;
+  }
+
+  &:active {
+    @include keycap-press;
+  }
+}
+
+.srOnly {
+  @include visually-hidden;
+}

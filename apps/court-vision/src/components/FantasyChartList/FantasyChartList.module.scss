@@ -28,30 +28,6 @@
   font-size: var(--font-size-xs);
 }
 
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--font-size-sm);
-}
-
-.legendItem {
-  display: grid;
-  grid-auto-flow: column;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.swatch {
-  display: block;
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: var(--radius-sm);
-}
-
 // The box the rows live in. Unlike table-wrapper it never clips overflow: a
 // row's hover tooltip has to hang below its 48px chart, over the next rows.
 .wrapper {

@@ -6,7 +6,6 @@ import { LeagueTotalsTable } from "@/components/MatchupView/LeagueTotalsTable";
 import { MatchupPanel } from "@/components/MatchupView/MatchupPanel";
 import { StandingsSummary } from "@/components/MatchupView/StandingsSummary";
 import { MyTeamPicker } from "@/components/MyTeamPicker/MyTeamPicker";
-import { SyncYahooButton } from "@/components/SyncYahooButton/SyncYahooButton";
 import { getProfile } from "@/lib/auth/session";
 import { getActiveLeagueRecord, toLeagueSummary } from "@/lib/leagues/queries";
 import { getLeagueTeams } from "@/lib/leagues/teamQueries";
@@ -22,30 +21,41 @@ import { buildSeasonSummary, findMatchup, pickWeek } from "@/lib/matchups/season
 import { buildStandings } from "@/lib/matchups/standings";
 import { type LeagueWeek } from "@/lib/matchups/types";
 import { type RawSearchParams } from "@/lib/players/searchParams";
-import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
+import { PageHeader, type PageHeaderProps } from "@vision/ui/components/PageHeader/PageHeader";
 import { StatViewTabs } from "@vision/ui/components/StatViewTabs/StatViewTabs";
 
+import {
+  ImportFromYahooAction,
+  LeagueGate,
+  LeagueStatus,
+  LeagueSyncButton,
+  OpenInYahooLink,
+} from "@/app/_league/LeagueGate";
 import { MATCHUP_PAGE_HEADER } from "@/app/matchup/header";
 
 import styles from "@/app/matchup/matchup.module.scss";
 
 export const dynamic = "force-dynamic";
 
-const IMPORT_PATH = "/leagues/import";
+const STATUS_LABEL = "Matchup status";
 
-// Every state short of the week: the page's own header, then why there is no
-// matchup yet and what to do about it.
-type MatchupGateProps = { message: string; children?: ReactNode };
+// Every state short of the week: the page's own header (with `header`'s
+// overrides), then why there is no matchup yet and what to do about it.
+type MatchupGateProps = {
+  message: string;
+  header?: Partial<PageHeaderProps>;
+  children?: ReactNode;
+};
 
-function MatchupGate({ message, children }: MatchupGateProps) {
+function MatchupGate({ message, header, children }: MatchupGateProps) {
   return (
-    <main className={styles.page}>
-      <PageHeader {...MATCHUP_PAGE_HEADER} />
-      <section className={styles.gate} aria-label="Matchup status">
-        <p className={styles.message}>{message}</p>
-        {children}
-      </section>
-    </main>
+    <LeagueGate
+      header={{ ...MATCHUP_PAGE_HEADER, ...header }}
+      label={STATUS_LABEL}
+      message={message}
+    >
+      {children}
+    </LeagueGate>
   );
 }
 
@@ -68,7 +78,7 @@ export default async function MatchupPage({ searchParams }: MatchupPageProps) {
   if (record === null) {
     return (
       <MatchupGate message="No league yet. Import your Yahoo league to see this week's matchup.">
-        <PageAction href={IMPORT_PATH}>Import from Yahoo</PageAction>
+        <ImportFromYahooAction />
       </MatchupGate>
     );
   }
@@ -77,7 +87,7 @@ export default async function MatchupPage({ searchParams }: MatchupPageProps) {
   if (!league.isImported) {
     return (
       <MatchupGate message="Matchups need a league imported from Yahoo, so they know the schedule and every team's totals.">
-        <PageAction href={IMPORT_PATH}>Import from Yahoo</PageAction>
+        <ImportFromYahooAction />
       </MatchupGate>
     );
   }
@@ -103,31 +113,15 @@ export default async function MatchupPage({ searchParams }: MatchupPageProps) {
   ]);
   const week = pickWeek({ season, week: requestedWeek }) ?? null;
 
-  const syncButton = (
-    <SyncYahooButton
-      leagueId={league.id}
-      syncedAt={league.syncedAt}
-      syncError={league.syncError}
-      syncVia={league.syncVia}
-      externalUrl={league.externalUrl}
-      autoSyncWhenStale
-    />
-  );
-
   if (week === null) {
     return (
-      <main className={styles.page}>
-        <PageHeader
-          {...MATCHUP_PAGE_HEADER}
-          eyebrow={`${league.name} · Yahoo`}
-          actions={syncButton}
-        />
-        <section className={styles.gate} aria-label="Matchup status">
-          <p className={styles.message}>
-            No matchup data yet. Sync your league to load the week&apos;s scoreboard from Yahoo.
-          </p>
-        </section>
-      </main>
+      <MatchupGate
+        header={{
+          eyebrow: `${league.name} · Yahoo`,
+          actions: <LeagueSyncButton league={league} />,
+        }}
+        message="No matchup data yet. Sync your league to load the week's scoreboard from Yahoo."
+      />
     );
   }
 
@@ -149,20 +143,8 @@ export default async function MatchupPage({ searchParams }: MatchupPageProps) {
         }
         actions={
           <>
-            {syncButton}
-            {!!league.externalUrl && (
-              // The hidden note, read as the description, says the link
-              // leaves for a new tab.
-              <a
-                href={league.externalUrl}
-                target="_blank"
-                rel="noreferrer"
-                className={styles.external}
-              >
-                Open in Yahoo
-                <span className={styles.srOnly}> (opens in new tab)</span>
-              </a>
-            )}
+            <LeagueSyncButton league={league} />
+            {!!league.externalUrl && <OpenInYahooLink href={league.externalUrl} />}
           </>
         }
       />
@@ -200,11 +182,10 @@ export default async function MatchupPage({ searchParams }: MatchupPageProps) {
         (mine !== undefined && opponent !== undefined ? (
           <MatchupPanel week={week} mine={mine} opponent={opponent} />
         ) : (
-          <section className={styles.gate} aria-label="Matchup status">
-            <p className={styles.message}>
-              Your team has no opponent in week {week.week}. See the league totals instead.
-            </p>
-          </section>
+          <LeagueStatus
+            label={STATUS_LABEL}
+            message={`Your team has no opponent in week ${week.week}. See the league totals instead.`}
+          />
         ))}
       {view === "league" && (
         <>

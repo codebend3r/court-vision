@@ -5,6 +5,7 @@ import {
   type SportDescriptor,
   type SportKeys,
 } from "#core/sport/types";
+import { memberOf } from "#core/sport/positions";
 import { isKeyOf } from "#core/util/record";
 import { type Basis, type ValuationLine } from "#core/valuation/types";
 
@@ -49,6 +50,14 @@ export const ratioDefs = <K extends SportKeys>({
     return def.kind === "ratio" ? [def] : [];
   });
 
+// Just their keys: what a line's `cross` and a pool's `leagueRate` are keyed by.
+type RatioKeysProps<K extends SportKeys> = {
+  sport: SportDescriptor<K>;
+};
+
+export const ratioKeys = <K extends SportKeys>({ sport }: RatioKeysProps<K>): K["ratio"][] =>
+  ratioDefs({ sport }).map((def) => def.key);
+
 // Table metadata in the sport's category order.
 type CategoryMetaProps<K extends SportKeys> = {
   sport: SportDescriptor<K>;
@@ -71,10 +80,8 @@ export const categoryMeta = <K extends SportKeys>({
 
 type CategoryGuardProps<K extends SportKeys> = { sport: SportDescriptor<K> };
 
-export const categoryGuard =
-  <K extends SportKeys>({ sport }: CategoryGuardProps<K>) =>
-  (value: string): value is Category<K> =>
-    sport.categoryOrder.some((key) => key === value);
+export const categoryGuard = <K extends SportKeys>({ sport }: CategoryGuardProps<K>) =>
+  memberOf({ values: sport.categoryOrder });
 
 // A season total read on the chosen basis: as is, or per game played. A
 // player with no games reads 0, never a divide by zero.

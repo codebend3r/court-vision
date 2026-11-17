@@ -12,6 +12,18 @@ export const playerIdentitySchema = z.object({
   nbaPersonId: z.number().nullable(),
 });
 
+// The same identity as a Prisma `select` on Player, for the queries that read
+// it through the client rather than raw SQL.
+export const PLAYER_IDENTITY_SELECT = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  fullName: true,
+  teamAbbr: true,
+  position: true,
+  nbaPersonId: true,
+} as const;
+
 // A search pool row's identity, keyed by `id`.
 export const playerRowSchema = playerIdentitySchema.extend({ id: z.number() });
 

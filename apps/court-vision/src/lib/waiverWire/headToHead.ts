@@ -1,10 +1,10 @@
 import { type Direction } from "@vision/core/sport/types";
 import { type CategoryKind } from "@vision/core/valuation/categories";
 import { categoryPerGame, teamCategoryTotals } from "@vision/sport-basketball/engine";
-import { type Category, type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
+import { type Category } from "@vision/sport-basketball/types";
 
 import { type FantasyStatLine } from "@/lib/valuation/types";
-import { type ScoreKey } from "@/lib/waiverWire/swapBoard";
+import { type BreakdownFor, type ScoreKey } from "@/lib/waiverWire/swapBoard";
 import { type WaiverModel, type WaiverRow } from "@/lib/waiverWire/types";
 
 // The free agent and the player of mine they are measured against.
@@ -80,13 +80,11 @@ const improves = ({ delta, direction }: ImprovesProps): boolean | null => {
 // One row per league category, in the breakdown's order: each player's
 // per-game number, who wins it on the method's score, and what the swap does
 // to my team's per-game total.
-type BreakdownForProps = { playerId: number };
-
 type BuildHeadToHeadProps = {
   pair: HeadToHeadPair;
   linesById: ReadonlyMap<number, FantasyStatLine>;
   rosterIds: readonly number[];
-  breakdownFor: ({ playerId }: BreakdownForProps) => FantasyCategoryBreakdown[];
+  breakdownFor: BreakdownFor;
   scoreKey: ScoreKey;
 };
 

@@ -21,6 +21,14 @@ type ToLeagueProviderProps = { value: string };
 export const toLeagueProvider = ({ value }: ToLeagueProviderProps): LeagueProvider =>
   isLeagueProvider(value) ? value : "manual";
 
+// Whether a stored provider marks an imported league. Tests the raw column, so
+// a provider this build doesn't know fails closed (read-only), matching the
+// `provider: "manual"` filters on every write path.
+type IsImportedProviderProps = { provider: string };
+
+export const isImportedProvider = ({ provider }: IsImportedProviderProps): boolean =>
+  provider !== "manual";
+
 // Which path keeps an imported league in sync: the server reads Yahoo
 // directly, or the browser extension does, which is the only way to read a
 // private league.
