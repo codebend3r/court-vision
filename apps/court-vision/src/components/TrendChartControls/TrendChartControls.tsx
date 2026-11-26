@@ -1,7 +1,6 @@
 "use client";
 
 import { AverageToggle } from "@/components/AverageToggle/AverageToggle";
-import { VALUE_LABELS } from "@/components/PlayerFantasyChart/labels";
 import {
   TREND_SPAN_LABELS,
   TREND_SPANS,
@@ -10,7 +9,7 @@ import {
   visibleMethods,
 } from "@/lib/charts/trendMethods";
 import { useTrendChartPrefs } from "@/components/TrendChartControls/useTrendChartPrefs";
-import { METHOD_VALUE_KEYS } from "@vision/core/valuation/registry";
+import { LABEL_BY_VALUE_KEY, METHOD_VALUE_KEYS } from "@vision/core/valuation/registry";
 
 import styles from "@/components/TrendChartControls/TrendChartControls.module.scss";
 
@@ -47,7 +46,7 @@ export function TrendChartControls({ span, onSpan }: TrendChartControlsProps) {
               title={isLast ? "At least one chart stays on" : undefined}
               onClick={() => setHidden(toggleMethod({ hidden, key }))}
             >
-              {VALUE_LABELS[key]}
+              {LABEL_BY_VALUE_KEY[key]}
             </button>
           );
         })}

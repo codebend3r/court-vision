@@ -26,7 +26,7 @@ import {
   type RawSearchParams,
 } from "@/lib/players/searchParams";
 import { getFantasyPool } from "@/lib/valuation/loader";
-import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
+import { preferredMethodOf } from "@/lib/settings/guards";
 
 import { PLAYERS_PAGE_HEADER } from "@/app/players/header";
 
@@ -171,8 +171,7 @@ export default async function PlayersPage({ searchParams }: PlayersPageProps) {
       signedIn(),
     ]);
     const presentKeys = new Set(Object.keys(raw));
-    const formula =
-      FANTASY_METHODS.find((method) => method.key === profile?.preferredFormula)?.key ?? null;
+    const formula = preferredMethodOf({ preferredFormula: profile?.preferredFormula ?? null });
     const leagueSeed = buildLeagueSeed({ league, preferredFormula: formula, presentKeys });
     return (
       <PlayersScreen params={params}>

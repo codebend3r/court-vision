@@ -1,6 +1,11 @@
 import { describe, expect, it } from "bun:test";
 
-import { fontScaleOf, isFontScale, isPreferredFormula } from "@/lib/settings/guards";
+import {
+  fontScaleOf,
+  isFontScale,
+  isPreferredFormula,
+  preferredMethodOf,
+} from "@/lib/settings/guards";
 
 describe("isFontScale", () => {
   it("accepts the four scales", () => {
@@ -39,5 +44,16 @@ describe("fontScaleOf", () => {
   it("returns default when fontScale is invalid", () => {
     expect(fontScaleOf({ profile: { fontScale: "xxl" } })).toBe("default");
     expect(fontScaleOf({ profile: { fontScale: "" } })).toBe("default");
+  });
+});
+
+describe("preferredMethodOf", () => {
+  it("reads a registered method", () => {
+    expect(preferredMethodOf({ preferredFormula: "gscore" })).toBe("gscore");
+  });
+
+  it("is null with no preference or one the registry no longer lists", () => {
+    expect(preferredMethodOf({ preferredFormula: null })).toBeNull();
+    expect(preferredMethodOf({ preferredFormula: "montecarlo" })).toBeNull();
   });
 });

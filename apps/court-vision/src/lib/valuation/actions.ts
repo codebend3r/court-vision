@@ -47,12 +47,14 @@ const cachedLogs = unstable_cache(
 // Intentionally public: the Players Fantasy tab works signed out. This action
 // only reads NBA box scores, never account data or writes. Its security-scan
 // exception must be re-reviewed if this module gains other exports or queries.
+// Last reviewed for the league-average read (getLeagueAverageLines): it reads
+// PlayerGameLog for the season the server picks (latestSeason), takes no
+// client input, and returns aggregates only, so the exception still holds.
 // The season's game logs for one page of the Fantasy tab, plus the league's
 // average rolling line per game date, so the client can draw each player's
 // rolling value (and the moving league average) against the pool it already
-// holds. Only
-// the box-score fields travel: the rolling scorers need nothing else, and a
-// page of a hundred players is thousands of rows.
+// holds. Only the box-score fields travel: the rolling scorers need nothing
+// else, and a page of a hundred players is thousands of rows.
 type LoadFantasyTrendLogsProps = {
   playerIds: readonly number[];
 };

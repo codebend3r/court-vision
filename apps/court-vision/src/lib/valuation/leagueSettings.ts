@@ -1,9 +1,9 @@
 import { type FantasyMethodKey } from "@vision/core/valuation/types";
-import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
 import { type MethodWeights, type ValuationConfig } from "@vision/sport-basketball/types";
 
 import { buildLeagueSeed, configFromSeed } from "@/lib/leagues/fantasyDefaults";
 import { type LeagueSummary } from "@/lib/leagues/types";
+import { preferredMethodOf } from "@/lib/settings/guards";
 
 export type LeagueValuationSettings = {
   // The user's preferred formula, or Z-Score.
@@ -27,7 +27,7 @@ export const leagueValuationSettings = ({
   league,
   preferredFormula,
 }: LeagueValuationSettingsProps): LeagueValuationSettings => ({
-  method: FANTASY_METHODS.find((entry) => entry.key === preferredFormula)?.key ?? "zscore",
+  method: preferredMethodOf({ preferredFormula }) ?? "zscore",
   ...configFromSeed({
     seed: buildLeagueSeed({ league, preferredFormula: null, presentKeys: new Set() }),
   }),

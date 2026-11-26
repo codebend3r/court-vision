@@ -6,11 +6,6 @@ import { rollingValues, rollingWindowLines } from "#core/valuation/rolling";
 import { type MethodValueKey } from "#core/valuation/types";
 import { type Yardstick } from "#core/valuation/yardstick";
 
-// The Fantasy tab's rolling charts show recent form. With no Games window
-// chosen they cover each player's last 20 games, so anyone with 29 or more
-// games has a full ten-game lookback at every plotted point.
-export const DEFAULT_TREND_GAMES = 20;
-
 // Rolling value per game on every method: null before the player's first
 // appearance, so a chart draws nothing rather than a stub. `gameIndex` is the
 // position within the plotted window (the player page's axis); `gameNumber`
@@ -47,7 +42,12 @@ export const buildFantasyTrend = <K extends SportKeys>({
   yardstick,
   windowGames,
 }: BuildFantasyTrendProps<K>): FantasyTrendValue[] => {
-  const lineEndingAt = rollingWindowLines({ sport, playerId: line.playerId, logs });
+  const lineEndingAt = rollingWindowLines({
+    sport,
+    playerId: line.playerId,
+    position: line.position,
+    logs,
+  });
   // Only the games the trend keeps are scored, and each window is aggregated
   // once for every method: the Fantasy tab builds fifty of these per page.
   const kept = windowGames === null ? logs : logs.slice(-windowGames);
@@ -56,9 +56,7 @@ export const buildFantasyTrend = <K extends SportKeys>({
     const index = offset + position;
     const rolling = lineEndingAt({ index });
     const values: { [M in MethodValueKey]: number | null } =
-      rolling === null
-        ? NO_VALUES
-        : rollingValues({ yardstick, line: rolling, position: line.position });
+      rolling === null ? NO_VALUES : rollingValues({ yardstick, line: rolling });
     return {
       gameIndex: position + 1,
       gameNumber: index + 1,

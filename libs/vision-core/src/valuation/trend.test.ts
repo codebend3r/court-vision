@@ -16,7 +16,7 @@ import {
   type ValuationConfig,
   makeDatedLog,
 } from "#core/testing/basketball";
-import { DEFAULT_TREND_GAMES, type FantasyTrendValue } from "#core/valuation/trend";
+import { type FantasyTrendValue } from "#core/valuation/trend";
 import { METHOD_VALUE_KEYS } from "#core/valuation/registry";
 import { ROLLING_WINDOW_GAMES, type TrendPoint } from "#core/valuation/rolling";
 import { type MethodValueKey, type ValuationLine } from "#core/valuation/types";
@@ -287,7 +287,7 @@ describe("buildFantasyTrend against the whole-season reference", () => {
   const perGameYardstick = yardstickFor({ config });
   const totalsYardstick = yardstickFor({ config: { ...config, basis: "total" } });
   // `0` is slice(-0), the whole season, which a naive suffix length gets wrong.
-  const windows: (number | null)[] = [null, 0, 1, 5, DEFAULT_TREND_GAMES, 100];
+  const windows: (number | null)[] = [null, 0, 1, 5, 20, 100];
   const lengths = [0, 5, ROLLING_WINDOW_GAMES - 1, ROLLING_WINDOW_GAMES, 30, 82];
 
   lengths.forEach((length) => {

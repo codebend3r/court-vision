@@ -1,85 +1,60 @@
 import { redirect } from "next/navigation";
-import { type ReactNode } from "react";
 
 import { AdvisorView } from "@/components/AdvisorView/AdvisorView";
-import { MyTeamPicker } from "@/components/MyTeamPicker/MyTeamPicker";
 import { getAdvisorLeagueData } from "@/lib/advisor/loader";
 import { loadAdvisorSearchParams } from "@/lib/advisor/searchParams";
 import { freePlayerIds, TREND_RANGE } from "@/lib/advisor/trending";
 import { getProfile } from "@/lib/auth/session";
 import { getActiveRosterPlayers } from "@/lib/fantasyTeams/loader";
 import { getActiveLeague } from "@/lib/leagues/queries";
-import { getLeagueTeams } from "@/lib/leagues/teamQueries";
+import { type BlockedRosterGateKind, rosterGate } from "@/lib/leagues/rosterGate";
 import { type RawSearchParams } from "@/lib/players/searchParams";
 import { leagueValuationSettings } from "@/lib/valuation/leagueSettings";
 import { getFantasyPool } from "@/lib/valuation/loader";
 import { notValuedMessage } from "@/lib/yahoo/messages";
 import { PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 
-import { ImportFromYahooAction, LeagueGate, LeagueSyncButton } from "@/app/_league/LeagueGate";
+import { LeagueSyncButton } from "@/app/_league/LeagueGate";
+import { rosterGateScreen } from "@/app/_league/rosterGateScreen";
 import { ADVISOR_PAGE_HEADER } from "@/app/advisor/header";
 
 import styles from "@/app/advisor/advisor.module.scss";
 
 export const dynamic = "force-dynamic";
 
-// Every state short of the advice: the page's own header, then why the
-// advisor can't run yet and what to do about it.
-type AdvisorGateProps = { message: string; children?: ReactNode };
-
-function AdvisorGate({ message, children }: AdvisorGateProps) {
-  return (
-    <LeagueGate header={ADVISOR_PAGE_HEADER} label="Roster Advisor status" message={message}>
-      {children}
-    </LeagueGate>
-  );
-}
+// Why the advisor can't run yet, for each state that blocks it.
+const ADVISOR_GATE_MESSAGES: Record<BlockedRosterGateKind, string> = {
+  no_league: "No league yet. Import your Yahoo league to find your team's biggest weakness.",
+  not_imported:
+    "The Roster Advisor needs a league imported from Yahoo, so it knows every team's roster.",
+  points: "The Roster Advisor works by category, so it doesn't support points leagues.",
+};
 
 type AdvisorPageProps = {
   searchParams: Promise<RawSearchParams>;
 };
 
 export default async function AdvisorPage({ searchParams }: AdvisorPageProps) {
-  const [profile, league] = await Promise.all([getProfile(), getActiveLeague()]);
+  const [profile, activeLeague] = await Promise.all([getProfile(), getActiveLeague()]);
   if (profile === null) redirect("/login?next=/advisor");
 
-  if (league === null) {
-    return (
-      <AdvisorGate message="No league yet. Import your Yahoo league to find your team's biggest weakness.">
-        <ImportFromYahooAction />
-      </AdvisorGate>
-    );
+  const gate = rosterGate({ league: activeLeague });
+  if (gate.kind !== "ready") {
+    return rosterGateScreen({
+      gate,
+      header: ADVISOR_PAGE_HEADER,
+      label: "Roster Advisor status",
+      messages: ADVISOR_GATE_MESSAGES,
+    });
   }
-
-  if (!league.isImported) {
-    return (
-      <AdvisorGate message="The Roster Advisor needs a league imported from Yahoo, so it knows every team's roster.">
-        <ImportFromYahooAction />
-      </AdvisorGate>
-    );
-  }
-
-  if (league.scoringType === "h2h_points") {
-    return (
-      <AdvisorGate message="The Roster Advisor works by category, so it doesn't support points leagues." />
-    );
-  }
-
-  if (league.myTeamId === null) {
-    const teams = await getLeagueTeams({ leagueId: league.id });
-    return (
-      <AdvisorGate message="Which team is yours?">
-        <MyTeamPicker leagueId={league.id} teams={teams} />
-      </AdvisorGate>
-    );
-  }
+  const { league, myTeamId } = gate;
 
   const { range } = loadAdvisorSearchParams(await searchParams);
   const [lines, seasonLines, recentLines, leagueData, activeRoster] = await Promise.all([
     getFantasyPool({ range }),
     getFantasyPool({ range: "all" }),
     getFantasyPool({ range: TREND_RANGE }),
-    getAdvisorLeagueData({ leagueId: league.id, myTeamId: league.myTeamId }),
+    getAdvisorLeagueData({ leagueId: league.id, myTeamId }),
     getActiveRosterPlayers(),
   ]);
   const activePlayerIds = activeRoster.map((player) => player.playerId);

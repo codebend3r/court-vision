@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 
 import { player } from "@/lib/advisor/fixture";
-import { findTargets, median, TARGET_LIMIT } from "@/lib/advisor/target";
+import { findTargets, findTradeTargets, median, TARGET_LIMIT } from "@/lib/advisor/target";
 
 const OTHER = { kind: "team", teamId: "t2", teamName: "Two", managerName: null } as const;
 
@@ -49,5 +49,23 @@ describe("findTargets", () => {
 
   it("has no targets without candidates", () => {
     expect(findTargets({ candidates: [], myRoster })).toEqual([]);
+  });
+});
+
+describe("findTradeTargets", () => {
+  it("ranks other teams' players only, leaving free agents out", () => {
+    const myRoster = [player({ playerId: 1, value: 2 })];
+    const rostered = player({ playerId: 10, value: 3, categoryScore: 1, owner: OTHER });
+    const freeAgent = player({
+      playerId: 11,
+      value: 9,
+      categoryScore: 9,
+      owner: { kind: "free_agent" },
+    });
+    expect(
+      findTradeTargets({ candidates: [freeAgent, rostered], myRoster }).map(
+        ({ playerId }) => playerId,
+      ),
+    ).toEqual([10]);
   });
 });

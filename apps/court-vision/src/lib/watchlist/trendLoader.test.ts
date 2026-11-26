@@ -24,6 +24,7 @@ vi.mock("@/lib/valuation/leagueAverage", () => ({ getLeagueAverageLines }));
 // Loaded after the mocks: the cache wrapper is built when the module
 // evaluates, so a static import would capture the real `unstable_cache`.
 const { getTrendSeries } = await import("@/lib/watchlist/trendLoader");
+const { getSeasonValuation } = await import("@/lib/valuation/seasonValuation");
 
 type LogProps = { day: number; pts: number };
 
@@ -68,11 +69,23 @@ const brunsonG = { ...brunson, position: "G" };
 
 // The neutral league read; the page passes leagueValuationSettings' result.
 const SETTINGS = { config: DEFAULT_VALUATION_CONFIG, methodWeights: {} };
+
+// The page's one season valuation, built fresh per call as the page would.
+type TrendsForProps = {
+  players: readonly { playerId: number; fullName: string; position: string | null }[];
+};
+
+const trendsFor = ({ players }: TrendsForProps) =>
+  getTrendSeries({
+    players,
+    settings: SETTINGS,
+    valuation: getSeasonValuation({ settings: SETTINGS }),
+  });
 const charted = [brunsonG, { playerId: 2, fullName: "Josh Hart", position: "F" }];
 
 describe("getTrendSeries", () => {
   it("reads each player's logs once and scores every method from them", async () => {
-    const { series } = await getTrendSeries({ players: charted, settings: SETTINGS });
+    const { series } = await trendsFor({ players: charted });
 
     expect(findMany).toHaveBeenCalledTimes(charted.length);
     expect(findMany).toHaveBeenCalledWith(
@@ -92,7 +105,7 @@ describe("getTrendSeries", () => {
   });
 
   it("scores the methods differently from the same logs, on the same dates", async () => {
-    const { series } = await getTrendSeries({ players: [brunsonG], settings: SETTINGS });
+    const { series } = await trendsFor({ players: [brunsonG] });
 
     const values = (key: "z" | "g" | "points") =>
       series[key][0]?.points.map((point) => point.value) ?? [];
@@ -113,22 +126,38 @@ describe("getTrendSeries", () => {
       buildLeagueAverageLines({ players: [{ playerId: 9, logs }] }),
     );
 
-    const { averages } = await getTrendSeries({ players: [brunsonG], settings: SETTINGS });
+    const { averages } = await trendsFor({ players: [brunsonG] });
 
     expect(getLeagueAverageLines).toHaveBeenCalledWith({ season: "2025-26" });
-    expect(averages.points).toHaveLength(12);
-    expect(averages.sgp).toHaveLength(12);
-    const points = averages.points.map((point) => point.value);
+    expect(averages).toHaveLength(12);
+    expect(Object.keys(averages[0]?.values ?? {}).toSorted()).toEqual(
+      ["g", "points", "positional", "sgp", "sim", "vorp", "z"].toSorted(),
+    );
+    const points = averages.map((entry) => entry.values.points);
     expect(points.at(-1) ?? 0).toBeGreaterThan(points[0] ?? 0);
   });
 
   it("answers empty series without reading logs before any season is synced", async () => {
     latestSeason.mockResolvedValue(null);
 
-    const { series } = await getTrendSeries({ players: [brunsonG], settings: SETTINGS });
+    const { series } = await trendsFor({ players: [brunsonG] });
     expect(series.z).toEqual([{ ...brunson, points: [] }]);
     expect(series.sim).toEqual([{ ...brunson, points: [] }]);
     expect(findMany).not.toHaveBeenCalled();
+  });
+
+  it("waits on the page's valuation instead of building its own yardstick", async () => {
+    let settle: (value: Awaited<ReturnType<typeof getSeasonValuation>>) => void = () => {};
+    const valuation = new Promise<Awaited<ReturnType<typeof getSeasonValuation>>>((resolve) => {
+      settle = resolve;
+    });
+    const pending = getTrendSeries({ players: [brunsonG], settings: SETTINGS, valuation });
+    // Only the page's valuation reads the pool; the loader never does.
+    expect(getFantasyPool).not.toHaveBeenCalled();
+    settle(await getSeasonValuation({ settings: SETTINGS }));
+    const { series } = await pending;
+    expect(getFantasyPool).toHaveBeenCalledTimes(1);
+    expect(series.z[0]?.points.length ?? 0).toBe(12);
   });
 
   it("caches per player under the players tag so a sync busts it with every other surface", () => {

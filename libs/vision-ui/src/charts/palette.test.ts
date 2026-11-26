@@ -5,6 +5,8 @@ import {
   CHART_CURVE,
   chartAxisProps,
   chartLineProps,
+  chartReferenceLineProps,
+  CHART_REFERENCE_STROKE,
   getSeriesPalette,
   getTrendPalette,
 } from "#ui/charts/palette";
@@ -73,6 +75,29 @@ describe("chartLineProps", () => {
       fill: "#199e70",
       stroke: "var(--color-surface)",
       strokeWidth: 2,
+    });
+  });
+});
+
+describe("chartReferenceLineProps", () => {
+  it("draws a thin dotted line in the axis ink on the shared curve", () => {
+    expect(CHART_REFERENCE_STROKE).toEqual({
+      stroke: CHART_CHROME.axis,
+      strokeDasharray: "3 3",
+      strokeWidth: 1.5,
+    });
+    expect(chartReferenceLineProps()).toMatchObject({
+      type: CHART_CURVE,
+      ...CHART_REFERENCE_STROKE,
+    });
+  });
+
+  it("has no dots or animation and bridges gaps", () => {
+    expect(chartReferenceLineProps()).toMatchObject({
+      dot: false,
+      activeDot: false,
+      isAnimationActive: false,
+      connectNulls: true,
     });
   });
 });

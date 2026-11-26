@@ -14,6 +14,7 @@ import { getActiveLeague } from "@/lib/leagues/queries";
 import { getLeagueTeams } from "@/lib/leagues/teamQueries";
 import { getHomeInsights } from "@/lib/home/insights";
 import { leagueValuationSettings } from "@/lib/valuation/leagueSettings";
+import { getSeasonValuation } from "@/lib/valuation/seasonValuation";
 import { formatOrdinal } from "@vision/core/util/format";
 import { HOMEPAGE_WATCHLIST_LIMIT, MAX_WATCHLIST } from "@/lib/watchlist/constants";
 import { getWatchlistCount, getWatchlistPlayers } from "@/lib/watchlist/queries";
@@ -39,16 +40,18 @@ export default async function Home() {
     getActiveLeague(),
   ]);
   // One valuation for the whole page: the panels and every trend chart value
-  // players on the same league settings and method.
+  // players on the same league settings, method and season yardstick. It is
+  // started once here and shared, so the yardstick is built exactly once.
   const settings = leagueValuationSettings({
     league,
     preferredFormula: profile.preferredFormula,
   });
+  const valuation = getSeasonValuation({ settings });
   // Every method's chart tracks exactly the players the Starred panel lists.
   const [teams, insights, trends] = await Promise.all([
     league === null ? Promise.resolve([]) : getLeagueTeams({ leagueId: league.id }),
-    getHomeInsights({ league, settings }),
-    getTrendSeries({ players, settings }),
+    getHomeInsights({ league, settings, valuation }),
+    getTrendSeries({ players, settings, valuation }),
   ]);
   // Picked once so the Roster readout and the Your Team panel describe the
   // same team: the newest, the roster a manager is most likely still filling.
@@ -114,7 +117,8 @@ export default async function Home() {
             >
               <WatchlistTrendChart
                 series={trends.series[method.valueKey]}
-                average={trends.averages[method.valueKey]}
+                methodKey={method.valueKey}
+                averages={trends.averages}
                 caption={`Rolling ${method.label} over each player's last ${ROLLING_WINDOW_GAMES} games (fewer early in the season), against this season's player pool. ${method.description}`}
               />
             </DashboardPanel>

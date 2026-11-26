@@ -3,11 +3,8 @@
 import { type ReactElement } from "react";
 import { Rectangle, type BarShapeProps, type RectangleProps } from "recharts";
 
-import {
-  METHOD_KEYS,
-  METHOD_LABELS,
-  type MethodColors,
-} from "@/components/PlayerFantasyChart/labels";
+import { METHOD_KEYS, type ValueColors } from "@/components/PlayerFantasyChart/labels";
+import { LABEL_BY_VALUE_KEY } from "@vision/core/valuation/registry";
 import {
   hoveredRow,
   SeriesTooltip,
@@ -43,7 +40,7 @@ export function SignedBar(props: BarShapeProps): ReactElement {
 
 export type BreakdownTooltipProps = InjectedTooltipProps & {
   breakdown: readonly FantasyCategoryBreakdown[];
-  colors: MethodColors;
+  colors: ValueColors;
 };
 
 // The hovered category's full name and per-game line over its Z and G. Shared
@@ -72,7 +69,7 @@ export function BreakdownTooltip({
       }
       rows={METHOD_KEYS.map((key) => ({
         key,
-        label: METHOD_LABELS[key],
+        label: LABEL_BY_VALUE_KEY[key],
         color: colors[key],
         value: formatSigned({ value: entry[key], digits: 1 }),
       }))}

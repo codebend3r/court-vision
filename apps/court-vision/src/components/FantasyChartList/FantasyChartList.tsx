@@ -5,13 +5,8 @@ import { PlayerPositionText } from "@/components/PositionTag/PositionTag";
 import { type ReactNode } from "react";
 
 import { PlayerAvatar } from "@/components/PlayerAvatar/PlayerAvatar";
-import {
-  METHOD_KEYS,
-  type MethodKey,
-  VALUE_LABELS,
-  valueColors,
-  type ValueColors,
-} from "@/components/PlayerFantasyChart/labels";
+import { METHOD_KEYS, valueColors, type ValueColors } from "@/components/PlayerFantasyChart/labels";
+import { LABEL_BY_VALUE_KEY } from "@vision/core/valuation/registry";
 import { type MethodValueKey } from "@vision/core/valuation/types";
 import { SeriesLegend } from "@/components/SeriesChart/SeriesLegend";
 import { SortButton } from "@/components/SortButton/SortButton";
@@ -25,9 +20,6 @@ import { type FantasyTableRow, type ListSortProps } from "@/lib/valuation/fantas
 import styles from "@/components/FantasyChartList/FantasyChartList.module.scss";
 
 type RenderChartProps<Row extends FantasyTableRow> = { row: Row; colors: ValueColors };
-
-// Z and G: the legend the category charts draw, and every list's readouts.
-const DEFAULT_METHODS: readonly MethodKey[] = METHOD_KEYS;
 
 type DescribeChartProps<Row extends FantasyTableRow> = { row: Row };
 
@@ -73,7 +65,7 @@ export function FantasyChartList<Row extends FantasyTableRow>({
   describeChart,
   busy = false,
   notice,
-  legend = DEFAULT_METHODS,
+  legend = METHOD_KEYS,
   controls,
 }: FantasyChartListProps<Row>) {
   const { theme } = useTheme();
@@ -87,7 +79,11 @@ export function FantasyChartList<Row extends FantasyTableRow>({
         <p className={styles.hint}>{hint}</p>
         {!!legend.length && (
           <SeriesLegend
-            entries={legend.map((key) => ({ key, label: VALUE_LABELS[key], color: colors[key] }))}
+            entries={legend.map((key) => ({
+              key,
+              label: LABEL_BY_VALUE_KEY[key],
+              color: colors[key],
+            }))}
           />
         )}
         {!!controls && <div className={styles.controls}>{controls}</div>}
@@ -103,7 +99,7 @@ export function FantasyChartList<Row extends FantasyTableRow>({
           {METHOD_KEYS.map((key) => (
             <SortButton
               key={key}
-              label={VALUE_LABELS[key]}
+              label={LABEL_BY_VALUE_KEY[key]}
               isActive={sort === key}
               dir={dir}
               onClick={() => onSort({ sort: key })}

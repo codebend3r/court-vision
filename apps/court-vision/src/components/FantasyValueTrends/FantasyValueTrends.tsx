@@ -4,14 +4,20 @@ import { type ReactElement } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { FantasyChartList } from "@/components/FantasyChartList/FantasyChartList";
-import { VALUE_LABELS, type ValueColors } from "@/components/PlayerFantasyChart/labels";
+import { type ValueColors } from "@/components/PlayerFantasyChart/labels";
+import { LABEL_BY_VALUE_KEY } from "@vision/core/valuation/registry";
 import { TrendChartControls } from "@/components/TrendChartControls/TrendChartControls";
 import {
   averageOn,
   type AverageByDate,
   useTrendChartView,
 } from "@/components/TrendChartControls/useTrendChartPrefs";
-import { AVERAGE_LINE_LABEL, AVERAGE_LINE_STYLE } from "@/lib/charts/averageLine";
+import {
+  AVERAGE_KEY,
+  AVERAGE_LINE_COLOR,
+  AVERAGE_LINE_LABEL,
+  averageLineProps,
+} from "@/lib/charts/averageLine";
 import { fittedDomain, type TrendSpan } from "@/lib/charts/trendMethods";
 import { type MethodValueKey } from "@vision/core/valuation/types";
 import {
@@ -21,7 +27,7 @@ import {
   SeriesTooltip,
   type InjectedTooltipProps,
 } from "@/components/SeriesTooltip/SeriesTooltip";
-import { CHART_CHROME, CHART_CURVE, chartLineProps } from "@vision/ui/charts/palette";
+import { CHART_CHROME, chartLineProps } from "@vision/ui/charts/palette";
 import { formatSigned } from "@vision/core/util/format";
 import { type FantasyTableRow, type ListSortProps } from "@/lib/valuation/fantasyRows";
 import { type FantasyTrendValue } from "@vision/core/valuation/trend";
@@ -70,17 +76,23 @@ export type TrendTooltipProps = InjectedTooltipProps & {
   trend: readonly FantasyTrendValue[];
   colors: ValueColors;
   // The methods drawn, named in the tooltip.
-  keys?: readonly MethodValueKey[];
+  keys: readonly MethodValueKey[];
+  // The league average on the hovered game's date, when the chart draws one.
+  averageFor?: ({ point }: AverageForProps) => number | null;
 };
 
-// The hovered game, named by its place in the player's season, over its Z
-// and G and any missed-game flag.
+type AverageForProps = { point: FantasyTrendValue };
+
+// The hovered game, named by its place in the player's season, over each
+// drawn method, the league average when there is one, and any missed-game
+// flag.
 export function TrendTooltip({
   active,
   payload,
   trend,
   colors,
-  keys = ["z", "g"],
+  keys,
+  averageFor = () => null,
 }: TrendTooltipProps): ReactElement | null {
   const hovered = hoveredRow({ active, payload });
   if (
@@ -95,6 +107,7 @@ export function TrendTooltip({
   if (point === undefined) {
     return null;
   }
+  const average = averageFor({ point });
 
   return (
     <SeriesTooltip
@@ -104,22 +117,21 @@ export function TrendTooltip({
           const value = point[key];
           return {
             key,
-            label: VALUE_LABELS[key],
+            label: LABEL_BY_VALUE_KEY[key],
             color: colors[key],
             value: value === null ? "—" : formatSigned({ value, digits: 1 }),
           };
         }),
-        // A sparkline's hovered row carries that date's league average.
-        ...("average" in hovered && typeof hovered.average === "number"
-          ? [
+        ...(average === null
+          ? []
+          : [
               {
-                key: "average",
+                key: AVERAGE_KEY,
                 label: AVERAGE_LINE_LABEL,
-                color: AVERAGE_LINE_STYLE.stroke,
-                value: formatSigned({ value: hovered.average, digits: 1 }),
+                color: AVERAGE_LINE_COLOR,
+                value: formatSigned({ value: average, digits: 1 }),
               },
-            ]
-          : []),
+            ]),
       ]}
       status={point.dnp ? DNP_STATUS : undefined}
     />
@@ -138,14 +150,13 @@ const describeTrend = ({ row, keys }: DescribeTrendProps): string => {
   return (
     `${row.fullName} rolling value: latest ` +
     keys
-      .map((key) => `${VALUE_LABELS[key]} ${formatSigned({ value: last[key] ?? 0, digits: 1 })}`)
+      .map(
+        (key) => `${LABEL_BY_VALUE_KEY[key]} ${formatSigned({ value: last[key] ?? 0, digits: 1 })}`,
+      )
       .join(", ") +
     `, games ${first.gameNumber} to ${last.gameNumber}`
   );
 };
-
-// The row field a sparkline's league-average line reads.
-const AVERAGE_KEY = "average";
 
 // One method's sparkline for one player: its own fitted scale (so a swing
 // fills the box), the league's average on each of the player's game dates
@@ -160,10 +171,11 @@ type SparklineProps = {
 };
 
 function Sparkline({ plotted, methodKey, color, colors, averageByDate }: SparklineProps) {
-  const data = plotted.map((point) => ({
-    ...point,
-    [AVERAGE_KEY]: averageOn({ averageByDate, gameDate: point.gameDate, key: methodKey }),
-  }));
+  // The league's average on a game's date: joined onto each row for the line,
+  // and read again for the hovered game's tooltip.
+  const averageFor = ({ point }: AverageForProps): number | null =>
+    averageOn({ averageByDate, date: Date.parse(point.gameDate), key: methodKey });
+  const data = plotted.map((point) => ({ ...point, [AVERAGE_KEY]: averageFor({ point }) }));
   return (
     <ResponsiveContainer
       width="100%"
@@ -186,7 +198,14 @@ function Sparkline({ plotted, methodKey, color, colors, averageByDate }: Sparkli
           hide
         />
         <Tooltip
-          content={<TrendTooltip trend={plotted} colors={colors} keys={[methodKey]} />}
+          content={
+            <TrendTooltip
+              trend={plotted}
+              colors={colors}
+              keys={[methodKey]}
+              averageFor={averageFor}
+            />
+          }
           cursor={{ stroke: CHART_CHROME.axis, strokeDasharray: "3 3" }}
           allowEscapeViewBox={{ x: true, y: true }}
           // Lift the bubble over the rows below, which paint later.
@@ -197,22 +216,11 @@ function Sparkline({ plotted, methodKey, color, colors, averageByDate }: Sparkli
           // curve legible without crowding the row.
           {...chartLineProps({ color, width: 2.5 })}
           dataKey={methodKey}
-          name={VALUE_LABELS[methodKey]}
+          name={LABEL_BY_VALUE_KEY[methodKey]}
           isAnimationActive={false}
           connectNulls={false}
         />
-        {averageByDate !== null && (
-          <Line
-            type={CHART_CURVE}
-            dataKey={AVERAGE_KEY}
-            name={AVERAGE_LINE_LABEL}
-            {...AVERAGE_LINE_STYLE}
-            dot={false}
-            activeDot={false}
-            isAnimationActive={false}
-            connectNulls
-          />
-        )}
+        {averageByDate !== null && <Line {...averageLineProps()} />}
       </LineChart>
     </ResponsiveContainer>
   );
@@ -265,7 +273,7 @@ export function FantasyValueTrends({
         <span className={styles.multiples} data-count={keys.length}>
           {keys.map((key) => (
             <span key={key} className={styles.band}>
-              {VALUE_LABELS[key]}
+              {LABEL_BY_VALUE_KEY[key]}
             </span>
           ))}
         </span>

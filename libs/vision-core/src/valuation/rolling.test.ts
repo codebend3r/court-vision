@@ -365,11 +365,25 @@ describe("rolling series against the per-window reference", () => {
 });
 
 describe("rollingWindowLines", () => {
+  it("carries the player's position on every window", () => {
+    const lineEndingAt = rollingWindowLines({
+      playerId: 7,
+      position: "G",
+      logs: seededSeason({ seed: 42, length: 15 }),
+    });
+    expect(lineEndingAt({ index: 12 })?.position).toBe("G");
+  });
+
   const logs = seededSeason({ seed: 42, length: 15 });
-  const lineEndingAt = rollingWindowLines({ playerId: 7, logs });
+  const lineEndingAt = rollingWindowLines({ playerId: 7, position: null, logs });
 
   it("has no line until the window fills when a full window is required", () => {
-    const full = rollingWindowLines({ playerId: 7, logs, minGames: ROLLING_WINDOW_GAMES });
+    const full = rollingWindowLines({
+      playerId: 7,
+      position: null,
+      logs,
+      minGames: ROLLING_WINDOW_GAMES,
+    });
     expect(full({ index: ROLLING_WINDOW_GAMES - 2 })).toBeNull();
   });
 

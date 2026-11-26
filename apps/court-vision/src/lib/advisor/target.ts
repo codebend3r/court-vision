@@ -1,4 +1,5 @@
-import { type AdvisorPlayer } from "@/lib/advisor/types";
+import { isOnAnotherTeam } from "@/lib/advisor/owner";
+import { type Advice, type AdvisorPlayer } from "@/lib/advisor/types";
 
 type MedianProps = { values: readonly number[] };
 
@@ -39,3 +40,16 @@ export const findTargets = ({ candidates, myRoster }: FindTargetsProps): Advisor
     TARGET_LIMIT,
   );
 };
+
+// The same ranking over other teams' players only: who to trade for, apart
+// from who to pick up (the dashboard's Trade targets panel).
+type FindTradeTargetsProps = Pick<Advice, "candidates" | "myRoster">;
+
+export const findTradeTargets = ({
+  candidates,
+  myRoster,
+}: FindTradeTargetsProps): AdvisorPlayer[] =>
+  findTargets({
+    candidates: candidates.filter((player) => isOnAnotherTeam(player.owner)),
+    myRoster,
+  });

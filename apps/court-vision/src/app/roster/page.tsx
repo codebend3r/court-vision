@@ -32,7 +32,7 @@ import {
 } from "@/lib/roster/searchParams";
 import { advancedSpecs, regularSpecs } from "@/lib/roster/statSpecs";
 import { getFantasyPool } from "@/lib/valuation/loader";
-import { FANTASY_METHODS } from "@vision/sport-basketball/engine";
+import { preferredMethodOf } from "@/lib/settings/guards";
 import { PageAction, PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 import { StatViewTabs } from "@vision/ui/components/StatViewTabs/StatViewTabs";
 
@@ -222,8 +222,7 @@ export default async function RosterPage({ searchParams }: RosterPageProps) {
   if (params.tab === "fantasy") {
     const lines = await getFantasyPool({ range: params.range });
     const presentKeys = new Set(Object.keys(raw));
-    const formula =
-      FANTASY_METHODS.find((method) => method.key === profile.preferredFormula)?.key ?? null;
+    const formula = preferredMethodOf({ preferredFormula: profile.preferredFormula });
     const leagueSeed = buildLeagueSeed({ league, preferredFormula: formula, presentKeys });
     return (
       <RosterScreen params={params}>

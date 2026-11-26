@@ -1,25 +1,27 @@
 import { describe, expect, it } from "bun:test";
 
-import {
-  METHOD_KEYS,
-  METHOD_LABELS,
-  methodColors,
-  symmetricDomain,
-} from "@/components/PlayerFantasyChart/labels";
+import { METHOD_KEYS, symmetricDomain, valueColors } from "@/components/PlayerFantasyChart/labels";
 import { getSeriesPalette } from "@vision/ui/charts/palette";
+import { LABEL_BY_VALUE_KEY, METHOD_VALUE_KEYS } from "@vision/core/valuation/registry";
 
-describe("METHOD_LABELS", () => {
-  it("names both series, in palette slot order", () => {
+describe("METHOD_KEYS", () => {
+  it("is Z and G, in palette slot order, named by the registry", () => {
     expect(METHOD_KEYS).toEqual(["z", "g"]);
-    expect(METHOD_LABELS).toEqual({ z: "Z-Score", g: "G-Score" });
+    expect(METHOD_KEYS.map((key) => LABEL_BY_VALUE_KEY[key])).toEqual(["Z-Score", "G-Score"]);
   });
 });
 
-describe("methodColors", () => {
-  it("takes the theme's first two series colours", () => {
+describe("valueColors", () => {
+  it("gives Z and G the theme's first two series colours", () => {
     const palette = getSeriesPalette({ theme: "light" });
+    const colors = valueColors({ theme: "light" });
 
-    expect(methodColors({ theme: "light" })).toEqual({ z: palette[0], g: palette[1] });
+    expect(colors.z).toBe(palette[0]);
+    expect(colors.g).toBe(palette[1]);
+  });
+
+  it("colours every method", () => {
+    expect(Object.keys(valueColors({ theme: "light" }))).toEqual([...METHOD_VALUE_KEYS]);
   });
 });
 

@@ -11,6 +11,15 @@ export const isFontScale = (value: string): value is FontScale =>
 export const isPreferredFormula = (value: string): value is FantasyMethodKey =>
   FANTASY_METHODS.some((method) => method.key === value);
 
+// The method a stored preference names, or null when it names none this build
+// registers. Every surface that honours the preference reads it here.
+type PreferredMethodOfProps = { preferredFormula: string | null };
+
+export const preferredMethodOf = ({
+  preferredFormula,
+}: PreferredMethodOfProps): FantasyMethodKey | null =>
+  preferredFormula !== null && isPreferredFormula(preferredFormula) ? preferredFormula : null;
+
 // Validate and extract the font scale from a profile object. Falls back to
 // "default" if the stored value is invalid or missing.
 type FontScaleOfProps = { profile: { fontScale: string } | null };
