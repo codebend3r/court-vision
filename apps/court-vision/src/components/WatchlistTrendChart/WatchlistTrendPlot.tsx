@@ -13,17 +13,12 @@ import {
 } from "recharts";
 
 import { formatSigned } from "@vision/core/util/format";
-import { AVERAGE_LINE_LABEL, AVERAGE_LINE_STYLE } from "@/lib/charts/averageLine";
+import { AVERAGE_KEY, averageLineProps } from "@/lib/charts/averageLine";
 import { fittedDomain } from "@/lib/charts/trendMethods";
-import {
-  CHART_CHROME,
-  CHART_CURVE,
-  chartAxisProps,
-  chartLineProps,
-} from "@vision/ui/charts/palette";
+import { CHART_CHROME, chartAxisProps, chartLineProps } from "@vision/ui/charts/palette";
 import { endLabel, lastPlottedIndex } from "@/components/ChartEndLabel/ChartEndLabel";
 import { ListTooltip } from "@/components/ListTooltip/ListTooltip";
-import { AVERAGE_KEY, type ChartRow } from "@/components/WatchlistTrendChart/WatchlistTrendChart";
+import { type ChartRow } from "@/components/WatchlistTrendChart/WatchlistTrendChart";
 import { usePrefersReducedMotion } from "@vision/ui/hooks/usePrefersReducedMotion";
 
 // One plotted player, already resolved by the figure: which row field the
@@ -101,18 +96,7 @@ export function WatchlistTrendPlot({ rows, lines, showAverage }: WatchlistTrendP
           tickFormatter={formatValue}
           width={48}
         />
-        {showAverage && (
-          <Line
-            dataKey={AVERAGE_KEY}
-            name={AVERAGE_LINE_LABEL}
-            type={CHART_CURVE}
-            {...AVERAGE_LINE_STYLE}
-            dot={false}
-            activeDot={false}
-            isAnimationActive={false}
-            connectNulls
-          />
-        )}
+        {showAverage && <Line {...averageLineProps()} />}
         <Tooltip content={<ChartTooltip />} cursor={{ stroke: CHART_CHROME.axis }} />
         {lines.map((line) => {
           // A player can miss the final dates; their name belongs beside

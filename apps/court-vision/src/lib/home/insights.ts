@@ -1,13 +1,15 @@
-import { buildCategoryBreakdown, methodMeta, valuePlayers } from "@vision/sport-basketball/engine";
+import { buildCategoryBreakdown, methodMeta } from "@vision/sport-basketball/engine";
 
 import { buildAdvice } from "@/lib/advisor/advice";
 import { cachedBreakdownFor } from "@/lib/advisor/breakdown";
 import { getAdvisorLeagueData } from "@/lib/advisor/loader";
+import { findTradeTargets } from "@/lib/advisor/target";
 import { type AdvisorPlayer, type CategoryNeed, type FreeAgentPick } from "@/lib/advisor/types";
 import { getActiveRosterPlayers } from "@/lib/fantasyTeams/loader";
+import { rosterGate } from "@/lib/leagues/rosterGate";
 import { type LeagueSummary } from "@/lib/leagues/types";
 import { type LeagueValuationSettings } from "@/lib/valuation/leagueSettings";
-import { getFantasyPool } from "@/lib/valuation/loader";
+import { type SeasonValuation } from "@/lib/valuation/seasonValuation";
 import { scoreKeysFor } from "@/lib/waiverWire/model";
 
 // How many trade targets and free agents each dashboard panel lists.
@@ -37,43 +39,38 @@ export type HomeInsights = {
 type GetHomeInsightsProps = {
   league: LeagueSummary | null;
   settings: LeagueValuationSettings;
+  // The page's one season valuation, shared with the trend charts; awaited
+  // here alongside the league reads rather than before them.
+  valuation: Promise<SeasonValuation>;
 };
 
-// The league's advisor inputs, or null when it can't be advised: not
-// imported, points scoring, or no team of mine (exactly when the Roster
-// Advisor page would refuse).
+// The league's advisor inputs, or null when rosterGate blocks it (the same
+// rule the Roster Advisor page applies).
 type LoadAdviceInputsProps = { league: LeagueSummary | null };
 
 const loadAdviceInputs = async ({ league }: LoadAdviceInputsProps) => {
-  if (
-    league === null ||
-    !league.isImported ||
-    league.scoringType === "h2h_points" ||
-    league.myTeamId === null
-  ) {
-    return null;
-  }
+  const gate = rosterGate({ league });
+  if (gate.kind !== "ready") return null;
   const [leagueData, activeRoster] = await Promise.all([
-    getAdvisorLeagueData({ leagueId: league.id, myTeamId: league.myTeamId }),
+    getAdvisorLeagueData({ leagueId: gate.league.id, myTeamId: gate.myTeamId }),
     getActiveRosterPlayers(),
   ]);
   return { leagueData, activePlayerIds: new Set(activeRoster.map((player) => player.playerId)) };
 };
 
-// The dashboard's valuation, done on the server: the season's pool valued
-// once on the league's settings and the user's method (see
-// leagueValuationSettings), so a number here matches the Roster Advisor's and
-// the Waiver Wire's.
+// The dashboard's valuation, done on the server on the league's settings and
+// the user's method (see leagueValuationSettings), so a number here matches
+// the Roster Advisor's and the Waiver Wire's.
 export const getHomeInsights = async ({
   league,
   settings: { method, config, methodWeights },
+  valuation,
 }: GetHomeInsightsProps): Promise<HomeInsights> => {
   const { valueKey, scoreKey } = scoreKeysFor({ method });
-  const [lines, inputs] = await Promise.all([
-    getFantasyPool({ range: "all" }),
+  const [{ lines, values, poolStats }, inputs] = await Promise.all([
+    valuation,
     loadAdviceInputs({ league }),
   ]);
-  const { values, poolStats } = valuePlayers({ lines, config, methodWeights, windowGames: null });
   const valueById = new Map(values.map((entry) => [entry.playerId, entry[valueKey]]));
   const methodLabel = methodMeta({ key: method })?.label ?? "Value";
   if (inputs === null) return { valueById, methodLabel, advice: null };
@@ -93,18 +90,16 @@ export const getHomeInsights = async ({
     focus: null,
     targetId: null,
   });
+  if (advice === null) return { valueById, methodLabel, advice: null };
 
   return {
     valueById,
     methodLabel,
-    advice:
-      advice === null
-        ? null
-        : {
-            weakness: advice.weakness,
-            focusLabel: advice.focusLabel,
-            tradeTargets: advice.tradeTargets.slice(0, HOME_PICK_LIMIT),
-            freeAgents: advice.freeAgents.slice(0, HOME_PICK_LIMIT),
-          },
+    advice: {
+      weakness: advice.weakness,
+      focusLabel: advice.focusLabel,
+      tradeTargets: findTradeTargets(advice).slice(0, HOME_PICK_LIMIT),
+      freeAgents: advice.freeAgents.slice(0, HOME_PICK_LIMIT),
+    },
   };
 };

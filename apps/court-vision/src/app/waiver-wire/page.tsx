@@ -1,12 +1,10 @@
 import { redirect } from "next/navigation";
-import { type ReactNode } from "react";
 
-import { MyTeamPicker } from "@/components/MyTeamPicker/MyTeamPicker";
 import { WaiverWireView } from "@/components/WaiverWireView/WaiverWireView";
 import { getProfile } from "@/lib/auth/session";
 import { getActiveRosterPlayers } from "@/lib/fantasyTeams/loader";
 import { getActiveLeague } from "@/lib/leagues/queries";
-import { getLeagueTeams } from "@/lib/leagues/teamQueries";
+import { type BlockedRosterGateKind, rosterGate } from "@/lib/leagues/rosterGate";
 import { type RawSearchParams } from "@/lib/players/searchParams";
 import { leagueValuationSettings } from "@/lib/valuation/leagueSettings";
 import { getFantasyPool } from "@/lib/valuation/loader";
@@ -15,71 +13,46 @@ import { loadWaiverWireSearchParams } from "@/lib/waiverWire/searchParams";
 import { notValuedMessage } from "@/lib/yahoo/messages";
 import { PageHeader } from "@vision/ui/components/PageHeader/PageHeader";
 
-import {
-  ImportFromYahooAction,
-  LeagueGate,
-  LeagueSyncButton,
-  OpenInYahooLink,
-} from "@/app/_league/LeagueGate";
+import { LeagueSyncButton, OpenInYahooLink } from "@/app/_league/LeagueGate";
+import { rosterGateScreen } from "@/app/_league/rosterGateScreen";
 import { WAIVER_WIRE_PAGE_HEADER } from "@/app/waiver-wire/header";
 
 import styles from "@/app/waiver-wire/waiverWire.module.scss";
 
 export const dynamic = "force-dynamic";
 
-// Every state short of the comparison: the page's own header, then why the
-// Waiver Wire can't run yet and what to do about it.
-type WaiverWireGateProps = { message: string; children?: ReactNode };
-
-function WaiverWireGate({ message, children }: WaiverWireGateProps) {
-  return (
-    <LeagueGate header={WAIVER_WIRE_PAGE_HEADER} label="Waiver Wire status" message={message}>
-      {children}
-    </LeagueGate>
-  );
-}
+// Why the Waiver Wire can't run yet, for each state that blocks it.
+const WAIVER_WIRE_GATE_MESSAGES: Record<BlockedRosterGateKind, string> = {
+  no_league:
+    "No league yet. Import your Yahoo league to see who on the wire beats your weakest players.",
+  not_imported:
+    "The Waiver Wire needs a league imported from Yahoo, so it knows every team's roster.",
+  points: "The Waiver Wire doesn't support points leagues yet.",
+};
 
 type WaiverWirePageProps = {
   searchParams: Promise<RawSearchParams>;
 };
 
 export default async function WaiverWirePage({ searchParams }: WaiverWirePageProps) {
-  const [profile, league] = await Promise.all([getProfile(), getActiveLeague()]);
+  const [profile, activeLeague] = await Promise.all([getProfile(), getActiveLeague()]);
   if (profile === null) redirect("/login?next=/waiver-wire");
 
-  if (league === null) {
-    return (
-      <WaiverWireGate message="No league yet. Import your Yahoo league to see who on the wire beats your weakest players.">
-        <ImportFromYahooAction />
-      </WaiverWireGate>
-    );
+  const gate = rosterGate({ league: activeLeague });
+  if (gate.kind !== "ready") {
+    return rosterGateScreen({
+      gate,
+      header: WAIVER_WIRE_PAGE_HEADER,
+      label: "Waiver Wire status",
+      messages: WAIVER_WIRE_GATE_MESSAGES,
+    });
   }
-
-  if (!league.isImported) {
-    return (
-      <WaiverWireGate message="The Waiver Wire needs a league imported from Yahoo, so it knows every team's roster.">
-        <ImportFromYahooAction />
-      </WaiverWireGate>
-    );
-  }
-
-  if (league.scoringType === "h2h_points") {
-    return <WaiverWireGate message="The Waiver Wire doesn't support points leagues yet." />;
-  }
-
-  if (league.myTeamId === null) {
-    const teams = await getLeagueTeams({ leagueId: league.id });
-    return (
-      <WaiverWireGate message="Which team is yours?">
-        <MyTeamPicker leagueId={league.id} teams={teams} />
-      </WaiverWireGate>
-    );
-  }
+  const { league, myTeamId } = gate;
 
   const { range } = loadWaiverWireSearchParams(await searchParams);
   const [lines, leagueData, activeRoster] = await Promise.all([
     getFantasyPool({ range }),
-    getWaiverLeagueData({ leagueId: league.id, myTeamId: league.myTeamId }),
+    getWaiverLeagueData({ leagueId: league.id, myTeamId }),
     getActiveRosterPlayers(),
   ]);
   const { method, config, methodWeights } = leagueValuationSettings({

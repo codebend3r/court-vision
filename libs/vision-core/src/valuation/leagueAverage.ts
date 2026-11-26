@@ -66,7 +66,8 @@ export const buildLeagueAverageLines = <K extends SportKeys>({
   windowSize = ROLLING_WINDOW_GAMES,
 }: BuildLeagueAverageLinesProps<K>): DatedAverageLine<K>[] => {
   const windowsByDate = players.reduce((byDate, { playerId, logs }) => {
-    const lineEndingAt = rollingWindowLines({ sport, playerId, logs, windowSize });
+    // The windows are averaged into a position-less line, so none is lent.
+    const lineEndingAt = rollingWindowLines({ sport, playerId, position: null, logs, windowSize });
     return logs.reduce((acc, log, index) => {
       if (!isAppearance(log)) return acc;
       const line = lineEndingAt({ index });
@@ -97,5 +98,5 @@ export const scoreAverageLines = <K extends SportKeys>({
 }: ScoreAverageLinesProps<K>): DatedMethodValues[] =>
   lines.map(({ date, line }) => ({
     date,
-    values: rollingValues({ yardstick, line, position: null }),
+    values: rollingValues({ yardstick, line }),
   }));

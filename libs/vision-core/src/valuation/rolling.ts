@@ -39,41 +39,44 @@ export type RollingSeriesArgs<K extends SportKeys> = {
 // before it. Null until minGames have been played, and for a still-growing
 // window with no appearance in it (a season that opens on the injury list
 // has nothing to score yet). Bound to one player's logs so a caller scoring a
-// window more than once (Z and G) aggregates it only once.
+// window on every method aggregates it only once. The line carries the
+// player's position, so Positional VORP measures the window against the
+// right replacement level.
 type RollingWindowLinesProps = { index: number };
 
 export const rollingWindowLines =
   <K extends SportKeys>({
     sport,
     playerId,
+    position,
     logs,
     windowSize = ROLLING_WINDOW_GAMES,
     minGames = 1,
-  }: Pick<RollingSeriesArgs<K>, "sport" | "playerId" | "logs" | "windowSize" | "minGames">) =>
+  }: Pick<
+    RollingSeriesArgs<K>,
+    "sport" | "playerId" | "position" | "logs" | "windowSize" | "minGames"
+  >) =>
   ({ index }: RollingWindowLinesProps): ValuationLine<K> | null => {
     if (index + 1 < Math.min(minGames, windowSize)) return null;
     const games = logs.slice(Math.max(0, index + 1 - windowSize), index + 1);
     if (games.length < windowSize && !games.some((log) => isAppearance(log))) return null;
-    return { playerId, position: null, ...aggregateWindowLogs({ sport, logs: games }) };
+    return { playerId, position, ...aggregateWindowLogs({ sport, logs: games }) };
   };
 
 // Every method's score for one rolling line, against a yardstick the caller
 // builds once from the season pool and holds fixed. Every rolling reading
-// (the dashboard series, the Fantasy tab's and the player page's trends) is
-// scored here. The window line borrows the player's position so Positional
-// VORP measures it against the right replacement level.
+// (the dashboard series, the Fantasy tab's and the player page's trends, the
+// league average) is scored here.
 type RollingValuesProps<K extends SportKeys> = {
   yardstick: Yardstick<K>;
   line: ValuationLine<K>;
-  position: string | null;
 };
 
 export const rollingValues = <K extends SportKeys>({
   yardstick,
   line,
-  position,
 }: RollingValuesProps<K>): MethodValues => {
-  const [scored] = yardstick.value({ lines: [{ ...line, position }] });
+  const [scored] = yardstick.value({ lines: [line] });
   return recordFromKeys({ keys: METHOD_VALUE_KEYS, value: (key) => scored?.[key] ?? 0 });
 };
 
@@ -91,11 +94,18 @@ export const buildRollingSeries = <K extends SportKeys>({
   windowSize = ROLLING_WINDOW_GAMES,
   minGames = 1,
 }: RollingSeriesArgs<K>): Record<MethodValueKey, TrendSeries> => {
-  const lineEndingAt = rollingWindowLines({ sport, playerId, logs, windowSize, minGames });
+  const lineEndingAt = rollingWindowLines({
+    sport,
+    playerId,
+    position,
+    logs,
+    windowSize,
+    minGames,
+  });
   const scored = logs.flatMap((log, index): { date: number; values: MethodValues }[] => {
     const line = lineEndingAt({ index });
     if (line === null) return [];
-    return [{ date: log.gameDate.getTime(), values: rollingValues({ yardstick, line, position }) }];
+    return [{ date: log.gameDate.getTime(), values: rollingValues({ yardstick, line }) }];
   });
   return recordFromKeys({
     keys: METHOD_VALUE_KEYS,

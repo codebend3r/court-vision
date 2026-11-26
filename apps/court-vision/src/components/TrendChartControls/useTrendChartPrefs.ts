@@ -59,13 +59,13 @@ export const useTrendChartView = ({ averages }: UseTrendChartViewProps): TrendCh
   };
 };
 
-// The league's average on one method for one game date, or null when there is
-// no line to draw or no reading that day.
+// The league's average on one method for one game date (epoch ms), or null
+// when there is no line to draw or no reading that day.
 type AverageOnProps = {
   averageByDate: AverageByDate | null;
-  gameDate: string;
+  date: number;
   key: MethodValueKey;
 };
 
-export const averageOn = ({ averageByDate, gameDate, key }: AverageOnProps): number | null =>
-  averageByDate?.get(Date.parse(gameDate))?.[key] ?? null;
+export const averageOn = ({ averageByDate, date, key }: AverageOnProps): number | null =>
+  averageByDate?.get(date)?.[key] ?? null;

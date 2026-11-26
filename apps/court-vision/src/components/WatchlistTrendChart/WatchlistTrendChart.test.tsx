@@ -34,7 +34,7 @@ type RenderChartProps = {
 const renderChart = ({ entries, caption = "Zero is league-average value." }: RenderChartProps) =>
   render(
     <ThemeProvider>
-      <WatchlistTrendChart series={entries} caption={caption} average={[]} />
+      <WatchlistTrendChart series={entries} caption={caption} methodKey="z" averages={[]} />
     </ThemeProvider>,
     { wrapper: withNuqsTestingAdapter() },
   );
@@ -146,5 +146,23 @@ describe("buildRows", () => {
     // what spaces the dates evenly.
     expect(rows).toHaveLength(1);
     expect(rows[0]).toEqual({ date: day(1), p1: 1, p2: 2 });
+  });
+
+  it("joins the league average onto each date's row", () => {
+    const rows = buildRows({
+      series: [
+        {
+          playerId: 1,
+          fullName: "A A",
+          points: [
+            { date: day(1), value: 1 },
+            { date: day(2), value: 2 },
+          ],
+        },
+      ],
+      averageAt: ({ date }) => (date === day(1) ? 0.5 : null),
+    });
+    expect(rows[0]?.average).toBe(0.5);
+    expect(rows[1]?.average).toBeUndefined();
   });
 });

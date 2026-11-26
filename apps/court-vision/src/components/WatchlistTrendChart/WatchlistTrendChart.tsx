@@ -1,13 +1,16 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useTrendChartPrefs } from "@/components/TrendChartControls/useTrendChartPrefs";
+import { averageOn, useTrendChartView } from "@/components/TrendChartControls/useTrendChartPrefs";
 
 import { ChartPlaceholder } from "@vision/ui/components/ChartPlaceholder/ChartPlaceholder";
 import { CHART_CHROME, getTrendPalette } from "@vision/ui/charts/palette";
 import type { WatchlistTrendLine } from "@/components/WatchlistTrendChart/WatchlistTrendPlot";
 import { useTheme } from "@vision/ui/components/ThemeProvider/ThemeProvider";
-import { type TrendPoint, type TrendSeries } from "@vision/core/valuation/rolling";
+import { type DatedMethodValues } from "@vision/core/valuation/leagueAverage";
+import { type TrendSeries } from "@vision/core/valuation/rolling";
+import { type MethodValueKey } from "@vision/core/valuation/types";
+import { AVERAGE_KEY } from "@/lib/charts/averageLine";
 
 import styles from "@/components/WatchlistTrendChart/WatchlistTrendChart.module.scss";
 
@@ -30,14 +33,13 @@ export type WatchlistTrendChartProps = {
   // chart itself is method-agnostic; one instance per method differs only in
   // its series, caption and average.
   caption: string;
-  // The league's average on this method per game date, drawn as a dotted
+  // The method the series score, which picks this chart's league average.
+  methodKey: MethodValueKey;
+  // The league's average on every method per game date, drawn as a dotted
   // line that moves with the league while the page's League average switch
   // is on (it starts on).
-  average: readonly TrendPoint[];
+  averages: readonly DatedMethodValues[];
 };
-
-// The row field the league-average line reads.
-export const AVERAGE_KEY = "average";
 
 type SeriesKeyProps = { playerId: number };
 
@@ -56,10 +58,15 @@ export type ChartRow = Record<string, number | undefined>;
 // break into dead space and squeezes busy weeks together.
 // The league average joins each row by date; it only fills dates a charted
 // player played, which is every date on the axis.
-type BuildRowsProps = { series: readonly TrendSeries[]; average?: readonly TrendPoint[] };
+type AverageAtProps = { date: number };
 
-export const buildRows = ({ series, average = [] }: BuildRowsProps): ChartRow[] => {
-  const averageByDate = new Map(average.map((point) => [point.date, point.value]));
+type BuildRowsProps = {
+  series: readonly TrendSeries[];
+  // The league average on a date, or null for none.
+  averageAt?: ({ date }: AverageAtProps) => number | null;
+};
+
+export const buildRows = ({ series, averageAt = () => null }: BuildRowsProps): ChartRow[] => {
   const dates = [
     ...new Set(series.flatMap((entry) => entry.points.map((point) => point.date))),
   ].sort((a, b) => a - b);
@@ -75,13 +82,18 @@ export const buildRows = ({ series, average = [] }: BuildRowsProps): ChartRow[] 
         ...row,
         [seriesKey({ playerId: entry.playerId })]: byPlayer.get(entry.playerId)?.get(date),
       }),
-      { date, [AVERAGE_KEY]: averageByDate.get(date) },
+      { date, [AVERAGE_KEY]: averageAt({ date }) ?? undefined },
     ),
   );
 };
 
-export function WatchlistTrendChart({ series, caption, average }: WatchlistTrendChartProps) {
-  const { showAverage } = useTrendChartPrefs();
+export function WatchlistTrendChart({
+  series,
+  caption,
+  methodKey,
+  averages,
+}: WatchlistTrendChartProps) {
+  const { averageByDate } = useTrendChartView({ averages });
   const { theme } = useTheme();
   const palette = getTrendPalette({ theme });
 
@@ -95,7 +107,10 @@ export function WatchlistTrendChart({ series, caption, average }: WatchlistTrend
     );
   }
 
-  const rows = buildRows({ series, average });
+  const rows = buildRows({
+    series,
+    averageAt: ({ date }) => averageOn({ averageByDate, date, key: methodKey }),
+  });
   const lines = series.map((entry, index): WatchlistTrendLine => ({
     dataKey: seriesKey({ playerId: entry.playerId }),
     name: entry.fullName,
@@ -130,11 +145,7 @@ export function WatchlistTrendChart({ series, caption, average }: WatchlistTrend
         <p className={styles.empty}>No starred player has played yet this season.</p>
       ) : (
         <div className={styles.plot}>
-          <WatchlistTrendPlot
-            rows={rows}
-            lines={lines}
-            showAverage={showAverage && !!average.length}
-          />
+          <WatchlistTrendPlot rows={rows} lines={lines} showAverage={averageByDate !== null} />
         </div>
       )}
       <figcaption className={styles.caption}>{caption}</figcaption>

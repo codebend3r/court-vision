@@ -15,6 +15,10 @@ const getWatchlistPlayers = vi.fn();
 const getWatchlistCount = vi.fn();
 const getTrendSeries = vi.fn();
 const getHomeInsights = vi.fn();
+// The page starts one season valuation and hands the same promise to the
+// panels and the charts.
+const seasonValuation = Promise.resolve({ lines: [], poolStats: {}, values: [] });
+const getSeasonValuation = vi.fn(() => seasonValuation);
 const getActiveLeague = vi.fn();
 const getLeagueTeams = vi.fn();
 
@@ -22,6 +26,7 @@ vi.mock("@/lib/auth/session", () => ({ getProfile: () => getProfile() }));
 vi.mock("@/lib/watchlist/queries", () => ({ getWatchlistPlayers, getWatchlistCount }));
 vi.mock("@/lib/watchlist/trendLoader", () => ({ getTrendSeries }));
 vi.mock("@/lib/home/insights", () => ({ getHomeInsights }));
+vi.mock("@/lib/valuation/seasonValuation", () => ({ getSeasonValuation }));
 vi.mock("@/lib/leagues/queries", () => ({ getActiveLeague: () => getActiveLeague() }));
 type GetLeagueTeamsProps = { leagueId: string };
 
@@ -41,6 +46,7 @@ afterEach(cleanup);
 
 beforeEach(() => {
   getProfile.mockReset();
+  getSeasonValuation.mockClear();
   getWatchlistPlayers.mockReset();
   getWatchlistCount.mockReset();
   getTrendSeries.mockReset();
@@ -77,7 +83,7 @@ const trends = ({ series }: TrendsProps) => ({
     sgp: series,
     sim: series,
   },
-  averages: { z: [], g: [], points: [], vorp: [], positional: [], sgp: [], sim: [] },
+  averages: [],
 });
 
 // Next's redirect() throws an error whose digest encodes the destination
@@ -319,13 +325,19 @@ describe("Home", () => {
 
     await renderHome();
 
-    // One read feeds both charts.
+    // One read feeds every chart.
     expect(getTrendSeries).toHaveBeenCalledTimes(1);
-    // ...valued on the same league settings as the panels.
+    // ...valued on the same league settings and the very same season
+    // valuation as the panels, built once for the page.
+    expect(getSeasonValuation).toHaveBeenCalledTimes(1);
     expect(getTrendSeries).toHaveBeenCalledWith({
       players,
       settings: expect.objectContaining({ config: expect.any(Object), methodWeights: {} }),
+      valuation: seasonValuation,
     });
+    expect(getHomeInsights).toHaveBeenCalledWith(
+      expect.objectContaining({ valuation: seasonValuation }),
+    );
     expect(screen.getByRole("heading", { name: "Z-Score Trend" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "G-Score Trend" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "PL Linear Trend" })).toBeInTheDocument();

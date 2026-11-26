@@ -27,6 +27,7 @@ import {
   type ValuationConfig as CoreValuationConfig,
   type ValuationLine as CoreValuationLine,
 } from "@vision/core/valuation/types";
+import { type Yardstick as CoreYardstick } from "@vision/core/valuation/yardstick";
 
 import { type BasketballKeys } from "#basketball/descriptor";
 
@@ -57,4 +58,5 @@ export type PlayerCategoryInsight = CorePlayerCategoryInsight<BasketballKeys>;
 export type H2hCategoriesConfig = CoreH2hCategoriesConfig<BasketballKeys>;
 export type H2hPointsConfig = CoreH2hPointsConfig<BasketballKeys>;
 export type RotoConfig = CoreRotoConfig<BasketballKeys>;
+export type Yardstick = CoreYardstick<BasketballKeys>;
 export type LeagueScoringConfig = CoreLeagueScoringConfig<BasketballKeys>;

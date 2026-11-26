@@ -1,14 +1,25 @@
-import { CHART_CHROME } from "@vision/ui/charts/palette";
+import { CHART_REFERENCE_STROKE, chartReferenceLineProps } from "@vision/ui/charts/palette";
 
-// How every trend chart draws the league's average: a thin dotted line in the
-// axis ink, the same dash the League average switch shows as its legend mark,
-// so the line and its switch read as one thing on every chart.
-type AverageLineStyle = { stroke: string; strokeDasharray: string; strokeWidth: number };
+// How every trend chart draws the league's average: the shared reference line
+// (thin, dotted, axis ink), the same dash the League average switch shows as
+// its legend mark, so the line and its switch read as one thing everywhere.
 
-export const AVERAGE_LINE_STYLE: AverageLineStyle = {
-  stroke: CHART_CHROME.axis,
-  strokeDasharray: "3 3",
-  strokeWidth: 1.5,
-};
+// The row field every chart's league-average line reads.
+export const AVERAGE_KEY = "average";
 
 export const AVERAGE_LINE_LABEL = "League average";
+
+// The line's colour, for a tooltip row or legend swatch naming it.
+export const AVERAGE_LINE_COLOR = CHART_REFERENCE_STROKE.stroke;
+
+type AverageLineProps = ReturnType<typeof chartReferenceLineProps> & {
+  dataKey: typeof AVERAGE_KEY;
+  name: string;
+};
+
+// Everything a recharts `Line` needs to draw the average: spread it on.
+export const averageLineProps = (): AverageLineProps => ({
+  ...chartReferenceLineProps(),
+  dataKey: AVERAGE_KEY,
+  name: AVERAGE_LINE_LABEL,
+});

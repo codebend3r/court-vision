@@ -1,14 +1,10 @@
 import { isRecord, recordFromKeys } from "@vision/core/util/record";
-import { ratioDefs } from "@vision/core/valuation/categories";
 import { type DatedAverageLine } from "@vision/core/valuation/leagueAverage";
-import {
-  basketball,
-  type BasketballKeys,
-  BASKETBALL_VALUED_STATS,
-} from "@vision/sport-basketball/descriptor";
+import { type BasketballKeys, BASKETBALL_VALUED_STATS } from "@vision/sport-basketball/descriptor";
 import { type DatedLog, type StatKey, type WindowLog } from "@vision/sport-basketball/types";
 
 import { PAGE_SIZES } from "@/lib/players/searchParams";
+import { isValuationLine } from "@/lib/valuation/workerProtocol";
 
 // One request covers the page in view, so the cap is the largest page size.
 export const MAX_TREND_PLAYERS = Math.max(...PAGE_SIZES);
@@ -58,26 +54,10 @@ const isFantasyTrendPlayerLogs = (value: unknown): value is FantasyTrendPlayerLo
   Array.isArray(value.logs) &&
   value.logs.every(isFantasyTrendLog);
 
-const RATIO_KEYS = ratioDefs({ sport: basketball }).map((def) => def.key);
-
-type IsNumberRecordProps = { value: unknown; keys: readonly string[] };
-
-const isNumberRecord = ({ value, keys }: IsNumberRecordProps): boolean =>
-  isRecord(value) && keys.every((key) => typeof value[key] === "number");
-
-export const isLeagueAverageLine = (value: unknown): value is DatedAverageLine<BasketballKeys> => {
-  if (!isRecord(value) || typeof value.date !== "number" || !isRecord(value.line)) return false;
-  const { line } = value;
-  return (
-    typeof line.playerId === "number" &&
-    (line.position === null || typeof line.position === "string") &&
-    typeof line.gamesPlayed === "number" &&
-    typeof line.playingTime === "number" &&
-    isNumberRecord({ value: line.stats, keys: BASKETBALL_VALUED_STATS }) &&
-    isNumberRecord({ value: line.sq, keys: BASKETBALL_VALUED_STATS }) &&
-    isNumberRecord({ value: line.cross, keys: RATIO_KEYS })
-  );
-};
+// The average is an ordinary valuation line on a date, so it reuses the
+// worker protocol's line guard rather than restating the line's shape.
+export const isLeagueAverageLine = (value: unknown): value is DatedAverageLine<BasketballKeys> =>
+  isRecord(value) && typeof value.date === "number" && isValuationLine(value.line);
 
 // A server action's reply is deserialized from the wire, so the client checks
 // the shape before reading it rather than trusting the annotation.

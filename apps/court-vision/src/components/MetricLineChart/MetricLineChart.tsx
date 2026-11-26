@@ -14,8 +14,12 @@ import {
 } from "recharts";
 
 import { isMetricPoint, type MetricPoint } from "@vision/core/series/metricPoint";
-import { AVERAGE_LINE_STYLE } from "@/lib/charts/averageLine";
-import { CHART_CHROME, chartAxisProps, chartLineProps } from "@vision/ui/charts/palette";
+import {
+  CHART_CHROME,
+  chartAxisProps,
+  chartLineProps,
+  chartReferenceLineProps,
+} from "@vision/ui/charts/palette";
 import { endLabel, lastPlottedIndex } from "@/components/ChartEndLabel/ChartEndLabel";
 import {
   DNP_STATUS,
@@ -32,8 +36,9 @@ export type MetricMeta<K extends string> = {
   key: K;
   label: string;
   color: string;
-  // A reference series (a league average, say) draws dotted.
-  dashed?: boolean;
+  // A reference series (a league average, say): drawn as the shared dotted
+  // reference line, behind the data rather than as one more series.
+  reference?: boolean;
 };
 
 export type MetricSeriesPoint<K extends string> = MetricPoint & Record<K, number | null>;
@@ -181,14 +186,14 @@ export function MetricLineChart<K extends string>({
         {metas.map((meta) => (
           <Line
             key={meta.key}
-            {...chartLineProps({
-              color: meta.color,
-              width: meta.dashed ? AVERAGE_LINE_STYLE.strokeWidth : undefined,
-            })}
-            strokeDasharray={meta.dashed ? AVERAGE_LINE_STYLE.strokeDasharray : undefined}
+            {...(meta.reference
+              ? chartReferenceLineProps()
+              : {
+                  ...chartLineProps({ color: meta.color }),
+                  isAnimationActive: false,
+                  connectNulls: false,
+                })}
             dataKey={meta.key}
-            isAnimationActive={false}
-            connectNulls={false}
             // A line ends at its last recorded game, which a run of trailing
             // DNPs or missing rows can put well before the final x tick; the
             // label belongs beside that point, not where the line would have gone.

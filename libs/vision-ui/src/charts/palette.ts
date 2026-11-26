@@ -123,3 +123,36 @@ export const chartLineProps = ({ color, width = 3 }: ChartLinePropsProps): Chart
   dot: false,
   activeDot: { r: width + 2, fill: color, stroke: "var(--color-surface)", strokeWidth: 2 },
 });
+
+// A reference series drawn beside the data (a league average, a baseline): a
+// thin dotted line in the axis ink, so it reads as context rather than as one
+// more series. Its dash is the mark a chart's legend or switch shows for it.
+type ChartReferenceStroke = { stroke: string; strokeDasharray: string; strokeWidth: number };
+
+export const CHART_REFERENCE_STROKE: ChartReferenceStroke = {
+  stroke: CHART_CHROME.axis,
+  strokeDasharray: "3 3",
+  strokeWidth: 1.5,
+};
+
+type ChartReferenceLineStyle = ChartReferenceStroke & {
+  type: typeof CHART_CURVE;
+  strokeLinecap: "round";
+  dot: false;
+  activeDot: false;
+  isAnimationActive: false;
+  connectNulls: true;
+};
+
+// The whole look of a reference line, spread onto a recharts `Line`: the same
+// curve as the series, no dots (hovering it should not compete with the data),
+// no animation, and gaps bridged, since a missing reading is not a dip.
+export const chartReferenceLineProps = (): ChartReferenceLineStyle => ({
+  type: CHART_CURVE,
+  ...CHART_REFERENCE_STROKE,
+  strokeLinecap: "round",
+  dot: false,
+  activeDot: false,
+  isAnimationActive: false,
+  connectNulls: true,
+});

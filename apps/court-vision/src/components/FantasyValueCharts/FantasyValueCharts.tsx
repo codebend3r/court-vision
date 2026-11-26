@@ -4,11 +4,8 @@ import { Bar, BarChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxi
 
 import { FantasyChartList } from "@/components/FantasyChartList/FantasyChartList";
 import { BreakdownTooltip, SignedBar } from "@/components/PlayerFantasyChart/breakdownChart";
-import {
-  METHOD_KEYS,
-  METHOD_LABELS,
-  symmetricDomain,
-} from "@/components/PlayerFantasyChart/labels";
+import { METHOD_KEYS, symmetricDomain } from "@/components/PlayerFantasyChart/labels";
+import { LABEL_BY_VALUE_KEY } from "@vision/core/valuation/registry";
 import { CHART_CHROME } from "@vision/ui/charts/palette";
 import { formatSigned } from "@vision/core/util/format";
 import { type CategoryMeta, type FantasyCategoryBreakdown } from "@vision/sport-basketball/types";
@@ -92,7 +89,7 @@ export function FantasyValueCharts({ rows, categories, ...listProps }: FantasyVa
               <Bar
                 key={key}
                 dataKey={key}
-                name={METHOD_LABELS[key]}
+                name={LABEL_BY_VALUE_KEY[key]}
                 fill={colors[key]}
                 shape={SignedBar}
                 isAnimationActive={false}

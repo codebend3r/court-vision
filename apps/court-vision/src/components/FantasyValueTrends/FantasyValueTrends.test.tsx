@@ -218,6 +218,7 @@ describe("TrendTooltip", () => {
         payload={[{ payload: last, graphicalItemId: "z" }]}
         trend={trend}
         colors={COLORS}
+        keys={["z", "g"]}
       />,
     );
 
@@ -246,6 +247,7 @@ describe("TrendTooltip", () => {
         payload={[{ payload: missed, graphicalItemId: "z" }]}
         trend={[missed]}
         colors={COLORS}
+        keys={["z", "g"]}
       />,
     );
 

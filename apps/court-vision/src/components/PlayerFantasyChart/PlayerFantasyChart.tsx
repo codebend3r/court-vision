@@ -17,15 +17,9 @@ import { formatSigned } from "@vision/core/util/format";
 import { type FantasyTrendPoint } from "@vision/core/valuation/playerValue";
 import { MetricLineChart, type MetricMeta } from "@/components/MetricLineChart/MetricLineChart";
 import { BreakdownTooltip, SignedBar } from "@/components/PlayerFantasyChart/breakdownChart";
-import {
-  METHOD_KEYS,
-  METHOD_LABELS,
-  methodColors,
-  type MethodKey,
-  VALUE_LABELS,
-  valueColors,
-} from "@/components/PlayerFantasyChart/labels";
-import { AVERAGE_LINE_LABEL, AVERAGE_LINE_STYLE } from "@/lib/charts/averageLine";
+import { METHOD_KEYS, type MethodKey, valueColors } from "@/components/PlayerFantasyChart/labels";
+import { LABEL_BY_VALUE_KEY } from "@vision/core/valuation/registry";
+import { AVERAGE_KEY, AVERAGE_LINE_COLOR, AVERAGE_LINE_LABEL } from "@/lib/charts/averageLine";
 import { TrendChartControls } from "@/components/TrendChartControls/TrendChartControls";
 import { averageOn, useTrendChartView } from "@/components/TrendChartControls/useTrendChartPrefs";
 import { fittedDomain } from "@/lib/charts/trendMethods";
@@ -48,30 +42,29 @@ export type PlayerFantasyChartProps = {
 };
 
 // The league's average on each game date, drawn dotted under a method's line.
-const AVERAGE_META: MetricMeta<"average"> = {
-  key: "average",
+const AVERAGE_META: MetricMeta<typeof AVERAGE_KEY> = {
+  key: AVERAGE_KEY,
   label: AVERAGE_LINE_LABEL,
-  color: AVERAGE_LINE_STYLE.stroke,
-  dashed: true,
+  color: AVERAGE_LINE_COLOR,
+  reference: true,
 };
 
 // Recharts hands its tick formatter the bare value.
 const formatTick = (value: number): string => formatSigned({ value, digits: 1 });
 
 // The fantasy view's two figures: where the value comes from (each category's
-// Z and G, side by side) and where it is going (the rolling ten-game value
-// across the timeframe). Both use the same two series colours, named once in
-// the legend above.
+// Z and G, side by side, named in the legend above) and where it is going
+// (one small rolling chart per method, each titled). A method keeps its
+// colour in both.
 export function PlayerFantasyChart({ breakdown, trend, averages }: PlayerFantasyChartProps) {
   const { theme } = useTheme();
-  const colors = methodColors({ theme });
+  const colors = valueColors({ theme });
   const { showDnp } = useShowDnp();
   const { keys, averageByDate } = useTrendChartView({ averages });
-  const lineColors = valueColors({ theme });
 
   const trendMetas: MetricMeta<MethodKey>[] = METHOD_KEYS.map((key) => ({
     key,
-    label: METHOD_LABELS[key],
+    label: LABEL_BY_VALUE_KEY[key],
     color: colors[key],
   }));
   const hasTrend = trend.some((point) => point.z !== null || point.g !== null);
@@ -133,15 +126,19 @@ export function PlayerFantasyChart({ breakdown, trend, averages }: PlayerFantasy
                 // Each game joined to the league's average on its date.
                 const series = trend.map((point) => ({
                   ...point,
-                  average: averageOn({ averageByDate, gameDate: point.gameDate, key }),
+                  [AVERAGE_KEY]: averageOn({
+                    averageByDate,
+                    date: Date.parse(point.gameDate),
+                    key,
+                  }),
                 }));
-                const metas: MetricMeta<MethodValueKey | "average">[] = [
-                  { key, label: VALUE_LABELS[key], color: lineColors[key] },
+                const metas: MetricMeta<MethodValueKey | typeof AVERAGE_KEY>[] = [
+                  { key, label: LABEL_BY_VALUE_KEY[key], color: colors[key] },
                   ...(averageByDate === null ? [] : [AVERAGE_META]),
                 ];
                 return (
                   <li key={key} className={styles.multiple}>
-                    <h4 className={styles.multipleTitle}>{VALUE_LABELS[key]}</h4>
+                    <h4 className={styles.multipleTitle}>{LABEL_BY_VALUE_KEY[key]}</h4>
                     <MetricLineChart
                       metas={metas}
                       series={series}
@@ -150,7 +147,7 @@ export function PlayerFantasyChart({ breakdown, trend, averages }: PlayerFantasy
                       // jump fills the box instead of hugging a scale padded
                       // out to zero.
                       domain={fittedDomain({
-                        values: series.flatMap((point) => [point[key], point.average]),
+                        values: series.flatMap((point) => [point[key], point[AVERAGE_KEY]]),
                       })}
                       clipToDomain
                       endLabels={false}
